@@ -61,10 +61,26 @@ public sealed class PhotoImporterTests : IDisposable
     {
         Touch("DSC_0001.NEF", "DSC_0001.JPG", "DSC_0002.NEF", "DSC_0003.dng", "DSC_0003.heic", "other/DSC_0002.jpg");
 
-        var listed = await ListAsync(Importer(), new ImportRequest([_root], IncludeSubfolders: false));
+        var listed = await ListAsync(new PhotoImporter(Importable) { IsReadable = Importable }, new ImportRequest([_root], IncludeSubfolders: false));
 
         // DSC_0002.NEF has its JPEG in another folder, so it stays.
         Assert.Equal(["DSC_0001.JPG", "DSC_0002.NEF", "DSC_0003.heic"], Names(listed.Frames));
+    }
+
+    [Fact]
+    public async Task ARawFileStaysWhenThisPcCannotDecodeItsPartner()
+    {
+        Touch("IMG_0001.CR3", "IMG_0001.HEIF", "IMG_0002.CR3", "IMG_0002.JPG");
+
+        // A codec set without HEIF: the HEIF is listed (it will come back as needing an extension), and the CR3 stays.
+        var importer = new PhotoImporter(path => Path.GetExtension(path).ToLowerInvariant() is ".jpg" or ".cr3" or ".heif")
+        {
+            IsReadable = path => Path.GetExtension(path).Equals(".jpg", StringComparison.OrdinalIgnoreCase),
+        };
+
+        var listed = await ListAsync(importer, new ImportRequest([_root], IncludeSubfolders: false));
+
+        Assert.Equal(["IMG_0001.CR3", "IMG_0001.HEIF", "IMG_0002.JPG"], Names(listed.Frames));
     }
 
     [Fact]

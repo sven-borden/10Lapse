@@ -67,6 +67,12 @@ public sealed class PhotoImporter : IPhotoImportSource
         _readBatch = readBatch;
     }
 
+    /// <summary>
+    /// True for a file this PC decodes (<see cref="PhotoCodecs.IsReadable"/>; tests pass their own codec set). A RAW file
+    /// is left out for its same-named partner only when this is true for the partner.
+    /// </summary>
+    internal Func<string, bool> IsReadable { get; init; } = PhotoCodecs.IsReadable;
+
     /// <inheritdoc />
     public bool IsPhotoFile(string path) => !string.IsNullOrEmpty(path) && _isPhoto(path);
 
@@ -186,16 +192,17 @@ public sealed class PhotoImporter : IPhotoImportSource
     }
 
     /// <summary>
-    /// Leaves out each camera RAW file that has a non-RAW photo (the camera's JPEG, a HEIF) with the same base name in
-    /// the same folder, so a RAW+JPEG shot is imported once, as the JPEG (#13 review). Then sorts by name the way
-    /// Explorer does. <paramref name="files"/> all come from one folder.
+    /// Leaves out each camera RAW file that has a non-RAW photo this PC decodes (the camera's JPEG, a HEIF with its
+    /// extension installed) with the same base name in the same folder, so a RAW+JPEG shot is imported once, as the JPEG
+    /// (#13 review). A partner this PC cannot decode (a HEIF without its extension) keeps the RAW in. Then sorts by name
+    /// the way Explorer does. <paramref name="files"/> all come from one folder.
     /// </summary>
-    internal static List<ListedFile> PairAndSort(List<ListedFile> files)
+    internal static List<ListedFile> PairAndSort(List<ListedFile> files, Func<string, bool> isReadable)
     {
         var withPhoto = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in files)
         {
-            if (!IsRaw(file.Path))
+            if (!IsRaw(file.Path) && isReadable(file.Path))
             {
                 withPhoto.Add(Path.GetFileNameWithoutExtension(file.Path));
             }
@@ -263,7 +270,7 @@ public sealed class PhotoImporter : IPhotoImportSource
 
         foreach (var folder in looseOrder)
         {
-            yield return PairAndSort(looseFiles[folder]);
+            yield return PairAndSort(looseFiles[folder], IsReadable);
         }
 
         foreach (var folder in folders)
@@ -319,7 +326,7 @@ public sealed class PhotoImporter : IPhotoImportSource
 
             if (files.Count > 0)
             {
-                yield return PairAndSort(files);
+                yield return PairAndSort(files, IsReadable);
             }
 
             // Pushed in reverse so the first by name is walked first.
