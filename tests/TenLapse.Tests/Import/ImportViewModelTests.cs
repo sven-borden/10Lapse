@@ -262,6 +262,29 @@ public sealed class ImportViewModelTests
     }
 
     [Fact]
+    public async Task CancelWhileListingTakesOutTheListedPhotosNoneOfWhichWereRead()
+    {
+        var source = new ScriptedImportSource([ScriptedImportSource.Photo("IMG_1.jpg"), ScriptedImportSource.Photo("IMG_2.jpg")], [ScriptedImportSource.Photo("IMG_3.jpg")]);
+        source.HoldListBatch(1);
+        using var harness = ImportHarness.With(source);
+        harness.Ui.Run(() => harness.Project.AddFrames([ScriptedImportSource.Photo("IMG_0.jpg")]));
+
+        var import = harness.ImportAsync(@"C:\Scripted");
+        await source.ListBatchReached.Task.WaitAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(3, await harness.Ui.InvokeAsync(() => harness.Project.Frames.Length));
+        await harness.Ui.InvokeAsync(() =>
+        {
+            harness.Import.CancelCommand.Execute(null);
+            return true;
+        });
+        await import;
+
+        Assert.Equal(["IMG_0.jpg"], harness.Project.Frames.Select(frame => frame.FileName));
+        Assert.Equal(ProjectText.ImportStoppedNone, Assert.Single(harness.InfoBars.Shown).Message);
+        Assert.Empty(harness.RealFailures());
+    }
+
+    [Fact]
     public async Task ThePickersStartInPicturesThenBesideTheLastFolder()
     {
         using var harness = ImportHarness.With(new ScriptedImportSource());

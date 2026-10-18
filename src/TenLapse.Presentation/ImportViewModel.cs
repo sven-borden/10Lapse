@@ -284,23 +284,23 @@ public sealed partial class ImportViewModel : ObservableObject
 
         // Phase 1: list. Each batch is added at once; `listed` keeps the frames this import really added (a photo
         // already in the project is left out by AddFrames), in order, for phase 2.
+        // `unread` holds the frames added but not read yet: Cancel takes them out again, in either phase.
         var listed = new List<Frame>();
+        var unread = new HashSet<Guid>();
         var skipped = new List<SkippedFile>();
         var found = 0;
-        var searchedFolder = false;
-        await foreach (var batch in _source.ListAsync(request, token).ConfigureAwait(false))
-        {
-            found += batch.Frames.Count;
-            var added = await _ui.InvokeAsync(() => AddListed(target, batch, wasEmpty ? name : null, listed.Count)).ConfigureAwait(false);
-            listed.AddRange(added);
-            skipped.AddRange(batch.Skipped);
-        }
-
-        searchedFolder = request.Paths.Any(Directory.Exists);
-        var unread = listed.Select(frame => frame.Id).ToHashSet();
         var kept = 0;
         try
         {
+            await foreach (var batch in _source.ListAsync(request, token).ConfigureAwait(false))
+            {
+                found += batch.Frames.Count;
+                var added = await _ui.InvokeAsync(() => AddListed(target, batch, wasEmpty ? name : null, listed.Count)).ConfigureAwait(false);
+                listed.AddRange(added);
+                unread.UnionWith(added.Select(frame => frame.Id));
+                skipped.AddRange(batch.Skipped);
+            }
+
             // Phase 2: read, then write back once per batch.
             var read = 0;
             await foreach (var readings in _source.ReadAsync(listed, token).ConfigureAwait(false))
@@ -336,7 +336,7 @@ public sealed partial class ImportViewModel : ObservableObject
         {
             _infoBars.Show(
                 InfoBarSeverity.Caution,
-                searchedFolder && !request.IncludeSubfolders ? ProjectText.ImportNothingFoundSubfolders : ProjectText.ImportNothingFound);
+                !request.IncludeSubfolders && request.Paths.Any(Directory.Exists) ? ProjectText.ImportNothingFoundSubfolders : ProjectText.ImportNothingFound);
         }
         else if (found > 0 && listed.Count == 0)
         {

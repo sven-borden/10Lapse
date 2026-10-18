@@ -105,9 +105,17 @@ public sealed partial class ShellView : UserControl
         return bounds;
     }
 
-    /// <summary>Stops following the InfoBar queue and takes the InfoBar shadow down (the window closed).</summary>
+    /// <summary>
+    /// Stops following the InfoBar queue, takes the InfoBar shadow down and stops a running import, whose batches
+    /// could no longer reach the UI thread (the window closed).
+    /// </summary>
     public void Detach()
     {
+        if (Import.CancelCommand.CanExecute(null))
+        {
+            Import.CancelCommand.Execute(null);
+        }
+
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
         ShellRoot.RemoveHandler(PointerPressedEvent, new PointerEventHandler(OnShellPointerPressed));
         _infoBars.Detach();
