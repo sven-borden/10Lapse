@@ -128,7 +128,20 @@ internal sealed partial class GalleryWindow : Window
         var light = (ResourceDictionary)overrides.ThemeDictionaries["Light"];
         var highContrast = (ResourceDictionary)overrides.ThemeDictionaries["HighContrast"];
         var missing = light.Keys.Count(key => !highContrast.ContainsKey(key));
-        return $"Overrides: {light.Count} keys, {missing} missing in HighContrast";
+        var unresolved = 0;
+        foreach (var key in highContrast.Keys.OfType<string>())
+        {
+            try
+            {
+                _ = ((SolidColorBrush)highContrast[key]).Color;
+            }
+            catch (Exception)
+            {
+                unresolved++;
+            }
+        }
+
+        return $"Overrides: {light.Count} keys, {missing} missing in HighContrast, {unresolved} unresolved there";
     }
 
     /// <summary>Resolves every motion resource once, so a bad Duration or KeySpline fails here.</summary>

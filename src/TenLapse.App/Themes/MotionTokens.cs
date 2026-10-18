@@ -48,6 +48,8 @@ public static class MotionTokens
     /// <summary>
     /// Whether the user wants animation (Windows Settings, Accessibility, Visual effects, Animation effects).
     /// Read it each time an animation starts. When false, movement becomes a short fade or nothing.
+    /// It is polled at each animation start, not observed: an animation already running when the user flips
+    /// the Windows setting finishes as it began, and the next one follows the new value.
     /// </summary>
     public static bool AnimationsEnabled => _settings.AnimationsEnabled;
 
