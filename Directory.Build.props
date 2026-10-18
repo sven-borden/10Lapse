@@ -7,6 +7,8 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- MSBuild, SDK, Win2D and XAML warnings fail a plain dotnet build too, as they do in the gate. -->
     <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
+    <!-- A build offline or with a low or moderate advisory must still work; high and critical (NU1903, NU1904) stay errors. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900;NU1901;NU1902</WarningsNotAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <Deterministic>true</Deterministic>
     <Company>Sven Borden</Company>
