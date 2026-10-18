@@ -4,7 +4,7 @@ Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Running: PR #67 review (#28) and #9 (wave 4).
+Running: PR #68 fix round (#9) and #26 (wave 6, started early: Core diagnostics, Presentation, App).
 
 ## Waves
 
@@ -21,11 +21,11 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 2 | #10 Exact frame timing | S | `TenLapse.Core/Timing` | merged #63 |
 | 3 | #8 Spike: streaming encode | O | `TenLapse.Media`, a spike harness | merged #65 |
 | 3 | #27 Design tokens and theme resources | S | `TenLapse.App/Themes` | merged #64 |
-| 4 | #9 Spike: encoder capabilities | O | `TenLapse.Media/Encoding` | running |
+| 4 | #9 Spike: encoder capabilities | O | `TenLapse.Media/Encoding` | PR #68, fix round |
 | 4 | #16 Project model and view models | O | `TenLapse.Core/Projects`, new `TenLapse.Presentation` | merged #66 |
-| 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | PR #67, review |
+| 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | merged #67 |
 | 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | |
-| 6 | #26 One error path | O | App startup, `Core/Diagnostics` | |
+| 6 | #26 One error path | O | App startup, `Core/Diagnostics` | running |
 | 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | |
 | 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | |
 | 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | |
@@ -125,6 +125,18 @@ own waves once 3.0 ships.
   clamps and says so. `OutputResolution` is the short side. Defaults: 30 fps,
   16:9 Fill, 1080p H.264 High, capture-time sort. User-visible text in
   `ProjectText` as whole format strings.
+- 2026-10-18 (#28): the shell is `Shell/ShellView` (a UserControl; adaptive
+  states go on `ShellRoot`). Title bar is custom elements with `SetTitleBar`
+  (caption buttons 32 px in the 40 px strip); title and command bar are one
+  drag region with passthrough for controls. Mica is tinted with the `Mica`
+  token (0.9 light, 0.95 dark) so it reads neutral, not blue. InfoBars go
+  through `IInfoBarService` (`InfoBarQueue`: thread-safe, at most 5 waiting,
+  identical requests coalesce, optional detail list behind View list), with
+  UIA announcements. `FlyoutShadow` is disposable; overlays must dispose it.
+  `AccessibilitySettings.HighContrastChanged` crashes unpackaged; use
+  `UISettings.ColorValuesChanged`. Ctrl+N goes on `ShellRoot`.
+- 2026-10-18 (#9 review): HEVC is offered only when an HEVC encoder works and
+  an HEVC decoder is present, so Windows can play the file.
 
 ## Merged
 
@@ -170,3 +182,8 @@ own waves once 3.0 ships.
   memory: 155 fps, 151 MB peak on NVENC. MP4 timestamps: exact when rate × 1000
   is whole, else 0 to one timescale unit late (#32). About 34 handles per
   export leak inside the NVIDIA encoder MFT, not fixable on our side.
+- #28 PR #67: app shell (title bar on tinted Mica, command bar with *New
+  project* once there is work, Empty/Editing states with stage 920×555 at
+  1280×800, inspector 320, filmstrip row), InfoBar host, `FlyoutShadow`,
+  `TintedMicaBackdrop`, minimum window 640×480. Debug switches
+  `--sample-frames=N`, `--infobar`, `--theme=light|dark`.
