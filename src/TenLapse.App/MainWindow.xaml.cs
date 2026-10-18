@@ -5,7 +5,6 @@ using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Services;
 using TenLapse.Shell;
@@ -24,7 +23,7 @@ namespace TenLapse;
 public sealed partial class MainWindow : Window
 {
     private readonly ShellView _shell;
-
+    private readonly TintedMicaBackdrop? _backdrop;
 
     // Kept as a field: its events stop when nothing holds it.
     private readonly UISettings _uiSettings = new();
@@ -55,7 +54,8 @@ public sealed partial class MainWindow : Window
         SetTitleBar(_shell.TitleBar);
         if (MicaController.IsSupported())
         {
-            SystemBackdrop = new MicaBackdrop();
+            _backdrop = new TintedMicaBackdrop();
+            SystemBackdrop = _backdrop;
         }
         else
         {
@@ -129,11 +129,12 @@ public sealed partial class MainWindow : Window
     // Raised on a background thread.
     private void OnColorValuesChanged(UISettings sender, object args) => DispatcherQueue.TryEnqueue(RefreshSystemColors);
 
-    // What follows the theme by hand: the caption buttons and the shell's shadows.
+    // What follows the theme by hand: the caption buttons, the shell's shadows and the Mica tint.
     private void RefreshSystemColors()
     {
         ColorCaptionButtons();
         _shell.RefreshTheme();
+        _backdrop?.Refresh();
     }
 
     // Before the content is loaded there is no XamlRoot yet; the window's DPI says the same.

@@ -19,13 +19,22 @@ public static class ThemeTokens
     /// <summary>The color token <paramref name="key"/> (for example "InkColor") as <paramref name="element"/> shows it now.</summary>
     public static Color Color(string key, FrameworkElement element)
     {
-        ArgumentException.ThrowIfNullOrEmpty(key);
         ArgumentNullException.ThrowIfNull(element);
+        return Color(key, element.ActualTheme);
+    }
 
-        var theme = IsHighContrast ? "HighContrast" : element.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
-        return Find(Application.Current.Resources, theme, key) is Color color
+    /// <summary>
+    /// The color token <paramref name="key"/> in <paramref name="theme"/> (Light unless Dark), or in HighContrast
+    /// while Windows runs a high contrast theme. For what has no element to ask, such as the window's backdrop.
+    /// </summary>
+    public static Color Color(string key, ElementTheme theme)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+
+        var name = IsHighContrast ? "HighContrast" : theme == ElementTheme.Dark ? "Dark" : "Light";
+        return Find(Application.Current.Resources, name, key) is Color color
             ? color
-            : throw new KeyNotFoundException($"No {theme} color token named {key}.");
+            : throw new KeyNotFoundException($"No {name} color token named {key}.");
     }
 
     /// <summary>The number token <paramref name="key"/> (for example "ElevationFlyoutBlur").</summary>
