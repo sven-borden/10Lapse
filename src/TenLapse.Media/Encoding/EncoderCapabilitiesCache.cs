@@ -29,7 +29,7 @@ public static class EncoderCapabilitiesCache
                 return null;
             }
 
-            return new EncoderCapabilities(file.Encoders, file.Probes, TimeSpan.FromMilliseconds(file.ProbeMilliseconds));
+            return new EncoderCapabilities(file.Encoders, file.Probes, TimeSpan.FromTicks(file.ProbeTicks));
         }
         catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
@@ -60,7 +60,7 @@ public static class EncoderCapabilitiesCache
         var temporary = $"{full}.{Guid.NewGuid():N}.tmp";
         try
         {
-            var file = new CacheFile(key, capabilities.Encoders, capabilities.Probes, capabilities.ProbeDuration.TotalMilliseconds);
+            var file = new CacheFile(key, capabilities.Encoders, capabilities.Probes, capabilities.ProbeDuration.Ticks);
             using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
                 JsonSerializer.Serialize(stream, file, CacheJson.Default.CacheFile);
@@ -76,7 +76,7 @@ public static class EncoderCapabilitiesCache
 }
 
 /// <summary>The cache file's layout.</summary>
-internal sealed record CacheFile(EncoderCacheKey Key, IReadOnlyList<EncoderMft> Encoders, IReadOnlyList<ProbedSize> Probes, double ProbeMilliseconds);
+internal sealed record CacheFile(EncoderCacheKey Key, IReadOnlyList<EncoderMft> Encoders, IReadOnlyList<ProbedSize> Probes, long ProbeTicks);
 
 [JsonSourceGenerationOptions(
     WriteIndented = true,

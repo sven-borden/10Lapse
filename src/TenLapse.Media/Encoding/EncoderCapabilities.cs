@@ -108,7 +108,10 @@ public sealed class EncoderCapabilities
     /// <summary>How long the probe took when it ran (a cached result keeps the original time).</summary>
     public TimeSpan ProbeDuration { get; }
 
-    /// <summary>Why the probe could not run at all, such as <see cref="VideoExportFailure.NoGraphicsDevice"/>; null when it ran.</summary>
+    /// <summary>
+    /// Why the probe could not run at all: <see cref="VideoExportFailure.NoGraphicsDevice"/>, or
+    /// <see cref="VideoExportFailure.EncoderUnavailable"/> when Media Foundation could not list encoders. Null when it ran.
+    /// </summary>
     public VideoExportFailure? DeviceFailure { get; }
 
     /// <summary>

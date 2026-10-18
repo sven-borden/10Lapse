@@ -94,8 +94,8 @@ public sealed class EncoderCacheTests : IDisposable
     [InlineData("not json")]
     [InlineData("[]")]
     [InlineData("{}")]
-    [InlineData("""{"key":null,"encoders":[],"probes":[],"probeMilliseconds":1}""")]
-    [InlineData("""{"key":{"schema":1,"adapter":"a","adapterName":"b","driver":"c","osBuild":"d","encoders":"e"},"encoders":[],"probes":[{"format":"Mp4Av1","width":1,"height":1,"framesPerSecond":30,"encoder":"Hardware","encoderName":null,"failure":null,"milliseconds":1}],"probeMilliseconds":1}""")]
+    [InlineData("""{"key":null,"encoders":[],"probes":[],"probeTicks":1}""")]
+    [InlineData("""{"key":{"schema":1,"adapter":"a","adapterName":"b","driver":"c","osBuild":"d","encoders":"e"},"encoders":[],"probes":[{"format":"Mp4Av1","width":1,"height":1,"framesPerSecond":30,"encoder":"Hardware","encoderName":null,"failure":null,"milliseconds":1}],"probeTicks":1}""")]
     public void ABadFileIsIgnoredAndRewritten(string content)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(CachePath)!);

@@ -51,7 +51,11 @@ public static class EncoderProbe
         return Task.Run(
             () =>
             {
-                var encoders = EncoderCatalog.Find();
+                if (ListEncoders() is not { } encoders)
+                {
+                    return NoMediaFoundation();
+                }
+
                 var key = EncoderCacheKey.ForThisMachine(encoders);
                 if (EncoderCapabilitiesCache.TryRead(cachePath, key) is { } cached)
                 {
@@ -86,7 +90,26 @@ public static class EncoderProbe
     /// <see cref="LoadOrProbeAsync"/>.
     /// </summary>
     public static Task<EncoderCapabilities> ProbeAsync(bool hardwareAcceleration, CancellationToken cancellationToken = default) =>
-        Task.Run(() => Probe(EncoderCatalog.Find(), cancellationToken, hardwareAcceleration), cancellationToken);
+        Task.Run(
+            () => ListEncoders() is { } encoders ? Probe(encoders, cancellationToken, hardwareAcceleration) : NoMediaFoundation(),
+            cancellationToken);
+
+    // Null when Media Foundation itself is missing (a Windows N edition without the Media Feature Pack): MFStartup
+    // or MFTEnumEx fails. That answers "nothing can be exported", as a provisional result, never an exception.
+    private static IReadOnlyList<EncoderMft>? ListEncoders()
+    {
+        try
+        {
+            return EncoderCatalog.Find();
+        }
+        catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
+        {
+            return null;
+        }
+    }
+
+    private static EncoderCapabilities NoMediaFoundation() =>
+        new([], [], TimeSpan.Zero, VideoExportFailure.EncoderUnavailable);
 
     // On an MTA thread: the device must not belong to an STA (see VideoExporter's thread rule).
     private static EncoderCapabilities Probe(IReadOnlyList<EncoderMft> encoders, CancellationToken cancellationToken, bool hardwareAcceleration = true)
