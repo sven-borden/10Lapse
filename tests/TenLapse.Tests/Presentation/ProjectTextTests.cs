@@ -51,6 +51,24 @@ public sealed class ProjectTextTests
         Assert.Equal(expected, confirmation.Message);
     }
 
+    [Fact]
+    public void EverySentenceIsOneFormatStringWithItsOwnPlaceholders()
+    {
+        // #39 moves these to resources as they are: whole sentences, singular and plural apart.
+        Assert.Equal("1 photo → {0} at {1}", ProjectText.TimingReadoutOne);
+        Assert.Equal("{0} photos → {1} at {2}", ProjectText.TimingReadoutMany);
+        Assert.Equal("{0} – {1}", ProjectText.WindowTitleSaved);
+        Assert.Equal("● {0} – {1}", ProjectText.WindowTitleUnsaved);
+        Assert.Equal("This project's {0} photos and settings will be cleared. The photo files stay on your PC.", ProjectText.NewProjectMessageMany);
+        Assert.DoesNotContain("{", ProjectText.NewProjectMessageOne);
+        Assert.DoesNotContain("{", ProjectText.NewProjectMessageNoPhotos);
+
+        var confirmation = ProjectText.NewProjectConfirmation(2);
+        Assert.Equal(ProjectText.NewProjectTitle, confirmation.Title);
+        Assert.Equal(ProjectText.NewProjectConfirm, confirmation.ConfirmText);
+        Assert.Equal(ProjectText.Cancel, confirmation.CancelText);
+    }
+
     [Theory]
     [InlineData("Timelapse", false, false, "10Lapse")]
     [InlineData("Harbor sunset", true, false, "Harbor sunset – 10Lapse")]
