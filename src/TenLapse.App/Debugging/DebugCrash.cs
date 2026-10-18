@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using Microsoft.UI.Dispatching;
 using TenLapse.Presentation.Services;
+using TenLapse.Services;
 
 namespace TenLapse.Debugging;
 
@@ -22,9 +23,12 @@ internal static partial class DebugLaunch
         switch (Value("--crash=")?.ToLowerInvariant())
         {
             case "command":
-                dispatcher.TryEnqueue(() => _ = errors
-                    .AsyncCommand(() => throw new InvalidOperationException("Debug --crash=command: a command threw."), "Debug --crash=command.")
-                    .ExecuteAsync(null));
+                dispatcher.TryEnqueueGuarded(
+                    errors,
+                    () => _ = errors
+                        .AsyncCommand(() => throw new InvalidOperationException("Debug --crash=command: a command threw."), "Debug --crash=command.")
+                        .ExecuteAsync(null),
+                    "Debug --crash=command.");
                 break;
             case "task":
                 StartUnobservedFailure();
@@ -39,8 +43,11 @@ internal static partial class DebugLaunch
                 break;
             case "ui":
                 // The way an async void method's exception comes back: posted to the UI thread's synchronization context.
-                dispatcher.TryEnqueue(() => SynchronizationContext.Current!.Post(
-                    _ => throw new InvalidOperationException("Debug --crash=ui: an exception posted to the UI thread."), null));
+                dispatcher.TryEnqueueGuarded(
+                    errors,
+                    () => SynchronizationContext.Current!.Post(
+                        _ => throw new InvalidOperationException("Debug --crash=ui: an exception posted to the UI thread."), null),
+                    "Debug --crash=ui.");
                 break;
             case "unhandled":
                 new Thread(() => throw new InvalidOperationException("Debug --crash=unhandled: a background thread threw.")) { IsBackground = true }.Start();

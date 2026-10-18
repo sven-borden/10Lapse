@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Services;
+using TenLapse.Services;
 using TenLapse.Themes;
 using Windows.Foundation;
 
@@ -18,21 +19,25 @@ public sealed partial class ShellView : UserControl
 {
     private readonly InfoBarPresenter _infoBars;
     private readonly FlyoutShadow _infoBarShadow;
+    private readonly IErrorSink _errors;
 
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
     /// <param name="infoBars">The InfoBars to float over the stage.</param>
-    public ShellView(ShellViewModel viewModel, SettingsViewModel settings, InfoBarQueue infoBars)
+    /// <param name="errors">Logs failures of the shell's dispatcher callbacks (log only, see <see cref="DispatcherQueueExtensions"/>).</param>
+    public ShellView(ShellViewModel viewModel, SettingsViewModel settings, InfoBarQueue infoBars, IErrorSink errors)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(infoBars);
+        ArgumentNullException.ThrowIfNull(errors);
         ViewModel = viewModel;
+        _errors = errors;
         InitializeComponent();
         SettingsPage.ViewModel = settings;
 
         _infoBarShadow = FlyoutShadow.Attach(InfoBarShadowCaster);
-        _infoBars = new InfoBarPresenter(infoBars, InfoBarLayer, ShellInfoBar, InfoBarDetails, InfoBarDetailList);
+        _infoBars = new InfoBarPresenter(infoBars, InfoBarLayer, ShellInfoBar, InfoBarDetails, InfoBarDetailList, errors);
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 
         // The shell leaves the tree only when the window closes; the shadow goes with it.
@@ -94,7 +99,7 @@ public sealed partial class ShellView : UserControl
         if (e.PropertyName == nameof(ShellViewModel.IsSettingsOpen))
         {
             var target = ViewModel.IsSettingsOpen ? BackButton : SettingsButton;
-            DispatcherQueue.TryEnqueue(() => target.Focus(FocusState.Programmatic));
+            DispatcherQueue.TryEnqueueGuarded(_errors, () => target.Focus(FocusState.Programmatic), ProjectText.SettingsFocusFailed);
         }
     }
 

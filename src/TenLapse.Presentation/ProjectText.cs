@@ -194,6 +194,15 @@ public static class ProjectText
     /// <summary>Error context: the error path itself failed while showing an error.</summary>
     public static string ShowingErrorFailed => "An error could not be shown to the user.";
 
+    /// <summary>Error context (log only): the InfoBar presenter failed to show, hide or animate an InfoBar.</summary>
+    public static string InfoBarSyncFailed => "Showing or hiding an InfoBar failed.";
+
+    /// <summary>Error context (log only): following a change of the Windows colors or high contrast failed.</summary>
+    public static string SystemColorsFailed => "Following the Windows colors failed.";
+
+    /// <summary>Error context (log only): moving focus after opening or leaving Settings failed.</summary>
+    public static string SettingsFocusFailed => "Moving focus after opening or leaving Settings failed.";
+
     /// <summary>Log line for a cancellation, which is not an error. {0} the context.</summary>
     public static string LogCancelled => "Cancelled, not an error: {0}";
 

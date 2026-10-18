@@ -54,6 +54,37 @@ public static class ErrorPath
     }
 
     /// <summary>
+    /// Runs <paramref name="action"/> and writes any failure to the log through <see cref="IErrorSink.Report"/>,
+    /// never to an InfoBar. Never throws. For callbacks the UI framework runs where an exception would end the
+    /// process (a <c>DispatcherQueue</c> callback: the App's <c>TryEnqueueGuarded</c> wraps every one in this), and
+    /// where a failure must not show an InfoBar because the InfoBar machinery itself may be what failed: showing
+    /// one would run the broken code again, and again.
+    /// </summary>
+    /// <param name="sink">Where the failure is logged; its <see cref="IErrorSink.Report"/> only, whatever else it is.</param>
+    /// <param name="action">The work.</param>
+    /// <param name="context">What it does, for the log (see <see cref="ProjectText"/>).</param>
+    public static void RunLogged(this IErrorSink sink, Action action, string context)
+    {
+        ArgumentNullException.ThrowIfNull(sink);
+        ArgumentNullException.ThrowIfNull(action);
+        try
+        {
+            action();
+        }
+        catch (Exception exception)
+        {
+            try
+            {
+                sink.Report(exception, context);
+            }
+            catch (Exception)
+            {
+                // A sink must not throw; if one does, the callback still must not end the process.
+            }
+        }
+    }
+
+    /// <summary>
     /// An async command whose failures go to the error path. Like <c>[RelayCommand]</c> on an async method, it
     /// cannot run again while it runs (bound buttons disable).
     /// </summary>

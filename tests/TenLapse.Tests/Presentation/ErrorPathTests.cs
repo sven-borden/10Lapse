@@ -202,6 +202,32 @@ public sealed class ErrorPathTests
     }
 
     [Fact]
+    public void ADispatcherCallbackThatThrowsIsLoggedNeverShownAndNeverThrows()
+    {
+        // TryEnqueueGuarded runs every dispatcher callback this way: a broken InfoBar presenter must not raise an
+        // InfoBar about itself, which would run it again.
+        var errors = new FakeErrorSink();
+        var failure = new InvalidOperationException("presenter bug");
+
+        var thrown = Record.Exception(() => errors.RunLogged(() => throw failure, ProjectText.InfoBarSyncFailed));
+
+        Assert.Null(thrown);
+        Assert.Empty(errors.Shown);
+        var reported = Assert.Single(errors.Reported);
+        Assert.Same(failure, reported.Exception);
+        Assert.Equal(ProjectText.InfoBarSyncFailed, reported.Context);
+
+        // Through the App's presenter too: logged, no InfoBar.
+        Presenter().RunLogged(() => throw failure, ProjectText.InfoBarSyncFailed);
+        Assert.Empty(_infoBars.Shown);
+        Assert.Equal(LogLevel.Error, Assert.Single(_log.Entries).Level);
+
+        // A sink that throws still cannot let the failure out.
+        var throwingSink = new ThrowingSink();
+        Assert.Null(Record.Exception(() => throwingSink.RunLogged(() => throw failure, "Testing.")));
+    }
+
+    [Fact]
     public void OnlyCorruptedStateIsFatal()
     {
         Assert.True(ErrorMessages.IsFatal(new AccessViolationException()));
@@ -284,6 +310,11 @@ public sealed class ErrorPathTests
     private sealed class ThrowingMapper : IErrorMessageMapper
     {
         public ErrorMessage? Map(Exception exception) => throw new InvalidOperationException("mapper bug");
+    }
+
+    private sealed class ThrowingSink : IErrorSink
+    {
+        public void Report(Exception exception, string context) => throw new InvalidOperationException("sink bug");
     }
 
     private sealed class ThrowingDialogService : IDialogService

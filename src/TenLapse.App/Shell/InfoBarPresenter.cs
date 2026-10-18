@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Services;
+using TenLapse.Services;
 using TenLapse.Themes;
 using Severity = TenLapse.Presentation.Services.InfoBarSeverity;
 using XamlSeverity = Microsoft.UI.Xaml.Controls.InfoBarSeverity;
@@ -31,6 +32,7 @@ internal sealed class InfoBarPresenter
     private readonly FrameworkElement _details;
     private readonly ItemsControl _detailList;
     private readonly DispatcherQueue _dispatcher;
+    private readonly IErrorSink _errors;
     private readonly Visual _visual;
     private readonly Compositor _compositor;
 
@@ -46,8 +48,14 @@ internal sealed class InfoBarPresenter
     /// <param name="bar">The InfoBar inside the layer.</param>
     /// <param name="details">The InfoBar's content: the detail list's panel, collapsed until its toggle opens it.</param>
     /// <param name="detailList">The list inside <paramref name="details"/> that takes the request's detail lines.</param>
-    public InfoBarPresenter(InfoBarQueue queue, FrameworkElement layer, InfoBar bar, FrameworkElement details, ItemsControl detailList)
+    /// <param name="errors">
+    /// Logs a failure of the presenter's own callbacks. Log only: an InfoBar about the InfoBar presenter failing would
+    /// run the presenter again.
+    /// </param>
+    public InfoBarPresenter(InfoBarQueue queue, FrameworkElement layer, InfoBar bar, FrameworkElement details, ItemsControl detailList, IErrorSink errors)
     {
+        ArgumentNullException.ThrowIfNull(errors);
+        _errors = errors;
         _queue = queue;
         _layer = layer;
         _bar = bar;
@@ -78,7 +86,7 @@ internal sealed class InfoBarPresenter
     }
 
     // The queue may change on any thread; the layer is touched only on the UI thread.
-    private void OnCurrentChanged(object? sender, EventArgs e) => _dispatcher.TryEnqueue(Sync);
+    private void OnCurrentChanged(object? sender, EventArgs e) => _dispatcher.TryEnqueueGuarded(_errors, Sync, ProjectText.InfoBarSyncFailed);
 
     // Only the close button is cancelled (and becomes a dismissal through the queue). The presenter's own
     // IsOpen = false at the end of the exit goes through, so the next IsOpen = true is a real change, which is
@@ -250,13 +258,16 @@ internal sealed class InfoBarPresenter
         if (completed is not null)
         {
             // Completed may arrive off the UI thread; a newer animation makes this one's ending moot.
-            batch.Completed += (_, _) => _dispatcher.TryEnqueue(() =>
-            {
-                if (generation == _generation)
+            batch.Completed += (_, _) => _dispatcher.TryEnqueueGuarded(
+                _errors,
+                () =>
                 {
-                    completed();
-                }
-            });
+                    if (generation == _generation)
+                    {
+                        completed();
+                    }
+                },
+                ProjectText.InfoBarSyncFailed);
         }
     }
 

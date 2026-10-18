@@ -76,7 +76,10 @@ public partial class App : Application
         // The one InfoBar queue: the error path and the import and export issues raise InfoBars through it (as
         // IInfoBarService); the window shows them. It shows its own bar when an InfoBar action fails, so it only
         // needs the log.
-        var infoBars = new InfoBarQueue(new LogErrorSink(_log));
+        // The window's dispatcher callbacks log their failures through the same log-only sink (never an InfoBar,
+        // so a broken InfoBar presenter cannot loop).
+        var logOnly = new LogErrorSink(_log);
+        var infoBars = new InfoBarQueue(logOnly);
 
         // Copy diagnostics. #9 and #23 add an encoder capabilities contributor to this list.
         var diagnostics = new DiagnosticsCopier(
@@ -89,7 +92,7 @@ public partial class App : Application
         var errors = new ErrorPresenter(_log, infoBars, [new VideoExportErrorMapper()], diagnostics.CopyAsync);
         var shell = new ShellViewModel(dialogs, errors);
         var settings = new SettingsViewModel(errors, diagnostics);
-        window = new MainWindow(shell, settings, infoBars);
+        window = new MainWindow(shell, settings, infoBars, logOnly);
         _errors = errors;
 #if DEBUG
         errors.Guard(() => Debugging.DebugLaunch.Apply(shell, infoBars), "Applying the Debug switches failed.");

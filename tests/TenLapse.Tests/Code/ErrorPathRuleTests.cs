@@ -16,6 +16,10 @@ public sealed partial class ErrorPathRuleTests
     // The one file that may construct commands.
     private const string CommandFactory = "ErrorPath.cs";
 
+    // The one file that may call DispatcherQueue.TryEnqueue: its TryEnqueueGuarded runs every callback through
+    // ErrorPath.RunLogged, because a dispatcher callback that throws ends the process and reaches no handler.
+    private const string DispatcherHelper = "DispatcherQueueExtensions.cs";
+
     [Fact]
     public void NoAsyncVoidExceptGuardedEventHandlers()
     {
@@ -36,6 +40,28 @@ public sealed partial class ErrorPathRuleTests
 
         Assert.True(offenders.Count == 0, "Commands must come from ErrorPath (errors.AsyncCommand / errors.Command):\n" + string.Join('\n', offenders));
     }
+
+    [Fact]
+    public void EveryDispatcherCallbackGoesThroughTheGuardedHelper()
+    {
+        var offenders = Sources()
+            .Where(file => !Path.GetFileName(file).Equals(DispatcherHelper, StringComparison.OrdinalIgnoreCase))
+            .SelectMany(file => DispatcherViolations(File.ReadAllText(file)).Select(hit => $"{Relative(file)}: {hit}"))
+            .ToList();
+
+        Assert.True(offenders.Count == 0, "Enqueue with dispatcher.TryEnqueueGuarded(errors, action, context), never TryEnqueue:\n" + string.Join('\n', offenders));
+    }
+
+    [Theory]
+    [InlineData("_dispatcher.TryEnqueue(Sync);")]
+    [InlineData("DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () => Refresh());")]
+    [InlineData("queue.TryEnqueue (() =>\n{\n    Refresh();\n});")]
+    public void TheScannerFlagsARawTryEnqueue(string source) => Assert.NotEmpty(DispatcherViolations(source));
+
+    [Theory]
+    [InlineData("_dispatcher.TryEnqueueGuarded(_errors, Sync, ProjectText.InfoBarSyncFailed);")]
+    [InlineData("// _dispatcher.TryEnqueue(Sync);")]
+    public void TheScannerAllowsTheGuardedHelper(string source) => Assert.Empty(DispatcherViolations(source));
 
     [Theory]
     [InlineData("private async void OnClick(object? sender, RoutedEventArgs e) => await _errors.GuardAsync(() => SaveAsync(), Context);")]
@@ -105,6 +131,9 @@ public sealed partial class ErrorPathRuleTests
         }
     }
 
+    private static IEnumerable<string> DispatcherViolations(string source) =>
+        RawTryEnqueue().Matches(WithoutComments(source)).Select(match => match.Value);
+
     private static IEnumerable<string> CommandViolations(string source)
     {
         var code = WithoutComments(source);
@@ -168,6 +197,9 @@ public sealed partial class ErrorPathRuleTests
 
     [GeneratedRegex(@"\[RelayCommand\b[^\]]*\]|\bnew\s+(Async)?RelayCommand\b(<[^>]*>)?\s*\(")]
     private static partial Regex CommandConstruction();
+
+    [GeneratedRegex(@"\bTryEnqueue\s*\(")]
+    private static partial Regex RawTryEnqueue();
 
     [GeneratedRegex(@"//[^\n]*")]
     private static partial Regex LineComment();

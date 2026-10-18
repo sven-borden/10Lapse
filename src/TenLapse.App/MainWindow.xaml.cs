@@ -7,6 +7,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Services;
+using TenLapse.Services;
 using TenLapse.Shell;
 using TenLapse.Themes;
 using Windows.Graphics;
@@ -24,6 +25,7 @@ public sealed partial class MainWindow : Window
 {
     private readonly ShellView _shell;
     private readonly TintedMicaBackdrop? _backdrop;
+    private readonly IErrorSink _errors;
 
     // Kept as a field: its events stop when nothing holds it.
     private readonly UISettings _uiSettings = new();
@@ -39,12 +41,15 @@ public sealed partial class MainWindow : Window
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
     /// <param name="infoBars">The InfoBars to float over the stage; the composition root hands the same queue to whoever raises them.</param>
-    public MainWindow(ShellViewModel viewModel, SettingsViewModel settings, InfoBarQueue infoBars)
+    /// <param name="errors">Logs failures of the window's dispatcher callbacks (log only, see <see cref="DispatcherQueueExtensions"/>).</param>
+    public MainWindow(ShellViewModel viewModel, SettingsViewModel settings, InfoBarQueue infoBars, IErrorSink errors)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
+        ArgumentNullException.ThrowIfNull(errors);
         ViewModel = viewModel;
+        _errors = errors;
         InitializeComponent();
-        _shell = new ShellView(viewModel, settings, infoBars);
+        _shell = new ShellView(viewModel, settings, infoBars, errors);
         Content = _shell;
 
         // Window is not a DependencyObject, so its Title cannot take a binding: follow the view model by hand.
@@ -128,7 +133,8 @@ public sealed partial class MainWindow : Window
     }
 
     // Raised on a background thread.
-    private void OnColorValuesChanged(UISettings sender, object args) => DispatcherQueue.TryEnqueue(RefreshSystemColors);
+    private void OnColorValuesChanged(UISettings sender, object args) =>
+        DispatcherQueue.TryEnqueueGuarded(_errors, RefreshSystemColors, ProjectText.SystemColorsFailed);
 
     // What follows the theme by hand: the caption buttons, the shell's shadows and the Mica tint.
     private void RefreshSystemColors()
