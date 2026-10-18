@@ -7,4 +7,8 @@
     <!-- The unit tests pin the internal best-fraction search (Fraction.Nearest) directly. -->
     <InternalsVisibleTo Include="TenLapse.Tests" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Capture times from EXIF (#15): JPEG, HEIC and TIFF-based RAW, read from a stream, metadata only. -->
+    <PackageReference Include="MetadataExtractor" />
+  </ItemGroup>
 </Project>
