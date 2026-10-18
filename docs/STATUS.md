@@ -4,7 +4,7 @@ Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Running: PR #71 fix round (#15) and #22 (wave 8).
+Running: #22 (wave 8) and #12 (wave 7).
 
 ## Waves
 
@@ -26,8 +26,8 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | merged #67 |
 | 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | merged #70 |
 | 6 | #26 One error path | O | App startup, `Core/Diagnostics` | merged #69 |
-| 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | PR #71, fix round |
-| 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | |
+| 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | merged #71 |
+| 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | running |
 | 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | merged #72 |
 | 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | running |
 | 8 | #29 First launch drop zone | O | App empty state view | |
@@ -233,3 +233,11 @@ own waves once 3.0 ships.
   deleted, long Unicode path, read-only). #12's import test must skip exactly
   `empty.jpg`, `truncated.jpg`, `no-eoi.jpg`, `text.heic` and import the other
   16.
+- #15 PR #71: `TenLapse.Core.Ordering` (`NaturalNameComparer` exact against
+  `StrCmpLogicalW` for ASCII, Latin-1 and Latin Extended-A, names normalised to
+  Form C; `CaptureTimeReader` with sub-seconds and offsets, never throws;
+  `FrameSorter` sorting by UTC only when every timed frame has an offset;
+  `FrameGaps.Detect(frames, mode)` with timestamp names excluded from
+  numbering; `Project` extensions `ApplySort`, `ApplyDefaultSort` (empty
+  project only), `Resort` (keeps Manual order), `ReorderManually`). New
+  `Frame.CaptureUtcOffset`. RAW and CR3 capture times are unverified until #30.
