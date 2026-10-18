@@ -97,6 +97,8 @@ public sealed class FractionTests
     [InlineData("0.5", 1, 2)]
     [InlineData("0.1", 1, 10)]
     [InlineData("29.97", 2997, 100)]
+    [InlineData("29,97", 2997, 100)]
+    [InlineData("1.000", 1, 1)]
     [InlineData("37.4829", 374829, 10000)]
     [InlineData("30000/1001", 30000, 1001)]
     [InlineData("60 / 4", 15, 1)]
@@ -129,6 +131,13 @@ public sealed class FractionTests
     [InlineData("1e3")]
     [InlineData("1.5/2")]
     [InlineData("99999999999")]
+    [InlineData("1,000")]     // a thousands group, not 1: used to parse as 1
+    [InlineData("23,976")]    // ambiguous with a thousands group: refused, "23.976" parses
+    [InlineData("1,000.5")]
+    [InlineData("1.000,5")]
+    [InlineData("1,2,3")]
+    [InlineData("1.2.3")]
+    [InlineData("1..2")]
     [InlineData("0.00001")]   // would approximate to zero: used to throw
     [InlineData("0.00004")]
     [InlineData("0.00005")]

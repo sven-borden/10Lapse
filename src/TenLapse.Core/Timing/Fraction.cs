@@ -85,7 +85,9 @@ public readonly struct Fraction : IEquatable<Fraction>, IComparable<Fraction>
     /// <summary>
     /// Parses what a user types: a decimal ("29.97", "12,5": dot or comma, digits only, no sign
     /// or exponent) through <see cref="FromDecimal"/>, or a ratio of two whole numbers
-    /// ("30000/1001"). Never throws: returns false for anything else, for zero, for negative values
+    /// ("30000/1001"). A decimal has at most one separator, and a comma followed by exactly three
+    /// digits is ambiguous, so "1,000", "23,976" and "1,000.5" are rejected rather than guessed
+    /// (type "23.976"; "29,97" and "12,5" are fine). Never throws: returns false for anything else, for zero, for negative values
     /// and for values that cannot be represented (below 0.0001, or too large for 32-bit parts).
     /// The text is read with the invariant culture.
     /// </summary>
@@ -115,7 +117,14 @@ public readonly struct Fraction : IEquatable<Fraction>, IComparable<Fraction>
                 return true;
             }
 
-            if (!decimal.TryParse(text.Replace(',', '.'), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value)
+            // One decimal separator, dot or comma. A frame rate never needs a thousands group, so
+            // more than one separator of any kind is rejected, and so is a comma followed by
+            // exactly three digits ("1,000" could be 1 or 1000): refuse rather than guess.
+            // The dot form ("23.976") is always a decimal.
+            var comma = text.IndexOf(',');
+            if (text.Count(c => c is '.' or ',') > 1
+                || (comma >= 0 && text.Length - comma - 1 == 3)
+                || !decimal.TryParse(text.Replace(',', '.'), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value)
                 || decimal.Round(value, 6, MidpointRounding.AwayFromZero) < 1m / FrameRates.MaxDenominator)
             {
                 return false;
