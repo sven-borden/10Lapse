@@ -93,7 +93,7 @@ public sealed class ShellViewModelTests
         var project = shell.CurrentProject;
         var frames = TestFrames.Folder("a", 742);
         project.Model.AddFrames(frames);
-        project.Model.Timing = new TimingSettings(FrameRates.Ntsc24, SpeedMode.PerSecond);
+        project.Model.Timing = TimingSettings.PerSecond(FrameRates.Ntsc24);
         var cache = new FakeProxyCache { Count = 742 };
         var preview = new FakePreviewSource();
         project.AddResource(cache);
@@ -110,7 +110,7 @@ public sealed class ShellViewModelTests
         Assert.Equal("Cancel", asked.CancelText);
         Assert.Same(project, shell.CurrentProject);
         Assert.Equal(frames, project.Model.Frames);
-        Assert.Equal(FrameRates.Ntsc24, project.Model.Timing.Rate);
+        Assert.Equal(FrameRates.Ntsc24, project.Model.Timing.FramesPerSecond);
         Assert.True(project.IsDirty);
         Assert.Equal(0, replaced);
         Assert.False(cache.IsDisposed);
@@ -174,7 +174,7 @@ public sealed class ShellViewModelTests
         model.AddFrames(TestFrames.Folder("a", 742));
         model.AddSkippedFiles([new SkippedFile(@"C:\Photos\a\x.heic", SkipReason.UnsupportedFormat, "No HEIF decoder.")]);
         model.Name = "Harbor sunset";
-        model.Timing = new TimingSettings(new Fraction(2, 1), SpeedMode.PerPhoto);
+        model.Timing = TimingSettings.PerPhoto(new Fraction(1, 2));
         model.FrameSettings = new FrameSettings(FrameAspect.Ratio9x16, FitMode.Fit);
         model.Output = new OutputSettings(OutputResolution.Uhd2160, VideoFormat.Mp4Hevc, OutputQuality.Maximum);
         model.SortMode = SortMode.Manual;
@@ -287,7 +287,7 @@ public sealed class ShellViewModelTests
     [Fact]
     public async Task TheFactoryCanSeedTheUsersDefaults()
     {
-        var timing = new TimingSettings(new Fraction(24, 1), SpeedMode.PerSecond);
+        var timing = TimingSettings.PerSecond(new Fraction(24, 1));
         var frame = new FrameSettings(FrameAspect.Ratio9x16, FitMode.Fit);
         var output = OutputSettings.Default with { Quality = OutputQuality.Maximum };
         var dialogs = new FakeDialogService(answer: false);

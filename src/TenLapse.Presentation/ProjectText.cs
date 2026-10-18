@@ -24,18 +24,21 @@ public static class ProjectText
         : count.ToString("N0", CultureInfo.InvariantCulture) + " photos";
 
     /// <summary>
-    /// The Timing readout, e.g. "742 photos → 24.7 s at 30 fps". In <see cref="SpeedMode.PerPhoto"/> the rate
-    /// reads per photo ("40 photos → 20.0 s at 0.5 s per photo"); otherwise as <see cref="TimingFormat.FrameRate"/>.
+    /// The Timing readout, e.g. "742 photos → 24.7 s at 30 fps", at the effective rate for this count
+    /// (<see cref="TimingSettings.EffectiveRate"/>: in Length mode a clamped rate gives the length the clip
+    /// really has). In <see cref="SpeedMode.PerPhoto"/> the rate reads per photo ("40 photos → 20.0 s at
+    /// 0.5 s per photo"); otherwise as <see cref="TimingFormat.FrameRate"/>.
     /// </summary>
     public static string TimingReadout(int frameCount, TimingSettings timing)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(frameCount);
         ArgumentNullException.ThrowIfNull(timing);
 
-        var length = TimingFormat.Duration(FrameTiming.Duration(frameCount, timing.Rate));
+        var effective = timing.EffectiveRate(frameCount).Rate;
+        var length = TimingFormat.Duration(FrameTiming.Duration(frameCount, effective));
         var rate = timing.Mode == SpeedMode.PerPhoto
-            ? TimingFormat.SecondsPerPhoto(timing.Rate)
-            : TimingFormat.FrameRate(timing.Rate);
+            ? TimingFormat.SecondsPerPhoto(effective)
+            : TimingFormat.FrameRate(effective);
         return $"{Photos(frameCount)} {Arrow} {length} at {rate}";
     }
 

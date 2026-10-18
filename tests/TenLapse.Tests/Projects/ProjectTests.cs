@@ -15,7 +15,7 @@ public sealed class ProjectTests
         Assert.False(project.IsDirty);
         Assert.False(project.HasWorkToLose);
         Assert.Equal(Project.DefaultName, project.Name);
-        Assert.Equal(new Fraction(30, 1), project.Timing.Rate);
+        Assert.Equal(new Fraction(30, 1), project.Timing.FramesPerSecond);
         Assert.Equal(SpeedMode.PerSecond, project.Timing.Mode);
         Assert.Equal(FrameSettings.Default, project.FrameSettings);
         Assert.Equal(OutputSettings.Default, project.Output);
@@ -121,8 +121,8 @@ public sealed class ProjectTests
         var changes = new List<ProjectChanges>();
         project.Changed += (_, e) => changes.Add(e.Changes);
 
-        project.Timing = new TimingSettings(FrameRates.Ntsc24, SpeedMode.PerSecond);
-        project.Timing = new TimingSettings(FrameRates.Ntsc24, SpeedMode.PerSecond);
+        project.Timing = TimingSettings.PerSecond(FrameRates.Ntsc24);
+        project.Timing = TimingSettings.PerSecond(FrameRates.Ntsc24);
         project.FrameSettings = project.FrameSettings with { Fit = FitMode.Fit };
         project.Output = project.Output with { Resolution = OutputResolution.Uhd2160 };
         project.SortMode = SortMode.Name;

@@ -43,19 +43,6 @@ public sealed class ProjectValueTests
     }
 
     [Fact]
-    public void TimingSettingsHoldOnlyARateInRangeEvenThroughWith()
-    {
-        var timing = new TimingSettings(FrameRates.Ntsc30, SpeedMode.Length);
-
-        Assert.Equal(FrameRates.Ntsc30, timing.Rate);
-        Assert.Throws<ArgumentOutOfRangeException>(() => new TimingSettings(default, SpeedMode.PerSecond));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new TimingSettings(new Fraction(121, 1), SpeedMode.PerSecond));
-        Assert.Throws<ArgumentOutOfRangeException>(() => timing with { Rate = new Fraction(1, 11) });
-        Assert.Throws<ArgumentOutOfRangeException>(() => timing with { Mode = (SpeedMode)9 });
-        Assert.Equal(new TimingSettings(FrameRates.Min, SpeedMode.PerPhoto), timing with { Rate = FrameRates.Min, Mode = SpeedMode.PerPhoto });
-    }
-
-    [Fact]
     public void FrameAndOutputSettingsRejectUnknownValues()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => FrameSettings.Default with { Aspect = (FrameAspect)99 });

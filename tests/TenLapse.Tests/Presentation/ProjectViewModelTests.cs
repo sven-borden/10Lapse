@@ -25,7 +25,7 @@ public sealed class ProjectViewModelTests
             raised);
 
         raised.Clear();
-        viewModel.Model.Timing = new TimingSettings(new Fraction(24, 1), SpeedMode.PerSecond);
+        viewModel.Model.Timing = TimingSettings.PerSecond(new Fraction(24, 1));
 
         Assert.Equal([nameof(ProjectViewModel.TimingReadout)], raised);
         Assert.Equal("742 photos → 30.9 s at 24 fps", viewModel.TimingReadout);

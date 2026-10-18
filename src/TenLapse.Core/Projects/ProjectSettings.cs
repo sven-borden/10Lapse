@@ -2,57 +2,153 @@ using TenLapse.Core.Timing;
 
 namespace TenLapse.Core.Projects;
 
-/// <summary>How the user sets the speed in the Timing panel (#17). The rate is the truth; the mode is the view.</summary>
+/// <summary>How the user sets the speed in the Timing panel (#17). Each mode keeps its own input.</summary>
 public enum SpeedMode
 {
     /// <summary>Frames per second.</summary>
     PerSecond,
 
-    /// <summary>A target total length; the rate is computed from it.</summary>
+    /// <summary>A target total length; the rate follows from it and the frame count.</summary>
     Length,
 
     /// <summary>Seconds each photo stays on screen, for slideshows.</summary>
     PerPhoto,
 }
 
+/// <summary>Which bound a <see cref="PlaybackRate"/> was held at, if any.</summary>
+public enum RateClamp
+{
+    /// <summary>The rate is what the user's input asks for.</summary>
+    None,
+
+    /// <summary>The input asks for less than <see cref="FrameRates.Min"/> (a long length for few photos, or no photos); the rate is the minimum.</summary>
+    Min,
+
+    /// <summary>The input asks for more than <see cref="FrameRates.Max"/> (a short length for many photos); the rate is the maximum.</summary>
+    Max,
+}
+
+/// <summary>The rate a project plays and exports at for its current frame count, and whether it was clamped (#17 says so).</summary>
+/// <param name="Rate">Frames per second, exact, always in <see cref="FrameRates.Min"/> to <see cref="FrameRates.Max"/>.</param>
+/// <param name="Clamp">The bound the rate was held at.</param>
+public readonly record struct PlaybackRate(Fraction Rate, RateClamp Clamp)
+{
+    /// <summary>True when the input asked for a rate outside the range, so the clip length differs from a Length target.</summary>
+    public bool IsClamped => Clamp != RateClamp.None;
+}
+
 /// <summary>
-/// The project's speed: an exact rational frame rate and the mode the user chose to set it in. Immutable; a
-/// <c>with</c> expression validates too, so a <see cref="TimingSettings"/> always holds a rate in
-/// <see cref="FrameRates.Min"/> to <see cref="FrameRates.Max"/>.
+/// The project's speed: the mode the user chose and each mode's own input, so switching modes keeps what the
+/// user typed in the others. Immutable; a <c>with</c> expression validates too, so every input is always in
+/// its #17 range. The rate itself depends on the frame count in Length mode: ask
+/// <see cref="EffectiveRate"/> (or <see cref="ProjectSnapshot.EffectiveRate"/>), never store it.
 /// </summary>
 public sealed record TimingSettings
 {
-    /// <summary>30 fps, set per second.</summary>
-    public static TimingSettings Default { get; } = new(new Fraction(30, 1), SpeedMode.PerSecond);
+    /// <summary>Per second: from 1 fps (#17).</summary>
+    public static Fraction MinFramesPerSecond { get; } = new(1, 1);
 
-    /// <summary>Creates timing settings; the rate must pass <see cref="FrameRates.IsInRange"/>.</summary>
-    public TimingSettings(Fraction rate, SpeedMode mode)
+    /// <summary>Per second: up to 120 fps (#17), <see cref="FrameRates.Max"/>.</summary>
+    public static Fraction MaxFramesPerSecond => FrameRates.Max;
+
+    /// <summary>Length: from 0.1 s.</summary>
+    public static Fraction MinLengthSeconds { get; } = new(1, 10);
+
+    /// <summary>Length: up to 10 h (36,000 s), past what 5,000 photos fill even at <see cref="FrameRates.Min"/>.</summary>
+    public static Fraction MaxLengthSeconds { get; } = new(36_000, 1);
+
+    /// <summary>Per photo: from 0.1 s (#17).</summary>
+    public static Fraction MinSecondsPerPhoto { get; } = new(1, 10);
+
+    /// <summary>Per photo: up to 10 s (#17).</summary>
+    public static Fraction MaxSecondsPerPhoto { get; } = new(10, 1);
+
+    /// <summary>30 fps set per second, with a 30 s length and 0.5 s per photo waiting in the other modes.</summary>
+    public static TimingSettings Default { get; } = new(SpeedMode.PerSecond, new Fraction(30, 1), new Fraction(30, 1), new Fraction(1, 2));
+
+    /// <summary>Creates timing settings; each input must be in its range, whatever the mode.</summary>
+    /// <param name="mode">The mode the Timing panel shows, which decides the rate.</param>
+    /// <param name="framesPerSecond">Per second input, <see cref="MinFramesPerSecond"/> to <see cref="MaxFramesPerSecond"/>.</param>
+    /// <param name="lengthSeconds">Length input in seconds, <see cref="MinLengthSeconds"/> to <see cref="MaxLengthSeconds"/>.</param>
+    /// <param name="secondsPerPhoto">Per photo input in seconds, <see cref="MinSecondsPerPhoto"/> to <see cref="MaxSecondsPerPhoto"/>.</param>
+    public TimingSettings(SpeedMode mode, Fraction framesPerSecond, Fraction lengthSeconds, Fraction secondsPerPhoto)
     {
-        Rate = rate;
         Mode = mode;
+        FramesPerSecond = framesPerSecond;
+        LengthSeconds = lengthSeconds;
+        SecondsPerPhoto = secondsPerPhoto;
     }
 
-    /// <summary>Frames per second, exact. Convert user input once (see <see cref="FrameRates"/>), never from display text.</summary>
-    public Fraction Rate
-    {
-        get;
-        init
-        {
-            if (!FrameRates.IsInRange(value))
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, $"The frame rate must be from {FrameRates.Min} to {FrameRates.Max} fps.");
-            }
-
-            field = value;
-        }
-    }
-
-    /// <summary>The mode the Timing panel shows.</summary>
+    /// <summary>The mode the Timing panel shows; it decides which input sets the rate.</summary>
     public SpeedMode Mode
     {
         get;
         init => field = Enum.IsDefined(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown speed mode.");
     }
+
+    /// <summary>The Per second input, exact (29.97 is 30000/1001: convert user input once with <see cref="FrameRates.TryParse"/>).</summary>
+    public Fraction FramesPerSecond
+    {
+        get;
+        init => field = InRange(value, MinFramesPerSecond, MaxFramesPerSecond, "The frame rate must be from 1 to 120 fps.");
+    }
+
+    /// <summary>The Length input: the target clip length in seconds.</summary>
+    public Fraction LengthSeconds
+    {
+        get;
+        init => field = InRange(value, MinLengthSeconds, MaxLengthSeconds, "The length must be from 0.1 s to 10 h.");
+    }
+
+    /// <summary>The Per photo input: the seconds each photo stays on screen.</summary>
+    public Fraction SecondsPerPhoto
+    {
+        get;
+        init => field = InRange(value, MinSecondsPerPhoto, MaxSecondsPerPhoto, "A photo must stay from 0.1 to 10 s.");
+    }
+
+    /// <summary>Per second at <paramref name="framesPerSecond"/>, the other inputs at their defaults.</summary>
+    public static TimingSettings PerSecond(Fraction framesPerSecond) =>
+        Default with { Mode = SpeedMode.PerSecond, FramesPerSecond = framesPerSecond };
+
+    /// <summary>Length mode with a target of <paramref name="lengthSeconds"/>, the other inputs at their defaults.</summary>
+    public static TimingSettings Length(Fraction lengthSeconds) =>
+        Default with { Mode = SpeedMode.Length, LengthSeconds = lengthSeconds };
+
+    /// <summary>Per photo at <paramref name="secondsPerPhoto"/>, the other inputs at their defaults.</summary>
+    public static TimingSettings PerPhoto(Fraction secondsPerPhoto) =>
+        Default with { Mode = SpeedMode.PerPhoto, SecondsPerPhoto = secondsPerPhoto };
+
+    /// <summary>
+    /// The rate for <paramref name="frameCount"/> frames. Per second and Per photo give their input (always in
+    /// range). Length gives <c>count / length</c> (<see cref="FrameRates.FromTotalLength"/>), held to
+    /// <see cref="FrameRates.Min"/> or <see cref="FrameRates.Max"/> with <see cref="PlaybackRate.Clamp"/> set
+    /// when it falls outside; no frames at all gives the minimum, clamped. It never throws for a count of 0 or more.
+    /// </summary>
+    public PlaybackRate EffectiveRate(int frameCount)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(frameCount);
+        switch (Mode)
+        {
+            case SpeedMode.PerSecond:
+                return new PlaybackRate(FramesPerSecond, RateClamp.None);
+            case SpeedMode.PerPhoto:
+                return new PlaybackRate(FrameRates.FromSecondsPerPhoto(SecondsPerPhoto), RateClamp.None);
+        }
+
+        if (frameCount == 0)
+        {
+            return new PlaybackRate(FrameRates.Min, RateClamp.Min);
+        }
+
+        var rate = FrameRates.FromTotalLength(frameCount, LengthSeconds);
+        return rate < FrameRates.Min ? new PlaybackRate(FrameRates.Min, RateClamp.Min)
+            : rate > FrameRates.Max ? new PlaybackRate(FrameRates.Max, RateClamp.Max)
+            : new PlaybackRate(rate, RateClamp.None);
+    }
+
+    private static Fraction InRange(Fraction value, Fraction min, Fraction max, string message) =>
+        value >= min && value <= max ? value : throw new ArgumentOutOfRangeException(nameof(value), value, message);
 }
 
 /// <summary>The output shape (#18).</summary>

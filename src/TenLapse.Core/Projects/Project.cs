@@ -153,6 +153,9 @@ public sealed record ProjectSnapshot
 
     /// <summary>True after any change since the project was created or last exported.</summary>
     public bool IsDirty { get; internal init; }
+
+    /// <summary>The rate these frames play and export at: <see cref="TimingSettings.EffectiveRate"/> for <see cref="Frames"/>.</summary>
+    public PlaybackRate EffectiveRate => Timing.EffectiveRate(Frames.Length);
 }
 
 /// <summary>
@@ -246,7 +249,10 @@ public sealed class Project
         }
     }
 
-    /// <summary>The speed (#17).</summary>
+    /// <summary>The rate the current frames play at (see <see cref="ProjectSnapshot.EffectiveRate"/>).</summary>
+    public PlaybackRate EffectiveRate => _state.EffectiveRate;
+
+    /// <summary>The speed (#17): the mode and each mode's input. The rate is <see cref="EffectiveRate"/>.</summary>
     public TimingSettings Timing
     {
         get => _state.Timing;
