@@ -1,4 +1,4 @@
-// Media Foundation, through CsWin32: the read-back utility (source reader) and the encoder enumeration.
+// Media Foundation, through CsWin32: the read-back utility (source reader), the encoder enumeration and the capability probe (#9).
 MFStartup
 MFShutdown
 MFCreateSourceReaderFromURL
@@ -74,3 +74,10 @@ MFVideoTransferMatrix
 MFVideoPrimaries
 MFVideoTransferFunction
 MFNominalRange
+MFVideoFormat_HEVC
+eAVEncH265VProfile
+MFT_TRANSFORM_CLSID_Attribute
+CreateDXGIFactory1
+IDXGIFactory1
+IDXGIAdapter1
+DXGI_ADAPTER_DESC1

@@ -1,3 +1,4 @@
+using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 
 namespace TenLapse.Media.Export;
@@ -38,6 +39,16 @@ public sealed record VideoExportSettings
 
     /// <summary>The exact output frame rate.</summary>
     public Fraction FrameRate { get; }
+
+    /// <summary>
+    /// The codec: H.264 (the default) or HEVC. Offer HEVC only where <see cref="Encoding.EncoderCapabilities"/>
+    /// says it works; without an HEVC encoder the export fails as <see cref="VideoExportFailure.EncoderUnavailable"/>.
+    /// </summary>
+    public VideoFormat Format
+    {
+        get;
+        init => field = Enum.IsDefined(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown video format.");
+    }
 
     /// <summary>Target bitrate in bits per second; null uses <see cref="DefaultBitrate"/>.</summary>
     public uint? Bitrate { get; init; }

@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Microsoft.Graphics.Canvas;
+using TenLapse.Core.Projects;
 using TenLapse.Media.Inspection;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -10,7 +11,7 @@ namespace TenLapse.Media.Export;
 
 /// <summary>
 /// The encode stage on <c>IMFSinkWriter</c>: Direct3D 11 surface samples in,
-/// H.264 MP4 out, with the export's own device handed to Media Foundation
+/// H.264 or HEVC MP4 out, with the export's own device handed to Media Foundation
 /// through an <c>IMFDXGIDeviceManager</c>, so the colour converter and the
 /// hardware encoder work on the textures Win2D drew, on the same device.
 /// </summary>
@@ -28,6 +29,7 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
     private readonly string _path;
     private readonly int _width;
     private readonly int _height;
+    private readonly VideoFormat _format;
     private bool _disposed;
 
     /// <param name="lowLatency">
@@ -39,6 +41,7 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
         _path = path;
         _width = settings.Width;
         _height = settings.Height;
+        _format = settings.Format;
         try
         {
             PInvoke.MFCreateDXGIDeviceManager(out var token, out _manager).ThrowOnFailure();
@@ -62,11 +65,14 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
                 Marshal.ReleaseComObject(attributes);
             }
 
-            var output = VideoType(settings, PInvoke.MFVideoFormat_H264);
+            var hevc = settings.Format == VideoFormat.Mp4Hevc;
+            var output = VideoType(settings, hevc ? PInvoke.MFVideoFormat_HEVC : PInvoke.MFVideoFormat_H264);
             try
             {
                 output.SetUINT32(PInvoke.MF_MT_AVG_BITRATE, settings.EffectiveBitrate);
-                output.SetUINT32(PInvoke.MF_MT_MPEG2_PROFILE, (uint)eAVEncH264VProfile.eAVEncH264VProfile_High);
+                output.SetUINT32(
+                    PInvoke.MF_MT_MPEG2_PROFILE,
+                    hevc ? (uint)eAVEncH265VProfile.eAVEncH265VProfile_Main_420_8 : (uint)eAVEncH264VProfile.eAVEncH264VProfile_High);
                 var (matrix, primaries) = ColourFor(settings.Height);
                 SetColour(output, primaries, MFNominalRange.MFNominalRange_16_235);
                 output.SetUINT32(PInvoke.MF_MT_YUV_MATRIX, (uint)matrix);
@@ -152,20 +158,20 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
     public void Finish()
     {
         _writer.Finalize();
-        CheckStartsAtZero(_path);
+        CheckStartsAtZero(_path, _format);
     }
 
     /// <summary>
     /// Fails loudly when the first sample is not at 0: the MP4 sink writes no edit list, so a composition offset
     /// (B-frames, or an encoder that ignores low latency) makes the whole clip start late in every player.
     /// </summary>
-    internal static void CheckStartsAtZero(string path)
+    internal static void CheckStartsAtZero(string path, VideoFormat format = VideoFormat.Mp4H264)
     {
         var first = VideoFileReader.FirstSampleTime(path);
         if (first is not 0)
         {
             throw new VideoExportException(
-                $"The H.264 encoder wrote a video whose first frame is at {(first is { } ticks ? $"{ticks} ticks" : "no time at all")} instead of 0.",
+                $"The {Encoding.EncoderText.CodecName(format)} encoder wrote a video whose first frame is at {(first is { } ticks ? $"{ticks} ticks" : "no time at all")} instead of 0.",
                 VideoExportFailure.EncoderFailed);
         }
     }
@@ -298,7 +304,7 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
                 {
                     var isHardware = HasString(attributes, PInvoke.MFT_ENUM_HARDWARE_URL_Attribute);
                     var name = ReadString(attributes, PInvoke.MFT_FRIENDLY_NAME_Attribute)
-                        ?? (isHardware ? "(unnamed hardware encoder)" : "Microsoft H.264 software encoder");
+                        ?? (isHardware ? "(unnamed hardware encoder)" : SoftwareEncoderName);
                     return new VideoEncoderInfo(name, isHardware);
                 }
                 finally
@@ -309,7 +315,7 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
             catch (COMException)
             {
                 // Software MFTs may have no attribute store at all.
-                return new VideoEncoderInfo("Microsoft H.264 software encoder", false);
+                return new VideoEncoderInfo(SoftwareEncoderName, false);
             }
             finally
             {
@@ -317,6 +323,8 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
             }
         }
     }
+
+    private string SoftwareEncoderName => $"Microsoft {Encoding.EncoderText.CodecName(_format)} software encoder";
 
     private static bool HasString(IMFAttributes attributes, Guid key)
     {
