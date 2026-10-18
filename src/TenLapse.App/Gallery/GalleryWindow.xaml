@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug only (see TenLapse.App.csproj): the token gallery, opened with the gallery switch. Colors come from the token dictionaries. -->
+<Window
+  x:Class="TenLapse.Gallery.GalleryWindow"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:local="using:TenLapse.Gallery">
+  <Grid x:Name="Root" Background="{ThemeResource MicaBrush}">
+    <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto">
+      <Border
+        Margin="{StaticResource ThicknessXl}"
+        Padding="{StaticResource Thickness2xl}"
+        Background="{ThemeResource LayerBrush}"
+        BorderBrush="{ThemeResource DividerBrush}"
+        BorderThickness="1"
+        CornerRadius="{StaticResource RadiusCard}">
+        <StackPanel Spacing="{StaticResource Spacing2xl}">
+
+          <StackPanel Spacing="{StaticResource SpacingXs}">
+            <TextBlock Style="{StaticResource TitleTextStyle}" Text="Token gallery" />
+            <TextBlock x:Name="SummaryText" Style="{StaticResource CaptionSecondaryTextStyle}" />
+          </StackPanel>
+
+          <StackPanel Spacing="{StaticResource SpacingMd}">
+            <TextBlock Style="{StaticResource SubtitleTextStyle}" Text="Color" />
+            <ItemsRepeater x:Name="Swatches">
+              <ItemsRepeater.Layout>
+                <UniformGridLayout MinItemWidth="260" MinColumnSpacing="12" MinRowSpacing="8" />
+              </ItemsRepeater.Layout>
+              <ItemsRepeater.ItemTemplate>
+                <DataTemplate x:DataType="local:Swatch">
+                  <Grid ColumnSpacing="{StaticResource SpacingMd}">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border
+                      Width="44"
+                      Height="32"
+                      Background="{x:Bind Fill}"
+                      BorderBrush="{ThemeResource ControlStrokeBrush}"
+                      BorderThickness="1"
+                      CornerRadius="{StaticResource RadiusControl}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                      <TextBlock Style="{StaticResource CaptionTextStyle}" Text="{x:Bind Key}" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind Hex}" />
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+          </StackPanel>
+
+          <StackPanel Spacing="{StaticResource SpacingMd}">
+            <TextBlock Style="{StaticResource SubtitleTextStyle}" Text="Type ramp" />
+            <ItemsRepeater x:Name="TypeRamp">
+              <ItemsRepeater.Layout>
+                <StackLayout Spacing="8" />
+              </ItemsRepeater.Layout>
+              <ItemsRepeater.ItemTemplate>
+                <DataTemplate x:DataType="local:TypeSample">
+                  <StackPanel>
+                    <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind Label}" />
+                    <TextBlock Style="{x:Bind Style}" Text="{x:Bind Text}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource Spacing2xl}">
+              <StackPanel>
+                <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="Tabular: BodyTabularTextStyle" />
+                <TextBlock Style="{StaticResource BodyTabularTextStyle}" Text="0111 of 0742" />
+                <TextBlock Style="{StaticResource BodyTabularTextStyle}" Text="1000 of 1000" />
+              </StackPanel>
+              <StackPanel>
+                <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="Proportional: BodyTextStyle" />
+                <TextBlock Style="{StaticResource BodyTextStyle}" Text="0111 of 0742" />
+                <TextBlock Style="{StaticResource BodyTextStyle}" Text="1000 of 1000" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel Spacing="{StaticResource SpacingMd}">
+            <TextBlock Style="{StaticResource SubtitleTextStyle}" Text="Spacing, radius, elevation" />
+            <ItemsRepeater x:Name="SpacingSamples">
+              <ItemsRepeater.Layout>
+                <StackLayout Spacing="4" />
+              </ItemsRepeater.Layout>
+              <ItemsRepeater.ItemTemplate>
+                <DataTemplate x:DataType="local:SpacingSample">
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingMd}">
+                    <TextBlock Width="150" Style="{StaticResource CaptionTextStyle}" Text="{x:Bind Label}" VerticalAlignment="Center" />
+                    <Rectangle Width="{x:Bind Size}" Height="12" Fill="{ThemeResource InkSecondaryBrush}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+            <ItemsRepeater x:Name="RadiusSamples">
+              <ItemsRepeater.Layout>
+                <StackLayout Orientation="Horizontal" Spacing="16" />
+              </ItemsRepeater.Layout>
+              <ItemsRepeater.ItemTemplate>
+                <DataTemplate x:DataType="local:RadiusSample">
+                  <StackPanel Spacing="{StaticResource SpacingXs}">
+                    <Border
+                      Width="84"
+                      Height="48"
+                      Background="{ThemeResource CardBrush}"
+                      BorderBrush="{ThemeResource ControlStrokeBrush}"
+                      BorderThickness="1"
+                      CornerRadius="{x:Bind Radius}" />
+                    <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind Label}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+            <Border
+              Width="220"
+              Height="64"
+              Padding="{StaticResource PaddingCard}"
+              HorizontalAlignment="Left"
+              Background="{ThemeResource CardBrush}"
+              BorderBrush="{ThemeResource DividerBrush}"
+              BorderThickness="1"
+              CornerRadius="{StaticResource RadiusCard}">
+              <TextBlock Style="{StaticResource BodyTextStyle}" Text="Card: border, no shadow" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock x:Name="ElevationText" Style="{StaticResource CaptionSecondaryTextStyle}" />
+          </StackPanel>
+
+          <StackPanel Spacing="{StaticResource SpacingMd}">
+            <TextBlock Style="{StaticResource SubtitleTextStyle}" Text="Controls with brand overrides" />
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingMd}">
+              <Button Style="{StaticResource ExportButtonStyle}" Height="{StaticResource ControlHeight}" Content="Export video" />
+              <Button Style="{StaticResource ExportButtonStyle}" Height="{StaticResource ControlHeight}" Content="Export video" IsEnabled="False" />
+              <Button Style="{StaticResource AccentButtonStyle}" Height="{StaticResource ControlHeight}" Content="Fluent accent (dialogs)" />
+              <Button Height="{StaticResource ControlHeight}" Content="Add photos" />
+              <HyperlinkButton Content="Try it with a sample sequence" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource Spacing2xl}">
+              <StackPanel Width="260" Spacing="{StaticResource SpacingSm}">
+                <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="ProgressBar (62%) and Slider" />
+                <ProgressBar Value="62" Maximum="100" />
+                <ProgressBar IsIndeterminate="True" />
+                <Slider Value="40" Maximum="100" />
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingMd}">
+                  <ProgressRing IsActive="True" />
+                  <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="ProgressRing, active" VerticalAlignment="Center" />
+                </StackPanel>
+              </StackPanel>
+              <StackPanel Spacing="{StaticResource SpacingSm}">
+                <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="ToggleSwitch on and off" />
+                <ToggleSwitch IsOn="True" OnContent="Keep awake" OffContent="Keep awake" />
+                <ToggleSwitch IsOn="False" OnContent="Notify" OffContent="Notify" />
+              </StackPanel>
+              <StackPanel Spacing="{StaticResource SpacingXs}">
+                <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="CheckBox" />
+                <CheckBox Content="Checked" IsChecked="True" />
+                <CheckBox Content="Unchecked" />
+                <CheckBox Content="Indeterminate" IsThreeState="True" IsChecked="{x:Null}" />
+              </StackPanel>
+              <StackPanel Spacing="{StaticResource SpacingXs}">
+                <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="RadioButton" />
+                <RadioButton Content="Per second" GroupName="speed" IsChecked="True" />
+                <RadioButton Content="Length" GroupName="speed" />
+              </StackPanel>
+              <StackPanel Width="200" Spacing="{StaticResource SpacingXs}">
+                <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="ListView selection indicator" />
+                <ListView SelectionMode="Single" SelectedIndex="1" Height="130">
+                  <ListViewItem Content="Frame 0310" />
+                  <ListViewItem Content="Frame 0311" />
+                  <ListViewItem Content="Frame 0312" />
+                </ListView>
+              </StackPanel>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingMd}">
+              <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="Toggle buttons, and not overridden (system accent leaks):" VerticalAlignment="Center" />
+              <ToggleButton Content="ToggleButton unchecked" />
+              <ToggleButton Content="ToggleButton checked" IsChecked="True" />
+              <TextBox Width="200" Text="TextBox" />
+              <ComboBox Width="140" SelectedIndex="0">
+                <ComboBoxItem Content="1080p" />
+                <ComboBoxItem Content="4K" />
+              </ComboBox>
+            </StackPanel>
+          </StackPanel>
+
+        </StackPanel>
+      </Border>
+    </ScrollViewer>
+  </Grid>
+</Window>
