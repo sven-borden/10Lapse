@@ -211,20 +211,72 @@ public sealed record FrameSettings
     }
 }
 
-/// <summary>Output height (#23); the width follows the frame shape.</summary>
+/// <summary>
+/// The output resolution (#23), named by the <b>short side</b> of the frame: the long side follows the frame
+/// shape. 1080p is 1920 × 1080 at 16:9 and 1080 × 1920 at 9:16, as phones and video sites name portrait video.
+/// <see cref="OutputSize.For"/> gives both sides.
+/// </summary>
 public enum OutputResolution
 {
-    /// <summary>720 p.</summary>
+    /// <summary>720p: the short side is 720 px.</summary>
     Hd720,
 
-    /// <summary>1080 p.</summary>
+    /// <summary>1080p: the short side is 1080 px.</summary>
     Hd1080,
 
-    /// <summary>1440 p.</summary>
+    /// <summary>1440p: the short side is 1440 px.</summary>
     Qhd1440,
 
-    /// <summary>2160 p (4K).</summary>
+    /// <summary>2160p (4K): the short side is 2160 px.</summary>
     Uhd2160,
+}
+
+/// <summary>The output frame size in pixels, from the resolution (the short side) and the frame shape.</summary>
+public static class OutputSize
+{
+    /// <summary>The short side in pixels: 720, 1080, 1440 or 2160.</summary>
+    public static int ShortSide(OutputResolution resolution) => resolution switch
+    {
+        OutputResolution.Hd720 => 720,
+        OutputResolution.Hd1080 => 1080,
+        OutputResolution.Qhd1440 => 1440,
+        OutputResolution.Uhd2160 => 2160,
+        _ => throw new ArgumentOutOfRangeException(nameof(resolution), resolution, "Unknown resolution."),
+    };
+
+    /// <summary>
+    /// The width and height of the exported video, so #9 and #23 can check both sides against what the
+    /// encoder supports. The short side is <see cref="ShortSide"/>; the long side follows the shape, rounded
+    /// to the nearest even number (4:2:0 video needs even sides). 1080p gives 1920 × 1080 at 16:9,
+    /// 1080 × 1920 at 9:16, 1080 × 1080 at 1:1, 1080 × 1350 at 4:5 and 1440 × 1080 at 4:3.
+    /// </summary>
+    /// <param name="resolution">The resolution.</param>
+    /// <param name="aspect">The frame shape.</param>
+    /// <param name="photoSize">For <see cref="FrameAspect.MatchPhotos"/>: the most common photo size, whose shape the video takes.</param>
+    /// <exception cref="ArgumentException"><see cref="FrameAspect.MatchPhotos"/> without a photo size.</exception>
+    public static PixelSize For(OutputResolution resolution, FrameAspect aspect, PixelSize? photoSize = null)
+    {
+        var (width, height) = aspect switch
+        {
+            FrameAspect.Ratio16x9 => (16, 9),
+            FrameAspect.Ratio9x16 => (9, 16),
+            FrameAspect.Ratio1x1 => (1, 1),
+            FrameAspect.Ratio4x5 => (4, 5),
+            FrameAspect.Ratio4x3 => (4, 3),
+            FrameAspect.MatchPhotos => photoSize is { } size
+                ? (size.Width, size.Height)
+                : throw new ArgumentException("Match photos needs the photos' size.", nameof(photoSize)),
+            _ => throw new ArgumentOutOfRangeException(nameof(aspect), aspect, "Unknown aspect."),
+        };
+
+        var shortSide = ShortSide(resolution);
+        var longSide = LongSide(shortSide, Math.Max(width, height), Math.Min(width, height));
+        return width >= height ? new PixelSize(longSide, shortSide) : new PixelSize(shortSide, longSide);
+    }
+
+    // shortSide × longRatio / shortRatio, rounded half up to an even number.
+    private static int LongSide(int shortSide, long longRatio, long shortRatio) =>
+        (int)(((shortSide * longRatio) + shortRatio) / (2 * shortRatio) * 2);
 }
 
 /// <summary>Container and codec (#23).</summary>
@@ -253,7 +305,7 @@ public enum OutputQuality
 /// <summary>The Output panel's settings. Immutable. #23 narrows them to what the hardware supports.</summary>
 public sealed record OutputSettings
 {
-    /// <summary>1080 p H.264 at High: every PC can export it, so #23 only ever raises it.</summary>
+    /// <summary>1080p (short side) H.264 at High: every PC can export it, so #23 only ever raises it.</summary>
     public static OutputSettings Default { get; } = new(OutputResolution.Hd1080, VideoFormat.Mp4H264, OutputQuality.High);
 
     /// <summary>Creates output settings.</summary>
@@ -264,7 +316,7 @@ public sealed record OutputSettings
         Quality = quality;
     }
 
-    /// <summary>The output height.</summary>
+    /// <summary>The resolution: the short side of the output (see <see cref="OutputSize.For"/>).</summary>
     public OutputResolution Resolution
     {
         get;
