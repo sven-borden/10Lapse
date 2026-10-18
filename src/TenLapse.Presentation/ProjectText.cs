@@ -68,7 +68,7 @@ public static class ProjectText
     // The error path (#26). Each sentence says what happened, then what to do.
 
     /// <summary>The generic failure: no kind the user can act on. Its InfoBar offers <see cref="CopyDiagnostics"/>.</summary>
-    public static string ErrorUnexpected => "That couldn't be done because of an unexpected problem. Try again, and if it keeps happening, copy the diagnostics into a bug report.";
+    public static string ErrorUnexpected => "Something unexpected stopped that. Try again, and if it keeps happening, copy the diagnostics into a bug report.";
 
     /// <summary>A failure nothing caught, after which the app kept running.</summary>
     public static string ErrorUnhandled => "10Lapse ran into an unexpected problem and kept running. If something looks wrong, restart 10Lapse.";

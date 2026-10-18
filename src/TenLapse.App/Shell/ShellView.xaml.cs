@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -19,16 +20,20 @@ public sealed partial class ShellView : UserControl
     private readonly FlyoutShadow _infoBarShadow;
 
     /// <param name="viewModel">The shell view model.</param>
+    /// <param name="settings">The Settings page's view model.</param>
     /// <param name="infoBars">The InfoBars to float over the stage.</param>
-    public ShellView(ShellViewModel viewModel, InfoBarQueue infoBars)
+    public ShellView(ShellViewModel viewModel, SettingsViewModel settings, InfoBarQueue infoBars)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
+        ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(infoBars);
         ViewModel = viewModel;
         InitializeComponent();
+        SettingsPage.ViewModel = settings;
 
         _infoBarShadow = FlyoutShadow.Attach(InfoBarShadowCaster);
         _infoBars = new InfoBarPresenter(infoBars, InfoBarLayer, ShellInfoBar, InfoBarDetails, InfoBarDetailList);
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 
         // The shell leaves the tree only when the window closes; the shadow goes with it.
         Unloaded += (_, _) => _infoBarShadow.Dispose();
@@ -77,8 +82,20 @@ public sealed partial class ShellView : UserControl
     /// <summary>Stops following the InfoBar queue and takes the InfoBar shadow down (the window closed).</summary>
     public void Detach()
     {
+        ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
         _infoBars.Detach();
         _infoBarShadow.Dispose();
+    }
+
+    // Opening Settings puts focus on Back, leaving it puts focus back on the Settings button, so the keyboard and a
+    // screen reader stay where the user is. After the state change has shown the button.
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ShellViewModel.IsSettingsOpen))
+        {
+            var target = ViewModel.IsSettingsOpen ? BackButton : SettingsButton;
+            DispatcherQueue.TryEnqueue(() => target.Focus(FocusState.Programmatic));
+        }
     }
 
     // Walks the panels down to the controls, skipping what is collapsed; a control's own parts are its business.

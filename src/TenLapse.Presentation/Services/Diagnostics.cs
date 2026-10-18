@@ -60,24 +60,44 @@ public sealed class DiagnosticsCollector
     /// <summary>How many log lines the diagnostics end with.</summary>
     public const int LogLineCount = 200;
 
+    /// <summary>What the user's profile folder reads as in the copied text.</summary>
+    public const string ProfilePlaceholder = "%USERPROFILE%";
+
     private readonly IReadOnlyList<IDiagnosticsContributor> _contributors;
     private readonly ILog _log;
     private readonly TimeProvider _clock;
+    private readonly string? _profileFolder;
 
     /// <param name="contributors">The sections, in order.</param>
     /// <param name="log">Whose last <see cref="LogLineCount"/> lines end the text.</param>
     /// <param name="clock">For the time stamp at the top; the system clock by default.</param>
-    public DiagnosticsCollector(IEnumerable<IDiagnosticsContributor> contributors, ILog log, TimeProvider? clock = null)
+    /// <param name="profileFolder">
+    /// The user's profile folder (C:\Users\name), replaced by <see cref="ProfilePlaceholder"/> everywhere in the text
+    /// so a pasted report does not carry the account name; the current user's by default.
+    /// </param>
+    public DiagnosticsCollector(IEnumerable<IDiagnosticsContributor> contributors, ILog log, TimeProvider? clock = null, string? profileFolder = null)
     {
         ArgumentNullException.ThrowIfNull(contributors);
         ArgumentNullException.ThrowIfNull(log);
         _contributors = contributors.ToArray();
         _log = log;
         _clock = clock ?? TimeProvider.System;
+        _profileFolder = profileFolder ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
     }
 
-    /// <summary>The diagnostics text. Never throws for a contributor: its failure becomes a line in its section.</summary>
+    /// <summary>
+    /// The diagnostics text, with the profile folder replaced. Never throws for a contributor: its failure becomes a
+    /// line in its section.
+    /// </summary>
     public string Collect()
+    {
+        var text = Build();
+        return string.IsNullOrEmpty(_profileFolder) || _profileFolder.Length < 4
+            ? text
+            : text.Replace(_profileFolder.TrimEnd('\\', '/'), ProfilePlaceholder, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string Build()
     {
         var report = new DiagnosticsReport();
         report.AddLine(ProjectText.Format(ProjectText.DiagnosticsHeading, Product.Name));

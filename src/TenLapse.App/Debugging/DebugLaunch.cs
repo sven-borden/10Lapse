@@ -8,9 +8,9 @@ namespace TenLapse.Debugging;
 /// Debug-only switches for looking at the shell before import exists (this folder is not built in Release):
 /// <c>--sample-frames=N</c> fills the project with N frames whose files do not exist, so the Editing state
 /// shows, and <c>--infobar</c> raises #13's skipped-photos InfoBar with its detail list, and a neutral one behind
-/// it. <c>--theme=light|dark</c> is the gallery's switch.
+/// it. <c>--theme=light|dark</c> is the gallery's switch. <c>--crash=command|task|ui|unhandled</c> is in DebugCrash.cs.
 /// </summary>
-internal static class DebugLaunch
+internal static partial class DebugLaunch
 {
     private const int MaxSampleFrames = 10_000;
 

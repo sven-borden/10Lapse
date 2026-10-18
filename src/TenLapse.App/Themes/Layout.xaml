@@ -82,6 +82,16 @@
   <x:Double x:Key="InfoBarMaxWidth">560</x:Double>
   <Thickness x:Key="InfoBarHostMargin">40,32,40,0</Thickness>
   <x:Double x:Key="FilmstripMinHeight">56</x:Double>
+
+  <!--
+    Settings page (prototype: a column at most 760 px wide, centered, 28 / 40 / 48 around it; the title 14 px above
+    the first section, 6 px between cards, 20 px more above each later section heading).
+  -->
+  <x:Double x:Key="SettingsPageMaxWidth">760</x:Double>
+  <Thickness x:Key="PaddingSettingsPage">40,28,40,48</Thickness>
+  <x:Double x:Key="SettingsCardSpacing">6</x:Double>
+  <Thickness x:Key="SettingsTitleMargin">0,0,0,14</Thickness>
+  <Thickness x:Key="SettingsSectionMargin">0,20,0,0</Thickness>
   <!--
     An InfoBar's detail list (prototype: 8 / 14 / 12 / 42 around 16 px lines 6 apart, the left edge in line
     with the message). Past seven lines it scrolls.

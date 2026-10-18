@@ -37,13 +37,14 @@ public sealed partial class MainWindow : Window
     private RectInt32[] _passthrough = [];
 
     /// <param name="viewModel">The shell view model.</param>
+    /// <param name="settings">The Settings page's view model.</param>
     /// <param name="infoBars">The InfoBars to float over the stage; the composition root hands the same queue to whoever raises them.</param>
-    public MainWindow(ShellViewModel viewModel, InfoBarQueue infoBars)
+    public MainWindow(ShellViewModel viewModel, SettingsViewModel settings, InfoBarQueue infoBars)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ViewModel = viewModel;
         InitializeComponent();
-        _shell = new ShellView(viewModel, infoBars);
+        _shell = new ShellView(viewModel, settings, infoBars);
         Content = _shell;
 
         // Window is not a DependencyObject, so its Title cannot take a binding: follow the view model by hand.
