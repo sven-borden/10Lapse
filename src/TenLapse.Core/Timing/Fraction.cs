@@ -58,7 +58,7 @@ public readonly struct Fraction : IEquatable<Fraction>, IComparable<Fraction>
     /// denominator. The value is rounded to 6 decimals first. 12.5 is 25/2; 29.97 is 2997/100
     /// (use <see cref="FrameRates.TryParse"/> to get the NTSC rate instead).
     /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException">The value is not positive after rounding.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not positive after rounding, or below <c>1 / MaxDenominator</c> (0.0001), which no fraction with such a denominator can represent.</exception>
     /// <exception cref="OverflowException">The value is larger than an <see cref="int"/> can hold.</exception>
     public static Fraction FromDecimal(decimal value)
     {
@@ -66,6 +66,11 @@ public readonly struct Fraction : IEquatable<Fraction>, IComparable<Fraction>
         if (rounded <= 0m)
         {
             throw new ArgumentOutOfRangeException(nameof(value), value, "A fraction must be positive.");
+        }
+
+        if (rounded < 1m / FrameRates.MaxDenominator)
+        {
+            throw new ArgumentOutOfRangeException(nameof(value), value, "The value is too small to represent.");
         }
 
         if (rounded > int.MaxValue)
@@ -80,7 +85,8 @@ public readonly struct Fraction : IEquatable<Fraction>, IComparable<Fraction>
     /// <summary>
     /// Parses what a user types: a decimal ("29.97", "12,5": dot or comma, digits only, no sign
     /// or exponent) through <see cref="FromDecimal"/>, or a ratio of two whole numbers
-    /// ("30000/1001"). Returns false for anything else, for zero and for values that do not fit.
+    /// ("30000/1001"). Never throws: returns false for anything else, for zero, for negative values
+    /// and for values that cannot be represented (below 0.0001, or too large for 32-bit parts).
     /// The text is read with the invariant culture.
     /// </summary>
     public static bool TryParse(string? text, out Fraction result)
@@ -110,7 +116,7 @@ public readonly struct Fraction : IEquatable<Fraction>, IComparable<Fraction>
             }
 
             if (!decimal.TryParse(text.Replace(',', '.'), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value)
-                || decimal.Round(value, 6, MidpointRounding.AwayFromZero) <= 0m)
+                || decimal.Round(value, 6, MidpointRounding.AwayFromZero) < 1m / FrameRates.MaxDenominator)
             {
                 return false;
             }
@@ -118,7 +124,7 @@ public readonly struct Fraction : IEquatable<Fraction>, IComparable<Fraction>
             result = FromDecimal(value);
             return true;
         }
-        catch (OverflowException)
+        catch (Exception ex) when (ex is OverflowException or ArgumentOutOfRangeException)
         {
             return false;
         }
@@ -128,6 +134,10 @@ public readonly struct Fraction : IEquatable<Fraction>, IComparable<Fraction>
     /// The fraction <c>numerator / denominator</c> if its reduced denominator is at most
     /// <paramref name="maxDenominator"/>, otherwise the closest fraction that satisfies the limit
     /// (best rational approximation by continued fractions, ties go to the smaller denominator).
+    /// Never returns zero and never throws for a positive input: a value below
+    /// <c>1 / maxDenominator</c> gives <c>1 / maxDenominator</c>, and a result whose parts do not
+    /// fit in an <see cref="int"/> (only for values above about 2 billion) gives
+    /// <see cref="int.MaxValue"/>. Both are far outside any usable frame rate.
     /// </summary>
     internal static Fraction Nearest(Int128 numerator, Int128 denominator, int maxDenominator)
     {
@@ -141,7 +151,7 @@ public readonly struct Fraction : IEquatable<Fraction>, IComparable<Fraction>
         var d0 = denominator / gcd;
         if (d0 <= maxDenominator)
         {
-            return new Fraction(Narrow(n0, d0));
+            return Clamped(n0, d0, maxDenominator);
         }
 
         // The last convergent below the limit and the best semiconvergent after it; the closer one wins.
@@ -167,8 +177,20 @@ public readonly struct Fraction : IEquatable<Fraction>, IComparable<Fraction>
         var errorConvergent = Int128.Abs((p1 * d0) - (n0 * q1)) * boundQ;
         var errorSemi = Int128.Abs((boundP * d0) - (n0 * boundQ)) * q1;
         return errorConvergent <= errorSemi
-            ? new Fraction(Narrow(p1, q1))
-            : new Fraction(Narrow(boundP, boundQ));
+            ? Clamped(p1, q1, maxDenominator)
+            : Clamped(boundP, boundQ, maxDenominator);
+    }
+
+    private static Fraction Clamped(Int128 numerator, Int128 denominator, int maxDenominator)
+    {
+        if (numerator <= 0)
+        {
+            return new Fraction(Narrow(1, maxDenominator));
+        }
+
+        return numerator > int.MaxValue || denominator > int.MaxValue
+            ? new Fraction(Narrow(int.MaxValue, 1))
+            : new Fraction(Narrow(numerator, denominator));
     }
 
     /// <summary>Exact product. Throws <see cref="OverflowException"/> when the reduced result does not fit.</summary>

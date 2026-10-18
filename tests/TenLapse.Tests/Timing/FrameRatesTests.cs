@@ -168,6 +168,26 @@ public sealed class FrameRatesTests
         Assert.Equal(new Fraction(7420, 247), FrameRates.FromTotalLength(Photos, length));
     }
 
+    [Theory]
+    [InlineData(20_000)]
+    [InlineData(100_000)]
+    public void LengthModeClampsAnAbsurdlySlowRateInsteadOfThrowing(int seconds)
+    {
+        var rate = FrameRates.FromTotalLength(1, new Fraction(seconds, 1));
+
+        Assert.Equal(new Fraction(1, FrameRates.MaxDenominator), rate);
+        Assert.False(FrameRates.IsInRange(rate));
+    }
+
+    [Fact]
+    public void LengthModeClampsAnAbsurdlyFastRateInsteadOfThrowing()
+    {
+        var rate = FrameRates.FromTotalLength(long.MaxValue, new Fraction(1, 1));
+
+        Assert.Equal(new Fraction(int.MaxValue, 1), rate);
+        Assert.False(FrameRates.IsInRange(rate));
+    }
+
     [Fact]
     public void ConversionsRejectNonsense()
     {

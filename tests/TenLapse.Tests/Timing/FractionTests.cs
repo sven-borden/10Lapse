@@ -129,9 +129,35 @@ public sealed class FractionTests
     [InlineData("1e3")]
     [InlineData("1.5/2")]
     [InlineData("99999999999")]
+    [InlineData("0.00001")]   // would approximate to zero: used to throw
+    [InlineData("0.00004")]
+    [InlineData("0.00005")]
+    [InlineData("0.00009")]
     public void TryParseRejectsEverythingElse(string text)
     {
         Assert.False(Fraction.TryParse(text, out _));
+    }
+
+    [Fact]
+    public void TryParseAcceptsTheSmallestRepresentableValue()
+    {
+        Assert.True(Fraction.TryParse("0.0001", out var fraction));
+        Assert.Equal(new Fraction(1, 10_000), fraction);
+    }
+
+    [Theory]
+    [InlineData(1, 20_000)]
+    [InlineData(1, 100_000)]
+    [InlineData(1, 100_000_000)]
+    public void NearestNeverReturnsZero(long numerator, long denominator)
+    {
+        Assert.Equal(new Fraction(1, 10_000), Fraction.Nearest(numerator, denominator, 10_000));
+    }
+
+    [Fact]
+    public void NearestClampsInsteadOfOverflowing()
+    {
+        Assert.Equal(new Fraction(int.MaxValue, 1), Fraction.Nearest(long.MaxValue, 1, 10_000));
     }
 
     [Fact]

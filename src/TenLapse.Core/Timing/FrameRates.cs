@@ -83,8 +83,10 @@ public static class FrameRates
     /// Length mode: the rate that makes <paramref name="frameCount"/> frames last
     /// <paramref name="lengthSeconds"/> seconds, <c>count / length</c>. Exact when the denominator
     /// is at most <see cref="MaxDenominator"/>, otherwise the closest such fraction (the clip
-    /// then misses the target by a tiny fraction of a frame). The caller checks
-    /// <see cref="IsInRange"/>.
+    /// then misses the target by a tiny fraction of a frame). Defined for any positive count and
+    /// length, it never throws for them: a rate below <c>1 / MaxDenominator</c> comes back as
+    /// <c>1 / MaxDenominator</c> and an absurdly large one as <see cref="int.MaxValue"/> fps. Both
+    /// are outside the usable range, so the caller must check <see cref="IsInRange"/>.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The frame count or the length is not positive.</exception>
     public static Fraction FromTotalLength(long frameCount, Fraction lengthSeconds)
