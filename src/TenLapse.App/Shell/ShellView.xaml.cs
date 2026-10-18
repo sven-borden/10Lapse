@@ -7,7 +7,9 @@ using TenLapse.Presentation;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using TenLapse.Themes;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
+using Windows.Storage;
 
 namespace TenLapse.Shell;
 
@@ -21,19 +23,31 @@ public sealed partial class ShellView : UserControl
     private readonly InfoBarPresenter _infoBars;
     private readonly FlyoutShadow _infoBarShadow;
     private readonly IErrorSink _errors;
+    private readonly IErrorPresenter _presenter;
+
+    // What the drag over the window holds, counted once when it enters: the photo files, null while not known (still
+    // counting, or folders among them), 0 when nothing in it can be imported.
+    private int? _draggedPhotos;
+    private int _dragGeneration;
 
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
+    /// <param name="import">Add photos, drag and drop and the import progress (#12).</param>
     /// <param name="infoBars">The InfoBars to float over the stage.</param>
     /// <param name="errors">Logs failures of the shell's dispatcher callbacks (log only, see <see cref="DispatcherQueueExtensions"/>).</param>
-    public ShellView(ShellViewModel viewModel, SettingsViewModel settings, InfoBarQueue infoBars, IErrorSink errors)
+    /// <param name="presenter">The error path for the drop handler.</param>
+    public ShellView(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(import);
         ArgumentNullException.ThrowIfNull(infoBars);
         ArgumentNullException.ThrowIfNull(errors);
+        ArgumentNullException.ThrowIfNull(presenter);
         ViewModel = viewModel;
+        Import = import;
         _errors = errors;
+        _presenter = presenter;
         InitializeComponent();
         SettingsPage.ViewModel = settings;
 
@@ -50,6 +64,9 @@ public sealed partial class ShellView : UserControl
 
     /// <summary>The shell's view model, for x:Bind.</summary>
     public ShellViewModel ViewModel { get; }
+
+    /// <summary>The import's view model, for x:Bind.</summary>
+    public ImportViewModel Import { get; }
 
     /// <summary>The title bar and command bar band, which the window makes its drag region.</summary>
     public UIElement TitleBar => DragRegion;
@@ -118,6 +135,84 @@ public sealed partial class ShellView : UserControl
             ViewModel.CloseSettingsCommand.Execute(null);
             e.Handled = true;
         }
+    }
+
+    // Drag and drop (#12). A drag that enters is counted once in the background (the photo files it holds), so the
+    // caption can say "Add 120 photos"; until then, and when it holds folders, it says "Add photos". A drag with
+    // nothing to import (no folder, no photo file) is refused, so the cursor says so before the drop.
+    private async void OnDragEnter(object sender, DragEventArgs e) => await ErrorPath.GuardAsync(_presenter, () => CountDraggedAsync(e), ProjectText.DragCountFailed);
+
+    private void OnDragOver(object sender, DragEventArgs e)
+    {
+        if (!e.DataView.Contains(StandardDataFormats.StorageItems) || _draggedPhotos == 0)
+        {
+            e.AcceptedOperation = DataPackageOperation.None;
+            return;
+        }
+
+        e.AcceptedOperation = DataPackageOperation.Copy;
+        e.DragUIOverride.Caption = ProjectText.DragCaption(_draggedPhotos);
+        e.DragUIOverride.IsCaptionVisible = true;
+        e.DragUIOverride.IsGlyphVisible = true;
+        e.Handled = true;
+    }
+
+    private async void OnDrop(object sender, DragEventArgs e) => await ErrorPath.GuardAsync(_presenter, () => DropAsync(e), ProjectText.ImportDropFailed);
+
+    // Never throws: a drag that cannot be counted keeps the generic caption, and the drop still works.
+    private async Task CountDraggedAsync(DragEventArgs e)
+    {
+        var generation = ++_dragGeneration;
+        _draggedPhotos = null;
+        if (!e.DataView.Contains(StandardDataFormats.StorageItems))
+        {
+            return;
+        }
+
+        try
+        {
+            var items = await e.DataView.GetStorageItemsAsync();
+            int? count = items.Count(item => item is IStorageFile && Import.IsPhotoFile(item.Path));
+            if (items.Any(item => item is IStorageFolder))
+            {
+                count = null;
+            }
+
+            if (generation == _dragGeneration)
+            {
+                _draggedPhotos = count;
+            }
+        }
+        catch (Exception exception)
+        {
+            _errors.Report(exception, ProjectText.DragCountFailed);
+        }
+    }
+
+    private async Task DropAsync(DragEventArgs e)
+    {
+        _dragGeneration++;
+        _draggedPhotos = null;
+        if (!e.DataView.Contains(StandardDataFormats.StorageItems))
+        {
+            return;
+        }
+
+        // The source keeps its data available until the deferral completes.
+        IReadOnlyList<IStorageItem> items;
+        var deferral = e.GetDeferral();
+        try
+        {
+            items = await e.DataView.GetStorageItemsAsync();
+        }
+        finally
+        {
+            deferral.Complete();
+        }
+
+        // Items without a path (a phone's photos over MTP, files inside a zip) cannot be read from disk: left out,
+        // and DropAsync says so when nothing is left.
+        await Import.DropAsync([.. items.Select(item => item.Path).Where(path => !string.IsNullOrEmpty(path))]);
     }
 
     // Walks the panels down to the controls, skipping what is collapsed; a control's own parts are its business.

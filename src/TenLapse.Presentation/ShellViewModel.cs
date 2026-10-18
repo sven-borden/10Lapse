@@ -113,7 +113,7 @@ public sealed partial class ShellViewModel : ObservableObject
         _replacing = true;
         try
         {
-            await ReplaceProjectAsync();
+            await ReplaceProjectAsync(askFirst: true);
         }
         finally
         {
@@ -121,17 +121,40 @@ public sealed partial class ShellViewModel : ObservableObject
         }
     }
 
-    private async Task ReplaceProjectAsync()
+    /// <summary>
+    /// Replaces the current project with an empty one without asking: the caller already asked (#12's drop question,
+    /// "Start new project"). Raises <see cref="ProjectReplaced"/> and disposes the previous project like
+    /// <c>New project</c>. On the UI thread.
+    /// </summary>
+    /// <returns>False when <c>New project</c> is already replacing the project (its question is open), so nothing changed.</returns>
+    internal bool ReplaceWithoutAsking()
     {
-        // Only this method replaces CurrentProject, and _replacing keeps it from running twice at once, so it
-        // is the same after the await.
+        if (_replacing)
+        {
+            return false;
+        }
+
+        Replace(CurrentProject);
+        return true;
+    }
+
+    private async Task ReplaceProjectAsync(bool askFirst)
+    {
+        // Only this method and ReplaceWithoutAsking replace CurrentProject, and _replacing keeps them from running
+        // while the question is open, so it is the same after the await.
         var previous = CurrentProject;
-        if (previous.Model.HasWorkToLose
+        if (askFirst
+            && previous.Model.HasWorkToLose
             && !await _dialogs.ConfirmAsync(ProjectText.NewProjectConfirmation(previous.FrameCount)))
         {
             return;
         }
 
+        Replace(previous);
+    }
+
+    private void Replace(ProjectViewModel previous)
+    {
         CurrentProject = new ProjectViewModel(CreateEmptyProject(previous.Model), _errors);
 
         // The swap is done, so nothing below may fail the command: each handler runs in its own try, the old
