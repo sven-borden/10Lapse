@@ -5,9 +5,10 @@
   Spacing: Spacing<Step> as x:Double on the 4 px grid, Thickness<Step> as uniform Thickness.
   Radius: Radius<Name> as CornerRadius. Sizes: ControlHeight and the fixed shell dimensions.
   Elevation: only flyouts cast a shadow (The Float Only Rule). WinUI has no CSS box-shadow, so the
-  spec's values are kept as numbers (blur, offset) and as colors (ShadowFlyoutColor and friends in
-  Colors.xaml) for a Composition DropShadow, and ElevationFlyoutShadow is a ThemeShadow for XAML:
-  put it in UIElement.Shadow and give the element Translation="0,0,32" (ElevationFlyoutZ).
+  spec's values are kept as numbers (blur, offset in px) here and as colors (ShadowFlyoutColor and friends
+  in Colors.xaml), ready for a Composition DropShadow (BlurRadius, Offset, Color). There is no ThemeShadow
+  token on purpose: ThemeShadow.Receivers.Add threw E_INVALIDARG for every receiver tried in the Debug
+  gallery on Windows App SDK 2.5.1, and ThemeShadow ignores the spec's numbers anyway.
 -->
 <ResourceDictionary
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -67,16 +68,13 @@
   <x:Double x:Key="MinWindowWidth">640</x:Double>
   <x:Double x:Key="MinWindowHeight">480</x:Double>
 
-  <!-- Elevation: flyout (InfoBars over the preview, select menus, the first-launch sample frame) -->
-  <x:Double x:Key="ElevationFlyoutZ">32</x:Double>
+  <!-- Elevation: flyout (InfoBars over the preview, select menus, the first-launch sample frame): two layers, ambient then key -->
   <x:Double x:Key="ElevationFlyoutBlur">28</x:Double>
   <x:Double x:Key="ElevationFlyoutOffsetY">8</x:Double>
   <x:Double x:Key="ElevationFlyoutKeyBlur">6</x:Double>
   <x:Double x:Key="ElevationFlyoutKeyOffsetY">2</x:Double>
-  <ThemeShadow x:Key="ElevationFlyoutShadow" />
 
-  <!-- Elevation: pill (the selected pill inside a segmented control) -->
-  <x:Double x:Key="ElevationPillZ">2</x:Double>
+  <!-- Elevation: pill (the selected pill inside a segmented control), with a 1 px ShadowPillRingColor hairline in light -->
   <x:Double x:Key="ElevationPillBlur">2</x:Double>
   <x:Double x:Key="ElevationPillOffsetY">1</x:Double>
 

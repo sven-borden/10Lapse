@@ -87,6 +87,30 @@
       <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="{ThemeResource OnIndicatorColor}" />
       <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="{ThemeResource OnIndicatorColor}" />
       <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminate" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeIndeterminate" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeIndeterminateDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminate" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" Color="{ThemeResource OnIndicatorColor}" />
+      <!-- Toggle button, checked: a neutral pill like the segmented control's selection, never amber (it marks a setting, not an action). -->
+      <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="{ThemeResource SegmentPillColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="{ThemeResource SegmentPillColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="{ThemeResource SegmentTrackColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedDisabled" Color="{ThemeResource SegmentPillColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPointerOver" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPressed" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleButtonForegroundCheckedDisabled" Color="{ThemeResource InkColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPressed" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedDisabled" Color="{ThemeResource ControlStrokeColor}" Opacity="0.4" />
       <!-- Selection indicators: the pip beside a selected list item, navigation or pivot entry. -->
       <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
       <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
@@ -174,6 +198,30 @@
       <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="{ThemeResource OnIndicatorColor}" />
       <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="{ThemeResource OnIndicatorColor}" />
       <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminate" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeIndeterminate" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeIndeterminateDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminate" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" Color="{ThemeResource OnIndicatorColor}" />
+      <!-- Toggle button, checked: a neutral pill like the segmented control's selection, never amber (it marks a setting, not an action). -->
+      <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="{ThemeResource SegmentPillColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="{ThemeResource SegmentPillColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="{ThemeResource SegmentTrackColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedDisabled" Color="{ThemeResource SegmentPillColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPointerOver" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPressed" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleButtonForegroundCheckedDisabled" Color="{ThemeResource InkColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPressed" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedDisabled" Color="{ThemeResource ControlStrokeColor}" Opacity="0.4" />
       <!-- Selection indicators: the pip beside a selected list item, navigation or pivot entry. -->
       <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
       <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
@@ -261,6 +309,30 @@
       <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="{ThemeResource OnIndicatorColor}" />
       <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="{ThemeResource OnIndicatorColor}" />
       <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminate" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeIndeterminate" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeIndeterminateDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminate" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" Color="{ThemeResource OnIndicatorColor}" />
+      <!-- Toggle button, checked: a neutral pill like the segmented control's selection, never amber (it marks a setting, not an action). -->
+      <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="{ThemeResource SegmentPillColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="{ThemeResource SegmentPillColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="{ThemeResource SegmentTrackColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedDisabled" Color="{ThemeResource SegmentPillColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPointerOver" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPressed" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleButtonForegroundCheckedDisabled" Color="{ThemeResource InkColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPressed" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedDisabled" Color="{ThemeResource ControlStrokeColor}" Opacity="0.4" />
       <!-- Selection indicators: the pip beside a selected list item, navigation or pivot entry. -->
       <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
       <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
@@ -278,5 +350,17 @@
       <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="{ThemeResource EmberLinkColor}" Opacity="0.8" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
+
+  <!--
+    The rest state of a named Fluent style is set by a Style setter, and ThemeResource lookups inside a
+    style that lives in XamlControlsResources do not see these overrides (the state brushes above, set from
+    the control template, do). So AccentButtonStyle is restated on top of Fluent's: amber with night-ink text
+    and the warm border. The resource keys named here resolve through this dictionary and the token brushes.
+  -->
+  <Style x:Key="AccentButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+    <Setter Property="Background" Value="{ThemeResource GoldenHourAmberBrush}" />
+    <Setter Property="Foreground" Value="{ThemeResource NightInkOnAmberBrush}" />
+    <Setter Property="BorderBrush" Value="{ThemeResource GoldenHourAmberStrokeBrush}" />
+  </Style>
 
 </ResourceDictionary>
