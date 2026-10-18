@@ -20,26 +20,32 @@ public sealed class ProjectReplacedEventArgs(ProjectViewModel previous, ProjectV
 public sealed partial class ShellViewModel : ObservableObject
 {
     private readonly IDialogService _dialogs;
+    private readonly IErrorSink _errors;
     private readonly Func<Project> _createProject;
 
     /// <summary>Creates the shell with a fresh project.</summary>
     /// <param name="dialogs">Asks before work is lost.</param>
+    /// <param name="errors">Takes the failures of closing the old project, which never fail <c>New project</c>.</param>
     /// <param name="createProject">
     /// Makes each new project; defaults to <c>new Project()</c>. #21 can pass one that applies the user's
-    /// default settings. It must return a new, empty project every time.
+    /// default settings with the <see cref="Project"/> settings constructor. It must return a new, empty,
+    /// clean project every time, on the UI thread.
     /// </param>
-    public ShellViewModel(IDialogService dialogs, Func<Project>? createProject = null)
+    public ShellViewModel(IDialogService dialogs, IErrorSink errors, Func<Project>? createProject = null)
     {
         ArgumentNullException.ThrowIfNull(dialogs);
+        ArgumentNullException.ThrowIfNull(errors);
         _dialogs = dialogs;
+        _errors = errors;
         _createProject = createProject ?? (() => new Project());
-        CurrentProject = new ProjectViewModel(CreateEmptyProject(previous: null));
+        CurrentProject = new ProjectViewModel(CreateEmptyProject(previous: null), errors);
     }
 
     /// <summary>
     /// Raised once per <c>New project</c>, after <see cref="CurrentProject"/> changed and before the previous
     /// project is disposed. Long-lived views (the filmstrip, #20; the player, #19) rebind here to
-    /// <see cref="ProjectReplacedEventArgs.Current"/> and let go of the previous project's resources.
+    /// <see cref="ProjectReplacedEventArgs.Current"/> and let go of the previous project's resources. Every
+    /// handler runs even when an earlier one throws; the failures go to the error sink after the dispose.
     /// </summary>
     public event EventHandler<ProjectReplacedEventArgs>? ProjectReplaced;
 
@@ -70,14 +76,31 @@ public sealed partial class ShellViewModel : ObservableObject
             return;
         }
 
-        CurrentProject = new ProjectViewModel(CreateEmptyProject(previous.Model));
-        try
+        CurrentProject = new ProjectViewModel(CreateEmptyProject(previous.Model), _errors);
+
+        // The swap is done, so nothing below may fail the command: each handler runs in its own try, the old
+        // project is disposed (which never throws), then every handler failure is reported.
+        List<Exception>? failures = null;
+        if (ProjectReplaced is { } replaced)
         {
-            ProjectReplaced?.Invoke(this, new ProjectReplacedEventArgs(previous, CurrentProject));
+            var args = new ProjectReplacedEventArgs(previous, CurrentProject);
+            foreach (var handler in replaced.GetInvocationList().Cast<EventHandler<ProjectReplacedEventArgs>>())
+            {
+                try
+                {
+                    handler(this, args);
+                }
+                catch (Exception exception)
+                {
+                    (failures ??= []).Add(exception);
+                }
+            }
         }
-        finally
+
+        previous.Dispose();
+        foreach (var failure in failures ?? [])
         {
-            previous.Dispose();
+            _errors.Report(failure, ProjectText.SwitchingViewFailed);
         }
     }
 

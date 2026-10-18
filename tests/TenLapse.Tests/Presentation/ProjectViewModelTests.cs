@@ -10,7 +10,7 @@ public sealed class ProjectViewModelTests
     [Fact]
     public void FollowsTheModelAndRaisesOnlyWhatChanged()
     {
-        var viewModel = new ProjectViewModel(new Project());
+        var viewModel = new ProjectViewModel(new Project(), new FakeErrorSink());
         var raised = new List<string?>();
         viewModel.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
 
@@ -35,7 +35,7 @@ public sealed class ProjectViewModelTests
     public void DisposeStopsFollowingTheModelAndDisposesResourcesNewestFirst()
     {
         var log = new List<string>();
-        var viewModel = new ProjectViewModel(new Project());
+        var viewModel = new ProjectViewModel(new Project(), new FakeErrorSink());
         viewModel.AddResource(new RecordingResource("cache", log));
         viewModel.AddResource(new RecordingResource("preview", log));
 
@@ -51,7 +51,7 @@ public sealed class ProjectViewModelTests
     [Fact]
     public void AResourceThatArrivesAfterDisposeIsDisposedAtOnce()
     {
-        var viewModel = new ProjectViewModel(new Project());
+        var viewModel = new ProjectViewModel(new Project(), new FakeErrorSink());
         viewModel.Dispose();
         var late = new FakeProxyCache { Count = 12 };
 
@@ -64,14 +64,33 @@ public sealed class ProjectViewModelTests
     public void OneFailingResourceDoesNotKeepTheOthersAlive()
     {
         var log = new List<string>();
-        var viewModel = new ProjectViewModel(new Project());
+        var errors = new FakeErrorSink();
+        var viewModel = new ProjectViewModel(new Project(), errors);
         viewModel.AddResource(new RecordingResource("cache", log));
         viewModel.AddResource(new RecordingResource("preview", log, throws: true));
+        viewModel.AddResource(new RecordingResource("import", log, throws: true));
 
-        var failure = Assert.Throws<AggregateException>(viewModel.Dispose);
+        var failure = Record.Exception(viewModel.Dispose);
 
-        Assert.Equal(["preview", "cache"], log);
-        Assert.Equal("preview", Assert.Single(failure.InnerExceptions).Message);
+        Assert.Null(failure);
+        Assert.Equal(["import", "preview", "cache"], log);
+        Assert.Equal(["import", "preview"], errors.Reported.Select(report => report.Exception.Message));
+        Assert.All(errors.Reported, report => Assert.Equal(ProjectText.ClosingProjectFailed, report.Context));
         Assert.True(viewModel.IsDisposed);
+    }
+
+    [Fact]
+    public void ALateResourceThatThrowsIsReportedNotThrown()
+    {
+        var log = new List<string>();
+        var errors = new FakeErrorSink();
+        var viewModel = new ProjectViewModel(new Project(), errors);
+        viewModel.Dispose();
+
+        var failure = Record.Exception(() => viewModel.AddResource(new RecordingResource("late", log, throws: true)));
+
+        Assert.Null(failure);
+        Assert.Equal(["late"], log);
+        Assert.Equal("late", Assert.Single(errors.Reported).Exception.Message);
     }
 }

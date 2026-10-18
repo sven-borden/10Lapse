@@ -57,6 +57,12 @@ public static class ProjectText
         return hasUnsavedChanges ? $"{UnsavedMarker} {title}" : title;
     }
 
+    /// <summary>Error context: a resource of the replaced project threw while it was disposed.</summary>
+    public static string ClosingProjectFailed => "Part of the previous project could not be closed.";
+
+    /// <summary>Error context: a view's <c>ProjectReplaced</c> handler threw.</summary>
+    public static string SwitchingViewFailed => "A view could not switch to the new project.";
+
     /// <summary>The question <c>New project</c> asks when there is work to lose.</summary>
     public static Confirmation NewProjectConfirmation(int frameCount)
     {

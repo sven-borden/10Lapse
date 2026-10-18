@@ -1,23 +1,30 @@
 using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.Mvvm.ComponentModel;
 using TenLapse.Core.Projects;
+using TenLapse.Presentation.Services;
 
 namespace TenLapse.Presentation;
 
 /// <summary>
 /// The bindable face of one <see cref="Project"/>, and the owner of everything built for it. The preview
 /// player and the proxy cache (#19) register themselves with <see cref="AddResource"/>; <c>New project</c>
-/// disposes this view model, which disposes them, so nothing of the old project outlives it.
+/// disposes this view model, which closes the project and disposes them, so nothing of the old project
+/// outlives it.
 /// </summary>
 public sealed partial class ProjectViewModel : ObservableObject, IDisposable
 {
     private readonly List<IDisposable> _resources = [];
+    private readonly IErrorSink _errors;
 
     /// <summary>Wraps <paramref name="model"/> and follows its changes until disposed.</summary>
-    public ProjectViewModel(Project model)
+    /// <param name="model">The project; this view model closes it when disposed.</param>
+    /// <param name="errors">Takes the failures of resources that throw while they are disposed.</param>
+    public ProjectViewModel(Project model, IErrorSink errors)
     {
         ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(errors);
         Model = model;
+        _errors = errors;
         Refresh();
         Model.Changed += OnModelChanged;
     }
@@ -62,7 +69,7 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(resource);
         if (IsDisposed)
         {
-            resource.Dispose();
+            DisposeResource(resource);
             return;
         }
 
@@ -70,8 +77,9 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Stops following the model and disposes every registered resource, newest first. Every resource is
-    /// disposed even when one throws; the failures then surface together as an <see cref="AggregateException"/>.
+    /// Stops following the model, closes it (it takes no more changes) and disposes every registered resource,
+    /// newest first. Never throws: a resource that throws is reported to the error sink and the others are
+    /// still disposed.
     /// </summary>
     public void Dispose()
     {
@@ -84,23 +92,23 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
         Model.Changed -= OnModelChanged;
         Model.Close();
 
-        List<Exception>? failures = null;
         for (var i = _resources.Count - 1; i >= 0; i--)
         {
-            try
-            {
-                _resources[i].Dispose();
-            }
-            catch (Exception exception)
-            {
-                (failures ??= []).Add(exception);
-            }
+            DisposeResource(_resources[i]);
         }
 
         _resources.Clear();
-        if (failures is not null)
+    }
+
+    private void DisposeResource(IDisposable resource)
+    {
+        try
         {
-            throw new AggregateException("Some of the old project's resources failed to close.", failures);
+            resource.Dispose();
+        }
+        catch (Exception exception)
+        {
+            _errors.Report(exception, ProjectText.ClosingProjectFailed);
         }
     }
 
@@ -110,10 +118,11 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     [MemberNotNull(nameof(Name), nameof(TimingReadout))]
     private void Refresh()
     {
-        FrameCount = Model.Frames.Length;
-        SkippedFileCount = Model.SkippedFiles.Length;
-        Name = Model.Name;
-        IsDirty = Model.IsDirty;
-        TimingReadout = ProjectText.TimingReadout(Model.Frames.Length, Model.Timing);
+        var snapshot = Model.Snapshot;
+        FrameCount = snapshot.Frames.Length;
+        SkippedFileCount = snapshot.SkippedFiles.Length;
+        Name = snapshot.Name;
+        IsDirty = snapshot.IsDirty;
+        TimingReadout = ProjectText.TimingReadout(snapshot.Frames.Length, snapshot.Timing);
     }
 }

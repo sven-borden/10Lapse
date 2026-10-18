@@ -37,7 +37,7 @@ public partial class App : Application
     {
         MainWindow? window = null;
         var dialogs = new ContentDialogService(() => window?.Content?.XamlRoot);
-        window = new MainWindow(new ShellViewModel(dialogs));
+        window = new MainWindow(new ShellViewModel(dialogs, new TraceErrorSink()));
         return window;
     }
 }

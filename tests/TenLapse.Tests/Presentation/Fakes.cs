@@ -16,6 +16,26 @@ internal sealed class FakeDialogService(bool answer = true) : IDialogService
     }
 }
 
+/// <summary>Records every reported failure, and can run a check at the moment of the report.</summary>
+internal sealed class FakeErrorSink : IErrorSink
+{
+    private readonly Lock _gate = new();
+
+    public List<(Exception Exception, string Context)> Reported { get; } = [];
+
+    public Action? OnReport { get; set; }
+
+    public void Report(Exception exception, string context)
+    {
+        lock (_gate)
+        {
+            Reported.Add((exception, context));
+        }
+
+        OnReport?.Invoke();
+    }
+}
+
 /// <summary>Holds the question open until the test answers it.</summary>
 internal sealed class PendingDialogService : IDialogService
 {
