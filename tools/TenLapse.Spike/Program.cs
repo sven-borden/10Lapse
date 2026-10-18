@@ -11,7 +11,6 @@ using TenLapse.Spike;
 //   TenLapse.Spike encode [--source synthetic|jpeg] [--dir D] [--frames 1000] [--source-size 6000x4000]
 //                         [--output-size 3840x2160] [--fps 30] [--out file.mp4] [--software]
 //                         [--targets 4] [--decode-ahead 4] [--verify]
-//                         [--stage sinkwriter|transcoder] [--input cpu|d3d]   (--input: transcoder only)
 // --verify decodes the output and checks every frame's FrameCode. Results go to the console, the
 // last line is a Markdown table row. Large files belong in %TEMP%, never in the repository.
 //   TenLapse.Spike inspect FILE [--decode]
@@ -75,22 +74,8 @@ static async Task<int> EncodeAsync(Options options)
         HardwareAcceleration = !options.Flag("software"),
         RenderTargets = options.Int("targets", 4),
         DecodeAhead = options.Int("decode-ahead", 4),
-        EncodeStage = options.Text("stage", "sinkwriter") switch
-        {
-            "sinkwriter" => VideoEncodeStage.SinkWriter,
-            "transcoder" => VideoEncodeStage.MediaTranscoder,
-            var other => throw new ArgumentException($"--stage must be sinkwriter or transcoder, not {other}."),
-        },
-        TranscoderInput = options.Text("input", "cpu") switch
-        {
-            "cpu" => TranscoderInput.CpuBuffer,
-            "d3d" => TranscoderInput.Direct3DSurface,
-            var other => throw new ArgumentException($"--input must be cpu or d3d, not {other}."),
-        },
     };
-    var stage = settings.EncodeStage == VideoEncodeStage.SinkWriter
-        ? "IMFSinkWriter"
-        : $"MediaTranscoder ({(settings.TranscoderInput == TranscoderInput.CpuBuffer ? "CPU buffers" : "D3D surfaces")})";
+    const string stage = "IMFSinkWriter";
 
     IFrameSource source = mode switch
     {
@@ -135,7 +120,7 @@ static async Task<int> EncodeAsync(Options options)
     var peak = process.PeakWorkingSet64;
     Console.WriteLine($"result: {result.FrameCount} frames in {wall.TotalSeconds:0.00} s = {result.FrameCount / wall.TotalSeconds:0.0} fps; " +
         $"peak working set {peak / 1048576.0:0} MB (before export {startPeak / 1048576.0:0} MB); file {new FileInfo(output).Length / 1e6:0.0} MB");
-    Console.WriteLine($"encoder reported: {(result.Encoder is { } ran ? $"{ran.Name} ({(ran.IsHardware ? "hardware" : "software")})" : "not reported by this stage")}");
+    Console.WriteLine($"encoder reported: {(result.Encoder is { } ran ? $"{ran.Name} ({(ran.IsHardware ? "hardware" : "software")})" : "not reported")}");
     Console.WriteLine($"gpu: {string.Join(", ", gpu.Select(g => $"{g.Engine} max {g.Max:0}% mean {g.Mean:0}%"))}");
     foreach (var instance in instances.Order())
     {

@@ -4,7 +4,7 @@ namespace TenLapse.Media.Inspection;
 
 /// <summary>
 /// One <c>MFStartup</c>/<c>MFShutdown</c> pair. Media Foundation counts them, so
-/// nesting sessions, or running one next to a <c>MediaTranscoder</c>, is safe.
+/// nesting sessions, or running a reader while an export writes, is safe.
 /// </summary>
 internal sealed class MediaFoundationSession : IDisposable
 {

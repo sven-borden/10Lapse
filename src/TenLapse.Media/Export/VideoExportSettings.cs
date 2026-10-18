@@ -44,7 +44,7 @@ public sealed record VideoExportSettings
 
     /// <summary>
     /// Lets Media Foundation use a GPU encoder when there is one (the default;
-    /// <c>MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS</c> for the sink writer). Off
+    /// <c>MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS</c>). Off
     /// forces the Microsoft software encoder, for comparison.
     /// </summary>
     public bool HardwareAcceleration { get; init; } = true;
@@ -57,12 +57,6 @@ public sealed record VideoExportSettings
     /// gets a new render target; none is ever drawn twice (see <see cref="VideoExporter"/>).
     /// </summary>
     public int RenderTargets { get; init; } = 4;
-
-    /// <summary>Which Media Foundation API encodes. <see cref="VideoEncodeStage.SinkWriter"/> unless comparing.</summary>
-    public VideoEncodeStage EncodeStage { get; init; } = VideoEncodeStage.SinkWriter;
-
-    /// <summary>How frames reach <c>MediaTranscoder</c>; ignored by the sink writer.</summary>
-    public TranscoderInput TranscoderInput { get; init; } = TranscoderInput.CpuBuffer;
 
     /// <summary>The bitrate the export uses.</summary>
     public uint EffectiveBitrate => Bitrate ?? DefaultBitrate(Width, Height, FrameRate);

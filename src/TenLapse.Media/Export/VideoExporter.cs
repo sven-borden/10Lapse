@@ -1,18 +1,12 @@
 using System.Collections.Concurrent;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Channels;
 using Microsoft.Graphics.Canvas;
 using TenLapse.Core.Timing;
 using TenLapse.Media.Inspection;
 using Windows.Foundation;
 using Windows.Graphics.DirectX;
-using Windows.Media.Core;
-using Windows.Media.MediaProperties;
-using Windows.Media.Transcoding;
-using Windows.Storage;
-using Windows.Storage.Streams;
 using Windows.UI;
 
 namespace TenLapse.Media.Export;
@@ -20,12 +14,8 @@ namespace TenLapse.Media.Export;
 /// <summary>What an export wrote.</summary>
 /// <param name="FrameCount">Frames the encoder took.</param>
 /// <param name="Duration">The clip duration in 100 ns ticks, <see cref="FrameTiming.Duration"/>.</param>
-/// <param name="EncodeStage">The encode stage that wrote the file.</param>
-/// <param name="Encoder">
-/// The H.264 encoder that ran, as the sink writer reports it; null for
-/// <see cref="VideoEncodeStage.MediaTranscoder"/>, which does not say.
-/// </param>
-public sealed record VideoExportResult(int FrameCount, long Duration, VideoEncodeStage EncodeStage, VideoEncoderInfo? Encoder);
+/// <param name="Encoder">The H.264 encoder that ran, as the sink writer reports it; null if it could not tell.</param>
+public sealed record VideoExportResult(int FrameCount, long Duration, VideoEncoderInfo? Encoder);
 
 /// <summary>Why an export failed in the encoder.</summary>
 public enum VideoExportFailure
@@ -156,9 +146,7 @@ public static class VideoExporter
                     processing = Task.Run(ProcessAsync);
                 }
 
-                encoder = _settings.EncodeStage == VideoEncodeStage.SinkWriter
-                    ? await EncodeWithSinkWriterAsync(outputPath, StartPipeline).ConfigureAwait(false)
-                    : await EncodeWithTranscoderAsync(outputPath, StartPipeline).ConfigureAwait(false);
+                encoder = await EncodeWithSinkWriterAsync(outputPath, StartPipeline).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
@@ -206,7 +194,7 @@ public static class VideoExporter
                     VideoExportFailure.EncoderFailed);
             }
 
-            return new VideoExportResult(taken, FrameTiming.Duration(taken, Rate), _settings.EncodeStage, encoder);
+            return new VideoExportResult(taken, FrameTiming.Duration(taken, Rate), encoder);
         }
 
         private async Task<VideoEncoderInfo?> EncodeWithSinkWriterAsync(string outputPath, Action startPipeline)
@@ -249,43 +237,6 @@ public static class VideoExporter
                 .ConfigureAwait(false);
         }
 
-        private async Task<VideoEncoderInfo?> EncodeWithTranscoderAsync(string outputPath, Action startPipeline)
-        {
-            var source = CreateMediaStreamSource();
-            source.SampleRequested += OnSampleRequested;
-            try
-            {
-                var transcoder = new MediaTranscoder { HardwareAccelerationEnabled = _settings.HardwareAcceleration };
-                using var output = await FileRandomAccessStream.OpenAsync(
-                        outputPath,
-                        FileAccessMode.ReadWrite,
-                        StorageOpenOptions.None,
-                        FileOpenDisposition.CreateAlways)
-                    .AsTask(_stop.Token)
-                    .ConfigureAwait(false);
-                var prepared = await transcoder.PrepareMediaStreamSourceTranscodeAsync(source, output, CreateProfile())
-                    .AsTask(_stop.Token)
-                    .ConfigureAwait(false);
-                if (!prepared.CanTranscode)
-                {
-                    throw new VideoExportException(
-                        $"The H.264 encoder cannot take this export ({prepared.FailureReason}).",
-                        prepared.FailureReason == TranscodeFailureReason.CodecNotFound
-                            ? VideoExportFailure.EncoderUnavailable
-                            : VideoExportFailure.SettingsRejected);
-                }
-
-                startPipeline();
-                await prepared.TranscodeAsync().AsTask(_stop.Token).ConfigureAwait(false);
-                await output.FlushAsync().AsTask(_stop.Token).ConfigureAwait(false);
-                return null;
-            }
-            finally
-            {
-                source.SampleRequested -= OnSampleRequested;
-            }
-        }
-
         private static VideoExportException SetupFailure(COMException exception) => (uint)exception.HResult switch
         {
             // MF_E_TOPO_CODEC_NOT_FOUND, MF_E_TRANSFORM_NOT_POSSIBLE_FOR_CURRENT_MEDIATYPE_COMBINATION
@@ -298,41 +249,6 @@ public static class VideoExporter
 
             _ => new VideoExportException($"The H.264 encoder could not start: {exception.Message}", VideoExportFailure.EncoderFailed, exception),
         };
-
-        private MediaStreamSource CreateMediaStreamSource()
-        {
-            var properties = VideoEncodingProperties.CreateUncompressed(
-                MediaEncodingSubtypes.Bgra8,
-                (uint)_settings.Width,
-                (uint)_settings.Height);
-            properties.FrameRate.Numerator = (uint)Rate.Numerator;
-            properties.FrameRate.Denominator = (uint)Rate.Denominator;
-            properties.PixelAspectRatio.Numerator = 1;
-            properties.PixelAspectRatio.Denominator = 1;
-            return new MediaStreamSource(new VideoStreamDescriptor(properties))
-            {
-                // A file source: no network buffering, no seeking, a known end.
-                BufferTime = TimeSpan.Zero,
-                CanSeek = false,
-                Duration = TimeSpan.FromTicks(FrameTiming.Duration(_source.FrameCount, Rate)),
-            };
-        }
-
-        private MediaEncodingProfile CreateProfile()
-        {
-            var profile = MediaEncodingProfile.CreateMp4(VideoEncodingQuality.HD1080p);
-            profile.Audio = null;
-            var video = profile.Video;
-            video.Width = (uint)_settings.Width;
-            video.Height = (uint)_settings.Height;
-            video.Bitrate = _settings.EffectiveBitrate;
-            video.FrameRate.Numerator = (uint)Rate.Numerator;
-            video.FrameRate.Denominator = (uint)Rate.Denominator;
-            video.PixelAspectRatio.Numerator = 1;
-            video.PixelAspectRatio.Denominator = 1;
-            video.ProfileId = H264ProfileIds.High;
-            return profile;
-        }
 
         private async Task ProduceAsync()
         {
@@ -435,57 +351,6 @@ public static class VideoExporter
             // Not inside ?.Report(...): with no progress the count would never move.
             var taken = Interlocked.Increment(ref _framesTaken);
             _progress?.Report(taken);
-        }
-
-        // Media Foundation raises this on its own threads, one request at a time per stream.
-        private void OnSampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
-        {
-            var request = args.Request;
-            var deferral = request.GetDeferral();
-            _ = SupplySampleAsync(sender, request, deferral);
-        }
-
-        private async Task SupplySampleAsync(
-            MediaStreamSource sender,
-            MediaStreamSourceSampleRequest request,
-            MediaStreamSourceSampleRequestDeferral deferral)
-        {
-            try
-            {
-                // False once every frame is out: a null sample ends the stream and the transcoder finishes the file.
-                if (await _rendered.Reader.WaitToReadAsync(_stop.Token).ConfigureAwait(false)
-                    && _rendered.Reader.TryRead(out var frame))
-                {
-                    request.Sample = CreateSample(frame);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Cancelled: end the stream; RunAsync reports the cancellation.
-            }
-            catch (Exception exception)
-            {
-                RecordFailure(exception);
-                sender.NotifyError(MediaStreamSourceErrorStatus.Other);
-            }
-            finally
-            {
-                deferral.Complete();
-            }
-        }
-
-        private MediaStreamSample CreateSample(RenderedFrame frame)
-        {
-            var time = TimeSpan.FromTicks(FrameTiming.FrameStart(frame.Index, Rate));
-            var sample = _settings.TranscoderInput == TranscoderInput.Direct3DSurface
-                ? MediaStreamSample.CreateFromDirect3D11Surface(frame.Target, time)
-                : MediaStreamSample.CreateFromBuffer(frame.Target.GetPixelBytes().AsBuffer(), time);
-            sample.Duration = TimeSpan.FromTicks(FrameTiming.FrameDuration(frame.Index, Rate));
-            sample.KeyFrame = true;
-
-            // Processed means Media Foundation has taken the sample, not that it has read the surface.
-            sample.Processed += (_, _) => FrameTaken(frame.Target);
-            return sample;
         }
 
         private void RecordFailure(Exception exception)

@@ -6,7 +6,7 @@ namespace TenLapse.Tests.Media;
 
 /// <summary>
 /// The #8 pipeline end to end at a small size: draw, fill, encode to H.264 MP4
-/// through MediaTranscoder, read back with the Media Foundation source reader.
+/// through IMFSinkWriter, read back with the Media Foundation source reader.
 /// </summary>
 public sealed class StreamingExportTests : IDisposable
 {
@@ -42,7 +42,6 @@ public sealed class StreamingExportTests : IDisposable
         var result = await ExportOrSkipAsync(new NumberedFrames(Frames, 960, 640), path, new VideoExportSettings(640, 360, rate));
 
         Assert.Equal(Frames, result.FrameCount);
-        Assert.Equal(VideoEncodeStage.SinkWriter, result.EncodeStage);
         Assert.NotNull(result.Encoder);
         var info = VideoFileReader.Read(path);
         Assert.Equal("H264", info.Codec);
@@ -151,26 +150,6 @@ public sealed class StreamingExportTests : IDisposable
         Assert.Throws<FileNotFoundException>(() => VideoFileReader.Read(Path.Combine(_directory, "missing.mp4")));
     }
 
-    [Fact]
-    public async Task TheMediaTranscoderStageWithCpuBuffersWritesEveryFrame()
-    {
-        SkipWithoutH264Encoder();
-        var path = Path.Combine(_directory, "transcoder.mp4");
-        var settings = new VideoExportSettings(640, 360, new Fraction(30, 1))
-        {
-            EncodeStage = VideoEncodeStage.MediaTranscoder,
-            TranscoderInput = TranscoderInput.CpuBuffer,
-        };
-
-        var result = await ExportOrSkipAsync(new NumberedFrames(Frames, 960, 640), path, settings);
-
-        Assert.Equal(Frames, result.FrameCount);
-        Assert.Null(result.Encoder);
-        var numbers = new List<int>();
-        VideoFileReader.ReadFrames(path, frame => numbers.Add(FrameCode.Read(frame.Pixels, frame.Width, frame.Height, frame.Stride)));
-        Assert.Equal(Enumerable.Range(0, Frames), numbers);
-    }
-
     // The MP4 sink keeps 1000 time units per frame, and rounds each sample's duration and the track's down to them.
     private static void AssertDurations(VideoFileInfo info, Fraction rate, long drift)
     {
@@ -197,7 +176,7 @@ public sealed class StreamingExportTests : IDisposable
         }
         catch (VideoExportException exception) when (exception.Failure == VideoExportFailure.EncoderUnavailable)
         {
-            Assert.Skip($"MediaTranscoder found no H.264 encoder ({exception.Message}). Run this test on a PC with one before merging.");
+            Assert.Skip($"The sink writer found no H.264 encoder ({exception.Message}). Run this test on a PC with one before merging.");
             throw;
         }
     }
