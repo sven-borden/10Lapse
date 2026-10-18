@@ -93,6 +93,11 @@
   <Thickness x:Key="SettingsTitleMargin">0,0,0,14</Thickness>
   <Thickness x:Key="SettingsSectionMargin">0,20,0,0</Thickness>
   <!--
+    On the Settings page the floating InfoBar starts below the title instead of over it: the page's 28 px top padding
+    and the title's 36 px line end at 64, and the bar keeps 8 px clear of that.
+  -->
+  <Thickness x:Key="InfoBarSettingsHostMargin">40,72,40,0</Thickness>
+  <!--
     An InfoBar's detail list (prototype: 8 / 14 / 12 / 42 around 16 px lines 6 apart, the left edge in line
     with the message). Past seven lines it scrolls.
   -->

@@ -53,7 +53,8 @@
         </VisualState>
         <!--
           The Settings page covers the body; the command bar trades its buttons for Back. The InfoBar layer spans both
-          body columns so a bar centers on the page, which covers the inspector's column too.
+          body columns so a bar centers on the page, which covers the inspector's column too, and starts below the
+          page's title instead of over it.
         -->
         <VisualState x:Name="Settings">
           <VisualState.StateTriggers>
@@ -66,6 +67,7 @@
             <Setter Target="WorkCommands.Visibility" Value="Collapsed" />
             <Setter Target="BackButton.Visibility" Value="Visible" />
             <Setter Target="InfoBarLayer.(Grid.ColumnSpan)" Value="2" />
+            <Setter Target="InfoBarLayer.Margin" Value="{StaticResource InfoBarSettingsHostMargin}" />
           </VisualState.Setters>
         </VisualState>
         <VisualState x:Name="Editing">
