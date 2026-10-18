@@ -74,14 +74,15 @@ public sealed record VideoExportSettings
     /// How many source frames may be loading, or loaded and waiting to be drawn, at once: the frame being drawn
     /// counts until it is drawn. This bounds the decoded bitmaps in memory. At least 1.
     /// </summary>
-    public int DecodeAhead { get; init; } = 6;
+    public int DecodeAhead { get; init; } = 8;
 
     /// <summary>
     /// How many loads may run at once, at most <see cref="DecodeAhead"/>: the decode concurrency, bounded
     /// separately from the queue depth. Each running WIC decode holds its CPU buffer. Defaults to half the
-    /// logical processors, 1 to 4.
+    /// logical processors, 1 to 6 (measured on 16 threads, 24 MP to 4K: 4 threads 23 fps, 6 threads 36 fps, 8 threads
+    /// 42 fps at 100 MB more; 6 keeps an iGPU, whose textures share system memory, under 1 GB).
     /// </summary>
-    public int DecodeThreads { get; init; } = Math.Clamp(Environment.ProcessorCount / 2, 1, 4);
+    public int DecodeThreads { get; init; } = Math.Clamp(Environment.ProcessorCount / 2, 1, 6);
 
     /// <summary>
     /// How long one encoder call (opening, writing one frame, finishing) may take before the export fails as
