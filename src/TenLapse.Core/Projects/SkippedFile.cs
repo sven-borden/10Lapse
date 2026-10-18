@@ -15,7 +15,7 @@ public enum SkipReason
     /// <summary>Windows refused access to the file.</summary>
     AccessDenied,
 
-    /// <summary>The file disappeared between listing and reading (or its drive or share did).</summary>
+    /// <summary>The file disappeared between listing and reading, or its drive or network share was disconnected.</summary>
     FileNotFound,
 
     /// <summary>Anything else; <see cref="SkippedFile.Message"/> says what, for the log.</summary>
@@ -27,7 +27,10 @@ public enum SkipReason
     /// <summary>The file ends before the image does: a copy or a download that stopped part way.</summary>
     Truncated,
 
-    /// <summary>A known format (HEIF, camera RAW) whose decoder comes in a Store extension this PC does not have (#14).</summary>
+    /// <summary>
+    /// A known format (HEIF, AVIF, camera RAW) whose decoder, or the codec its decoder needs (HEVC for HEIC), comes
+    /// in a Store extension this PC does not have (#14).
+    /// </summary>
     NeedsExtension,
 
     /// <summary>Another program has the file open and does not let others read it.</summary>
@@ -35,6 +38,9 @@ public enum SkipReason
 
     /// <summary>The image is too large to decode in memory.</summary>
     ImageTooLarge,
+
+    /// <summary>An online-only cloud file (OneDrive files on demand) that could not be downloaded: offline, or the sync app is not running.</summary>
+    CloudFileOffline,
 }
 
 /// <summary>A file import could not use, kept so the user can see which and why.</summary>

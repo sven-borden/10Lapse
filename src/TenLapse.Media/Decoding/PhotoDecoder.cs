@@ -109,6 +109,7 @@ public static class PhotoDecoder
         ArgumentNullException.ThrowIfNull(path);
         cancellationToken.ThrowIfCancellationRequested();
         var stage = PhotoFailures.Stage.Open;
+        byte[]? header = null;
         try
         {
             using var file = OpenFile(path);
@@ -118,7 +119,8 @@ public static class PhotoDecoder
                 return PhotoResult<PhotoInfo>.Failed(Empty(path));
             }
 
-            if (!PhotoStructure.EndsCompletely(ReadHeader(file), length, ReadAtHandle(file)))
+            header = ReadHeader(file);
+            if (!PhotoStructure.EndsCompletely(header, length, ReadAtHandle(file)))
             {
                 return PhotoResult<PhotoInfo>.Failed(Truncated(path));
             }
@@ -132,7 +134,7 @@ public static class PhotoDecoder
         }
         catch (Exception exception) when (!IsCancellation(exception, cancellationToken))
         {
-            return PhotoResult<PhotoInfo>.Failed(PhotoFailures.Classify(exception, path, stage));
+            return PhotoResult<PhotoInfo>.Failed(PhotoFailures.Classify(exception, path, stage, header: header));
         }
     }
 
@@ -153,6 +155,7 @@ public static class PhotoDecoder
         options ??= PhotoDecodeOptions.FullSize;
         cancellationToken.ThrowIfCancellationRequested();
         var stage = PhotoFailures.Stage.Open;
+        byte[]? header = null;
         try
         {
             using var file = OpenFile(path);
@@ -162,6 +165,7 @@ public static class PhotoDecoder
                 return PhotoResult<DecodedPhoto>.Failed(Empty(path));
             }
 
+            header = ReadHeader(file);
             IRandomAccessStream stream;
             var inMemory = length <= MaxInMemoryFileBytes;
             if (inMemory)
@@ -178,7 +182,7 @@ public static class PhotoDecoder
             else
             {
                 // Too large to copy: read through .NET's adapter, which does not map the file either.
-                if (!PhotoStructure.EndsCompletely(ReadHeader(file), length, ReadAtHandle(file)))
+                if (!PhotoStructure.EndsCompletely(header, length, ReadAtHandle(file)))
                 {
                     return PhotoResult<DecodedPhoto>.Failed(Truncated(path));
                 }
@@ -195,7 +199,7 @@ public static class PhotoDecoder
         }
         catch (Exception exception) when (!IsCancellation(exception, cancellationToken))
         {
-            return PhotoResult<DecodedPhoto>.Failed(PhotoFailures.Classify(exception, path, stage));
+            return PhotoResult<DecodedPhoto>.Failed(PhotoFailures.Classify(exception, path, stage, header: header));
         }
     }
 

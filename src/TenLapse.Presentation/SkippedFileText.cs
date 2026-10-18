@@ -25,7 +25,7 @@ public static class SkippedFileText
     public static string AccessDenied => "No permission to open it";
 
     /// <summary><see cref="SkipReason.FileNotFound"/>.</summary>
-    public static string FileNotFound => "No longer there: moved or deleted";
+    public static string FileNotFound => "No longer there: moved, deleted or disconnected";
 
     /// <summary><see cref="SkipReason.Other"/>.</summary>
     public static string Other => "Couldn't be read";
@@ -45,6 +45,9 @@ public static class SkippedFileText
     /// <summary><see cref="SkipReason.ImageTooLarge"/>.</summary>
     public static string ImageTooLarge => "Too large to open";
 
+    /// <summary><see cref="SkipReason.CloudFileOffline"/>.</summary>
+    public static string CloudFileOffline => "In the cloud and not available offline";
+
     /// <summary>The short reason shown beside the file name.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A value <see cref="SkipReason"/> does not define.</exception>
     public static string Reason(SkipReason reason) => reason switch
@@ -59,6 +62,7 @@ public static class SkippedFileText
         SkipReason.NeedsExtension => NeedsExtension,
         SkipReason.FileInUse => FileInUse,
         SkipReason.ImageTooLarge => ImageTooLarge,
+        SkipReason.CloudFileOffline => CloudFileOffline,
         _ => throw new ArgumentOutOfRangeException(nameof(reason), reason, "Unknown skip reason."),
     };
 }

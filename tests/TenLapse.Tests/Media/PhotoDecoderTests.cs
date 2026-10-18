@@ -496,32 +496,92 @@ public sealed class PhotoDecoderTests : IDisposable
         await File.WriteAllTextAsync(path, "These are not the pixels you are looking for.", Token);
 
         // HEIF and RAW have their decoders here; on a PC without them, these would need the extension instead.
-        var expected = PhotoCodecs.DecoderFor(Path.GetExtension(name)) is null && KnownPhotoFormats.ForPath(name)?.Extension is not null
+        var expected = PhotoCodecs.DecoderFor(Path.GetExtension(name)) is null && KnownPhotoFormats.ForPath(name)?.Container is not null
             ? SkipReason.NeedsExtension
             : SkipReason.UnsupportedFormat;
         await AssertFailsAsync(path, expected);
     }
 
-    [Fact]
-    public void WithoutItsDecoderAHeicNeedsTheHeifExtension()
+    // ftyp boxes as a phone writes them: an iPhone HEIC, an AVIF, and a HEIF that names no codec.
+    private static readonly byte[] _heicHeader = [0, 0, 0, 0x18, .. "ftypheic"u8, 0, 0, 0, 0, .. "mif1heic"u8];
+    private static readonly byte[] _avifHeader = [0, 0, 0, 0x1C, .. "ftypavif"u8, 0, 0, 0, 0, .. "avifmif1miaf"u8];
+    private static readonly byte[] _plainHeifHeader = [0, 0, 0, 0x14, .. "ftypmif1"u8, 0, 0, 0, 0, .. "mif1"u8];
+
+    // name, stage, HRESULT, is the decoder for the extension installed, header, the extension expected (null: unreadable, not NeedsExtension)
+    public static TheoryData<string, string, uint, bool, string, string?> MissingComponents => new()
     {
-        var unknown = new COMException("No component found.", unchecked((int)0x88982F50));
+        // No decoder claims the extension: the extension that adds the decoder.
+        { "IMG_4402.HEIC", "Open", 0x88982F50, false, "", "HEIF Image Extensions" },
+        { "IMG_4402.avif", "Open", 0x88982F50, false, "", "HEIF Image Extensions" },
+        { "DSC_0001.NEF", "Open", 0x88982F50, false, "", "Raw Image Extension" },
+        { "photo.webp", "Open", 0x88982F50, false, "", "Webp Image Extensions" },
+        { "photo.jxl", "Open", 0x88982F50, false, "", "JPEG XL Image Extension" },
+        // The HEIF decoder is there (a fresh Windows 11) but cannot decode the image inside: the codec.
+        { "IMG_4402.HEIC", "Open", 0x88982F81, true, "heic", "HEVC Video Extensions" },
+        { "IMG_4402.HEIC", "Open", 0x88982F50, true, "heic", "HEVC Video Extensions" },
+        { "IMG_4402.HEIC", "Decode", 0xC00D5212, true, "heic", "HEVC Video Extensions" },
+        { "IMG_4402.HEIC", "Decode", 0x88982F50, true, "", "HEVC Video Extensions" },
+        { "IMG_4402.avif", "Open", 0x88982F81, true, "avif", "AV1 Video Extension" },
+        { "renamed.jpg", "Open", 0x88982F81, true, "heic", "HEVC Video Extensions" },
+        // Unreadable, not a missing extension: text named .heic, a HEIF naming no codec opened, a JPEG, RAW with its decoder.
+        { "notes.heic", "Open", 0x88982F50, true, "", null },
+        { "IMG_4402.HEIC", "Open", 0x88982F50, true, "mif1", null },
+        { "IMG_4402.jpg", "Decode", 0x88982F50, false, "", null },
+        { "DSC_0001.NEF", "Decode", 0x88982F50, true, "", null },
+    };
 
-        var failure = PhotoFailures.Classify(unknown, @"C:\Photos\IMG_4402.HEIC", PhotoFailures.Stage.Open, _ => null);
-        var raw = PhotoFailures.Classify(unknown, @"C:\Photos\DSC_0001.NEF", PhotoFailures.Stage.Open, _ => null);
-        var withDecoder = PhotoFailures.Classify(unknown, @"C:\Photos\IMG_4402.HEIC", PhotoFailures.Stage.Open, e => PhotoCodecs.Decoders[0]);
-        var codecMissing = PhotoFailures.Classify(unknown, @"C:\Photos\IMG_4402.HEIC", PhotoFailures.Stage.Decode, e => PhotoCodecs.Decoders[0]);
-        var jpeg = PhotoFailures.Classify(unknown, @"C:\Photos\IMG_4402.jpg", PhotoFailures.Stage.Open, _ => null);
+    [Theory]
+    [MemberData(nameof(MissingComponents))]
+    public void AMissingComponentNamesTheExtensionToInstall(string name, string stage, uint hresult, bool decoderInstalled, string brand, string? expected)
+    {
+        // The HEVC codec is installed here, so the fresh-Windows case is injected: the HRESULTs are those seen
+        // with a HEIC whose image is coded in a codec this PC lacks (see AHeicWhoseCodecIsMissingNeedsTheCodecExtension).
+        var header = brand switch { "heic" => _heicHeader, "avif" => _avifHeader, "mif1" => _plainHeifHeader, _ => null };
+        var exception = new COMException("Component missing.", unchecked((int)hresult));
 
-        Assert.Equal(SkipReason.NeedsExtension, failure.Reason);
-        Assert.Equal(KnownPhotoFormats.HeifExtension, failure.Format?.Extension);
-        Assert.Equal(SkipReason.NeedsExtension, raw.Reason);
-        Assert.Equal(KnownPhotoFormats.RawExtension, raw.Format?.Extension);
-        Assert.Equal(SkipReason.UnsupportedFormat, withDecoder.Reason);
-        Assert.Equal(SkipReason.NeedsExtension, codecMissing.Reason);
-        Assert.Equal(SkipReason.UnsupportedFormat, jpeg.Reason);
-        Assert.Contains("WINCODEC_ERR_COMPONENTNOTFOUND", failure.Detail, StringComparison.Ordinal);
-        Assert.Same(unknown, failure.Exception);
+        var failure = PhotoFailures.Classify(exception, @"C:\Photos\" + name, Enum.Parse<PhotoFailures.Stage>(stage), _ => decoderInstalled ? PhotoCodecs.Decoders[0] : null, header);
+
+        Assert.Equal(expected, failure.MissingExtension?.Name);
+        Assert.Equal(expected is null ? SkipReason.UnsupportedFormat : SkipReason.NeedsExtension, failure.Reason);
+        Assert.Same(exception, failure.Exception);
+        if (expected is not null)
+        {
+            Assert.Contains(failure.MissingExtension!.StoreProductId, failure.Detail, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public async Task AHeicWhoseCodecIsMissingNeedsTheCodecExtension()
+    {
+        // HEVC is installed here, so a missing codec is provoked: a HEIC written by WIC with its image item and
+        // decoder configuration renamed from HEVC (hvc1, hvcC) to VVC (vvc1, vvcC), which this PC cannot decode.
+        // The HEIF decoder takes the file and refuses the image, as it does a HEVC image without the HEVC codec.
+        Assert.SkipWhen(PhotoCodecs.DecoderFor(".heic") is null, "No HEIF decoder on this PC.");
+        Assert.SkipUnless(BitmapEncoder.GetEncoderInformationEnumerator().Any(e => e.CodecId == BitmapEncoder.HeifEncoderId), "No HEIF encoder on this PC to write a test HEIC.");
+        var heic = await _files.WriteAsync("hevc.heic", BitmapEncoder.HeifEncoderId, width: 256, height: 128);
+        var bytes = await File.ReadAllBytesAsync(heic, Token);
+        Assert.Equal(1, Replace(bytes, "hvc1"u8, "vvc1"u8));
+        Assert.Equal(1, Replace(bytes, "hvcC"u8, "vvcC"u8));
+        var path = _files.PathOf("vvc.heic");
+        await File.WriteAllBytesAsync(path, bytes, Token);
+
+        await AssertFailsAsync(path, SkipReason.NeedsExtension);
+        var result = await PhotoDecoder.DecodeAsync(path, cancellationToken: Token);
+        Assert.Equal(KnownPhotoFormats.HevcExtension, result.Failure?.MissingExtension);
+    }
+
+    [Fact]
+    public async Task ATruncatedHeicIsDamaged()
+    {
+        Assert.SkipWhen(PhotoCodecs.DecoderFor(".heic") is null, "No HEIF decoder on this PC.");
+        Assert.SkipUnless(BitmapEncoder.GetEncoderInformationEnumerator().Any(e => e.CodecId == BitmapEncoder.HeifEncoderId), "No HEIF encoder on this PC to write a test HEIC.");
+        var heic = await _files.WriteAsync("whole.heic", BitmapEncoder.HeifEncoderId, width: 256, height: 128);
+        var bytes = await File.ReadAllBytesAsync(heic, Token);
+        var path = _files.PathOf("cut.heic");
+        await File.WriteAllBytesAsync(path, bytes[..(bytes.Length / 2)], Token);
+
+        // The HEIF decoder says MF_E_INVALID_FILE_FORMAT.
+        await AssertFailsAsync(path, SkipReason.DecodeFailed);
     }
 
     [Theory]
@@ -539,6 +599,13 @@ public sealed class PhotoDecoderTests : IDisposable
     [InlineData(0x8007000Eu, SkipReason.ImageTooLarge)]
     [InlineData(0x88982F80u, SkipReason.UnsupportedFormat)]
     [InlineData(0x80004005u, SkipReason.Other)]
+    [InlineData(0xC00D36BEu, SkipReason.DecodeFailed)]
+    [InlineData(0x800700A1u, SkipReason.Other)]
+    [InlineData(0x80070040u, SkipReason.FileNotFound)]
+    [InlineData(0x8007003Bu, SkipReason.FileNotFound)]
+    [InlineData(0x8007016Au, SkipReason.CloudFileOffline)]
+    [InlineData(0x80070185u, SkipReason.CloudFileOffline)]
+    [InlineData(0x80070780u, SkipReason.CloudFileOffline)]
     public void HResultsMapToReasons(uint hresult, SkipReason expected)
     {
         var failure = PhotoFailures.Classify(new COMException("x", unchecked((int)hresult)), @"C:\Photos\a.jpg", PhotoFailures.Stage.Decode);
@@ -607,6 +674,18 @@ public sealed class PhotoDecoderTests : IDisposable
     }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    private static int Replace(byte[] bytes, ReadOnlySpan<byte> from, ReadOnlySpan<byte> to)
+    {
+        var count = 0;
+        for (var i = bytes.AsSpan().IndexOf(from); i >= 0; i = bytes.AsSpan().IndexOf(from))
+        {
+            to.CopyTo(bytes.AsSpan(i));
+            count++;
+        }
+
+        return count;
+    }
 
     // A 600x400 JPEG, red top-left and blue elsewhere, with the profile embedded.
     private async Task<string> WriteJpegWithProfileAsync(string name, byte[] profile)

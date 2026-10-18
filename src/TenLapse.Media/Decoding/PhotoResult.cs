@@ -11,8 +11,10 @@ public sealed record PhotoFailure
     /// <param name="reason">The kind of failure, which picks the text the user sees.</param>
     /// <param name="detail">What happened in detail, for the log: the error and its HRESULT name where there is one.</param>
     /// <param name="exception">The original exception, for the log; null when the decoder found the problem itself.</param>
-    /// <param name="format">The known format of the file by its extension, when there is one (#14 reads its extension).</param>
-    public PhotoFailure(string path, SkipReason reason, string detail, Exception? exception = null, KnownPhotoFormat? format = null)
+    /// <param name="format">The known format of the file by its extension, when there is one.</param>
+    /// <param name="missingExtension">With <see cref="SkipReason.NeedsExtension"/>, the Store extension to install (#14 offers it).</param>
+    public PhotoFailure(
+        string path, SkipReason reason, string detail, Exception? exception = null, KnownPhotoFormat? format = null, PhotoCodecExtension? missingExtension = null)
     {
         ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(detail);
@@ -26,6 +28,7 @@ public sealed record PhotoFailure
         Detail = detail;
         Exception = exception;
         Format = format;
+        MissingExtension = missingExtension;
     }
 
     /// <summary>The file.</summary>
@@ -40,8 +43,15 @@ public sealed record PhotoFailure
     /// <summary>The original exception, or null.</summary>
     public Exception? Exception { get; }
 
-    /// <summary>The file's known format by extension, or null. With <see cref="SkipReason.NeedsExtension"/> its <see cref="KnownPhotoFormat.Extension"/> is the fix.</summary>
+    /// <summary>The file's known format by extension, or null.</summary>
     public KnownPhotoFormat? Format { get; }
+
+    /// <summary>
+    /// With <see cref="SkipReason.NeedsExtension"/>, the Store extension that is missing: the one adding the decoder
+    /// (<see cref="KnownPhotoFormat.Container"/>) or, when that is installed, the codec it needs
+    /// (<see cref="KnownPhotoFormat.Codec"/>: HEVC for a HEIC photo). Null otherwise.
+    /// </summary>
+    public PhotoCodecExtension? MissingExtension { get; }
 
     /// <summary>The entry for the project's "couldn't read" list.</summary>
     public SkippedFile ToSkippedFile() => new(Path, Reason, Detail);

@@ -33,7 +33,7 @@ public sealed class PhotoCodecsTests
 
         Assert.All(missing, format => Assert.False(PhotoCodecs.IsReadable("x" + format.Extensions[0])));
         Assert.All(KnownPhotoFormats.All.Except(missing), format => Assert.True(PhotoCodecs.IsReadable("x" + format.Extensions[0])));
-        Assert.All(missing, format => Assert.NotNull(format.Extension));
+        Assert.All(missing, format => Assert.NotNull(format.Container));
     }
 
     [Fact]
@@ -52,8 +52,24 @@ public sealed class PhotoCodecsTests
 
         Assert.Equal(KnownPhotoFormats.All.Count - 1, onlyJpeg.Count);
         Assert.Contains(KnownPhotoFormats.Heif, onlyJpeg);
-        Assert.Equal("9PMMSR1CGPWG", KnownPhotoFormats.Heif.Extension?.StoreProductId);
-        Assert.Equal("9NCTDW2W1BH8", KnownPhotoFormats.Raw.Extension?.StoreProductId);
+        Assert.Equal("9PMMSR1CGPWG", KnownPhotoFormats.Heif.Container?.StoreProductId);
+        Assert.Equal("9NCTDW2W1BH8", KnownPhotoFormats.Raw.Container?.StoreProductId);
+    }
+
+    [Theory]
+    [InlineData("JPEG", null, null)]
+    [InlineData("PNG", null, null)]
+    [InlineData("HEIF", "9PMMSR1CGPWG", "9NMZLZ57R3T7")]
+    [InlineData("AVIF", "9PMMSR1CGPWG", "9MVZQVXJBQ9V")]
+    [InlineData("WebP", "9PG2DK419DRG", null)]
+    [InlineData("JPEG XL", "9MZPRTH5C0TB", null)]
+    [InlineData("Camera RAW", "9NCTDW2W1BH8", null)]
+    public void EachFormatNamesTheExtensionsForItsContainerAndCodec(string name, string? container, string? codec)
+    {
+        var format = Assert.Single(KnownPhotoFormats.All, f => f.Name == name);
+
+        Assert.Equal(container, format.Container?.StoreProductId);
+        Assert.Equal(codec, format.Codec?.StoreProductId);
     }
 
     [Theory]

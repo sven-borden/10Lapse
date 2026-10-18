@@ -32,6 +32,12 @@ internal static class PhotoFailures
         [Code(0x80070035)] = ("ERROR_BAD_NETPATH", SkipReason.FileNotFound),
         [Code(0x80070043)] = ("ERROR_BAD_NET_NAME", SkipReason.FileNotFound),
         [Code(0x8007012F)] = ("ERROR_DELETE_PENDING", SkipReason.FileNotFound),
+        [Code(0x8007003B)] = ("ERROR_UNEXP_NET_ERR", SkipReason.FileNotFound),
+        [Code(0x80070040)] = ("ERROR_NETNAME_DELETED", SkipReason.FileNotFound),
+        [Code(0x800700A1)] = ("ERROR_BAD_PATHNAME", SkipReason.Other),
+        [Code(0x8007016A)] = ("ERROR_CLOUD_FILE_PROVIDER_NOT_RUNNING", SkipReason.CloudFileOffline),
+        [Code(0x80070185)] = ("ERROR_CLOUD_FILE_NETWORK_UNAVAILABLE", SkipReason.CloudFileOffline),
+        [Code(0x80070780)] = ("ERROR_CANT_ACCESS_FILE", SkipReason.CloudFileOffline),
         [Code(0x80030002)] = ("STG_E_FILENOTFOUND", SkipReason.FileNotFound),
         [Code(0x80030003)] = ("STG_E_PATHNOTFOUND", SkipReason.FileNotFound),
         [Code(0x80070005)] = ("E_ACCESSDENIED", SkipReason.AccessDenied),
@@ -63,16 +69,21 @@ internal static class PhotoFailures
         [Code(0x88982F95)] = ("WINCODEC_ERR_INVALIDPROGRESSIVELEVEL", SkipReason.DecodeFailed),
         [Code(0x88982F96)] = ("WINCODEC_ERR_INVALIDJPEGSCANINDEX", SkipReason.DecodeFailed),
         [Code(0x88982F48)] = ("WINCODEC_ERR_INTERNALERROR", SkipReason.DecodeFailed),
+        [Code(0xC00D36BE)] = ("MF_E_INVALID_FILE_FORMAT", SkipReason.DecodeFailed),
     };
 
-    // A missing component while decoding a format that comes from a Store extension: the decoder is there but a
-    // codec it needs is not (a HEIC photo without the HEVC decoder).
+    // What a decoder says when a component it needs is missing: no decoder for the content at all, or (from the
+    // HEIF decoder) none for the codec of the image inside. A HEIC whose HEVC-coded image the HEIF decoder
+    // cannot decode fails at the open with WINCODEC_ERR_UNSUPPORTEDOPERATION (seen with an image coded in a
+    // codec this PC lacks).
     private static readonly HashSet<int> _missingComponent =
-        [Code(0x88982F50), Code(0x80040154), Code(0xC00D5212)];
+        [Code(0x88982F50), Code(0x80040154), Code(0xC00D5212), Code(0x88982F81)];
 
     /// <summary>The failure for an exception thrown at <paramref name="stage"/>.</summary>
     /// <param name="decoderFor">The installed decoder for an extension; <see cref="PhotoCodecs.DecoderFor"/> unless a test stands in for a PC without one.</param>
-    public static PhotoFailure Classify(Exception exception, string path, Stage stage, Func<string, PhotoDecoderInfo?>? decoderFor = null)
+    /// <param name="header">The file's first bytes when they were read, which tell a HEIF or AVIF file by content.</param>
+    public static PhotoFailure Classify(
+        Exception exception, string path, Stage stage, Func<string, PhotoDecoderInfo?>? decoderFor = null, byte[]? header = null)
     {
         var format = KnownPhotoFormats.ForPath(path);
         var hresult = exception.HResult;
@@ -87,25 +98,51 @@ internal static class PhotoFailures
                 _ => ("unknown", SkipReason.Other),
             };
 
-        if (reason == SkipReason.UnsupportedFormat && format?.Extension is not null && NeedsExtension(path, stage, hresult, decoderFor ?? PhotoCodecs.DecoderFor))
-        {
-            reason = SkipReason.NeedsExtension;
-        }
-
+        var missing = reason == SkipReason.UnsupportedFormat
+            ? MissingExtension(path, stage, hresult, format, header, decoderFor ?? PhotoCodecs.DecoderFor)
+            : null;
         var detail = string.Create(
             CultureInfo.InvariantCulture,
             $"{stage}: {name} (0x{hresult:X8}, {exception.GetType().Name}): {exception.Message}");
-        return new PhotoFailure(path, reason, detail, exception, format);
+        if (missing is not null)
+        {
+            detail += $" Missing: {missing.Name} ({missing.StoreProductId}).";
+        }
+
+        return new PhotoFailure(path, missing is null ? reason : SkipReason.NeedsExtension, detail, exception, format, missing);
     }
 
     /// <summary>A failure the decoder found itself, without an exception.</summary>
     public static PhotoFailure Found(string path, SkipReason reason, string detail) =>
         new(path, reason, detail, exception: null, KnownPhotoFormats.ForPath(path));
 
-    // No installed decoder claims the extension (the HEIF or RAW extension is missing), or the one that does is
-    // missing a codec it needs. A format whose decoder is installed but which WIC did not recognize is just unreadable.
-    private static bool NeedsExtension(string path, Stage stage, int hresult, Func<string, PhotoDecoderInfo?> decoderFor) =>
-        decoderFor(Path.GetExtension(path)) is null || (stage == Stage.Decode && _missingComponent.Contains(hresult));
+    // The Store extension whose absence explains an unreadable file, or null when it is just unreadable:
+    // - no installed decoder claims the file's extension: the extension that adds the decoder (HEIF, RAW, WebP,
+    //   JPEG XL), whichever stage;
+    // - a component is missing and the content is HEIF or AVIF (its ftyp brands): the decoder, if it is not
+    //   installed, else the codec (HEVC, AV1), whichever stage and whatever the file's name;
+    // - a component is missing once the decoder took the file (the decode stage): the codec its format needs.
+    // A file whose decoder is installed but that no decoder recognized (text named .heic) stays unreadable.
+    private static PhotoCodecExtension? MissingExtension(
+        string path, Stage stage, int hresult, KnownPhotoFormat? format, byte[]? header, Func<string, PhotoDecoderInfo?> decoderFor)
+    {
+        if (format?.Container is { } container && decoderFor(Path.GetExtension(path)) is null)
+        {
+            return container;
+        }
+
+        if (!_missingComponent.Contains(hresult))
+        {
+            return null;
+        }
+
+        if (KnownPhotoFormats.ByContent(header) is { } content)
+        {
+            return decoderFor(content.Extensions[0]) is null ? content.Container : content.Codec;
+        }
+
+        return stage == Stage.Decode ? format?.Codec : null;
+    }
 
     private static int Code(uint value) => unchecked((int)value);
 }
