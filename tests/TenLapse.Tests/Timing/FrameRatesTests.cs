@@ -9,6 +9,8 @@ public sealed class FrameRatesTests
     [Theory]
     [InlineData("29.97", 30000, 1001)]
     [InlineData("29,97", 30000, 1001)]
+    [InlineData("23,976", 24000, 1001)]
+    [InlineData("59,940", 60000, 1001)]
     [InlineData("29.970", 30000, 1001)]
     [InlineData("59.94", 60000, 1001)]
     [InlineData("23.976", 24000, 1001)]
