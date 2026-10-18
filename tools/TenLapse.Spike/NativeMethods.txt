@@ -1,0 +1,10 @@
+// PDH, to read this process's GPU engine counters (which engine the encode ran on).
+PdhOpenQuery
+PdhAddEnglishCounter
+PdhCollectQueryData
+PdhGetFormattedCounterArray
+PdhCloseQuery
+PDH_FMT_COUNTERVALUE_ITEM_W
+PDH_FMT
+PDH_MORE_DATA
+PDH_CSTATUS_VALID_DATA
