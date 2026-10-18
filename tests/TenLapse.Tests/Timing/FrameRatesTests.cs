@@ -20,7 +20,18 @@ public sealed class FrameRatesTests
     [InlineData("30", 30, 1)]
     [InlineData("50", 50, 1)]
     [InlineData("60", 60, 1)]
-    [InlineData("29.98", 1499, 50)]   // not NTSC: nearest small fraction
+    [InlineData("23.97", 24000, 1001)]
+    [InlineData("11.988", 12000, 1001)]
+    [InlineData("11.99", 12000, 1001)]
+    [InlineData("14.985", 15000, 1001)]
+    [InlineData("14.98", 15000, 1001)]
+    [InlineData("29.98", 30000, 1001)]
+    [InlineData("12", 12, 1)]
+    [InlineData("15", 15, 1)]
+    [InlineData("29.99", 2999, 100)]  // 0.02 from 29.97003: not NTSC, nearest small fraction
+    [InlineData("29.96", 749, 25)]    // 0.01003 from 29.97003: just outside the tolerance
+    [InlineData("23.99", 2399, 100)]
+    [InlineData("24.01", 2401, 100)]
     [InlineData("12.5", 25, 2)]
     [InlineData("0.5", 1, 2)]
     [InlineData("30000/1001", 30000, 1001)]
@@ -29,6 +40,16 @@ public sealed class FrameRatesTests
     {
         Assert.True(FrameRates.TryParse(text, out var rate));
         Assert.Equal(new Fraction(num, den), rate);
+    }
+
+    [Fact]
+    public void TheNtscToleranceNeverCapturesAWholeRate()
+    {
+        for (var whole = 1; whole <= 240; whole++)
+        {
+            Assert.True(FrameRates.TryParse(whole.ToString(System.Globalization.CultureInfo.InvariantCulture), out var rate));
+            Assert.Equal(new Fraction(whole, 1), rate);
+        }
     }
 
     [Theory]

@@ -17,7 +17,7 @@ public static class FrameRates
     public const int MaxDenominator = 10_000;
 
     private static readonly Fraction[] _ntscFamily =
-        [new(24000, 1001), new(30000, 1001), new(48000, 1001), new(60000, 1001), new(120000, 1001)];
+        [new(12000, 1001), new(15000, 1001), new(24000, 1001), new(30000, 1001), new(48000, 1001), new(60000, 1001), new(120000, 1001)];
 
     /// <summary>24000/1001, film on NTSC video (23.976 fps).</summary>
     public static Fraction Ntsc24 { get; } = new(24000, 1001);
@@ -43,9 +43,13 @@ public static class FrameRates
 
     /// <summary>
     /// Parses a frame rate typed by the user (see <see cref="Fraction.TryParse"/>). A decimal
-    /// within 0.005 of an NTSC rate becomes that rate: 29.97 and 29.970 are 30000/1001, 59.94 is
-    /// 60000/1001, 23.976 and 23.98 are 24000/1001 (also 47.95 and 119.88). Anything else is the
-    /// nearest fraction with a denominator up to <see cref="MaxDenominator"/>: 25 is 25, 12.5 is 25/2.
+    /// within 0.01 (inclusive) of an NTSC rate becomes that rate. The family is n * 1000/1001 for
+    /// n = 12, 15, 24, 30, 48, 60 and 120: 11.988, 14.985, 23.976, 29.97003, 47.952, 59.94006 and
+    /// 119.88012 fps. So 23.97, 23.98 and 23.976 are 24000/1001, 29.97 and 29.98 are 30000/1001,
+    /// 59.94 is 60000/1001. The tolerance is narrower than the gap to the whole rates (12, 15, 24,
+    /// 30, ... are at least 0.012 away), so a whole rate is never captured: 24, 25, 30 and 60 stay
+    /// exact and 29.99 is 2999/100. Anything else is the nearest fraction with a denominator up to
+    /// <see cref="MaxDenominator"/>: 12.5 is 25/2.
     /// </summary>
     public static bool TryParse(string? text, out Fraction rate)
     {
@@ -60,10 +64,9 @@ public static class FrameRates
             return true;
         }
 
-        var typed = rate.ToDouble();
         foreach (var ntsc in _ntscFamily)
         {
-            if (Math.Abs(typed - ntsc.ToDouble()) < 0.005)
+            if (IsWithinNtscTolerance(rate, ntsc))
             {
                 rate = ntsc;
                 break;
@@ -71,6 +74,13 @@ public static class FrameRates
         }
 
         return true;
+    }
+
+    /// <summary>Exact test of <c>|typed - ntsc| &lt;= 1/100</c> by cross-multiplication.</summary>
+    private static bool IsWithinNtscTolerance(Fraction typed, Fraction ntsc)
+    {
+        var difference = Int128.Abs(((Int128)typed.Numerator * ntsc.Denominator) - ((Int128)ntsc.Numerator * typed.Denominator));
+        return difference * 100 <= (Int128)typed.Denominator * ntsc.Denominator;
     }
 
     /// <summary>Per-photo mode: <paramref name="secondsPerPhoto"/> seconds for each photo is a rate of 1 / seconds.</summary>
