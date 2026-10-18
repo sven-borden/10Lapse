@@ -81,6 +81,12 @@ internal sealed class FakePreviewSource : IDisposable
     }
 }
 
+/// <summary>Runs a callback when disposed.</summary>
+internal sealed class CallbackResource(Action onDispose) : IDisposable
+{
+    public void Dispose() => onDispose();
+}
+
 /// <summary>Records the order it was disposed in, and can throw.</summary>
 internal sealed class RecordingResource(string name, List<string> log, bool throws = false) : IDisposable
 {

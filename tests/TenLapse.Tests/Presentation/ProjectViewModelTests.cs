@@ -80,6 +80,67 @@ public sealed class ProjectViewModelTests
     }
 
     [Fact]
+    public void AResourceAddedFromAnotherThreadDuringDisposeIsAlwaysDisposed()
+    {
+        for (var round = 0; round < 300; round++)
+        {
+            var errors = new FakeErrorSink();
+            var viewModel = new ProjectViewModel(new Project(), errors);
+            var resources = Enumerable.Range(0, 64).Select(_ => new FakeProxyCache()).ToArray();
+            foreach (var resource in resources[..16])
+            {
+                viewModel.AddResource(resource);
+            }
+
+            using var start = new Barrier(2);
+            Exception? failure = null;
+            var adder = new Thread(() =>
+            {
+                try
+                {
+                    start.SignalAndWait();
+                    foreach (var resource in resources[16..])
+                    {
+                        viewModel.AddResource(resource);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    failure = exception;
+                }
+            });
+            adder.Start();
+            start.SignalAndWait(TestContext.Current.CancellationToken);
+
+            viewModel.Dispose();
+
+            Assert.True(adder.Join(TimeSpan.FromSeconds(10)));
+            Assert.Null(failure);
+            Assert.Empty(errors.Reported);
+            Assert.All(resources, resource => Assert.True(resource.IsDisposed));
+        }
+    }
+
+    [Fact]
+    public void AResourceAddedByAnotherThreadWhileAResourceIsBeingDisposedDoesNotDeadlock()
+    {
+        var viewModel = new ProjectViewModel(new Project(), new FakeErrorSink());
+        var late = new FakeProxyCache();
+        var joined = false;
+        viewModel.AddResource(new CallbackResource(() =>
+        {
+            var thread = new Thread(() => viewModel.AddResource(late));
+            thread.Start();
+            joined = thread.Join(TimeSpan.FromSeconds(10));
+        }));
+
+        viewModel.Dispose();
+
+        Assert.True(joined);
+        Assert.True(late.IsDisposed);
+    }
+
+    [Fact]
     public void ALateResourceThatThrowsIsReportedNotThrown()
     {
         var log = new List<string>();

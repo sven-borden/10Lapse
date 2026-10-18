@@ -13,8 +13,10 @@ namespace TenLapse.Presentation;
 /// </summary>
 public sealed partial class ProjectViewModel : ObservableObject, IDisposable
 {
+    private readonly Lock _gate = new();
     private readonly List<IDisposable> _resources = [];
     private readonly IErrorSink _errors;
+    private bool _disposed;
 
     /// <summary>Wraps <paramref name="model"/> and follows its changes until disposed.</summary>
     /// <param name="model">The project; this view model closes it when disposed.</param>
@@ -57,47 +59,56 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     public bool HasFrames => FrameCount > 0;
 
     /// <summary>True once <c>New project</c> (or the app) has disposed this view model.</summary>
-    public bool IsDisposed { get; private set; }
+    public bool IsDisposed => Volatile.Read(ref _disposed);
 
     /// <summary>
     /// Hands a per-project resource (the preview's frame source, the proxy cache, a running import) to this
     /// project: it is disposed with the project, last registered first. A resource registered after the
-    /// project was disposed (a background build that finished late) is disposed at once.
+    /// project was disposed (a background build that finished late) is disposed at once. Safe on any thread,
+    /// also while <see cref="Dispose"/> runs on another.
     /// </summary>
     public void AddResource(IDisposable resource)
     {
         ArgumentNullException.ThrowIfNull(resource);
-        if (IsDisposed)
+        lock (_gate)
         {
-            DisposeResource(resource);
-            return;
+            if (!_disposed)
+            {
+                _resources.Add(resource);
+                return;
+            }
         }
 
-        _resources.Add(resource);
+        DisposeResource(resource);
     }
 
     /// <summary>
     /// Stops following the model, closes it (it takes no more changes) and disposes every registered resource,
     /// newest first. Never throws: a resource that throws is reported to the error sink and the others are
-    /// still disposed.
+    /// still disposed. The resources are disposed outside the lock, so one that registers another resource
+    /// from any thread while it closes cannot deadlock; that late one is disposed at once.
     /// </summary>
     public void Dispose()
     {
-        if (IsDisposed)
+        IDisposable[] resources;
+        lock (_gate)
         {
-            return;
+            if (_disposed)
+            {
+                return;
+            }
+
+            Volatile.Write(ref _disposed, true);
+            resources = [.. _resources];
+            _resources.Clear();
         }
 
-        IsDisposed = true;
         Model.Changed -= OnModelChanged;
         Model.Close();
-
-        for (var i = _resources.Count - 1; i >= 0; i--)
+        for (var i = resources.Length - 1; i >= 0; i--)
         {
-            DisposeResource(_resources[i]);
+            DisposeResource(resources[i]);
         }
-
-        _resources.Clear();
     }
 
     private void DisposeResource(IDisposable resource)
