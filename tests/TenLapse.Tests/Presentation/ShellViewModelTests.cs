@@ -56,8 +56,10 @@ public sealed class ShellViewModelTests
         Assert.Null(failure);
         Assert.Equal(["filmstrip", "player", "inspector"], ran);
         Assert.True(old.IsDisposed);
-        Assert.Equal(["filmstrip", "inspector"], errors.Reported.Select(report => report.Exception.Message));
-        Assert.All(errors.Reported, report => Assert.Equal(ProjectText.SwitchingViewFailed, report.Context));
+        // A view that did not switch is something the user should know about: shown, not only logged.
+        Assert.Empty(errors.Reported);
+        Assert.Equal(["filmstrip", "inspector"], errors.Shown.Select(report => report.Exception.Message));
+        Assert.All(errors.Shown, report => Assert.Equal(ProjectText.SwitchingViewFailed, report.Context));
         Assert.Equal([true, true], disposedAtReport);
     }
 
@@ -375,9 +377,14 @@ public sealed class ShellViewModelTests
     public async Task TheFactoryMustReturnANewEmptyProject()
     {
         var shared = new Project();
-        var shell = Shell(new FakeDialogService(), () => shared);
+        var errors = new FakeErrorSink();
+        var shell = Shell(new FakeDialogService(), () => shared, errors);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => shell.NewProjectCommand.ExecuteAsync(null));
+        // The command goes through the error path: the failure is shown, not thrown, and nothing was replaced.
+        await shell.NewProjectCommand.ExecuteAsync(null);
+        var shown = Assert.Single(errors.Shown);
+        Assert.IsType<InvalidOperationException>(shown.Exception);
+        Assert.Equal(ProjectText.NewProjectFailed, shown.Context);
         Assert.Same(shared, shell.CurrentProject.Model);
 
         var used = new Project();

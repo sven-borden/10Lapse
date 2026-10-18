@@ -28,6 +28,14 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!--
+    The tests cannot reference the App exe (docs/STATUS.md, Decisions). The export failure sentences live in an App
+    file that needs only Media and Presentation, so it is compiled in here to be tested.
+  -->
+  <ItemGroup>
+    <Compile Include="..\..\src\TenLapse.App\Services\VideoExportErrorMapper.cs" Link="Linked\VideoExportErrorMapper.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\TenLapse.Core\TenLapse.Core.csproj" />
     <ProjectReference Include="..\..\src\TenLapse.Media\TenLapse.Media.csproj" />

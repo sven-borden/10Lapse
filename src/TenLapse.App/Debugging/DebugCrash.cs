@@ -38,7 +38,9 @@ internal static partial class DebugLaunch
                 });
                 break;
             case "ui":
-                dispatcher.TryEnqueue(() => throw new InvalidOperationException("Debug --crash=ui: a UI thread callback threw."));
+                // The way an async void method's exception comes back: posted to the UI thread's synchronization context.
+                dispatcher.TryEnqueue(() => SynchronizationContext.Current!.Post(
+                    _ => throw new InvalidOperationException("Debug --crash=ui: an exception posted to the UI thread."), null));
                 break;
             case "unhandled":
                 new Thread(() => throw new InvalidOperationException("Debug --crash=unhandled: a background thread threw.")) { IsBackground = true }.Start();
