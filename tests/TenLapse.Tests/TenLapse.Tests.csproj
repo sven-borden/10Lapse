@@ -31,5 +31,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\TenLapse.Core\TenLapse.Core.csproj" />
     <ProjectReference Include="..\..\src\TenLapse.Media\TenLapse.Media.csproj" />
+    <ProjectReference Include="..\..\src\TenLapse.Presentation\TenLapse.Presentation.csproj" />
   </ItemGroup>
 </Project>
