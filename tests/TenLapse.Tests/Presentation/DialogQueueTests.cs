@@ -16,8 +16,9 @@ public sealed class DialogQueueTests
         var first = queue.RunAsync(Free, () => Show("first", firstAnswer));
         var second = queue.RunAsync(Free, () =>
         {
+            var answer = Show("second", secondAnswer);
             secondShown.SetResult();
-            return Show("second", secondAnswer);
+            return answer;
         });
 
         Assert.Equal(["first"], shown);
