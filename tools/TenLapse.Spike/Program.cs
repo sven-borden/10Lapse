@@ -29,6 +29,11 @@ try
         "generate" => await GenerateAsync(options),
         "encode" => await EncodeAsync(options),
         "inspect" => Inspect(options),
+        "decode-bench" => await DecodeBench.RunAsync(
+            options.Positional ?? throw new ArgumentException("decode-bench needs a photo."),
+            options.Int("runs", 5),
+            options.Size("output-size", (3840, 2160)).Width,
+            options.Size("output-size", (3840, 2160)).Height),
         "probe" => await ProbeReport.RunAsync(options.Text("cache", Path.Combine(Path.GetTempPath(), "10lapse-encoders.json")), options.Flag("fresh"), options.Flag("software")),
         _ => Help(),
     };

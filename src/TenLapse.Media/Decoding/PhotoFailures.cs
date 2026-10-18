@@ -71,7 +71,8 @@ internal static class PhotoFailures
         [Code(0x88982F50), Code(0x80040154), Code(0xC00D5212)];
 
     /// <summary>The failure for an exception thrown at <paramref name="stage"/>.</summary>
-    public static PhotoFailure Classify(Exception exception, string path, Stage stage)
+    /// <param name="decoderFor">The installed decoder for an extension; <see cref="PhotoCodecs.DecoderFor"/> unless a test stands in for a PC without one.</param>
+    public static PhotoFailure Classify(Exception exception, string path, Stage stage, Func<string, PhotoDecoderInfo?>? decoderFor = null)
     {
         var format = KnownPhotoFormats.ForPath(path);
         var hresult = exception.HResult;
@@ -86,7 +87,7 @@ internal static class PhotoFailures
                 _ => ("unknown", SkipReason.Other),
             };
 
-        if (reason == SkipReason.UnsupportedFormat && format?.Extension is not null && NeedsExtension(path, stage, hresult))
+        if (reason == SkipReason.UnsupportedFormat && format?.Extension is not null && NeedsExtension(path, stage, hresult, decoderFor ?? PhotoCodecs.DecoderFor))
         {
             reason = SkipReason.NeedsExtension;
         }
@@ -103,8 +104,8 @@ internal static class PhotoFailures
 
     // No installed decoder claims the extension (the HEIF or RAW extension is missing), or the one that does is
     // missing a codec it needs. A format whose decoder is installed but which WIC did not recognize is just unreadable.
-    private static bool NeedsExtension(string path, Stage stage, int hresult) =>
-        PhotoCodecs.DecoderFor(Path.GetExtension(path)) is null || (stage == Stage.Decode && _missingComponent.Contains(hresult));
+    private static bool NeedsExtension(string path, Stage stage, int hresult, Func<string, PhotoDecoderInfo?> decoderFor) =>
+        decoderFor(Path.GetExtension(path)) is null || (stage == Stage.Decode && _missingComponent.Contains(hresult));
 
     private static int Code(uint value) => unchecked((int)value);
 }

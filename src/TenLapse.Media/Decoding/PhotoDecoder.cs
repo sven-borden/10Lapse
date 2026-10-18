@@ -1,5 +1,6 @@
 using TenLapse.Core.Projects;
 using Windows.Graphics.Imaging;
+using Windows.Storage;
 using Windows.Storage.Streams;
 
 namespace TenLapse.Media.Decoding;
@@ -89,16 +90,16 @@ public static class PhotoDecoder
     public static async Task<PhotoResult<PhotoInfo>> ReadInfoAsync(string path, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(path);
+        cancellationToken.ThrowIfCancellationRequested();
         var stage = PhotoFailures.Stage.Open;
         try
         {
-            using var file = Open(path, out var empty);
-            if (empty is not null)
+            using var stream = await OpenAsync(path, cancellationToken).ConfigureAwait(false);
+            if (stream.Size == 0)
             {
-                return PhotoResult<PhotoInfo>.Failed(empty);
+                return PhotoResult<PhotoInfo>.Failed(Empty(path));
             }
 
-            using var stream = file!.AsRandomAccessStream();
             var decoder = await BitmapDecoder.CreateAsync(stream).AsTask(cancellationToken).ConfigureAwait(false);
             stage = PhotoFailures.Stage.Decode;
             return await ReadInfoAsync(path, decoder, cancellationToken).ConfigureAwait(false);
@@ -118,16 +119,16 @@ public static class PhotoDecoder
     {
         ArgumentNullException.ThrowIfNull(path);
         options ??= PhotoDecodeOptions.FullSize;
+        cancellationToken.ThrowIfCancellationRequested();
         var stage = PhotoFailures.Stage.Open;
         try
         {
-            using var file = Open(path, out var empty);
-            if (empty is not null)
+            using var stream = await OpenAsync(path, cancellationToken).ConfigureAwait(false);
+            if (stream.Size == 0)
             {
-                return PhotoResult<DecodedPhoto>.Failed(empty);
+                return PhotoResult<DecodedPhoto>.Failed(Empty(path));
             }
 
-            using var stream = file!.AsRandomAccessStream();
             var decoder = await BitmapDecoder.CreateAsync(stream).AsTask(cancellationToken).ConfigureAwait(false);
             stage = PhotoFailures.Stage.Decode;
             var read = await ReadInfoAsync(path, decoder, cancellationToken).ConfigureAwait(false);
@@ -149,6 +150,8 @@ public static class PhotoDecoder
             }
 
             // Scaling happens before the EXIF rotation, so the scaled size is in stored orientation.
+            // A WinRT operation that has already completed ignores the token, so check it before the long part.
+            cancellationToken.ThrowIfCancellationRequested();
             var transform = new BitmapTransform { InterpolationMode = BitmapInterpolationMode.Fant };
             if (scale < 1)
             {
@@ -164,6 +167,15 @@ public static class PhotoDecoder
                     ColorManagementMode.ColorManageToSRgb)
                 .AsTask(cancellationToken)
                 .ConfigureAwait(false);
+            if (info.Decoder.CodecId == BitmapDecoder.JpegDecoderId && !JpegStructure.EndsCompletely(path))
+            {
+                pixels.Dispose();
+                return PhotoResult<DecodedPhoto>.Failed(PhotoFailures.Found(
+                    path,
+                    SkipReason.Truncated,
+                    "Decode: the JPEG data ends before its end-of-image marker (the decoder filled the rest with gray)."));
+            }
+
             return PhotoResult<DecodedPhoto>.Success(new DecodedPhoto(pixels, info));
         }
         catch (Exception exception) when (!IsCancellation(exception, cancellationToken))
@@ -233,29 +245,41 @@ public static class PhotoDecoder
         }
     }
 
-    // Read-only, sharing everything: other programs keep the file open, write, rename or delete it meanwhile.
-    private static FileStream? Open(string path, out PhotoFailure? empty)
+    /// <summary>
+    /// Opens the file read-only, sharing it: other programs keep it open, write, rename or delete it meanwhile.
+    /// </summary>
+    /// <remarks>
+    /// Windows' own file stream first: through it a 24 MP JPEG decodes in about 115 ms, through .NET's adapter over
+    /// a <see cref="FileStream"/> in about 205 ms (every read becomes an async WinRT call). It refuses paths past
+    /// MAX_PATH even with the <c>\\?\</c> prefix, and says "access denied" for a file another program has locked,
+    /// so both cases go to the <see cref="FileStream"/>, which opens long paths and names a lock as a sharing
+    /// violation (or throws the real access error, which is then classified).
+    /// </remarks>
+    private static async Task<IRandomAccessStream> OpenAsync(string path, CancellationToken cancellationToken)
     {
-        var file = new FileStream(
-            path,
-            new FileStreamOptions
-            {
-                Mode = FileMode.Open,
-                Access = FileAccess.Read,
-                Share = FileShare.ReadWrite | FileShare.Delete,
-                Options = FileOptions.RandomAccess,
-                BufferSize = 64 * 1024,
-            });
-        if (file.Length == 0)
+        try
         {
-            file.Dispose();
-            empty = PhotoFailures.Found(path, SkipReason.EmptyFile, "Open: the file has 0 bytes.");
-            return null;
+            return await FileRandomAccessStream.OpenAsync(path, FileAccessMode.Read, StorageOpenOptions.AllowReadersAndWriters, FileOpenDisposition.OpenExisting)
+                .AsTask(cancellationToken)
+                .ConfigureAwait(false);
         }
-
-        empty = null;
-        return file;
+        catch (Exception exception) when (exception is PathTooLongException or UnauthorizedAccessException)
+        {
+            var file = new FileStream(
+                path,
+                new FileStreamOptions
+                {
+                    Mode = FileMode.Open,
+                    Access = FileAccess.Read,
+                    Share = FileShare.ReadWrite | FileShare.Delete,
+                    Options = FileOptions.RandomAccess,
+                    BufferSize = 64 * 1024,
+                });
+            return file.AsRandomAccessStream();
+        }
     }
+
+    private static PhotoFailure Empty(string path) => PhotoFailures.Found(path, SkipReason.EmptyFile, "Open: the file has 0 bytes.");
 
     private static bool IsCancellation(Exception exception, CancellationToken cancellationToken) =>
         exception is OperationCanceledException && cancellationToken.IsCancellationRequested;
