@@ -214,7 +214,7 @@ public static class VideoExporter
             }
             catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
             {
-                throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed, setup: true);
+                throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed, _settings.Format, setup: true);
             }
 
             var complete = false;
@@ -235,7 +235,7 @@ public static class VideoExporter
                         }
                         catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
                         {
-                            throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed);
+                            throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed, _settings.Format);
                         }
 
                         FrameTaken(frame.Target);
@@ -254,7 +254,7 @@ public static class VideoExporter
                 }
                 catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
                 {
-                    throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed);
+                    throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed, _settings.Format);
                 }
 
                 complete = true;
@@ -323,7 +323,7 @@ public static class VideoExporter
                             if (!await _slots.WaitAsync(EncoderStallTimeout, _stop.Token).ConfigureAwait(false))
                             {
                                 throw new VideoExportException(
-                                    $"The encoder has not taken a frame for {EncoderStallTimeout.TotalSeconds:0} s.",
+                                    $"{ExportFailures.Summary(VideoExportFailure.EncoderStalled, _settings.Format)}: it has not taken a frame for {EncoderStallTimeout.TotalSeconds:0} s.",
                                     VideoExportFailure.EncoderStalled);
                             }
 
@@ -368,7 +368,7 @@ public static class VideoExporter
             catch (Exception exception) when (ExportFailures.ShouldClassify(exception) && ExportFailures.FromHResult(exception.HResult) is { } failure)
             {
                 // A driver reset or out of video memory while drawing; anything else surfaces as it is (#22 adds frame context).
-                throw ExportFailures.Classify(exception, failure);
+                throw ExportFailures.Classify(exception, failure, _settings.Format);
             }
         }
 

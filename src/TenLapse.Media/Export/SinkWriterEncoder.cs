@@ -1,5 +1,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.Graphics.Canvas;
+using TenLapse.Core.Projects;
+using TenLapse.Core.Timing;
 using TenLapse.Media.Inspection;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -10,7 +12,7 @@ namespace TenLapse.Media.Export;
 
 /// <summary>
 /// The encode stage on <c>IMFSinkWriter</c>: Direct3D 11 surface samples in,
-/// H.264 MP4 out, with the export's own device handed to Media Foundation
+/// H.264 or HEVC MP4 out, with the export's own device handed to Media Foundation
 /// through an <c>IMFDXGIDeviceManager</c>, so the colour converter and the
 /// hardware encoder work on the textures Win2D drew, on the same device.
 /// </summary>
@@ -21,6 +23,8 @@ namespace TenLapse.Media.Export;
 /// </remarks>
 internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
 {
+    private static readonly Fraction _oneFps = new(1, 1);
+
     private readonly MediaFoundationSession _session = new();
     private readonly IMFDXGIDeviceManager _manager;
     private readonly IMFSinkWriter _writer;
@@ -28,6 +32,8 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
     private readonly string _path;
     private readonly int _width;
     private readonly int _height;
+    private readonly VideoFormat _format;
+    private readonly Fraction _nominalRate;
     private bool _disposed;
 
     /// <param name="lowLatency">
@@ -39,6 +45,8 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
         _path = path;
         _width = settings.Width;
         _height = settings.Height;
+        _format = settings.Format;
+        _nominalRate = NominalFrameRate(settings.Format, settings.FrameRate);
         try
         {
             PInvoke.MFCreateDXGIDeviceManager(out var token, out _manager).ThrowOnFailure();
@@ -62,11 +70,14 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
                 Marshal.ReleaseComObject(attributes);
             }
 
-            var output = VideoType(settings, PInvoke.MFVideoFormat_H264);
+            var hevc = settings.Format == VideoFormat.Mp4Hevc;
+            var output = VideoType(settings, hevc ? PInvoke.MFVideoFormat_HEVC : PInvoke.MFVideoFormat_H264);
             try
             {
-                output.SetUINT32(PInvoke.MF_MT_AVG_BITRATE, settings.EffectiveBitrate);
-                output.SetUINT32(PInvoke.MF_MT_MPEG2_PROFILE, (uint)eAVEncH264VProfile.eAVEncH264VProfile_High);
+                output.SetUINT32(PInvoke.MF_MT_AVG_BITRATE, NominalBitrate(settings.EffectiveBitrate, settings.FrameRate, _nominalRate));
+                output.SetUINT32(
+                    PInvoke.MF_MT_MPEG2_PROFILE,
+                    hevc ? (uint)eAVEncH265VProfile.eAVEncH265VProfile_Main_420_8 : (uint)eAVEncH264VProfile.eAVEncH264VProfile_High);
                 var (matrix, primaries) = ColourFor(settings.Height);
                 SetColour(output, primaries, MFNominalRange.MFNominalRange_16_235);
                 output.SetUINT32(PInvoke.MF_MT_YUV_MATRIX, (uint)matrix);
@@ -93,6 +104,11 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
             if (lowLatency)
             {
                 DisableBFrames();
+            }
+
+            if (_nominalRate != settings.FrameRate)
+            {
+                DisableFrameRateConversion();
             }
 
             _writer.BeginWriting();
@@ -152,20 +168,20 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
     public void Finish()
     {
         _writer.Finalize();
-        CheckStartsAtZero(_path);
+        CheckStartsAtZero(_path, _format);
     }
 
     /// <summary>
     /// Fails loudly when the first sample is not at 0: the MP4 sink writes no edit list, so a composition offset
     /// (B-frames, or an encoder that ignores low latency) makes the whole clip start late in every player.
     /// </summary>
-    internal static void CheckStartsAtZero(string path)
+    internal static void CheckStartsAtZero(string path, VideoFormat format = VideoFormat.Mp4H264)
     {
         var first = VideoFileReader.FirstSampleTime(path);
         if (first is not 0)
         {
             throw new VideoExportException(
-                $"The H.264 encoder wrote a video whose first frame is at {(first is { } ticks ? $"{ticks} ticks" : "no time at all")} instead of 0.",
+                $"The {Encoding.EncoderText.CodecName(format)} encoder wrote a video whose first frame is at {(first is { } ticks ? $"{ticks} ticks" : "no time at all")} instead of 0.",
                 VideoExportFailure.EncoderFailed);
         }
     }
@@ -229,6 +245,70 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
     }
 
     /// <summary>
+    /// Stops the video processor the sink writer puts before the encoder (colour conversion) from converting the
+    /// frame rate. With a nominal rate in the types (<see cref="NominalFrameRate"/>) it would otherwise repeat
+    /// frames to fill the nominal cadence: at 1/2 fps with a 1 fps type, each frame came out twice, one second
+    /// each. With conversion off every sample keeps its own time and duration.
+    /// </summary>
+    /// <exception cref="VideoExportException">
+    /// There is no video processor to tell, or it refuses (<see cref="VideoExportFailure.SettingsRejected"/>): the
+    /// file would not keep the real timing.
+    /// </exception>
+    private void DisableFrameRateConversion()
+    {
+        if (_writer is not IMFSinkWriterEx writer)
+        {
+            throw new VideoExportException(
+                $"The sink writer cannot reach its video processor, so it cannot write {Encoding.EncoderText.CodecName(_format)} below 1 fps.",
+                VideoExportFailure.SettingsRejected);
+        }
+
+        var disabled = false;
+        for (uint index = 0; ; index++)
+        {
+            IMFTransform transform;
+            Guid category;
+            try
+            {
+                writer.GetTransformForStream(_stream, index, &category, out transform);
+            }
+            catch (COMException)
+            {
+                // MF_E_INVALIDINDEX: no more transforms on this stream.
+                break;
+            }
+
+            try
+            {
+                if (category == PInvoke.MFT_CATEGORY_VIDEO_PROCESSOR)
+                {
+                    transform.GetAttributes(out var attributes);
+                    try
+                    {
+                        attributes.SetUINT32(PInvoke.MF_XVP_DISABLE_FRC, 1);
+                        disabled = true;
+                    }
+                    finally
+                    {
+                        Release(attributes);
+                    }
+                }
+            }
+            finally
+            {
+                Release(transform);
+            }
+        }
+
+        if (!disabled)
+        {
+            throw new VideoExportException(
+                $"The sink writer has no video processor whose frame rate conversion can be turned off, so it cannot write {Encoding.EncoderText.CodecName(_format)} below 1 fps.",
+                VideoExportFailure.SettingsRejected);
+        }
+    }
+
+    /// <summary>
     /// The colour tags of the output. The matrix is the one the sink writer's colour converter uses: BT.601 up to
     /// 576 lines, BT.709 above, whatever the width (measured 2026-10 on an RTX 4060 Ti: 1920x540 and 1024x576 are
     /// BT.601, 1024x578 and 360x640 BT.709; the software encoder agrees at 640x360 and 1280x720, since the converter
@@ -259,7 +339,7 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
         type.SetGUID(PInvoke.MF_MT_MAJOR_TYPE, PInvoke.MFMediaType_Video);
         type.SetGUID(PInvoke.MF_MT_SUBTYPE, subtype);
         type.SetUINT64(PInvoke.MF_MT_FRAME_SIZE, Pack((uint)_width, (uint)_height));
-        type.SetUINT64(PInvoke.MF_MT_FRAME_RATE, Pack((uint)settings.FrameRate.Numerator, (uint)settings.FrameRate.Denominator));
+        type.SetUINT64(PInvoke.MF_MT_FRAME_RATE, Pack((uint)_nominalRate.Numerator, (uint)_nominalRate.Denominator));
         type.SetUINT64(PInvoke.MF_MT_PIXEL_ASPECT_RATIO, Pack(1, 1));
         type.SetUINT32(PInvoke.MF_MT_INTERLACE_MODE, (uint)MFVideoInterlaceMode.MFVideoInterlace_Progressive);
         return type;
@@ -298,7 +378,7 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
                 {
                     var isHardware = HasString(attributes, PInvoke.MFT_ENUM_HARDWARE_URL_Attribute);
                     var name = ReadString(attributes, PInvoke.MFT_FRIENDLY_NAME_Attribute)
-                        ?? (isHardware ? "(unnamed hardware encoder)" : "Microsoft H.264 software encoder");
+                        ?? (isHardware ? "(unnamed hardware encoder)" : SoftwareEncoderName);
                     return new VideoEncoderInfo(name, isHardware);
                 }
                 finally
@@ -309,7 +389,7 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
             catch (COMException)
             {
                 // Software MFTs may have no attribute store at all.
-                return new VideoEncoderInfo("Microsoft H.264 software encoder", false);
+                return new VideoEncoderInfo(SoftwareEncoderName, false);
             }
             finally
             {
@@ -317,6 +397,8 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
             }
         }
     }
+
+    private string SoftwareEncoderName => $"Microsoft {Encoding.EncoderText.CodecName(_format)} software encoder";
 
     private static bool HasString(IMFAttributes attributes, Guid key)
     {
@@ -362,6 +444,36 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
             // The setup failure is what the caller needs.
         }
     }
+
+    /// <summary>
+    /// The frame rate the media types carry: the real one, except HEVC below 1 fps, which gets the smallest whole
+    /// multiple of it that is at least 1 fps (1/10 says 1, 3/10 says 6/5). The HEVC Video Extensions' software
+    /// encoder kills the process with an access violation (not an exception: nothing can catch it) when its type
+    /// says less than 1 fps (seen at 1/2, 1/5 and 1/10 on 2.5.33.0), and the sink writer can fall back to that
+    /// encoder by itself. The rate in the type is only nominal: every sample carries its own time and duration from
+    /// <see cref="FrameTiming"/>, and the MP4 sink writes those. A whole multiple keeps them exact, because the sink
+    /// picks its timescale from the type's rate (1000 × the numerator): 1 fps would give milliseconds, which cannot
+    /// hold the 10/3 s frames of 3/10 fps.
+    /// </summary>
+    internal static Fraction NominalFrameRate(VideoFormat format, Fraction frameRate)
+    {
+        if (format != VideoFormat.Mp4Hevc || frameRate >= _oneFps)
+        {
+            return frameRate;
+        }
+
+        var multiple = (frameRate.Denominator + frameRate.Numerator - 1) / frameRate.Numerator;
+        return new Fraction((long)frameRate.Numerator * multiple, frameRate.Denominator);
+    }
+
+    /// <summary>
+    /// The bitrate for the media type: scaled with the nominal rate, so that each frame gets the bits the real rate
+    /// gives it (the encoder budgets bitrate ÷ frame rate per frame).
+    /// </summary>
+    internal static uint NominalBitrate(uint bitrate, Fraction frameRate, Fraction nominalRate) =>
+        nominalRate == frameRate
+            ? bitrate
+            : (uint)Math.Min(uint.MaxValue, Math.Round(bitrate * nominalRate.ToDouble() / frameRate.ToDouble()));
 
     private static ulong Pack(uint high, uint low) => ((ulong)high << 32) | low;
 

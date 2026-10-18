@@ -1,9 +1,12 @@
+using TenLapse.Core.Projects;
+using TenLapse.Media.Encoding;
+
 namespace TenLapse.Media.Export;
 
 /// <summary>Why an export failed, in categories the app turns into a sentence that says what to do (#22).</summary>
 public enum VideoExportFailure
 {
-    /// <summary>No H.264 encoder could be loaded.</summary>
+    /// <summary>No encoder for the codec (H.264 or HEVC) could be loaded.</summary>
     EncoderUnavailable,
 
     /// <summary>The encoder refused the size, frame rate or bitrate.</summary>
@@ -116,19 +119,24 @@ internal static class ExportFailures
     };
 
     /// <summary>Wraps a native failure in the category its HRESULT names, or in <paramref name="fallback"/>.</summary>
-    public static VideoExportException Classify(Exception exception, VideoExportFailure fallback, bool setup = false) =>
-        Wrap(exception, FromHResult(exception.HResult, setup) ?? fallback);
+    /// <param name="format">The codec being written, which the message names.</param>
+    public static VideoExportException Classify(Exception exception, VideoExportFailure fallback, VideoFormat format, bool setup = false) =>
+        Wrap(exception, FromHResult(exception.HResult, setup) ?? fallback, format);
 
     /// <summary>Wraps <paramref name="exception"/> as <paramref name="failure"/>, keeping it as the inner exception.</summary>
-    public static VideoExportException Wrap(Exception exception, VideoExportFailure failure) =>
-        new($"{Summary(failure)}: {exception.Message}", failure, exception);
+    /// <param name="format">The codec being written, which the message names.</param>
+    public static VideoExportException Wrap(Exception exception, VideoExportFailure failure, VideoFormat format) =>
+        new($"{Summary(failure, format)}: {exception.Message}", failure, exception);
 
-    /// <summary>A plain English summary for logs and tests; the app words its own sentences from <see cref="VideoExportFailure"/>.</summary>
-    public static string Summary(VideoExportFailure failure) => failure switch
+    /// <summary>
+    /// A plain English summary for logs and tests, naming the codec (H.264 or HEVC) where the failure is the
+    /// encoder's; the app words its own sentences from <see cref="VideoExportFailure"/>.
+    /// </summary>
+    public static string Summary(VideoExportFailure failure, VideoFormat format) => failure switch
     {
-        VideoExportFailure.EncoderUnavailable => "No H.264 encoder could be loaded",
-        VideoExportFailure.SettingsRejected => "The H.264 encoder refused these settings",
-        VideoExportFailure.EncoderStalled => "The H.264 encoder stopped taking frames",
+        VideoExportFailure.EncoderUnavailable => $"No {EncoderText.CodecName(format)} encoder could be loaded",
+        VideoExportFailure.SettingsRejected => $"The {EncoderText.CodecName(format)} encoder refused these settings",
+        VideoExportFailure.EncoderStalled => $"The {EncoderText.CodecName(format)} encoder stopped taking frames",
         VideoExportFailure.OutputFolderNotWritable => "The output folder cannot be written to",
         VideoExportFailure.OutputFileInUse => "Another app has the output file open",
         VideoExportFailure.OutputFolderMissing => "The output folder does not exist",
@@ -136,6 +144,6 @@ internal static class ExportFailures
         VideoExportFailure.NoGraphicsDevice => "No graphics device can run the export",
         VideoExportFailure.GraphicsDeviceLost => "The graphics driver reset during the export",
         VideoExportFailure.OutOfMemory => "There is not enough memory for the export",
-        _ => "The H.264 encoder failed",
+        _ => $"The {EncoderText.CodecName(format)} encoder failed",
     };
 }
