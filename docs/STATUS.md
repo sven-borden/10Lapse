@@ -148,7 +148,7 @@ own waves once 3.0 ships.
   `DispatcherQueue` callback goes through `TryEnqueueGuarded` (a throwing raw
   callback kills the process). `OperationCanceledException` is silent only
   when the command's own token was cancelled. Log: one file per process per
-  day in `LocalState\Logs` (packaged) or `%LOCALAPPDATA%Lapse\Logs`, 7 days,
+  day in `LocalState\Logs` (packaged) or `%LOCALAPPDATA%\10Lapse\Logs`, 7 days,
   repeats collapsed, a reserve for Critical lines. *Copy diagnostics* redacts
   the profile path and user name. PRIVACY.md says the log may include file
   and folder names. Settings is a full page (Back, Escape, Alt+Left, mouse
