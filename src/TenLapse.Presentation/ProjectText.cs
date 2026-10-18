@@ -191,6 +191,9 @@ public static class ProjectText
     /// <summary>Error context: the main window could not be created at startup.</summary>
     public static string StartupWindowFailed => "The main window could not be created.";
 
+    /// <summary>Error context: the app's resources (App.xaml) could not be loaded at startup.</summary>
+    public static string StartupResourcesFailed => "The app's resources (App.xaml) could not be loaded.";
+
     /// <summary>Error context: the error path itself failed while showing an error.</summary>
     public static string ShowingErrorFailed => "An error could not be shown to the user.";
 

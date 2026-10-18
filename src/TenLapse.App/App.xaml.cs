@@ -29,7 +29,22 @@ public partial class App : Application
         UnhandledException += OnUnhandledException;
 
         _log.Info($"10Lapse {AppDiagnostics.AppVersion()} starting ({(AppEnvironment.HasPackageIdentity ? "packaged" : "unpackaged")}); log in {_log.Folder}.");
-        InitializeComponent();
+
+        // App.xaml (the token dictionaries, the styles) that fails to load would escape the constructor with no
+        // message and maybe no log: as in OnLaunched, log it, say so in a plain message box and close. The process
+        // ends here, because Application.Exit would still run OnLaunched against the broken resources.
+        try
+        {
+            InitializeComponent();
+        }
+        catch (Exception exception)
+        {
+            _log.Critical(ProjectText.StartupResourcesFailed, exception);
+            StartupFailure.Show(_log.Folder);
+            _log.Dispose();
+            Environment.Exit(StartupFailure.ExitCode);
+        }
+
 #if DEBUG
         Gallery.GalleryLaunch.ApplyTheme(this);
 #endif

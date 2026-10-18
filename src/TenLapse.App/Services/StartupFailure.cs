@@ -11,6 +11,9 @@ namespace TenLapse.Services;
 /// </summary>
 internal static class StartupFailure
 {
+    /// <summary>The process exit code after a startup failure.</summary>
+    public const int ExitCode = 1;
+
     private const uint MbOk = 0x0;
     private const uint MbIconError = 0x10;
 
