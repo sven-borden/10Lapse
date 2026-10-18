@@ -75,8 +75,10 @@ public sealed class NaturalNameComparer : IComparer<string?>
             return 1;
         }
 
-        var left = new Cursor(x);
-        var right = new Cursor(y);
+        // Explorer sorts a name with a combining mark (macOS writes é as e + U+0301) like the precomposed letter.
+        // Already-composed text, ASCII included, is returned as it is, so this costs next to nothing.
+        var left = new Cursor(Composed(x));
+        var right = new Cursor(Composed(y));
         var accentTie = 0;
         while (true)
         {
@@ -115,6 +117,9 @@ public sealed class NaturalNameComparer : IComparer<string?>
 
         return CompareSpecials(left.Specials, right.Specials);
     }
+
+    private static string Composed(string text) =>
+        text.IsNormalized(NormalizationForm.FormC) ? text : text.Normalize(NormalizationForm.FormC);
 
     // The entries are (position among the real tokens, weight). The earlier a hyphen, the later the name; at the
     // same place an apostrophe sorts before a hyphen; the name with more of them is last.

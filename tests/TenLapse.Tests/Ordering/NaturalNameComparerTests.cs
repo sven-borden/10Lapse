@@ -212,4 +212,61 @@ public static class NaturalNameComparerTests
             }
         }
     }
+
+    // Names as macOS and some cloud tools write them: the accent is a separate combining mark (NFD). Explorer sorts
+    // such a name like the same name typed with the precomposed letter (NFC), so the comparer must too.
+    private static string[] AccentedNames() =>
+    [
+        "e.jpg", "f.jpg", "ea.jpg", "eb.jpg",
+        $"{(char)0xE9}.jpg", $"{(char)0xE9}a.jpg", $"{(char)0xE9}b.jpg", // e acute
+        $"M{(char)0xFC}ller 2.jpg", $"M{(char)0xFC}ller 10.jpg", "Muller 3.jpg", // u diaeresis
+        $"{(char)0xC5}ke 1.jpg", "Ake 2.jpg", // A ring
+        $"Zo{(char)0xEB}.jpg", $"Z{(char)0xF4}ne 5.png", // e diaeresis, o circumflex
+        $"{(char)0x00C9}t{(char)0xE9} 04.jpg", $"{(char)0x00C9}t{(char)0xE9} 4.jpg", // Ete
+        $"na{(char)0xEF}ve_{(char)0xF1}.jpg", // i diaeresis, n tilde
+        $"{(char)0x0161}tor 1.jpg", $"{(char)0x010D}a 2.jpg", $"{(char)0x0105}b.jpg", // s caron, c caron, a ogonek
+    ];
+
+    [Fact]
+    public static void DecomposedAccentsOrderLikePrecomposedOnes()
+    {
+        foreach (var name in AccentedNames())
+        {
+            var nfc = name.Normalize(System.Text.NormalizationForm.FormC);
+            var nfd = name.Normalize(System.Text.NormalizationForm.FormD);
+            Assert.Equal(0, Managed(nfc, nfd));
+            Assert.Equal(Windows(nfc, nfd), Managed(nfc, nfd));
+        }
+    }
+
+    [Fact]
+    public static void DecomposedAndPrecomposedNamesAgreeWithExplorerInEveryPairing()
+    {
+        var forms = new List<string>();
+        foreach (var name in AccentedNames())
+        {
+            forms.Add(name.Normalize(System.Text.NormalizationForm.FormC));
+            forms.Add(name.Normalize(System.Text.NormalizationForm.FormD));
+        }
+
+        foreach (var left in forms)
+        {
+            foreach (var right in forms)
+            {
+                AssertParity(left, right);
+            }
+        }
+    }
+
+    [Fact]
+    public static void AMixedFolderOfNfcAndNfdNamesSortsAsExplorerDoes()
+    {
+        var names = AccentedNames()
+            .Select((name, i) => i % 2 == 0 ? name.Normalize(System.Text.NormalizationForm.FormD) : name.Normalize(System.Text.NormalizationForm.FormC))
+            .ToArray();
+
+        Assert.Equal(
+            names.Order(Comparer<string>.Create(StrCmpLogicalW)).ToArray(),
+            names.Order(NaturalNameComparer.Instance).ToArray());
+    }
 }
