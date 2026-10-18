@@ -131,8 +131,9 @@
           <StackPanel Spacing="{StaticResource SpacingMd}">
             <TextBlock Style="{StaticResource SubtitleTextStyle}" Text="Controls with brand overrides" />
             <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingMd}">
-              <Button Style="{StaticResource AccentButtonStyle}" Height="{StaticResource ControlHeight}" Content="Export video" />
-              <Button Style="{StaticResource AccentButtonStyle}" Height="{StaticResource ControlHeight}" Content="Export video" IsEnabled="False" />
+              <Button Style="{StaticResource ExportButtonStyle}" Height="{StaticResource ControlHeight}" Content="Export video" />
+              <Button Style="{StaticResource ExportButtonStyle}" Height="{StaticResource ControlHeight}" Content="Export video" IsEnabled="False" />
+              <Button Style="{StaticResource AccentButtonStyle}" Height="{StaticResource ControlHeight}" Content="Fluent accent (dialogs)" />
               <Button Height="{StaticResource ControlHeight}" Content="Add photos" />
               <HyperlinkButton Content="Try it with a sample sequence" />
             </StackPanel>
@@ -140,7 +141,12 @@
               <StackPanel Width="260" Spacing="{StaticResource SpacingSm}">
                 <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="ProgressBar (62%) and Slider" />
                 <ProgressBar Value="62" Maximum="100" />
+                <ProgressBar IsIndeterminate="True" />
                 <Slider Value="40" Maximum="100" />
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingMd}">
+                  <ProgressRing IsActive="True" />
+                  <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="ProgressRing, active" VerticalAlignment="Center" />
+                </StackPanel>
               </StackPanel>
               <StackPanel Spacing="{StaticResource SpacingSm}">
                 <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="ToggleSwitch on and off" />
@@ -168,7 +174,8 @@
               </StackPanel>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingMd}">
-              <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="Not overridden, to check for leaks of the system accent:" VerticalAlignment="Center" />
+              <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="Toggle buttons, and not overridden (system accent leaks):" VerticalAlignment="Center" />
+              <ToggleButton Content="ToggleButton unchecked" />
               <ToggleButton Content="ToggleButton checked" IsChecked="True" />
               <TextBox Width="200" Text="TextBox" />
               <ComboBox Width="140" SelectedIndex="0">

@@ -11,9 +11,14 @@
   Keys follow the DESIGN.md token names in PascalCase: golden-hour-amber is GoldenHourAmberColor and
   GoldenHourAmberBrush; the "-light" and "-dark" variants are the same key in the Light and Dark dictionaries.
 
-  Amber rule: GoldenHourAmber* is the Export fill only. DeepAmberIndicator* is the state indicator
-  (progress, scrubber, playhead ring, toggles that are on, selection). Never use GoldenHourAmber for an
-  indicator in the light theme (2.26:1 on the layer).
+  Amber rule: GoldenHourAmber* is the Export fill only (ExportButtonStyle). DeepAmberIndicator* is the state
+  indicator (progress, scrubber, playhead ring, toggles that are on, selection). Never use GoldenHourAmber for
+  an indicator in the light theme (2.26:1 on the layer).
+
+  DeepAmberIndicatorHover and DeepAmberIndicatorPressed are the indicator's hover and press feedback, taken
+  from its tonal ramp in .impeccable/design.json: Light steps lighter on hover (#BD6A1D) and darker on press
+  (#924C00); Dark is the inverse (#DD9155 on hover, #FDB885 on press). Each keeps 3:1 against Track and Mica.
+  HighContrast uses Hotlight for both, so hover and press differ from the Highlight rest state.
 -->
 <ResourceDictionary
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -28,6 +33,8 @@
       <Color x:Key="GoldenHourAmberStrokeColor">#3878460A</Color>
       <Color x:Key="GoldenHourAmberTintColor">#14E8962E</Color>
       <Color x:Key="DeepAmberIndicatorColor">#B5620D</Color>
+      <Color x:Key="DeepAmberIndicatorHoverColor">#BD6A1D</Color>
+      <Color x:Key="DeepAmberIndicatorPressedColor">#924C00</Color>
       <Color x:Key="OnIndicatorColor">#FEFDFC</Color>
       <Color x:Key="EmberLinkColor">#9A5208</Color>
       <Color x:Key="NightInkOnAmberColor">#1F1404</Color>
@@ -64,6 +71,8 @@
       <SolidColorBrush x:Key="GoldenHourAmberStrokeBrush" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
       <SolidColorBrush x:Key="GoldenHourAmberTintBrush" Color="{ThemeResource GoldenHourAmberTintColor}" />
       <SolidColorBrush x:Key="DeepAmberIndicatorBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="DeepAmberIndicatorHoverBrush" Color="{ThemeResource DeepAmberIndicatorHoverColor}" />
+      <SolidColorBrush x:Key="DeepAmberIndicatorPressedBrush" Color="{ThemeResource DeepAmberIndicatorPressedColor}" />
       <SolidColorBrush x:Key="OnIndicatorBrush" Color="{ThemeResource OnIndicatorColor}" />
       <SolidColorBrush x:Key="EmberLinkBrush" Color="{ThemeResource EmberLinkColor}" />
       <SolidColorBrush x:Key="NightInkOnAmberBrush" Color="{ThemeResource NightInkOnAmberColor}" />
@@ -100,6 +109,8 @@
       <Color x:Key="GoldenHourAmberStrokeColor">#2EFFE6BE</Color>
       <Color x:Key="GoldenHourAmberTintColor">#1AF0A54A</Color>
       <Color x:Key="DeepAmberIndicatorColor">#F0A54A</Color>
+      <Color x:Key="DeepAmberIndicatorHoverColor">#DD9155</Color>
+      <Color x:Key="DeepAmberIndicatorPressedColor">#FDB885</Color>
       <Color x:Key="OnIndicatorColor">#1F1404</Color>
       <Color x:Key="EmberLinkColor">#F3B05C</Color>
       <Color x:Key="NightInkOnAmberColor">#1F1404</Color>
@@ -136,6 +147,8 @@
       <SolidColorBrush x:Key="GoldenHourAmberStrokeBrush" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
       <SolidColorBrush x:Key="GoldenHourAmberTintBrush" Color="{ThemeResource GoldenHourAmberTintColor}" />
       <SolidColorBrush x:Key="DeepAmberIndicatorBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="DeepAmberIndicatorHoverBrush" Color="{ThemeResource DeepAmberIndicatorHoverColor}" />
+      <SolidColorBrush x:Key="DeepAmberIndicatorPressedBrush" Color="{ThemeResource DeepAmberIndicatorPressedColor}" />
       <SolidColorBrush x:Key="OnIndicatorBrush" Color="{ThemeResource OnIndicatorColor}" />
       <SolidColorBrush x:Key="EmberLinkBrush" Color="{ThemeResource EmberLinkColor}" />
       <SolidColorBrush x:Key="NightInkOnAmberBrush" Color="{ThemeResource NightInkOnAmberColor}" />
@@ -173,6 +186,8 @@
       <StaticResource x:Key="GoldenHourAmberStrokeColor" ResourceKey="SystemColorHighlightTextColor" />
       <Color x:Key="GoldenHourAmberTintColor">#00000000</Color>
       <StaticResource x:Key="DeepAmberIndicatorColor" ResourceKey="SystemColorHighlightColor" />
+      <StaticResource x:Key="DeepAmberIndicatorHoverColor" ResourceKey="SystemColorHotlightColor" />
+      <StaticResource x:Key="DeepAmberIndicatorPressedColor" ResourceKey="SystemColorHotlightColor" />
       <StaticResource x:Key="OnIndicatorColor" ResourceKey="SystemColorHighlightTextColor" />
       <StaticResource x:Key="EmberLinkColor" ResourceKey="SystemColorHotlightColor" />
       <StaticResource x:Key="NightInkOnAmberColor" ResourceKey="SystemColorHighlightTextColor" />
@@ -209,6 +224,8 @@
       <SolidColorBrush x:Key="GoldenHourAmberStrokeBrush" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
       <SolidColorBrush x:Key="GoldenHourAmberTintBrush" Color="{ThemeResource GoldenHourAmberTintColor}" />
       <SolidColorBrush x:Key="DeepAmberIndicatorBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="DeepAmberIndicatorHoverBrush" Color="{ThemeResource DeepAmberIndicatorHoverColor}" />
+      <SolidColorBrush x:Key="DeepAmberIndicatorPressedBrush" Color="{ThemeResource DeepAmberIndicatorPressedColor}" />
       <SolidColorBrush x:Key="OnIndicatorBrush" Color="{ThemeResource OnIndicatorColor}" />
       <SolidColorBrush x:Key="EmberLinkBrush" Color="{ThemeResource EmberLinkColor}" />
       <SolidColorBrush x:Key="NightInkOnAmberBrush" Color="{ThemeResource NightInkOnAmberColor}" />
