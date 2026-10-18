@@ -269,4 +269,64 @@ public static class NaturalNameComparerTests
             names.Order(Comparer<string>.Create(StrCmpLogicalW)).ToArray(),
             names.Order(NaturalNameComparer.Instance).ToArray());
     }
+
+    // Documented divergences from Explorer. The comparer copies Windows' order for ASCII, Latin-1 and Latin Extended-A;
+    // everything else is approximate. These tests assert what the comparer does today, not what Windows does, so a
+    // change to any of them is a decision and not an accident. Each comment says what StrCmpLogicalW answered on
+    // Windows 11 (26100) when the test was written.
+
+    [Fact]
+    public static void KanaAreOrderedByCodePointWhileWindowsPutsKatakanaFirst()
+    {
+        var hiraganaA = $"{(char)0x3042}.jpg";
+        var katakanaA = $"{(char)0x30A2}.jpg";
+
+        // Windows: katakana ア before hiragana あ. Here: code point, so hiragana first.
+        Assert.Equal(-1, Managed(hiraganaA, katakanaA));
+        Assert.Equal(1, Managed(katakanaA, hiraganaA));
+    }
+
+    [Fact]
+    public static void AnEmojiIsASymbolThatSortsBeforeDigitsAndLettersWhileWindowsSortsItAfter()
+    {
+        var grinning = char.ConvertFromUtf32(0x1F600);
+
+        // Windows: "a" + emoji after "a1" and after "az". Here: a symbol, so before a digit and before a letter.
+        Assert.Equal(-1, Managed($"a{grinning}.jpg", "a1.jpg"));
+        Assert.Equal(-1, Managed($"a{grinning}.jpg", "az.jpg"));
+
+        // Two emoji are in code point order, as in Windows.
+        Assert.Equal(-1, Managed($"a{grinning}.jpg", $"a{char.ConvertFromUtf32(0x1F601)}.jpg"));
+    }
+
+    [Fact]
+    public static void DigitsOfOtherScriptsCountAsNumbersButTieWithTheAsciiDigitOfTheSameValue()
+    {
+        var arabicIndicThree = (char)0x0663;
+        var arabicIndicTen = $"{(char)0x0661}{(char)0x0660}";
+        var fullwidthThree = (char)0xFF13;
+        var fullwidthTen = $"{(char)0xFF11}{(char)0xFF10}";
+
+        // They are read as numbers, in order with the ASCII ones, as in Windows.
+        AssertParity($"a{arabicIndicTen}.jpg", "a9.jpg");
+        AssertParity($"a{arabicIndicTen}.jpg", "a11.jpg");
+        AssertParity($"a{fullwidthTen}.jpg", "a9.jpg");
+        AssertParity($"a{fullwidthTen}.jpg", "a11.jpg");
+        AssertParity($"a{arabicIndicThree}.jpg", "a2.jpg");
+        AssertParity($"a{arabicIndicThree}.jpg", "a4.jpg");
+
+        // The same value in two scripts is a tie here (compare returns 0 for two different strings). Windows says the
+        // non-ASCII digit comes after the ASCII one.
+        Assert.Equal(0, Managed($"a{arabicIndicThree}.jpg", "a3.jpg"));
+        Assert.Equal(0, Managed($"a{fullwidthThree}.jpg", "a3.jpg"));
+    }
+
+    [Fact]
+    public static void OtherScriptsAreInCodePointOrderAfterLatin()
+    {
+        // CJK and Cyrillic order by code point and follow the Latin letters; Windows agrees on these pairs.
+        AssertParity($"{(char)0x4E2D}.jpg", $"{(char)0x6587}.jpg");
+        AssertParity($"{(char)0x0416}.jpg", $"{(char)0x0410}.jpg");
+        AssertParity($"{(char)0x0416}.jpg", "z.jpg");
+    }
 }

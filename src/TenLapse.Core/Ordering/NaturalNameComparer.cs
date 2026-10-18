@@ -24,12 +24,18 @@ namespace TenLapse.Core.Ordering;
 /// as in Windows' word sort.</item>
 /// </list>
 /// <para>
-/// The tests compare this against <c>StrCmpLogicalW</c>: every short string over six small alphabets, every ASCII,
-/// Latin-1 and Latin Extended-A character in five contexts, long digit runs, and generated camera names. What does
-/// not match, because Windows' collation tables are not copied: Latin Extended-B and a few Latin Extended-A letters
-/// (Ĳ, Ŀ, ŉ, ı, ĸ, Ŋ), ª, µ and º; non-Latin scripts and rare symbols order by code point; and digits of different
-/// scripts with the same value (٣ and 3) compare equal here. None of these changes the order of ordinary
-/// camera, phone and screenshot file names.
+/// Both names are first converted to Unicode Form C, so a decomposed accent (macOS writes é as e + U+0301) sorts like the
+/// precomposed letter, as in Explorer.
+/// </para>
+/// <para>
+/// <b>How exact it is.</b> The order is exact for ASCII, Latin-1 and Latin Extended-A (the tests compare it with
+/// <c>StrCmpLogicalW</c>: every short string over six small alphabets, every such character in five contexts, long digit
+/// runs, NFC against NFD, and generated camera names). Fullwidth digits are read as numbers, in order with ASCII ones.
+/// Everything else is approximate, because Windows' collation tables are not copied: Latin Extended-B and a few Latin
+/// Extended-A letters (Ĳ, Ŀ, ŉ, ı, ĸ, Ŋ), ª, µ and º; non-Latin scripts and symbols order by code point (hiragana before
+/// katakana, where Explorer puts katakana first; an emoji before digits and letters, where Explorer puts it after);
+/// and digits of different scripts with the same value (٣ and 3, ３ and 3) tie here. Tests pin those divergences. None
+/// of it touches ordinary camera, phone and screenshot file names.
 /// </para>
 /// </remarks>
 public sealed class NaturalNameComparer : IComparer<string?>
