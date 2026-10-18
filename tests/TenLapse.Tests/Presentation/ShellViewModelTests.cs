@@ -77,7 +77,7 @@ public sealed class ShellViewModelTests
         var dialogs = new FakeDialogService(answer: false);
         var shell = new ShellViewModel(dialogs);
         shell.CurrentProject.Model.AddFrames(TestFrames.Folder("a", 10));
-        shell.CurrentProject.Model.MarkExported();
+        shell.CurrentProject.Model.MarkExported(shell.CurrentProject.Model.Version);
 
         await shell.NewProjectCommand.ExecuteAsync(null);
 
@@ -230,7 +230,7 @@ public sealed class ShellViewModelTests
         Assert.Contains(nameof(ShellViewModel.Title), raised);
         Assert.Contains(nameof(ShellViewModel.HasUnsavedChanges), raised);
 
-        shell.CurrentProject.Model.MarkExported();
+        shell.CurrentProject.Model.MarkExported(shell.CurrentProject.Model.Version);
 
         Assert.Equal("Harbor sunset – 10Lapse", shell.Title);
         Assert.False(shell.HasUnsavedChanges);

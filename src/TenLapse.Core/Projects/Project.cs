@@ -463,14 +463,28 @@ public sealed class Project
         }
     }
 
-    /// <summary>Records a finished export (#24): the project has no unsaved work until it changes again.</summary>
-    public void MarkExported()
+    /// <summary>
+    /// Records a finished export (#24): the project has no unsaved work until it changes again, but only if
+    /// nothing changed while the export ran. #24 reads <see cref="Version"/> (from the snapshot it encodes)
+    /// when the export starts and passes it here when it finishes; a change made meanwhile is not in the file,
+    /// so the project stays dirty. Clearing the flag does not change <see cref="Version"/>.
+    /// </summary>
+    /// <param name="versionAtExportStart">The <see cref="ProjectSnapshot.Version"/> the export encoded.</param>
+    /// <returns>True when the project is clean afterwards.</returns>
+    public bool MarkExported(long versionAtExportStart)
     {
         EnsureWritable();
+        if (versionAtExportStart != _state.Version)
+        {
+            return false;
+        }
+
         if (_state.IsDirty)
         {
             Publish(_state with { IsDirty = false }, ProjectChanges.Dirty);
         }
+
+        return true;
     }
 
     private static List<T> Materialize<T>(IEnumerable<T> items, string parameterName)

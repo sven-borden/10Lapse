@@ -148,12 +148,34 @@ public sealed class ProjectTests
         var project = new Project();
         project.AddFrames(TestFrames.Folder("a", 2));
 
-        project.MarkExported();
+        var version = project.Version;
+
+        Assert.True(project.MarkExported(version));
 
         Assert.False(project.IsDirty);
         Assert.False(project.HasWorkToLose);
+        Assert.Equal(version, project.Version);
         project.Output = project.Output with { Quality = OutputQuality.Maximum };
         Assert.True(project.HasWorkToLose);
+    }
+
+    [Fact]
+    public void AChangeDuringTheExportKeepsTheProjectDirty()
+    {
+        var project = new Project();
+        project.AddFrames(TestFrames.Folder("a", 2));
+        var exporting = project.Snapshot;
+        var changes = new List<ProjectChanges>();
+        project.Changed += (_, e) => changes.Add(e.Changes);
+
+        project.AddFrames(TestFrames.Folder("b", 1));
+        var cleared = project.MarkExported(exporting.Version);
+
+        Assert.False(cleared);
+        Assert.True(project.IsDirty);
+        Assert.Equal([ProjectChanges.Frames], changes);
+        Assert.True(project.MarkExported(project.Version));
+        Assert.False(project.IsDirty);
     }
 
     [Fact]
