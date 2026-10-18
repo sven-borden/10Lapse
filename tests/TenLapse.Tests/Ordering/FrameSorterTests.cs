@@ -31,6 +31,65 @@ public static class FrameSorterTests
         return inFolderOrder ? [.. a, .. b] : [.. b, .. a];
     }
 
+    private static Frame Zoned(string name, DateTime wallClock, double? offsetHours) =>
+        new($@"C:\Trip\{name}", 1_000, new DateTime(2026, 5, 2, 8, 0, 0, DateTimeKind.Utc))
+        {
+            CaptureTime = wallClock,
+            CaptureUtcOffset = offsetHours is { } hours ? TimeSpan.FromHours(hours) : null,
+        };
+
+    [Fact]
+    public static void WhenEveryFrameHasAnOffsetCaptureTimeSortsByTheInstant()
+    {
+        // Clocks go back on the night of 25 to 26 October 2026 in Central Europe: 02:50 CEST (+2) happens before 02:10 CET (+1),
+        // which is an hour later on the same clock. By wall clock the order would be wrong.
+        var night = new DateTime(2026, 10, 26, 2, 0, 0, DateTimeKind.Unspecified);
+        var first = Zoned("A_summer.jpg", night.AddMinutes(50), 2);
+        var second = Zoned("B_winter.jpg", night.AddMinutes(10), 1);
+        var third = Zoned("C_winter.jpg", night.AddMinutes(40), 1);
+
+        Assert.Equal(["A_summer.jpg", "B_winter.jpg", "C_winter.jpg"], Names(FrameSorter.Sort([third, second, first], SortMode.CaptureTime)));
+        Assert.Equal(["A_summer.jpg", "B_winter.jpg", "C_winter.jpg"], Names(FrameSorter.Sort([first, second, third], SortMode.CaptureTime)));
+
+        // The same wall clocks without offsets are sorted as written on the clock.
+        var plain = new[] { first, second, third }.Select(frame => frame with { CaptureUtcOffset = null }).ToArray();
+        Assert.Equal(["B_winter.jpg", "C_winter.jpg", "A_summer.jpg"], Names(FrameSorter.Sort(plain, SortMode.CaptureTime)));
+    }
+
+    [Fact]
+    public static void WhenSomeFramesHaveNoOffsetCaptureTimeSortsByTheWallClock()
+    {
+        // One camera writes offsets, the other does not: mixing instants with wall clocks would put the second camera
+        // hours away from the first, so the wall clock is used for all.
+        var ten = _base;
+        Frame[] frames =
+        [
+            Zoned("Z_late.jpg", ten.AddHours(1), 2),
+            Zoned("Y_nooffset.jpg", ten.AddMinutes(30), null),
+            Zoned("X_early.jpg", ten, 2),
+        ];
+
+        Assert.Equal(["X_early.jpg", "Y_nooffset.jpg", "Z_late.jpg"], Names(FrameSorter.Sort(frames, SortMode.CaptureTime)));
+    }
+
+    [Fact]
+    public static void OffsetsDoNotMatterForUntimedFramesOrOtherModes()
+    {
+        var night = new DateTime(2026, 10, 26, 2, 0, 0, DateTimeKind.Unspecified);
+        Frame[] frames =
+        [
+            Zoned("B_winter.jpg", night.AddMinutes(10), 1),
+            Zoned("A_summer.jpg", night.AddMinutes(50), 2),
+            Photo(@"C:\Trip\Z_untimed.jpg"),
+        ];
+
+        // An untimed frame has no offset to ask for and goes last; the timed ones still sort by the instant.
+        Assert.Equal(["A_summer.jpg", "B_winter.jpg", "Z_untimed.jpg"], Names(FrameSorter.Sort(frames, SortMode.CaptureTime)));
+
+        // Name order ignores times and offsets.
+        Assert.Equal(["A_summer.jpg", "B_winter.jpg", "Z_untimed.jpg"], Names(FrameSorter.Sort(frames, SortMode.Name)));
+    }
+
     [Fact]
     public static void TwoCamerasWithDifferentNamingInterleaveByCaptureTime()
     {

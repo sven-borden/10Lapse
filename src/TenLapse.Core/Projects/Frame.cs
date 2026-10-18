@@ -49,6 +49,13 @@ public sealed record Frame
     /// </summary>
     public DateTime? CaptureTime { get; init; }
 
+    /// <summary>
+    /// The camera's offset from UTC when it took the photo (EXIF <c>OffsetTimeOriginal</c>, #15), when it wrote one; most cameras
+    /// do not. <see cref="CaptureTime"/> stays the wall-clock time; the capture-time sort subtracts this only when every
+    /// timed frame has one (see <c>FrameSorter</c>).
+    /// </summary>
+    public TimeSpan? CaptureUtcOffset { get; init; }
+
     /// <summary>The file name with its extension, for the name sort and the filmstrip.</summary>
     public string FileName => Path.GetFileName(SourcePath);
 

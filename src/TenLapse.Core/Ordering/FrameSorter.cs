@@ -34,9 +34,48 @@ public static class FrameSorter
     }
 
     /// <summary>
+    /// The capture time of each frame as ticks, null for a frame without one: the UTC instant (wall clock minus offset) when every timed
+    /// frame has a <see cref="Frame.CaptureUtcOffset"/>, otherwise the wall-clock time. Mixing the two would put a camera without
+    /// offsets hours away from one with them. The capture-time sort and the interval gaps both measure with this.
+    /// </summary>
+    internal static long?[] CaptureTicks(IReadOnlyList<Frame> frames)
+    {
+        var useOffsets = false;
+        foreach (var frame in frames)
+        {
+            if (frame.CaptureTime is null)
+            {
+                continue;
+            }
+
+            if (frame.CaptureUtcOffset is null)
+            {
+                useOffsets = false;
+                break;
+            }
+
+            useOffsets = true;
+        }
+
+        var ticks = new long?[frames.Count];
+        for (var i = 0; i < ticks.Length; i++)
+        {
+            if (frames[i].CaptureTime is { } time)
+            {
+                ticks[i] = useOffsets ? time.Ticks - frames[i].CaptureUtcOffset!.Value.Ticks : time.Ticks;
+            }
+        }
+
+        return ticks;
+    }
+
+    /// <summary>
     /// The frames in the order of <paramref name="mode"/>.
     /// <list type="bullet">
-    /// <item><see cref="SortMode.CaptureTime"/>: earliest first, to the tick (100 ns), so burst shots keep their order. Frames without a
+    /// <item><see cref="SortMode.CaptureTime"/>: earliest first, to the tick (100 ns), so burst shots keep their order. When every
+    /// timed frame has a <see cref="Frame.CaptureUtcOffset"/> the time is the UTC instant (wall clock minus offset), which keeps
+    /// the order right across a daylight-saving change or a trip across zones; if even one timed frame has none, all are
+    /// compared by their wall-clock <see cref="Frame.CaptureTime"/>. Frames without a
     /// capture time come after all the timed ones, in name order, so choosing this mode by hand never loses a frame.</item>
     /// <item><see cref="SortMode.Name"/>: the file name as Explorer sorts it, IMG_9 before IMG_10.</item>
     /// <item><see cref="SortMode.DateModified"/>: the file's last write time, oldest first.</item>
@@ -77,12 +116,14 @@ public static class FrameSorter
             return byPath != 0 ? byPath : a.CompareTo(b);
         }
 
+        // UTC instants when every timed frame has an offset, the cameras' wall clocks otherwise (see CaptureTicks).
+        var ticks = mode == SortMode.CaptureTime ? CaptureTicks(input) : [];
         Comparison<int> comparison = mode switch
         {
             SortMode.CaptureTime => (a, b) =>
             {
-                var left = input[a].CaptureTime;
-                var right = input[b].CaptureTime;
+                var left = ticks[a];
+                var right = ticks[b];
                 if (left is { } l && right is { } r)
                 {
                     var byTime = l.CompareTo(r);

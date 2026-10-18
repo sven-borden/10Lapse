@@ -244,6 +244,29 @@ public static class FrameGapsTests
     }
 
     [Fact]
+    public static void ADaylightSavingChangeIsNoGapWhenEveryFrameHasAnOffset()
+    {
+        // Spring forward in Central Europe, 29 March 2026 at 01:00 UTC: shots 5 s apart, the wall clock jumps an hour.
+        var startUtc = new DateTime(2026, 3, 29, 0, 59, 30, DateTimeKind.Utc);
+        Frame[] withOffsets =
+        [
+            .. Enumerable.Range(0, 20).Select(i =>
+            {
+                var utc = startUtc.AddSeconds(i * 5);
+                var offset = utc >= new DateTime(2026, 3, 29, 1, 0, 0, DateTimeKind.Utc) ? TimeSpan.FromHours(2) : TimeSpan.FromHours(1);
+                return Photo($"IMG_{i + 1:0000}.jpg", DateTime.SpecifyKind(utc + offset, DateTimeKind.Unspecified)) with { CaptureUtcOffset = offset };
+            }),
+        ];
+
+        Assert.Empty(FrameGaps.Detect(withOffsets));
+
+        // Without the offsets the same times show a one-hour hole at the change: the wall clock is all there is.
+        var wallClockOnly = withOffsets.Select(frame => frame with { CaptureUtcOffset = null }).ToArray();
+        var gap = Assert.Single(FrameGaps.Detect(wallClockOnly));
+        Assert.Equal(FrameGapKinds.CaptureInterval, gap.Kinds);
+    }
+
+    [Fact]
     public static void ThreeTimesTheMedianIsTheLine()
     {
         Frame[] Series(double jump) =>

@@ -21,8 +21,9 @@ public enum CaptureTimeSource
 /// </param>
 /// <param name="UtcOffset">
 /// The offset from UTC (<c>OffsetTimeOriginal</c> or <c>OffsetTimeDigitized</c>) when the camera wrote one, else null.
-/// Most cameras do not, so the sort never applies it: mixing offset and wall-clock times would put one camera's
-/// photos hours away from another's.
+/// Most cameras do not. Store it in <see cref="Projects.Frame.CaptureUtcOffset"/> next to the time: the sort and the gap
+/// markers use the UTC instant only when every timed frame has an offset, and the wall clock otherwise, because mixing
+/// the two would put one camera's photos hours away from another's.
 /// </param>
 /// <param name="Source">Which tag <paramref name="Time"/> came from.</param>
 public readonly record struct CaptureTimeReading(DateTime Time, TimeSpan? UtcOffset, CaptureTimeSource Source);
@@ -43,6 +44,12 @@ public readonly record struct CaptureTimeReading(DateTime Time, TimeSpan? UtcOff
 /// Formats are found by content, not by extension. JPEG, TIFF and the TIFF-based RAW formats (CR2, NEF, ARW, DNG,
 /// ORF, RW2, PEF) keep the time in an Exif IFD; HEIC and HEIF keep an Exif item in the ISO base media file; CR3
 /// keeps the Exif IFDs in Canon's metadata boxes. All of them end up as an Exif SubIFD in MetadataExtractor.
+/// </para>
+/// <para>
+/// <b>Verified and not.</b> JPEG and HEIC are checked against real files (JPEG and HEIC encoded by Windows Imaging), and
+/// the TIFF layout behind DNG, ARW and NEF against hand-built containers. <b>Unverified:</b> real camera RAW (CR2, NEF, ARW, DNG,
+/// ORF, RW2, PEF) and CR3 are supported by MetadataExtractor but no camera file has been tried; the first check is Sven's
+/// sample photos (#30). A format that does not yield a time gives null, which makes the default sort fall back to name order.
 /// </para>
 /// </remarks>
 public static class CaptureTimeReader

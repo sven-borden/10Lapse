@@ -64,7 +64,9 @@ public sealed record FrameGap(
 /// frame counter, so it is not numbered: see <c>LooksLikeTimestamp</c> for the rule.
 /// </para>
 /// <para>
-/// <b>Interval.</b> For each pair of neighbours that both have a capture time, in order, the interval is an outlier when
+/// <b>Interval.</b> Times are the UTC instants when every timed frame has a <see cref="Frame.CaptureUtcOffset"/> (a daylight-saving
+/// change is no gap) and the cameras' wall clocks otherwise, as in <see cref="FrameSorter"/>.
+/// For each pair of neighbours that both have a capture time, in order, the interval is an outlier when
 /// it is at least one second and more than three times the median of up to five intervals on each side of it (a median
 /// under one second counts as one second, so whole-second EXIF times at several shots a second cannot flag every step). Fewer
 /// than three intervals around it, or a pair out of time order, never flag. The one-second floor keeps a burst
@@ -206,12 +208,15 @@ public static class FrameGaps
     private static Dictionary<int, IntervalOutlier> DetectIntervals(IReadOnlyList<Frame> frames)
     {
         // intervals[i] is the time from frame i - 1 to frame i; null when either has no time or they are out of order.
+        // Measured on the same clock the capture-time sort uses: UTC instants when every timed frame has an offset (so a
+        // daylight-saving change is not a one-hour gap), wall clocks otherwise.
+        var ticks = FrameSorter.CaptureTicks(frames);
         var intervals = new TimeSpan?[frames.Count];
         for (var i = 1; i < frames.Count; i++)
         {
-            if (frames[i - 1].CaptureTime is { } before && frames[i].CaptureTime is { } after && after >= before)
+            if (ticks[i - 1] is { } before && ticks[i] is { } after && after >= before)
             {
-                intervals[i] = after - before;
+                intervals[i] = TimeSpan.FromTicks(after - before);
             }
         }
 
