@@ -229,6 +229,27 @@ public static class PhotoDecoder
     public static int Scaled(int side, double scale) =>
         scale >= 1 ? side : Math.Max(1, (int)Math.Ceiling((side * scale) - 1e-6));
 
+    /// <summary>
+    /// A side scaled by <paramref name="scale"/> to cover <paramref name="coverSide"/>, the output's side it meets.
+    /// The side that sets the cover scale comes out exactly <paramref name="coverSide"/>; the other is rounded to the
+    /// nearest whole number with the parity of its cover side, never below it, so the centred crop
+    /// (<see cref="Export.FrameFill"/>) starts on a whole pixel and copies the pixels one to one: an odd margin
+    /// would start it half a pixel in, and the drawing would resample every pixel, softening the frame
+    /// (4288x2848 covering 3840x2160: 2550 rows, cropped from row 195, rather than 2551 from 195.5).
+    /// </summary>
+    public static int Scaled(int side, double scale, int coverSide)
+    {
+        var exact = side * scale;
+        if (scale >= 1 || exact < coverSide - 1e-6)
+        {
+            // Not scaled, or capped below the cover (MaxSide): the drawing scales it anyway.
+            return Scaled(side, scale);
+        }
+
+        var rounded = coverSide + (2 * (int)Math.Round((exact - coverSide) / 2));
+        return Math.Min(Math.Max(rounded, coverSide), side);
+    }
+
     // colourSource: the photo's bytes, for reading its embedded colour; null converts as WinRT does, at the source.
     private static async Task<PhotoResult<DecodedPhoto>> DecodeAsync(
         string path, BitmapDecoder decoder, IRandomAccessStream? colourSource, PhotoDecodeOptions options, CancellationToken cancellationToken)
@@ -241,8 +262,16 @@ public static class PhotoDecoder
 
         var info = read.Value;
         var scale = Scale(info.Size, options);
-        var width = Scaled(info.StoredSize.Width, scale);
-        var height = Scaled(info.StoredSize.Height, scale);
+        var (width, height) = (Scaled(info.StoredSize.Width, scale), Scaled(info.StoredSize.Height, scale));
+        if (options.CoverSize is { } cover)
+        {
+            // The stored sides meet the output's sides as the photo is turned (orientations 5 to 8 swap them).
+            var turned = info.Orientation is >= 5 and <= 8;
+            (width, height) = (
+                Scaled(info.StoredSize.Width, scale, turned ? cover.Height : cover.Width),
+                Scaled(info.StoredSize.Height, scale, turned ? cover.Width : cover.Height));
+        }
+
         if ((long)width * height > MaxDecodedPixels)
         {
             return PhotoResult<DecodedPhoto>.Failed(PhotoFailures.Found(

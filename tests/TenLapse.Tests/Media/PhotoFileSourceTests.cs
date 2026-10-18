@@ -1,3 +1,4 @@
+using Microsoft.Graphics.Canvas;
 using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 using TenLapse.Media.Decoding;
@@ -53,6 +54,62 @@ public sealed class PhotoFileSourceTests : IDisposable
         Assert.Equal(SkipReason.EmptyFile, failure.Failure.Reason);
         Assert.Equal(empty, failure.Failure.Path);
         Assert.Contains("empty.jpg", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ACoverDecodedFrameLooksLikeTheFullPhotoDrawnTheSameWay()
+    {
+        // 640x425 covering 320x180: half size, 212.5 rows, of which the crop keeps 180. The frame drawn from the
+        // cover decode must match the full photo drawn by the same processing code: same framing, no softening.
+        SkipWithoutGraphicsDevice();
+        var path = await _files.WritePatternAsync("pattern.png", 640, 425, (x, y) => (
+            (byte)(128 + (100 * Math.Sin(x * 2 * Math.PI / 23))),
+            (byte)(128 + (100 * Math.Sin(y * 2 * Math.PI / 17))),
+            (byte)(255 * y / 425)));
+        using var device = VideoDevice.Create();
+        var output = new PixelSize(320, 180);
+        using var cover = await new PhotoFileSource([path]).LoadAsync(0, device.Canvas, output, TestContext.Current.CancellationToken);
+        var full = await PhotoDecoder.DecodeAsync(path, cancellationToken: TestContext.Current.CancellationToken);
+        using var fullPhoto = full.Value!;
+        using var fullBitmap = CanvasBitmap.CreateFromSoftwareBitmap(device.Canvas, fullPhoto.Pixels);
+
+        var fromCover = Draw(device.Canvas, cover, output);
+        var fromFull = Draw(device.Canvas, fullBitmap, output);
+
+        // Against the full photo: the two scalers differ (Fant, then high-quality cubic), so a small tolerance.
+        var differences = fromCover.Zip(fromFull, (a, b) => Math.Abs(a - b)).ToArray();
+        var mean = differences.Average();
+        // Against the decoded pixels: the crop starts on a whole pixel, so drawing copies them one to one. With
+        // 213 rows it started at row 16.5 and every pixel was resampled between two rows.
+        var decoded = cover.GetPixelBytes();
+        var (width, height) = ((int)cover.SizeInPixels.Width, (int)cover.SizeInPixels.Height);
+        var crop = FrameFill.SourceRect(new Windows.Foundation.Size(width, height), new Windows.Foundation.Size(output.Width, output.Height));
+        var copied = 0;
+        for (var y = 0; y < output.Height; y++)
+        {
+            for (var x = 0; x < output.Width * 4; x++)
+            {
+                var source = decoded[((((int)crop.Y + y) * width) + (int)crop.X) * 4 + x];
+                copied = Math.Max(copied, Math.Abs(source - fromCover[(y * output.Width * 4) + x]));
+            }
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine($"cover {width}x{height}, crop at {crop.Y}: against the full photo mean {mean:0.00}, max {differences.Max()}; against the decoded pixels max {copied}");
+        Assert.Equal((320, 212), (width, height));
+        Assert.True(mean < 2.0, $"mean difference {mean:0.00} levels from the full photo drawn the same way");
+        Assert.True(copied <= 1, $"the drawn frame differs from the decoded pixels by up to {copied} levels: resampled, not copied");
+    }
+
+    private static byte[] Draw(CanvasDevice device, CanvasBitmap bitmap, PixelSize output)
+    {
+        using var target = new CanvasRenderTarget(device, output.Width, output.Height, 96);
+        using (var session = target.CreateDrawingSession())
+        {
+            session.Clear(Microsoft.UI.Colors.Black);
+            FrameFill.Draw(session, bitmap, new Windows.Foundation.Size(output.Width, output.Height));
+        }
+
+        return target.GetPixelBytes();
     }
 
     [Fact]

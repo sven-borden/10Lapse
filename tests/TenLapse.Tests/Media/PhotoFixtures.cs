@@ -76,6 +76,29 @@ internal sealed class PhotoFixtures : IDisposable
         await encoder.FlushAsync();
     }
 
+    /// <summary>A PNG whose every pixel <paramref name="colour"/> gives (x, y to B, G, R), through WIC's encoder.</summary>
+    public async Task<string> WritePatternAsync(string name, int width, int height, Func<int, int, (byte B, byte G, byte R)> colour)
+    {
+        var pixels = new byte[width * height * 4];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var (b, g, r) = colour(x, y);
+                var offset = ((y * width) + x) * 4;
+                (pixels[offset], pixels[offset + 1], pixels[offset + 2], pixels[offset + 3]) = (b, g, r, 255);
+            }
+        }
+
+        var path = PathOf(name);
+        using var file = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
+        using var stream = file.AsRandomAccessStream();
+        var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
+        encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)width, (uint)height, 96, 96, pixels);
+        await encoder.FlushAsync();
+        return path;
+    }
+
     /// <summary>A 16-bit RGBA PNG, red top-left and blue elsewhere, through WIC's encoder.</summary>
     public async Task<string> WritePngAsync(string name, BitmapPixelFormat format, int width = 64, int height = 32)
     {

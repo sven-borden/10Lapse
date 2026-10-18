@@ -3,6 +3,7 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using TenLapse.Core.Projects;
 using TenLapse.Media.Decoding;
+using TenLapse.Media.Export;
 using Windows.Graphics.Imaging;
 using static TenLapse.Tests.Media.PhotoFixtures;
 
@@ -660,6 +661,28 @@ public sealed class PhotoDecoderTests : IDisposable
         Assert.Equal(expected, scale, 6);
         Assert.True(PhotoDecoder.Scaled(width, scale) >= Math.Min(width, outputWidth));
         Assert.True(PhotoDecoder.Scaled(height, scale) >= Math.Min(height, outputHeight));
+    }
+
+    [Theory]
+    [InlineData(4288, 2848, 3840, 2160, 3840, 2550)]
+    [InlineData(640, 425, 320, 180, 320, 212)]
+    [InlineData(6000, 4000, 3840, 2160, 3840, 2560)]
+    [InlineData(4000, 6000, 3840, 2160, 3840, 5760)]
+    [InlineData(3000, 2001, 1921, 1080, 1921, 1282)]
+    [InlineData(1280, 720, 3840, 2160, 1280, 720)]
+    public void TheSideACoverCropsHasTheParityOfTheOutput(int width, int height, int outputWidth, int outputHeight, int scaledWidth, int scaledHeight)
+    {
+        // The crop's margin splits evenly, so FrameFill starts on a whole pixel: 4288x2848 to 3840x2160 used to
+        // decode 2551 rows and crop from row 195.5.
+        var output = new PixelSize(outputWidth, outputHeight);
+        var scale = PhotoDecoder.Scale(new PixelSize(width, height), PhotoDecodeOptions.Cover(output));
+
+        var scaled = (PhotoDecoder.Scaled(width, scale, outputWidth), PhotoDecoder.Scaled(height, scale, outputHeight));
+
+        Assert.Equal((scaledWidth, scaledHeight), scaled);
+        var crop = FrameFill.SourceRect(new Windows.Foundation.Size(scaled.Item1, scaled.Item2), new Windows.Foundation.Size(outputWidth, outputHeight));
+        Assert.Equal(Math.Round(crop.X), crop.X);
+        Assert.Equal(Math.Round(crop.Y), crop.Y);
     }
 
     [Fact]
