@@ -33,11 +33,19 @@ public sealed class PhotoImporter : IPhotoImportSource
     private readonly int _listBatch;
     private readonly int _readBatch;
 
-    /// <summary>An importer for the photo formats this PC reads (<see cref="PhotoCodecs.IsReadable"/>).</summary>
+    /// <summary>
+    /// An importer for the photo formats this PC reads (<see cref="PhotoCodecs.IsReadable"/>) and the known ones it
+    /// cannot read yet (<see cref="KnownPhotoFormats"/>: HEIC, RAW without their Store extension), which come back from
+    /// reading as <see cref="SkipReason.NeedsExtension"/> so #14 can offer the extension.
+    /// </summary>
     public PhotoImporter()
-        : this(PhotoCodecs.IsReadable)
+        : this(IsImportable)
     {
     }
+
+    /// <summary>True for a photo format this PC reads, or a known one an extension from the Store would read.</summary>
+    public static bool IsImportable(string path) =>
+        PhotoCodecs.IsReadable(path) || KnownPhotoFormats.ForPath(path) is not null;
 
     /// <summary>An importer with its own format filter and batch sizes (tests).</summary>
     /// <param name="isPhoto">True for the file paths to import.</param>

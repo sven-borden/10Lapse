@@ -37,7 +37,9 @@ internal sealed class PhotoPickerService(Func<WindowId> window) : IPhotoPicker
             SuggestedStartLocation = PickerLocationId.PicturesLibrary,
             ViewMode = PickerViewMode.Thumbnail,
         };
-        foreach (var extension in PhotoCodecs.Extensions.Order(StringComparer.Ordinal))
+        // The formats this PC reads and the known ones it needs a Store extension for (they import as "needs an
+        // extension", which #14 turns into a one-click fix).
+        foreach (var extension in PhotoCodecs.Extensions.Concat(KnownPhotoFormats.All.SelectMany(format => format.Extensions)).Distinct().Order(StringComparer.Ordinal))
         {
             picker.FileTypeFilter.Add(extension);
         }
