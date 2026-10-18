@@ -9,7 +9,7 @@ public enum ProjectChanges
     /// <summary>Nothing.</summary>
     None = 0,
 
-    /// <summary>Frames were added, removed or reordered.</summary>
+    /// <summary>Frames were added, removed, reordered or updated; <see cref="ProjectChangedEventArgs.Frames"/> says which.</summary>
     Frames = 1 << 0,
 
     /// <summary>The skipped-files list grew.</summary>
@@ -45,6 +45,12 @@ public enum FrameChangeKind
 
     /// <summary>The order changed (#15 sorts, #20 drags): rebind to the new list.</summary>
     Reset,
+
+    /// <summary>
+    /// The frames at <see cref="FrameChange.Indices"/> were replaced by new values with the same id and path
+    /// (#13 and #15 fill in the pixel size and capture time). The order did not change.
+    /// </summary>
+    Updated,
 }
 
 /// <summary>
@@ -70,16 +76,17 @@ public sealed class FrameChange
     /// <summary><see cref="FrameChangeKind.Added"/>: where the first new frame now sits. Otherwise -1.</summary>
     public int Index { get; }
 
-    /// <summary>How many frames were added or removed; 0 for a reset.</summary>
+    /// <summary>How many frames were added, removed or updated; 0 for a reset.</summary>
     public int Count => Ids.Length;
 
     /// <summary>
     /// <see cref="FrameChangeKind.Removed"/>: the removed frames' positions in the list before the change,
-    /// ascending. <see cref="FrameChangeKind.Added"/>: <c>Index</c> to <c>Index + Count - 1</c>. Empty for a reset.
+    /// ascending. <see cref="FrameChangeKind.Added"/>: <c>Index</c> to <c>Index + Count - 1</c>.
+    /// <see cref="FrameChangeKind.Updated"/>: the updated frames' positions, ascending. Empty for a reset.
     /// </summary>
     public ImmutableArray<int> Indices { get; }
 
-    /// <summary>The ids of the frames added or removed, in list order. Empty for a reset.</summary>
+    /// <summary>The ids of the frames added, removed or updated, in list order. Empty for a reset.</summary>
     public ImmutableArray<Guid> Ids { get; }
 
     internal static FrameChange Added(int index, IEnumerable<Frame> frames)
@@ -90,6 +97,9 @@ public sealed class FrameChange
 
     internal static FrameChange Removed(ImmutableArray<int> indices, ImmutableArray<Guid> ids) =>
         new(FrameChangeKind.Removed, -1, indices, ids);
+
+    internal static FrameChange Updated(ImmutableArray<int> indices, ImmutableArray<Guid> ids) =>
+        new(FrameChangeKind.Updated, -1, indices, ids);
 }
 
 /// <summary>Carries the <see cref="ProjectChanges"/> of one mutation.</summary>
@@ -355,6 +365,64 @@ public sealed class Project
             ProjectChanges.Frames,
             FrameChange.Removed(indices.MoveToImmutable(), removedIds.MoveToImmutable()));
         return doomed.Count;
+    }
+
+    /// <summary>
+    /// Replaces frames by id in one change, keeping their positions: #13 writes back the
+    /// <see cref="Frame.PixelSize"/> and #15 the <see cref="Frame.CaptureTime"/> with
+    /// <c>frame with { ... }</c>. Each frame must already be in the project with the same
+    /// <see cref="Frame.SourcePath"/>, and appear once in the batch; otherwise nothing changes. A value equal
+    /// to the current one is not a change.
+    /// </summary>
+    /// <returns>How many frames changed.</returns>
+    /// <exception cref="ArgumentException">An id is unknown or repeated, or a path differs.</exception>
+    public int UpdateFrames(IEnumerable<Frame> frames)
+    {
+        EnsureWritable();
+        var batch = Materialize(frames, nameof(frames));
+        var current = _state.Frames;
+        var positions = new Dictionary<Guid, int>(current.Length);
+        for (var i = 0; i < current.Length; i++)
+        {
+            positions[current[i].Id] = i;
+        }
+
+        var replacements = new SortedDictionary<int, Frame>();
+        foreach (var frame in batch)
+        {
+            if (!positions.TryGetValue(frame.Id, out var index))
+            {
+                throw new ArgumentException($"No frame with id {frame.Id} is in the project; nothing was changed.", nameof(frames));
+            }
+
+            if (!string.Equals(current[index].SourcePath, frame.SourcePath, StringComparison.Ordinal))
+            {
+                throw new ArgumentException($"An update keeps the frame's path ({current[index].SourcePath}); nothing was changed.", nameof(frames));
+            }
+
+            if (!replacements.TryAdd(index, frame))
+            {
+                throw new ArgumentException($"The frame {frame.Id} is in the batch twice; nothing was changed.", nameof(frames));
+            }
+        }
+
+        var changed = replacements.Where(pair => !pair.Value.Equals(current[pair.Key])).ToList();
+        if (changed.Count == 0)
+        {
+            return 0;
+        }
+
+        var next = current.ToBuilder();
+        foreach (var (index, frame) in changed)
+        {
+            next[index] = frame;
+        }
+
+        Commit(
+            _state with { Frames = next.MoveToImmutable() },
+            ProjectChanges.Frames,
+            FrameChange.Updated([.. changed.Select(pair => pair.Key)], [.. changed.Select(pair => pair.Value.Id)]));
+        return changed.Count;
     }
 
     /// <summary>
