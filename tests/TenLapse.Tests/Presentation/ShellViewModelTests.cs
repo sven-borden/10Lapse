@@ -245,10 +245,29 @@ public sealed class ShellViewModelTests
         var raised = 0;
         shell.PropertyChanged += (_, _) => raised++;
 
-        old.AddFrames(TestFrames.Folder("a", 3));
+        Assert.Throws<ObjectDisposedException>(() => old.AddFrames(TestFrames.Folder("a", 3)));
 
         Assert.Equal(0, raised);
         Assert.Equal("10Lapse", shell.Title);
+    }
+
+    [Fact]
+    public async Task ABatchThatArrivesAfterNewProjectNeverReachesTheNewProject()
+    {
+        var shell = new ShellViewModel(new FakeDialogService(answer: true));
+        // #12 captures the target project when the import starts.
+        var target = shell.CurrentProject.Model;
+        target.AddFrames(TestFrames.Folder("harbor", 3));
+
+        await shell.NewProjectCommand.ExecuteAsync(null);
+        var late = Record.Exception(() => target.AddFrames(TestFrames.Folder("harbor-late", 2)));
+
+        Assert.IsType<ObjectDisposedException>(late);
+        Assert.True(target.IsClosed);
+        Assert.Equal(3, target.Frames.Length);
+        Assert.Empty(shell.CurrentProject.Model.Frames);
+        Assert.False(shell.CurrentProject.Model.IsClosed);
+        Assert.False(shell.CurrentProject.IsDirty);
     }
 
     [Fact]

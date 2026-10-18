@@ -82,6 +82,7 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
 
         IsDisposed = true;
         Model.Changed -= OnModelChanged;
+        Model.Close();
 
         List<Exception>? failures = null;
         for (var i = _resources.Count - 1; i >= 0; i--)

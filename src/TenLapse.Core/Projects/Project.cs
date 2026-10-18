@@ -170,8 +170,9 @@ public sealed record ProjectSnapshot
 /// agree (the frames and the timing, say) takes <see cref="Snapshot"/> once and reads from it.
 /// </para>
 /// <para>
-/// A project is never cleared: <c>New project</c> replaces the whole instance, so nothing of the old one can
-/// survive into the new one. Removing a frame removes it from the project, never from disk.
+/// A project is never cleared: <c>New project</c> replaces the whole instance and <see cref="Close"/>s the old
+/// one, so nothing of the old one can survive into the new one and nothing late can be added to the old one.
+/// Removing a frame removes it from the project, never from disk.
 /// </para>
 /// </remarks>
 public sealed class Project
@@ -186,6 +187,7 @@ public sealed class Project
     private readonly HashSet<Guid> _ids = [];
 
     private volatile ProjectSnapshot _state;
+    private volatile bool _closed;
 
     /// <summary>Creates an empty, clean project with the default settings, owned by the calling thread.</summary>
     public Project()
@@ -304,6 +306,9 @@ public sealed class Project
 
     /// <summary>True after any change since the project was created or last exported.</summary>
     public bool IsDirty => _state.IsDirty;
+
+    /// <summary>True once <see cref="Close"/> ran: the project was replaced and takes no more changes.</summary>
+    public bool IsClosed => _closed;
 
     /// <summary>
     /// True when replacing this project would lose something the user did: it changed since it was created
@@ -555,6 +560,14 @@ public sealed class Project
         return added.Count;
     }
 
+    /// <summary>
+    /// Ends this project's life: <c>New project</c> closes the project it replaces. From then on every
+    /// mutation throws <see cref="ObjectDisposedException"/>, so a batch from an import that was still running
+    /// can never land in a project the user left (#12 treats that exception as "cancelled"). Reading keeps
+    /// working. Safe on any thread, and a second call does nothing.
+    /// </summary>
+    public void Close() => _closed = true;
+
     private bool Changes<T>(T current, T value)
         where T : class
     {
@@ -565,6 +578,7 @@ public sealed class Project
 
     private void EnsureWritable()
     {
+        ObjectDisposedException.ThrowIf(_closed, this);
         if (Environment.CurrentManagedThreadId != _ownerThreadId)
         {
             throw new InvalidOperationException(

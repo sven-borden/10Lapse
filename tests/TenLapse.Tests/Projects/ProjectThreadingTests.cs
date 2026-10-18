@@ -117,6 +117,29 @@ public sealed class ProjectThreadingTests
         Assert.Equal(Project.DefaultName, project.Name);
     }
 
+    [Fact]
+    public async Task AClosedProjectTakesNoMoreChangesButCanStillBeRead()
+    {
+        var project = new Project();
+        var frames = TestFrames.Folder("a", 2);
+        project.AddFrames(frames);
+
+        await RunOnNewThread(project.Close);
+        project.Close();
+
+        Assert.True(project.IsClosed);
+        Assert.Throws<ObjectDisposedException>(() => project.AddFrames(TestFrames.Folder("b", 1)));
+        Assert.Throws<ObjectDisposedException>(() => project.InsertFrames(0, TestFrames.Folder("b", 1)));
+        Assert.Throws<ObjectDisposedException>(() => project.UpdateFrames([frames[0]]));
+        Assert.Throws<ObjectDisposedException>(() => project.RemoveFrames([frames[0].Id]));
+        Assert.Throws<ObjectDisposedException>(() => project.ReorderFrames([frames[1].Id, frames[0].Id]));
+        Assert.Throws<ObjectDisposedException>(() => project.AddSkippedFiles([]));
+        Assert.Throws<ObjectDisposedException>(() => project.Name = "Other");
+        Assert.Throws<ObjectDisposedException>(() => project.SortMode = SortMode.Manual);
+        Assert.Throws<ObjectDisposedException>(() => project.MarkExported(project.Version));
+        Assert.Equal(frames, project.Frames);
+    }
+
     private static Task RunOnNewThread(Action action)
     {
         var done = new TaskCompletionSource();

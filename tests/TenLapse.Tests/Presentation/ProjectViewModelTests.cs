@@ -41,9 +41,10 @@ public sealed class ProjectViewModelTests
 
         viewModel.Dispose();
         viewModel.Dispose();
-        viewModel.Model.AddFrames(TestFrames.Folder("a", 1));
 
         Assert.Equal(["preview", "cache"], log);
+        Assert.True(viewModel.Model.IsClosed);
+        Assert.Throws<ObjectDisposedException>(() => viewModel.Model.AddFrames(TestFrames.Folder("a", 1)));
         Assert.Equal(0, viewModel.FrameCount);
     }
 
