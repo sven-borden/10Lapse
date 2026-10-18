@@ -299,9 +299,9 @@
           RadiusY="6" />
         <InfoBar
           x:Name="ShellInfoBar"
-          CornerRadius="{StaticResource RadiusCard}"
           IsClosable="True"
-          IsOpen="False">
+          IsOpen="False"
+          Style="{StaticResource InfoBarStyle}">
           <!--
             The detail list (#13's skipped photos): under a divider, in line with the message, scrolling past
             InfoBarDetailsMaxHeight. InfoBarPresenter fills it and its toggle opens it; collapsed by default.
