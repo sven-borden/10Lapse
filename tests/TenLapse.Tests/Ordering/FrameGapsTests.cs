@@ -51,6 +51,31 @@ public static class FrameGapsTests
         Assert.Equal(4, gap.MissingFrames);
     }
 
+    [Theory]
+    [InlineData("IMG_9998.jpg", "IMG_0002.jpg", 2)] // 9999 and 0001 are missing
+    [InlineData("IMG_9995.jpg", "IMG_0001.jpg", 4)] // 9996 to 9999
+    [InlineData("IMG_9990.jpg", "IMG_0100.jpg", 9 + 99)] // the bottom 1 percent of 10,000 is 0 to 100
+    [InlineData("DSC09997.jpg", "DSC00003.jpg", 4)] // 09998, 09999, 00001, 00002
+    [InlineData("IMG_998.jpg", "IMG_002.jpg", 2)] // a three-digit counter wraps at 999
+    public static void AWrapNearTheTopOfTheCounterCountsTheNumbersSkipped(string before, string after, int expected)
+    {
+        // "Near the top" is the top 1 percent of the counter's range (9900 to 9999 for four digits), "near the bottom" the bottom 1 percent.
+        var gap = Assert.Single(FrameGaps.Detect(Named(before, after)));
+        Assert.Equal(0, gap.AfterIndex);
+        Assert.Equal(expected, gap.MissingFrames);
+    }
+
+    [Theory]
+    [InlineData("IMG_9999.jpg", "IMG_0001.jpg")]
+    [InlineData("IMG_9899.jpg", "IMG_0002.jpg")] // below the top 1 percent: not a wrap, a number that went back
+    [InlineData("IMG_9998.jpg", "IMG_0101.jpg")] // above the bottom 1 percent
+    [InlineData("IMG_5000.jpg", "IMG_0002.jpg")]
+    [InlineData("a98.jpg", "a2.jpg")] // under three digits is never a counter's wrap
+    public static void ABackwardStepThatIsNotAWrapIsNoGap(string before, string after)
+    {
+        Assert.Empty(FrameGaps.Detect(Named(before, after)));
+    }
+
     [Fact]
     public static void NumbersThatDoNotRiseAreNoGap()
     {

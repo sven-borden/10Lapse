@@ -54,8 +54,11 @@ public sealed record FrameGap(
 /// extension, any folder) form one sequence, so two cameras with different prefixes are separate sequences even when
 /// their frames are interleaved by capture time. Walking the frames in order, a frame whose number is more than one
 /// above the previous number of its sequence has a gap in front of it, of the numbers in between. A number that is
-/// not higher is no gap (duplicates, a RAW and a JPEG of one shot, a second folder). A counter that wraps, 9999 to
-/// 0001, is no gap either; 9999 to 0005 is a gap of 4 (0001 to 0004). The marker goes in front of the frame whose
+/// not higher is no gap (duplicates, a RAW and a JPEG of one shot, a second folder), except a wrap: when the previous
+/// number is in the top 1 percent of its counter range and the next in the bottom 1 percent (the range is the next power
+/// of ten above the previous number, at least 1000: 9900 to 9999, then 0 to 100) the numbers left at the top and those
+/// skipped after the bottom are the gap. 9999 to 0001 is none, 9999 to 0005 is 4 (0001 to 0004), 9998 to 0002 is 2
+/// (9999 and 0001). The marker goes in front of the frame whose
 /// number jumped, also when frames of other sequences sit between it and the previous frame of its own. A name made from
 /// the time the photo was taken (<c>IMG_20240101_123456</c>, <c>PXL_20240101_123456789</c>, <c>20240101_123456(1)</c>) has no
 /// frame counter, so it is not numbered: see <c>LooksLikeTimestamp</c> for the rule.
@@ -148,33 +151,37 @@ public static class FrameGaps
             return current - previous - 1;
         }
 
-        // The counter wrapped from all nines (9999 to 0001): the next number would be 1, so only a later one is a gap.
-        if (current < previous && IsWrapPoint(previous))
+        // The counter wrapped (9999 to 0001): the numbers left before the top, plus those skipped after the bottom.
+        if (current < previous && IsWrap(previous, current, out var top))
         {
-            return Math.Max(0, current - 1);
+            return (top - previous) + Math.Max(0, current - 1);
         }
 
         return 0;
     }
 
-    // 999, 9999, 99999 ...: the last number a counter of three or more digits shows before it wraps. (A counter that
-    // ends at 9 or 99 is more likely a short run of copies than a camera.)
-    private static bool IsWrapPoint(long number)
+    // A wrap is the previous number in the top 1 percent of its counter's range and the next in the bottom 1 percent.
+    // The range is the smallest power of ten above the previous number: for 9998 it is 10,000, so the wrap is from
+    // 9900 to 9999 and on to 0 to 100, and 9998 to 0002 has 9999 and 0001 missing. (Going by the value, not the zero
+    // padding, makes Sony's five-digit DSC09999 to DSC00001 a wrap too.) A counter needs three digits to count: one of
+    // 9 or 99 is more likely a short run of copies than a camera. `top` is the last number of the range.
+    private static bool IsWrap(long previous, long current, out long top)
     {
-        if (number < 999)
+        top = 0;
+        if (previous < 990)
         {
             return false;
         }
 
-        for (var power = 1000L; power > 0 && power <= number + 1; power *= 10)
+        var range = 1000L;
+        while (range <= previous)
         {
-            if (power == number + 1)
-            {
-                return true;
-            }
+            range *= 10;
         }
 
-        return false;
+        top = range - 1;
+        var onePercent = range / 100;
+        return previous >= range - onePercent && current <= onePercent;
     }
 
     private readonly record struct IntervalOutlier(TimeSpan Interval, TimeSpan Typical);
