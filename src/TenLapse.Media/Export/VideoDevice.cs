@@ -56,7 +56,9 @@ internal sealed class VideoDevice : IDisposable
         var pointer = Marshal.GetIUnknownForObject(inspectable);
         try
         {
-            var direct3DDevice = WinRT.MarshalInterface<IDirect3DDevice>.FromAbi(pointer);
+            // Win2D keeps its own reference. Disposed here, or the wrapper holds the whole device (about 90 MB
+            // private and 160 handles for a 640x360 export, 300 MB and 230 MB of video memory at 4K) until a GC.
+            using var direct3DDevice = WinRT.MarshalInterface<IDirect3DDevice>.FromAbi(pointer);
             return new VideoDevice(device, CanvasDevice.CreateFromDirect3D11Device(direct3DDevice));
         }
         finally
@@ -73,15 +75,23 @@ internal sealed class VideoDevice : IDisposable
         try
         {
             var access = (IDirect3DDxgiInterfaceAccess)Marshal.GetObjectForIUnknown(inspectable);
-            var iid = typeof(ID3D11Texture2D).GUID;
-            access.GetInterface(&iid, out var raw);
             try
             {
-                return (ID3D11Texture2D)Marshal.GetObjectForIUnknown((nint)raw);
+                var iid = typeof(ID3D11Texture2D).GUID;
+                access.GetInterface(&iid, out var raw);
+                try
+                {
+                    return (ID3D11Texture2D)Marshal.GetObjectForIUnknown((nint)raw);
+                }
+                finally
+                {
+                    Marshal.Release((nint)raw);
+                }
             }
             finally
             {
-                Marshal.Release((nint)raw);
+                // The wrapper of the render target; left to the GC it keeps every frame's texture alive.
+                Marshal.ReleaseComObject(access);
             }
         }
         finally
