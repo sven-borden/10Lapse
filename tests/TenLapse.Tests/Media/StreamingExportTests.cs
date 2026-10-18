@@ -31,11 +31,15 @@ public sealed class StreamingExportTests : IDisposable
     [Theory]
     [InlineData(30, 1)]
     [InlineData(24, 1)]
+    [InlineData(25, 1)]
+    [InlineData(50, 1)]
     [InlineData(60, 1)]
+    [InlineData(12, 1)]
     [InlineData(1, 2)]
     [InlineData(1, 10)]
     public async Task ExportWritesEveryFrameAtItsExactTime(int numerator, int denominator)
     {
+        // Rates whose thousandfold is whole: the MP4 sink's timescale (1000 units a frame) holds every FrameStart exactly.
         SkipWithoutH264Encoder();
         var rate = new Fraction(numerator, denominator);
         var path = Path.Combine(_directory, $"{numerator}-{denominator}.mp4");
@@ -47,32 +51,42 @@ public sealed class StreamingExportTests : IDisposable
         var info = VideoFileReader.Read(path);
         Assert.Equal("H264", info.Codec);
         Assert.Equal((640, 360), (info.Width, info.Height));
-        Assert.Equal(rate, info.FrameRate);
         Assert.Equal(Frames, info.FrameCount);
         Assert.Equal(Enumerable.Range(0, Frames).Select(i => FrameTiming.FrameStart(i, rate)), info.SampleTimes);
-        AssertDurations(info, rate, drift: 0);
+        AssertFrameRate(info, rate);
+        AssertDurations(info, rate);
     }
 
-    [Fact]
-    public async Task AnNtscExportDriftsByAThirdOfATickPerFrameAtMost()
+    [Theory]
+    [InlineData(30000, 1001, 2001)] // late by up to 333 ticks (frame 997), on time again at frame 2000
+    [InlineData(24000, 1001, 300)]
+    [InlineData(60000, 1001, 300)]
+    [InlineData(7, 3, 60)] // length mode: timescale 2333, up to 4,286 ticks late (frame 7)
+    [InlineData(200, 9, 120)] // length mode: timescale 22222, up to 450 ticks late (frame 100)
+    [InlineData(3, 7, 12)] // length mode: timescale 428, up to 23,364 ticks late (frame 3)
+    public async Task EveryFrameLandsAtMostOneTimescaleUnitAfterItsStart(int numerator, int denominator, int frames)
     {
-        // The MP4 sink stores 30000/1001 as timescale 29970 with 1000 units a frame (29.97 fps exactly),
-        // so frame n lands at n * 1000/29970 s instead of n * 1001/30000 s: a third of a tick later per frame.
+        // The MP4 sink's timescale is floor(rate x 1000). When that is not exact, each sample lands on that
+        // grid at or after FrameStart and less than one unit later; the error does not accumulate.
         SkipWithoutH264Encoder();
-        var rate = FrameRates.Ntsc30;
-        var path = Path.Combine(_directory, "ntsc.mp4");
+        var rate = new Fraction(numerator, denominator);
+        var path = Path.Combine(_directory, $"{numerator}-{denominator}.mp4");
 
-        await ExportOrSkipAsync(new NumberedFrames(Frames, 960, 640), path, new VideoExportSettings(640, 360, rate));
+        await ExportOrSkipAsync(new NumberedFrames(frames, 320, 180), path, new VideoExportSettings(160, 90, rate));
 
         var info = VideoFileReader.Read(path);
-        Assert.Equal(Frames, info.FrameCount);
-        for (var i = 0; i < Frames; i++)
+        Assert.Equal(frames, info.FrameCount);
+        var unit = TimescaleUnit(rate);
+        for (var i = 0; i < frames; i++)
         {
-            Assert.InRange(info.SampleTimes[i] - FrameTiming.FrameStart(i, rate), 0, 1 + (i / 3));
+            var late = info.SampleTimes[i] - FrameTiming.FrameStart(i, rate);
+            Assert.True(late >= 0 && late <= unit, $"Frame {i} is {late} ticks late; one timescale unit is {unit} ticks.");
         }
 
-        AssertDurations(info, rate, drift: 1 + (Frames / 3));
+        AssertFrameRate(info, rate);
+        AssertDurations(info, rate);
     }
+
     [Fact]
     public async Task EveryDecodedFrameShowsItsOwnNumber()
     {
@@ -230,17 +244,46 @@ public sealed class StreamingExportTests : IDisposable
         Assert.Throws<FileNotFoundException>(() => VideoFileReader.Read(Path.Combine(_directory, "missing.mp4")));
     }
 
-    // The MP4 sink keeps 1000 time units per frame, and rounds each sample's duration and the track's down to them.
-    private static void AssertDurations(VideoFileInfo info, Fraction rate, long drift)
+    /// <summary>
+    /// One unit of the MP4 sink's timescale, floor(rate x 1000) units a second, in whole ticks rounded up:
+    /// 334 at 30 and 29.97 fps, 4,287 at 7/3, 23,365 at 3/7. The bound for #32's timing checks.
+    /// </summary>
+    private static long TimescaleUnit(Fraction rate)
     {
-        var unit = (FrameTiming.FrameDuration(0, rate) / 1000) + 1;
+        var timescale = (long)rate.Numerator * 1000 / rate.Denominator;
+        return (FrameTiming.TicksPerSecond + timescale - 1) / timescale;
+    }
+
+    // Each sample's duration and the track's are whole timescale units: within one unit of ours.
+    private static void AssertDurations(VideoFileInfo info, Fraction rate)
+    {
+        var unit = TimescaleUnit(rate);
         for (var i = 0; i < info.FrameCount; i++)
         {
-            Assert.InRange(info.SampleDurations[i], FrameTiming.FrameDuration(i, rate) - unit, FrameTiming.FrameDuration(i, rate) + 1);
+            Assert.InRange(info.SampleDurations[i], FrameTiming.FrameDuration(i, rate) - unit, FrameTiming.FrameDuration(i, rate) + unit);
         }
 
         var expected = FrameTiming.Duration(info.FrameCount, rate);
-        Assert.InRange(info.Duration, expected - unit - drift, expected + drift);
+        Assert.InRange(info.Duration, expected - unit, expected + unit);
+    }
+
+    // The source reader derives the rate from the 100 ns frame duration and gives the exact fraction back only for
+    // the broadcast rates (12 fps reads back as 10,000,000/833,333, 24000/1001 as 10,000,000/417,083, 7/3 as 10,000,000/4,285,719). Elsewhere the
+    // frame duration it implies is within one timescale unit of ours.
+    private static void AssertFrameRate(VideoFileInfo info, Fraction rate)
+    {
+        Fraction[] broadcast = [new(24, 1), new(25, 1), new(30, 1), new(50, 1), new(60, 1), FrameRates.Ntsc30, FrameRates.Ntsc60];
+        Assert.NotNull(info.FrameRate);
+        if (broadcast.Contains(rate))
+        {
+            Assert.Equal(rate, info.FrameRate);
+            return;
+        }
+
+        var read = info.FrameRate.Value;
+        var readDuration = (double)FrameTiming.TicksPerSecond * read.Denominator / read.Numerator;
+        var ourDuration = (double)FrameTiming.TicksPerSecond * rate.Denominator / rate.Numerator;
+        Assert.InRange(readDuration - ourDuration, -TimescaleUnit(rate), TimescaleUnit(rate));
     }
 
     [Fact]
