@@ -468,6 +468,23 @@ public sealed class Project
     {
         EnsureWritable();
         ArgumentNullException.ThrowIfNull(order);
+        ReorderAndSetMode(order, _state.SortMode);
+    }
+
+    /// <summary>
+    /// <see cref="ReorderFrames"/> and <see cref="SortMode"/> in one commit, so a listener never sees the new order under the
+    /// old mode (or the new mode over the old order). One <see cref="Changed"/> event with <see cref="ProjectChanges.Frames"/>
+    /// and <see cref="ProjectChanges.SortMode"/> as far as each really changes; none when neither does. An invalid order
+    /// or mode throws and changes nothing. For <c>TenLapse.Core.Ordering</c>.
+    /// </summary>
+    internal void ReorderAndSetMode(IReadOnlyList<Guid> order, SortMode mode)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(order);
+        if (!Enum.IsDefined(mode))
+        {
+            throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown sort mode.");
+        }
 
         var frames = _state.Frames;
         var byId = frames.ToDictionary(frame => frame.Id);
@@ -476,12 +493,24 @@ public sealed class Project
             throw new ArgumentException("The order must list every frame id in the project exactly once.", nameof(order));
         }
 
-        if (order.SequenceEqual(frames.Select(frame => frame.Id)))
+        var next = _state;
+        var changes = ProjectChanges.None;
+        if (!order.SequenceEqual(frames.Select(frame => frame.Id)))
         {
-            return;
+            next = next with { Frames = [.. order.Select(id => byId[id])] };
+            changes |= ProjectChanges.Frames;
         }
 
-        Commit(_state with { Frames = [.. order.Select(id => byId[id])] }, ProjectChanges.Frames, FrameChange.Reset);
+        if (mode != _state.SortMode)
+        {
+            next = next with { SortMode = mode };
+            changes |= ProjectChanges.SortMode;
+        }
+
+        if (changes != ProjectChanges.None)
+        {
+            Commit(next, changes, (changes & ProjectChanges.Frames) != 0 ? FrameChange.Reset : null);
+        }
     }
 
     /// <summary>
