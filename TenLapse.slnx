@@ -37,4 +37,11 @@
       <Platform Solution="*|ARM64" Project="ARM64" />
     </Project>
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/TenLapse.Spike/TenLapse.Spike.csproj">
+      <Platform Solution="*|Any CPU" Project="x64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+    </Project>
+  </Folder>
 </Solution>

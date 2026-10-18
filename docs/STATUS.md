@@ -4,7 +4,7 @@ Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Running: #8 fix round (PR #65) and #28 (wave 5, started early: App window only).
+Running: PR #67 review (#28) and #9 (wave 4).
 
 ## Waves
 
@@ -19,11 +19,11 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 1 | #6 Privacy policy and README | S | `README.md`, `PRIVACY.md` | merged #60 |
 | 2 | #4 Package identity and MSIX | S | `src/TenLapse.App` manifest, packaging props | merged #62 |
 | 2 | #10 Exact frame timing | S | `TenLapse.Core/Timing` | merged #63 |
-| 3 | #8 Spike: streaming encode | O | `TenLapse.Media`, a spike harness | PR #65, fix round |
+| 3 | #8 Spike: streaming encode | O | `TenLapse.Media`, a spike harness | merged #65 |
 | 3 | #27 Design tokens and theme resources | S | `TenLapse.App/Themes` | merged #64 |
-| 4 | #9 Spike: encoder capabilities | O | `TenLapse.Media/Encoding` | |
+| 4 | #9 Spike: encoder capabilities | O | `TenLapse.Media/Encoding` | running |
 | 4 | #16 Project model and view models | O | `TenLapse.Core/Projects`, new `TenLapse.Presentation` | merged #66 |
-| 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | running |
+| 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | PR #67, review |
 | 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | |
 | 6 | #26 One error path | O | App startup, `Core/Diagnostics` | |
 | 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | |
@@ -160,3 +160,13 @@ own waves once 3.0 ships.
   `ProjectViewModel`, `ProjectText`, `IDialogService`, `DialogQueue`,
   `IErrorSink`), App `ContentDialogService` and `TraceErrorSink`, manual
   composition root in `App.xaml.cs`.
+- #8 PR #65: `TenLapse.Media.Export` (`VideoExporter.ExportAsync`, callable
+  from any thread; `VideoDevice` per export; `SinkWriterEncoder` behind the
+  internal `IVideoEncoder` seam; `IFrameSource`, `PhotoFileSource`;
+  `VideoExportFailure` categories classified by HRESULT; output deleted on
+  failure or cancel), `TenLapse.Media.Inspection.VideoFileReader` (exact sample
+  times, first-sample check), colour tags (BT.709 above 576 lines, BT.601
+  below, studio range), no B-frames. `tools/TenLapse.Spike` harness. 4K from
+  memory: 155 fps, 151 MB peak on NVENC. MP4 timestamps: exact when rate × 1000
+  is whole, else 0 to one timescale unit late (#32). About 34 handles per
+  export leak inside the NVIDIA encoder MFT, not fixable on our side.
