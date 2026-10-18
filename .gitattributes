@@ -29,3 +29,28 @@
 *.pri binary
 *.dll binary
 *.exe binary
+*.pfx binary
+*.msix binary
+*.msixbundle binary
+*.appx binary
+*.zip binary
+*.pdf binary
+*.bin binary
+
+# Raw photo, modern image, video and audio formats
+*.cr2 binary
+*.cr3 binary
+*.nef binary
+*.arw binary
+*.raf binary
+*.orf binary
+*.rw2 binary
+*.avif binary
+*.jxl binary
+*.mkv binary
+*.webm binary
+*.wav binary
+*.mp3 binary
+
+# Test fixtures are byte-exact: no line-ending conversion, whatever the extension
+tests/**/Fixtures/** -text
