@@ -329,4 +329,58 @@ public static class NaturalNameComparerTests
         AssertParity($"{(char)0x0416}.jpg", $"{(char)0x0410}.jpg");
         AssertParity($"{(char)0x0416}.jpg", "z.jpg");
     }
+
+    [Fact]
+    public static void SortingRandomNamesOverAMixedAlphabetNeverThrowsAndIsConsistent()
+    {
+        // ASCII letters of both cases, digits, fullwidth digits, Latin-1 accents precomposed and decomposed, a space and a dot.
+        string[] alphabet =
+        [
+            "a", "B", "z", "Q", "0", "1", "9", "7", "_", "-", " ", ".", "(", ")",
+            $"{(char)0xFF11}", $"{(char)0xFF13}", $"{(char)0xFF10}",
+            $"{(char)0xE9}", $"e{(char)0x0301}", $"{(char)0xC9}", $"{(char)0xFC}", $"u{(char)0x0308}", $"{(char)0xE0}", $"a{(char)0x0300}", $"{(char)0xDF}", $"{(char)0xF1}", $"n{(char)0x0303}",
+        ];
+        var random = new Random(2026);
+        var names = new string[5000];
+        for (var i = 0; i < names.Length; i++)
+        {
+            var length = random.Next(1, 9);
+            names[i] = string.Concat(Enumerable.Range(0, length).Select(_ => alphabet[random.Next(alphabet.Length)]));
+        }
+
+        var comparer = NaturalNameComparer.Instance;
+        var sorted = (string[])names.Clone();
+        Array.Sort(sorted, comparer);
+
+        // In order.
+        for (var i = 1; i < sorted.Length; i++)
+        {
+            Assert.True(comparer.Compare(sorted[i - 1], sorted[i]) <= 0, $"\"{sorted[i - 1]}\" before \"{sorted[i]}\"");
+        }
+
+        // Sorting the result again gives the same order (names that tie may swap places, so compare by the comparer, not by text),
+        // and so does sorting a shuffled copy.
+        var again = (string[])sorted.Clone();
+        Array.Sort(again, comparer);
+        var shuffled = names.OrderBy(_ => random.Next()).ToArray();
+        Array.Sort(shuffled, comparer);
+        for (var i = 0; i < sorted.Length; i++)
+        {
+            Assert.Equal(0, comparer.Compare(sorted[i], again[i]));
+            Assert.Equal(0, comparer.Compare(sorted[i], shuffled[i]));
+        }
+
+        // Antisymmetry on a sample of pairs, and transitivity on a sample of triples.
+        for (var n = 0; n < 20_000; n++)
+        {
+            var a = names[random.Next(names.Length)];
+            var b = names[random.Next(names.Length)];
+            var c = names[random.Next(names.Length)];
+            Assert.Equal(-Math.Sign(comparer.Compare(b, a)), Math.Sign(comparer.Compare(a, b)));
+            if (comparer.Compare(a, b) <= 0 && comparer.Compare(b, c) <= 0)
+            {
+                Assert.True(comparer.Compare(a, c) <= 0, $"\"{a}\" <= \"{b}\" <= \"{c}\" but \"{a}\" > \"{c}\"");
+            }
+        }
+    }
 }
