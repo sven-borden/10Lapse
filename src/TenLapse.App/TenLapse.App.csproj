@@ -45,10 +45,14 @@
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
-  <!-- The token gallery (opened with the gallery switch) is a Debug tool and must not exist in Release. -->
+  <!--
+    The token gallery (opened with the gallery switch) and the shell's sample switches (Debugging) are Debug
+    tools and must not exist in Release.
+  -->
   <ItemGroup Condition="'$(Configuration)' != 'Debug'">
     <Page Remove="Gallery\**" />
     <Compile Remove="Gallery\**" />
+    <Compile Remove="Debugging\**" />
   </ItemGroup>
 
   <ItemGroup>

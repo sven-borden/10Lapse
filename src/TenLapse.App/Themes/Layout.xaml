@@ -67,6 +67,9 @@
   <x:Double x:Key="InspectorDockMinWindowWidth">1000</x:Double>
   <x:Double x:Key="MinWindowWidth">640</x:Double>
   <x:Double x:Key="MinWindowHeight">480</x:Double>
+  <!-- The size a new window opens at (the prototype's frame), when the screen's work area has room for it -->
+  <x:Double x:Key="DefaultWindowWidth">1280</x:Double>
+  <x:Double x:Key="DefaultWindowHeight">800</x:Double>
 
   <!--
     Shell regions (prototype docs/design/canvas/Main.dc.html): the InfoBar floats 32 px below the top of the

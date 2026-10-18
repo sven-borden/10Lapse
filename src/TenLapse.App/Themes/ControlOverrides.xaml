@@ -121,6 +121,22 @@
       <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="{ThemeResource EmberLinkColor}" />
       <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="{ThemeResource EmberLinkColor}" />
       <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="{ThemeResource EmberLinkColor}" Opacity="0.8" />
+      <!-- InfoBar (DESIGN.md, Cards and InfoBars): the status fill (Neutral is Card), the icon in the status color, Ink text, a Control Stroke border. The tokens map to system colors in HighContrast. -->
+      <SolidColorBrush x:Key="InfoBarErrorSeverityBackgroundBrush" Color="{ThemeResource CriticalFillColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityBackgroundBrush" Color="{ThemeResource CautionFillColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityBackgroundBrush" Color="{ThemeResource SuccessFillColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityBackgroundBrush" Color="{ThemeResource CardColor}" />
+      <SolidColorBrush x:Key="InfoBarErrorSeverityIconBackground" Color="{ThemeResource CriticalColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityIconBackground" Color="{ThemeResource CautionColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityIconBackground" Color="{ThemeResource SuccessColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityIconBackground" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="InfoBarErrorSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarTitleForeground" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InfoBarMessageForeground" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InfoBarBorderBrush" Color="{ThemeResource ControlStrokeColor}" />
     </ResourceDictionary>
 
     <ResourceDictionary x:Key="Dark">
@@ -221,6 +237,22 @@
       <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="{ThemeResource EmberLinkColor}" />
       <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="{ThemeResource EmberLinkColor}" />
       <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="{ThemeResource EmberLinkColor}" Opacity="0.8" />
+      <!-- InfoBar (DESIGN.md, Cards and InfoBars): the status fill (Neutral is Card), the icon in the status color, Ink text, a Control Stroke border. The tokens map to system colors in HighContrast. -->
+      <SolidColorBrush x:Key="InfoBarErrorSeverityBackgroundBrush" Color="{ThemeResource CriticalFillColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityBackgroundBrush" Color="{ThemeResource CautionFillColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityBackgroundBrush" Color="{ThemeResource SuccessFillColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityBackgroundBrush" Color="{ThemeResource CardColor}" />
+      <SolidColorBrush x:Key="InfoBarErrorSeverityIconBackground" Color="{ThemeResource CriticalColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityIconBackground" Color="{ThemeResource CautionColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityIconBackground" Color="{ThemeResource SuccessColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityIconBackground" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="InfoBarErrorSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarTitleForeground" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InfoBarMessageForeground" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InfoBarBorderBrush" Color="{ThemeResource ControlStrokeColor}" />
     </ResourceDictionary>
 
     <ResourceDictionary x:Key="HighContrast">
@@ -321,6 +353,22 @@
       <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="{ThemeResource EmberLinkColor}" />
       <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
       <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="{ThemeResource SystemColorHighlightColor}" />
+      <!-- InfoBar (DESIGN.md, Cards and InfoBars): the status fill (Neutral is Card), the icon in the status color, Ink text, a Control Stroke border. The tokens map to system colors in HighContrast. -->
+      <SolidColorBrush x:Key="InfoBarErrorSeverityBackgroundBrush" Color="{ThemeResource CriticalFillColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityBackgroundBrush" Color="{ThemeResource CautionFillColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityBackgroundBrush" Color="{ThemeResource SuccessFillColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityBackgroundBrush" Color="{ThemeResource CardColor}" />
+      <SolidColorBrush x:Key="InfoBarErrorSeverityIconBackground" Color="{ThemeResource CriticalColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityIconBackground" Color="{ThemeResource CautionColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityIconBackground" Color="{ThemeResource SuccessColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityIconBackground" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="InfoBarErrorSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarTitleForeground" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InfoBarMessageForeground" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InfoBarBorderBrush" Color="{ThemeResource ControlStrokeColor}" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 

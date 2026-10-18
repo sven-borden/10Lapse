@@ -51,6 +51,9 @@ public static class ProjectText
     /// <summary>Error context: a view's <c>ProjectReplaced</c> handler threw.</summary>
     public static string SwitchingViewFailed => "A view could not switch to the new project.";
 
+    /// <summary>Error context: the action of an InfoBar failed.</summary>
+    public static string InfoBarActionFailed => "An InfoBar action failed.";
+
     /// <summary>
     /// The Timing readout, e.g. "742 photos → 24.7 s at 30 fps", at the effective rate for this count
     /// (<see cref="TimingSettings.EffectiveRate"/>: in Length mode a clamped rate gives the length the clip

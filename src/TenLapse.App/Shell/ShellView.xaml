@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The app shell (#28), the whole content of MainWindow. It is a UserControl, not the window's own XAML, because
+  visual state triggers only run inside a control: the Empty and Editing states here, #36's narrow layout later.
+  Laid out after the prototype in docs/design/canvas/Main.dc.html and DESIGN.md section 5:
+
+    Title bar    40 px on Mica: app icon, "10Lapse" in Caption, the project name in Ink Secondary, a dot
+                 while there are unsaved changes, the system caption buttons.
+    Command bar  48 px on Mica: subtle buttons left; Settings and the amber Export button right.
+    Body         two states from ProjectViewModel.HasFrames:
+                 Empty    EmptyRegion, the first-launch drop zone (#29).
+                 Editing  the Layer surface with StageRegion (PreviewRegion, TransportRegion, FilmstripRegion)
+                          and InspectorPane (InspectorRegion) docked right at 320 px.
+                 InfoBarLayer floats over the top of the stage in both states and never moves the layout.
+
+  The body grid is 2 x 2 so #36 can fold the inspector under the stage below 1,000 px with one visual state:
+  InspectorPane to Grid.Row 1, Grid.Column 0, Width Auto, Height NarrowPanelHeight, BorderThickness 0,1,0,0.
+  The stage and the InfoBar layer stay in cell (0, 0) and need no change.
+
+  Unbuilt actions are absent, not disabled (CLAUDE.md): the command bar holds only New project for now, with
+  a commented slot for each later button.
+-->
+<UserControl
+  x:Class="TenLapse.Shell.ShellView"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:core="using:TenLapse.Core"
+  xmlns:shell="using:TenLapse.Shell">
+
+  <Grid x:Name="ShellRoot">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <VisualStateManager.VisualStateGroups>
+      <!-- Empty or Editing. #36 adds its own group beside this one for the narrow layout. -->
+      <VisualStateGroup x:Name="ProjectStates">
+        <VisualState x:Name="Empty">
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind shell:Bind.Not(ViewModel.CurrentProject.HasFrames), Mode=OneWay}" />
+          </VisualState.StateTriggers>
+        </VisualState>
+        <VisualState x:Name="Editing">
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind ViewModel.CurrentProject.HasFrames, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="EmptyRegion.Visibility" Value="Collapsed" />
+            <Setter Target="EditingSurface.Visibility" Value="Visible" />
+            <Setter Target="StageRegion.Visibility" Value="Visible" />
+            <Setter Target="InspectorPane.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
+
+    <!-- Where Mica is not available (Windows 10), the Mica token instead. -->
+    <Border x:Name="MicaFallback" Grid.RowSpan="3" Visibility="Collapsed" Background="{ThemeResource MicaBrush}" />
+
+    <!--
+      Title bar: the whole strip is the drag region (Window.SetTitleBar), so it holds nothing interactive. The
+      inset columns keep clear of the system caption buttons; MainWindow sizes them from AppWindow.TitleBar.
+    -->
+    <Grid x:Name="AppTitleBar" Grid.Row="0" Height="{StaticResource TitleBarHeight}">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition x:Name="TitleBarLeftInset" Width="0" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition x:Name="TitleBarRightInset" Width="0" />
+      </Grid.ColumnDefinitions>
+      <!--
+        The system draws its caption buttons 32 px tall (AppWindowTitleBar offers 32 or 48, not 40), so the
+        title content is centered on their row, the top 32 px, and the strip keeps the spec's 40 px.
+      -->
+      <StackPanel
+        Grid.Column="1"
+        Height="32"
+        Padding="16,0,0,0"
+        VerticalAlignment="Top"
+        Orientation="Horizontal"
+        Spacing="{StaticResource SpacingMd}">
+        <!-- The app icon is the Store tile's unplated asset, so #37's icon arrives here by itself. -->
+        <Image
+          Width="16"
+          Height="16"
+          VerticalAlignment="Center"
+          Source="ms-appx:///Assets/Square44x44Logo.targetsize-24_altform-unplated.png" />
+        <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionTextStyle}" Text="{x:Bind core:Product.Name}" />
+        <StackPanel
+          VerticalAlignment="Center"
+          Orientation="Horizontal"
+          Spacing="{StaticResource SpacingSm}"
+          Visibility="{x:Bind ViewModel.ShowsProjectName, Mode=OneWay}">
+          <TextBlock
+            x:Name="ProjectNameText"
+            MaxWidth="360"
+            VerticalAlignment="Center"
+            Style="{StaticResource CaptionSecondaryTextStyle}"
+            Text="{x:Bind ViewModel.CurrentProject.Name, Mode=OneWay}"
+            TextTrimming="CharacterEllipsis" />
+          <Ellipse
+            x:Name="UnsavedDot"
+            Width="6"
+            Height="6"
+            VerticalAlignment="Center"
+            AutomationProperties.Name="Unsaved changes"
+            Fill="{ThemeResource InkSecondaryBrush}"
+            Visibility="{x:Bind ViewModel.HasUnsavedChanges, Mode=OneWay}" />
+        </StackPanel>
+      </StackPanel>
+    </Grid>
+
+    <!--
+      Command bar. Its buttons are subtle (DESIGN.md, Buttons): the Button keys below make every plain Button in
+      it transparent with an Ink wash on hover. ExportButtonStyle carries its own brushes, so the slot for it on
+      the right is not affected. High contrast keeps the system button colors.
+    -->
+    <Grid
+      x:Name="CommandBarRegion"
+      Grid.Row="1"
+      Height="{StaticResource CommandBarHeight}"
+      Padding="12,0,12,0">
+      <Grid.Resources>
+        <ResourceDictionary>
+          <ResourceDictionary.ThemeDictionaries>
+            <ResourceDictionary x:Key="Light">
+              <SolidColorBrush x:Key="ButtonBackground" Color="Transparent" />
+              <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{ThemeResource SubtleFillHoverColor}" />
+              <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{ThemeResource SubtleFillPressedColor}" />
+              <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="Transparent" />
+              <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent" />
+              <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+              <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+              <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="Transparent" />
+              <SolidColorBrush x:Key="ButtonForeground" Color="{ThemeResource InkColor}" />
+              <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{ThemeResource InkColor}" />
+              <SolidColorBrush x:Key="ButtonForegroundPressed" Color="{ThemeResource InkSecondaryColor}" />
+            </ResourceDictionary>
+            <ResourceDictionary x:Key="Dark">
+              <SolidColorBrush x:Key="ButtonBackground" Color="Transparent" />
+              <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{ThemeResource SubtleFillHoverColor}" />
+              <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{ThemeResource SubtleFillPressedColor}" />
+              <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="Transparent" />
+              <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent" />
+              <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+              <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+              <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="Transparent" />
+              <SolidColorBrush x:Key="ButtonForeground" Color="{ThemeResource InkColor}" />
+              <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{ThemeResource InkColor}" />
+              <SolidColorBrush x:Key="ButtonForegroundPressed" Color="{ThemeResource InkSecondaryColor}" />
+            </ResourceDictionary>
+          </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+      </Grid.Resources>
+
+      <StackPanel
+        HorizontalAlignment="Left"
+        VerticalAlignment="Center"
+        Orientation="Horizontal"
+        Spacing="{StaticResource SpacingXs}">
+        <!-- Slot: Add photos (#12). A subtle button with the plus icon, always visible. -->
+        <!-- Slot: Sort (#15). "Sort: Capture time" with a chevron, visible with a project. -->
+        <Button
+          x:Name="NewProjectButton"
+          Height="{StaticResource ControlHeight}"
+          Padding="{StaticResource PaddingButtonSubtle}"
+          AutomationProperties.Name="New project"
+          Command="{x:Bind ViewModel.NewProjectCommand}"
+          Visibility="{x:Bind ViewModel.ShowsProjectName, Mode=OneWay}">
+          <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+            <!-- The prototype's "new page" icon, stroked like the other command bar icons. -->
+            <Path
+              Width="16"
+              Height="16"
+              VerticalAlignment="Center"
+              Data="M9 2H4.5A1.5 1.5 0 0 0 3 3.5v9A1.5 1.5 0 0 0 4.5 14h7a1.5 1.5 0 0 0 1.5-1.5V6zM9 2v4h4M8 8.5v3M6.5 10h3"
+              Stroke="{ThemeResource InkBrush}"
+              StrokeEndLineCap="Round"
+              StrokeLineJoin="Round"
+              StrokeStartLineCap="Round"
+              StrokeThickness="1.5" />
+            <TextBlock VerticalAlignment="Center" Text="New project" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+
+      <StackPanel
+        HorizontalAlignment="Right"
+        VerticalAlignment="Center"
+        Orientation="Horizontal"
+        Spacing="{StaticResource SpacingSm}">
+        <!-- Slot: Settings. A 32 x 32 subtle icon button that opens the settings page (a page, not a dialog). -->
+        <!-- Slot: Export video (#24). <Button Style="{StaticResource ExportButtonStyle}" />, the one amber button. -->
+      </StackPanel>
+    </Grid>
+
+    <!-- Body: a 2 x 2 grid, see the comment at the top. -->
+    <Grid x:Name="Body" Grid.Row="2">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <!-- Empty: #29 puts the first-launch drop zone here, on Mica, 16 px in from the window edges. -->
+      <Grid
+        x:Name="EmptyRegion"
+        Grid.RowSpan="2"
+        Grid.ColumnSpan="2"
+        Padding="16,0,16,16">
+        <TextBlock
+          MaxWidth="460"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource BodyTextStyle}"
+          Text="10Lapse plays your photos back as a video."
+          TextAlignment="Center"
+          TextWrapping="Wrap" />
+      </Grid>
+
+      <!-- Editing: the Layer surface for the stage and the inspector, separated from Mica by one divider. -->
+      <Border
+        x:Name="EditingSurface"
+        Grid.RowSpan="2"
+        Grid.ColumnSpan="2"
+        Background="{ThemeResource LayerBrush}"
+        BorderBrush="{ThemeResource DividerBrush}"
+        BorderThickness="0,1,0,0"
+        Visibility="Collapsed" />
+
+      <!-- Stage: 20 px padding, 12 px between the preview, the transport and the filmstrip. -->
+      <Grid
+        x:Name="StageRegion"
+        Grid.Row="0"
+        Grid.Column="0"
+        Margin="0,1,0,0"
+        Padding="{StaticResource PaddingStage}"
+        RowSpacing="{StaticResource SpacingMd}"
+        Visibility="Collapsed">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <!-- Preview gate (#19): the photo in a 6 px gate; Letterbox where Fit leaves space. -->
+        <Grid
+          x:Name="PreviewRegion"
+          Grid.Row="0"
+          Background="{StaticResource LetterboxBrush}"
+          CornerRadius="{StaticResource RadiusCard}" />
+        <!-- Transport (#19): the 36 px play button, the scrubber and the time code. -->
+        <Grid
+          x:Name="TransportRegion"
+          Grid.Row="1"
+          Height="{StaticResource PlayButtonSize}" />
+        <!-- Filmstrip (#20): the thumbnails and their caption row; drop MinHeight once the strip sizes itself. -->
+        <Grid
+          x:Name="FilmstripRegion"
+          Grid.Row="2"
+          MinHeight="{StaticResource FilmstripMinHeight}" />
+      </Grid>
+
+      <!-- Inspector (#17, #18, #23, Look; #24 swaps in the export panel): 320 px, one divider on its left. -->
+      <Border
+        x:Name="InspectorPane"
+        Grid.Row="0"
+        Grid.Column="1"
+        Width="{StaticResource InspectorWidth}"
+        Margin="0,1,0,0"
+        BorderBrush="{ThemeResource DividerBrush}"
+        BorderThickness="1,0,0,0"
+        Visibility="Collapsed">
+        <Grid x:Name="InspectorRegion" Padding="20,0,20,20" />
+      </Border>
+
+      <!--
+        InfoBars float over the top of the stage (DESIGN.md, Cards and InfoBars): 32 px down, at most 560 px wide,
+        with the Flyout shadow. InfoBarPresenter fills, shows and animates it; FlyoutShadow casts the shadow from
+        the rectangle behind the bar, which always has its size.
+      -->
+      <Grid
+        x:Name="InfoBarLayer"
+        Grid.Row="0"
+        Grid.Column="0"
+        MaxWidth="{StaticResource InfoBarMaxWidth}"
+        Margin="{StaticResource InfoBarHostMargin}"
+        VerticalAlignment="Top"
+        Visibility="Collapsed">
+        <Rectangle
+          x:Name="InfoBarShadowCaster"
+          Fill="{ThemeResource CardBrush}"
+          RadiusX="6"
+          RadiusY="6" />
+        <InfoBar
+          x:Name="ShellInfoBar"
+          CornerRadius="{StaticResource RadiusCard}"
+          IsClosable="True"
+          IsOpen="False" />
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>
