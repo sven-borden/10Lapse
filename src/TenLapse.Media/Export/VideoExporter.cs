@@ -90,8 +90,12 @@ public static class VideoExporter
             throw new ArgumentException("The source has no frames.", nameof(source));
         }
 
+        // The whole run lives on the thread pool (MTA). Called from the UI thread (an STA), the Direct3D device's
+        // runtime callable wrapper would otherwise belong to that apartment, and Media Foundation's threads could
+        // not use it ("Specified cast is not valid" in IMFDXGIDeviceManager.ResetDevice).
         var run = new ExportRun(source, settings, progress);
-        return await run.RunAsync(Path.GetFullPath(outputPath), cancellationToken).ConfigureAwait(false);
+        var fullPath = Path.GetFullPath(outputPath);
+        return await Task.Run(() => run.RunAsync(fullPath, cancellationToken), CancellationToken.None).ConfigureAwait(false);
     }
 
     private sealed class ExportRun

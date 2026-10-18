@@ -1,6 +1,7 @@
 using TenLapse.Core.Timing;
 using TenLapse.Media.Export;
 using TenLapse.Media.Inspection;
+using static TenLapse.Tests.Media.MediaSkips;
 
 namespace TenLapse.Tests.Media;
 
@@ -163,21 +164,38 @@ public sealed class StreamingExportTests : IDisposable
         Assert.InRange(info.Duration, expected - unit - drift, expected + drift);
     }
 
-    private static void SkipWithoutH264Encoder() =>
-        Assert.SkipWhen(
-            H264Encoders.Find().Count == 0,
-            "No H.264 encoder is installed (Media Foundation lists none), so the export cannot run here. Run this test on a PC with one before merging.");
-
-    private static async Task<VideoExportResult> ExportOrSkipAsync(NumberedFrames source, string path, VideoExportSettings settings)
+    [Fact]
+    public void AnExportStartedOnAnStaThreadWorks()
     {
-        try
+        // The WinUI UI thread is an STA. A COM object created there belongs to that apartment, and Media
+        // Foundation's own threads (and the thread pool) then cannot use it.
+        SkipWithoutH264Encoder();
+        var path = Path.Combine(_directory, "sta.mp4");
+        Exception? failure = null;
+        VideoExportResult? result = null;
+        var thread = new Thread(() =>
         {
-            return await VideoExporter.ExportAsync(source, path, settings, cancellationToken: TestContext.Current.CancellationToken);
-        }
-        catch (VideoExportException exception) when (exception.Failure == VideoExportFailure.EncoderUnavailable)
-        {
-            Assert.Skip($"The sink writer found no H.264 encoder ({exception.Message}). Run this test on a PC with one before merging.");
-            throw;
-        }
+            try
+            {
+                result = VideoExporter.ExportAsync(
+                        new NumberedFrames(10, 320, 180),
+                        path,
+                        new VideoExportSettings(320, 180, new Fraction(30, 1)),
+                        cancellationToken: TestContext.Current.CancellationToken)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (Exception exception)
+            {
+                failure = exception;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(60)), "The export did not finish within 60 s.");
+
+        Assert.Null(failure);
+        Assert.Equal(10, result!.FrameCount);
+        Assert.Equal(10, VideoFileReader.Read(path).FrameCount);
     }
 }
