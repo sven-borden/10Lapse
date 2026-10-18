@@ -1,6 +1,6 @@
 <Solution>
   <!--
-    Win2D and the Windows App SDK need a real architecture, so the Windows
+    Win2D and the Windows App SDK want a real architecture, so the Windows
     projects (App, Media, Tests) always build as x64 or ARM64; Core is Any CPU.
     "Any CPU" is listed so that plain `dotnet build` and `dotnet test` default
     to it (otherwise they pick ARM64, the first platform alphabetically, which

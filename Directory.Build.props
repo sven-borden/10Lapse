@@ -11,6 +11,16 @@
     <Product>10Lapse</Product>
   </PropertyGroup>
 
+  <!--
+    A Windows project built on its own (dotnet build src/TenLapse.App, or dotnet
+    test on tests/TenLapse.Tests) would default to AnyCPU: Win2D warns
+    (WIN2D0001) and the test host crashes in the Windows App SDK bootstrapper.
+    Default it to x64; Core stays Any CPU.
+  -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'TenLapse.Core' and '$(Platform)' == ''">
+    <Platform>x64</Platform>
+  </PropertyGroup>
+
   <!-- Windows projects (App, Media, Tests) take their target framework from here. -->
   <PropertyGroup>
     <TenLapseWindowsTargetFramework>net10.0-windows10.0.19041.0</TenLapseWindowsTargetFramework>
