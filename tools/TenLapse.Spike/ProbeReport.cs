@@ -24,8 +24,9 @@ internal static class ProbeReport
         var first = clock.Elapsed;
         clock.Restart();
         var encoders = EncoderCatalog.Find();
+        var decoders = EncoderCatalog.FindDecoders(VideoFormat.Mp4Hevc);
         var catalog = clock.Elapsed;
-        var key = EncoderCacheKey.ForThisMachine(encoders);
+        var key = EncoderCacheKey.ForThisMachine(encoders, decoders);
         var keyTime = clock.Elapsed - catalog;
         clock.Restart();
         if (!software)
@@ -48,6 +49,13 @@ internal static class ProbeReport
         foreach (var encoder in capabilities.Encoders)
         {
             Console.WriteLine($"| {encoder.Name} | {EncoderText.CodecName(encoder.Format)} | {(encoder.IsHardware ? "hardware" : "software")} | {encoder.Clsid:B} |");
+        }
+
+        Console.WriteLine();
+        Console.WriteLine($"HEVC decoders: {(capabilities.Decoders.Count == 0 ? "none" : string.Join(", ", capabilities.Decoders.Select(decoder => decoder.Name)))}");
+        foreach (var format in new[] { VideoFormat.Mp4H264, VideoFormat.Mp4Hevc })
+        {
+            Console.WriteLine($"{EncoderText.CodecName(format)}: available {capabilities.IsAvailable(format)}, plays back {capabilities.CanPlayBack(format)}, hardware {capabilities.HasHardware(format)}");
         }
 
         Console.WriteLine();

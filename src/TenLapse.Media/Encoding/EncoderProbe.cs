@@ -25,7 +25,8 @@ namespace TenLapse.Media.Encoding;
 /// <para>
 /// A failed test encode is a "not supported" answer, classified as an export failure would be, never an
 /// exception. An encoder that is not listed (HEVC without the HEVC Video Extensions or a GPU encoder) is not
-/// probed at all, so HEVC is offered only when an HEVC encoder is present and a test encode worked.
+/// probed at all, and neither is HEVC when no HEVC decoder is listed (a GPU encoder alone, without the HEVC
+/// Video Extensions): HEVC is offered only when Windows can play it back and a test encode worked.
 /// </para>
 /// <para>
 /// Each test encode gets <see cref="TestEncodeTimeout"/>. One that takes longer (a hung driver) is recorded as
@@ -77,18 +78,18 @@ public static class EncoderProbe
         return Task.Run(
             () =>
             {
-                if (ListEncoders() is not { } encoders)
+                if (ListCodecs() is not var (encoders, decoders))
                 {
                     return NoMediaFoundation();
                 }
 
-                var key = EncoderCacheKey.ForThisMachine(encoders);
+                var key = EncoderCacheKey.ForThisMachine(encoders, decoders);
                 if (EncoderCapabilitiesCache.TryRead(cachePath, key) is { } cached)
                 {
                     return cached;
                 }
 
-                var capabilities = Probe(encoders, hardwareAcceleration: true, temporaryFolder, TestEncodeTimeout, cancellationToken);
+                var capabilities = Probe(encoders, decoders, hardwareAcceleration: true, temporaryFolder, TestEncodeTimeout, cancellationToken);
                 if (!capabilities.IsProvisional)
                 {
                     try
@@ -117,8 +118,8 @@ public static class EncoderProbe
     /// </summary>
     public static Task<EncoderCapabilities> ProbeAsync(bool hardwareAcceleration, CancellationToken cancellationToken = default) =>
         Task.Run(
-            () => ListEncoders() is { } encoders
-                ? Probe(encoders, hardwareAcceleration, Path.GetTempPath(), TestEncodeTimeout, cancellationToken)
+            () => ListCodecs() is var (encoders, decoders)
+                ? Probe(encoders, decoders, hardwareAcceleration, Path.GetTempPath(), TestEncodeTimeout, cancellationToken)
                 : NoMediaFoundation(),
             cancellationToken);
 
@@ -281,11 +282,12 @@ public static class EncoderProbe
 
     // Null when Media Foundation itself is missing (a Windows N edition without the Media Feature Pack): MFStartup
     // or MFTEnumEx fails. That answers "nothing can be exported", as a provisional result, never an exception.
-    private static IReadOnlyList<EncoderMft>? ListEncoders()
+    // Only HEVC decoders are listed: H.264 decoding ships with Windows.
+    private static (IReadOnlyList<EncoderMft> Encoders, IReadOnlyList<DecoderMft> Decoders)? ListCodecs()
     {
         try
         {
-            return EncoderCatalog.Find();
+            return (EncoderCatalog.Find(), EncoderCatalog.FindDecoders(VideoFormat.Mp4Hevc));
         }
         catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
         {
@@ -300,6 +302,7 @@ public static class EncoderProbe
     // run on threads of their own (MTA too), one at a time.
     private static EncoderCapabilities Probe(
         IReadOnlyList<EncoderMft> encoders,
+        IReadOnlyList<DecoderMft> decoders,
         bool hardwareAcceleration,
         string temporaryFolder,
         TimeSpan timeout,
@@ -313,20 +316,21 @@ public static class EncoderProbe
         }
         catch (VideoExportException exception)
         {
-            return new EncoderCapabilities(encoders, [], clock.Elapsed, exception.Failure);
+            return new EncoderCapabilities(encoders, [], clock.Elapsed, exception.Failure, decoders);
         }
 
         var stalled = false;
         try
         {
+            // A codec Windows cannot play back is not offered, so it is not probed either.
             var probes = Search(
-                encoders,
+                [.. encoders.Where(encoder => EncoderCapabilities.CanPlayBack(encoder.Format, decoders))],
                 (format, width, height, fps) => TestEncode(device, format, width, height, fps, hardwareAcceleration, temporaryFolder),
                 hardwareAcceleration,
                 timeout,
                 cancellationToken,
                 out stalled);
-            return new EncoderCapabilities(encoders, probes, clock.Elapsed);
+            return new EncoderCapabilities(encoders, probes, clock.Elapsed, decoders: decoders);
         }
         finally
         {

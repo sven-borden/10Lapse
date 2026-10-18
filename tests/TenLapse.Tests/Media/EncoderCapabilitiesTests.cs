@@ -21,7 +21,10 @@ public sealed class EncoderCapabilitiesTests
             _ => null,
         }, kind == EncoderKind.None ? failure ?? VideoExportFailure.SettingsRejected : null, 50);
 
-    internal static EncoderCapabilities Set(params ProbedSize[] probes) => new([], probes, TimeSpan.FromMilliseconds(900));
+    internal static readonly DecoderMft HevcDecoder = new(Hevc, "Microsoft H265 Video Decoder MFT", false, Guid.Empty);
+
+    // With an HEVC decoder listed, as on a PC with the HEVC Video Extensions.
+    internal static EncoderCapabilities Set(params ProbedSize[] probes) => new([], probes, TimeSpan.FromMilliseconds(900), decoders: [HevcDecoder]);
 
     // What this PC (RTX 4060 Ti) answered: four encodes settle the matrix.
     private static EncoderCapabilities AllHardware() => Set(
@@ -137,6 +140,43 @@ public sealed class EncoderCapabilitiesTests
     }
 
     [Fact]
+    public void HevcThatWindowsCannotPlayIsNotOffered()
+    {
+        // A GPU HEVC encoder (it ships with the display driver) that works, but no HEVC Video Extensions: no decoder.
+        EncoderMft gpuHevc = new(Hevc, "GPU HEVC Encoder MFT", true, Guid.NewGuid());
+        ProbedSize[] probes =
+        [
+            Probe(H264, 3840, 2160, 120, EncoderKind.Hardware),
+            Probe(H264, 2160, 3840, 120, EncoderKind.Hardware),
+            Probe(Hevc, 3840, 2160, 120, EncoderKind.Hardware),
+            Probe(Hevc, 2160, 3840, 120, EncoderKind.Hardware),
+        ];
+        var noDecoder = new EncoderCapabilities([gpuHevc], probes, TimeSpan.FromSeconds(1));
+
+        Assert.False(noDecoder.CanPlayBack(Hevc));
+        Assert.False(noDecoder.IsAvailable(Hevc));
+        Assert.Equal(EncoderKind.None, noDecoder.EncoderFor(Hevc, 1280, 720, _fps30));
+        Assert.False(noDecoder.Supports(Hevc, OutputResolution.Hd720, FrameAspect.Ratio16x9, _fps30));
+        Assert.Null(noDecoder.MaxResolution(Hevc, FrameAspect.Ratio16x9, _fps30));
+        Assert.Equal("This PC cannot play HEVC video, so it does not export it.", noDecoder.Summary(Hevc, FrameAspect.Ratio16x9, _fps30));
+
+        // H.264 needs no listed decoder (it ships with Windows).
+        Assert.True(noDecoder.CanPlayBack(H264));
+        Assert.True(noDecoder.IsAvailable(H264));
+
+        // An unplayable codec is not probed, so its listed GPU encoder without a hardware result does not make the result provisional.
+        Assert.False(new EncoderCapabilities([gpuHevc], probes[..2], TimeSpan.FromSeconds(1)).IsProvisional);
+
+        // The same encodes with a decoder listed: offered.
+        var withDecoder = new EncoderCapabilities([gpuHevc], probes, TimeSpan.FromSeconds(1), decoders: [HevcDecoder]);
+        Assert.True(withDecoder.IsAvailable(Hevc));
+        Assert.Equal(EncoderKind.Hardware, withDecoder.EncoderFor(Hevc, 1280, 720, _fps30));
+
+        // A decoder alone is not enough either: no working HEVC encode.
+        Assert.False(new EncoderCapabilities([], probes[..2], TimeSpan.FromSeconds(1), decoders: [HevcDecoder]).IsAvailable(Hevc));
+    }
+
+    [Fact]
     public void MaxResolutionAsksForSoftwareOrHardware() =>
         Assert.Throws<ArgumentOutOfRangeException>(() => AllHardware().MaxResolution(H264, FrameAspect.Ratio16x9, _fps30, minimum: EncoderKind.None));
 
@@ -210,7 +250,7 @@ public sealed class EncoderCapabilitiesTests
             TimeSpan.FromSeconds(1)).IsProvisional);
     }
 
-    private static EncoderCacheKey Key { get; } = new(EncoderCacheKey.CurrentSchema, "adapter", "name", "1.0", "10.0.1.1", "encoders");
+    private static EncoderCacheKey Key { get; } = new(EncoderCacheKey.CurrentSchema, "adapter", "name", "1.0", "10.0.1.1", "encoders", "decoders");
 
     [Fact]
     public void AProbeWithANonsenseSizeIsRefused() =>

@@ -23,22 +23,33 @@ namespace TenLapse.Media.Encoding;
 /// Every listed encoder as <c>format:clsid:name</c>, sorted, separated by semicolons. The name counts because a
 /// Store codec (the HEVC Video Extensions' "HEVCVideoExtensionEncoder") is listed without a class id.
 /// </param>
-public sealed record EncoderCacheKey(int Schema, string Adapter, string AdapterName, string Driver, string OsBuild, string Encoders)
+/// <param name="Decoders">The listed HEVC decoders, the same way: installing or removing the HEVC Video Extensions re-probes.</param>
+public sealed record EncoderCacheKey(int Schema, string Adapter, string AdapterName, string Driver, string OsBuild, string Encoders, string Decoders)
 {
     /// <summary>The probe schema this build writes and accepts.</summary>
     public const int CurrentSchema = 2;
 
-    /// <summary>The key for this PC now, from the encoders <see cref="EncoderCatalog.Find()"/> listed.</summary>
-    public static EncoderCacheKey ForThisMachine(IReadOnlyList<EncoderMft> encoders)
+    /// <summary>
+    /// The key for this PC now, from the encoders <see cref="EncoderCatalog.Find()"/> and the decoders
+    /// <see cref="EncoderCatalog.FindDecoders"/> listed.
+    /// </summary>
+    public static EncoderCacheKey ForThisMachine(IReadOnlyList<EncoderMft> encoders, IReadOnlyList<DecoderMft> decoders)
     {
         ArgumentNullException.ThrowIfNull(encoders);
+        ArgumentNullException.ThrowIfNull(decoders);
         var (adapter, name, driver) = DefaultAdapter();
-        return new EncoderCacheKey(CurrentSchema, adapter, name, driver, WindowsBuild(), EncoderList(encoders));
+        return new EncoderCacheKey(CurrentSchema, adapter, name, driver, WindowsBuild(), EncoderList(encoders), DecoderList(decoders));
     }
 
     /// <summary>The <see cref="Encoders"/> string for a list of encoders: order does not matter.</summary>
     public static string EncoderList(IEnumerable<EncoderMft> encoders) =>
-        string.Join(';', encoders.Select(encoder => $"{encoder.Format}:{encoder.Clsid:D}:{encoder.Name}").Distinct().Order(StringComparer.Ordinal));
+        Join(encoders.Select(encoder => $"{encoder.Format}:{encoder.Clsid:D}:{encoder.Name}"));
+
+    /// <summary>The <see cref="Decoders"/> string for a list of decoders: order does not matter.</summary>
+    public static string DecoderList(IEnumerable<DecoderMft> decoders) =>
+        Join(decoders.Select(decoder => $"{decoder.Format}:{decoder.Clsid:D}:{decoder.Name}"));
+
+    private static string Join(IEnumerable<string> entries) => string.Join(';', entries.Distinct().Order(StringComparer.Ordinal));
 
     // The adapter D3D11CreateDevice(null, HARDWARE) uses: the first one DXGI lists (Windows orders them by the
     // app's GPU preference). If DXGI cannot say, the key says "unknown" and the probe itself finds out.

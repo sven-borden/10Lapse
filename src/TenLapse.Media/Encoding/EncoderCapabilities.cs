@@ -55,6 +55,8 @@ public sealed record ProbedSize(
 /// encoder among the probes that cover the request on every axis, and <see cref="EncoderKind.None"/> when no probe
 /// covers it (above 120 fps, or a shape wider than 16:9 or taller than 9:16 at 4K): a conservative answer, never an
 /// offer the export cannot keep. A rate between two probed rates takes the answer of the next probed rate up.
+/// HEVC also needs an HEVC decoder (<see cref="CanPlayBack"/>): without one every HEVC answer is
+/// <see cref="EncoderKind.None"/>, whatever the encoders can do.
 /// </remarks>
 public sealed class EncoderCapabilities
 {
@@ -79,17 +81,20 @@ public sealed class EncoderCapabilities
     /// <param name="probes">The test encodes.</param>
     /// <param name="probeDuration">How long the whole probe took (device, encodes, clean-up).</param>
     /// <param name="deviceFailure">Why no probe could run (no graphics device), or null.</param>
+    /// <param name="decoders">The decoders <see cref="EncoderCatalog.FindDecoders"/> listed: HEVC is offered only with one.</param>
     /// <exception cref="ArgumentException">A probe with a non-positive size or rate, or an unknown enum value.</exception>
     public EncoderCapabilities(
         IEnumerable<EncoderMft> encoders,
         IEnumerable<ProbedSize> probes,
         TimeSpan probeDuration,
-        VideoExportFailure? deviceFailure = null)
+        VideoExportFailure? deviceFailure = null,
+        IEnumerable<DecoderMft>? decoders = null)
     {
         ArgumentNullException.ThrowIfNull(encoders);
         ArgumentNullException.ThrowIfNull(probes);
         Encoders = [.. encoders];
         Probes = [.. probes];
+        Decoders = decoders is null ? [] : [.. decoders];
         foreach (var probe in Probes)
         {
             if (probe is null || probe.Width <= 0 || probe.Height <= 0 || probe.FramesPerSecond <= 0
@@ -108,6 +113,9 @@ public sealed class EncoderCapabilities
 
     /// <summary>The test encodes the answers rest on.</summary>
     public IReadOnlyList<ProbedSize> Probes { get; }
+
+    /// <summary>The decoders Media Foundation lists for the codecs that need one listed (HEVC).</summary>
+    public IReadOnlyList<DecoderMft> Decoders { get; }
 
     /// <summary>How long the probe took when it ran (a cached result keeps the original time).</summary>
     public TimeSpan ProbeDuration { get; }
@@ -129,12 +137,29 @@ public sealed class EncoderCapabilities
     public bool IsProvisional =>
         DeviceFailure is not null
         || Probes.Any(probe => probe.Failure is { } failure && _transient.Contains(failure))
-        || Encoders.Any(encoder => encoder.IsHardware && !HasHardware(encoder.Format));
+        || Encoders.Any(encoder => encoder.IsHardware && CanPlayBack(encoder.Format) && !HasHardware(encoder.Format));
+
+    /// <summary>
+    /// True when Windows on this PC can play the codec back. H.264 decoding ships with Windows (every edition that
+    /// has Media Foundation at all). HEVC decoding comes only with the HEVC Video Extensions from the Store (or a
+    /// PC maker's copy), while a GPU's HEVC encoder ships with its display driver: a PC can encode HEVC it cannot
+    /// play, and such a video would not open in Photos or Films &amp; TV, so HEVC needs a listed HEVC decoder.
+    /// </summary>
+    public bool CanPlayBack(VideoFormat format) => CanPlayBack(format, Decoders);
+
+    /// <summary>The rule of <see cref="CanPlayBack(VideoFormat)"/> on a list of decoders: the probe skips a codec it fails.</summary>
+    internal static bool CanPlayBack(VideoFormat format, IEnumerable<DecoderMft> decoders) =>
+        format != VideoFormat.Mp4Hevc || decoders.Any(decoder => decoder.Format == format);
 
     /// <summary>The encoder an export of this size and rate would run on (see the remarks).</summary>
     public EncoderKind EncoderFor(VideoFormat format, int width, int height, Fraction frameRate)
     {
         var best = EncoderKind.None;
+        if (!CanPlayBack(format))
+        {
+            return best;
+        }
+
         foreach (var probe in Probes)
         {
             if (probe.Format == format && probe.Encoder > best && probe.Covers(width, height, frameRate))
@@ -190,9 +215,12 @@ public sealed class EncoderCapabilities
         return null;
     }
 
-    /// <summary>True when at least one test encode of this codec worked: offer HEVC only then.</summary>
+    /// <summary>
+    /// True when at least one test encode of this codec worked and Windows can play it back
+    /// (<see cref="CanPlayBack(VideoFormat)"/>): offer HEVC only then.
+    /// </summary>
     public bool IsAvailable(VideoFormat format) =>
-        Probes.Any(probe => probe.Format == format && probe.Encoder != EncoderKind.None);
+        CanPlayBack(format) && Probes.Any(probe => probe.Format == format && probe.Encoder != EncoderKind.None);
 
     /// <summary>True when the graphics hardware encodes this codec at some size.</summary>
     public bool HasHardware(VideoFormat format) =>
@@ -213,8 +241,10 @@ public sealed class EncoderCapabilities
     /// </summary>
     /// <exception cref="ArgumentException"><see cref="FrameAspect.MatchPhotos"/> without a photo size.</exception>
     public string Summary(VideoFormat format, FrameAspect aspect, Fraction frameRate, PixelSize? photoSize = null) =>
-        EncoderText.Summary(
-            format,
-            MaxResolution(format, aspect, frameRate, photoSize, EncoderKind.Hardware),
-            MaxResolution(format, aspect, frameRate, photoSize));
+        CanPlayBack(format)
+            ? EncoderText.Summary(
+                format,
+                MaxResolution(format, aspect, frameRate, photoSize, EncoderKind.Hardware),
+                MaxResolution(format, aspect, frameRate, photoSize))
+            : EncoderText.NoPlaybackSummary(format);
 }

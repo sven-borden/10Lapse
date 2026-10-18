@@ -21,6 +21,9 @@ public static class EncoderText
     /// <summary>{0}: the codec, such as "HEVC".</summary>
     public const string Unavailable = "This PC cannot export {0} video at this shape and frame rate.";
 
+    /// <summary>{0}: the codec, "HEVC": Windows has no decoder for it (the HEVC Video Extensions are not installed).</summary>
+    public const string NoPlayback = "This PC cannot play {0} video, so it does not export it.";
+
     /// <summary>The resolution's usual name: 720p, 1080p, 1440p or 4K.</summary>
     public static string ResolutionName(OutputResolution resolution) => resolution switch
     {
@@ -48,6 +51,9 @@ public static class EncoderText
             ({ } hardware, { } max) when hardware >= max => Format(HardwareUpTo, ResolutionName(max)),
             ({ } hardware, _) => Format(HardwareUpToThenSoftware, ResolutionName(hardware)),
         };
+
+    /// <summary>The note when Windows cannot play the codec back.</summary>
+    public static string NoPlaybackSummary(VideoFormat format) => Format(NoPlayback, CodecName(format));
 
     private static string Format(string format, params object[] arguments) =>
         string.Format(CultureInfo.CurrentCulture, format, arguments);

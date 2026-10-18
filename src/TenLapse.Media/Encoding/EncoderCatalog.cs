@@ -17,9 +17,17 @@ namespace TenLapse.Media.Encoding;
 /// </param>
 public sealed record EncoderMft(VideoFormat Format, string Name, bool IsHardware, Guid Clsid);
 
+/// <summary>A decoder transform (MFT) Media Foundation lists for H.264 or HEVC: what lets Windows play the file back.</summary>
+/// <param name="Format">The codec it reads.</param>
+/// <param name="Name">Its friendly name, such as "Microsoft H265 Video Decoder MFT".</param>
+/// <param name="IsHardware">True for a decoder registered as a hardware MFT.</param>
+/// <param name="Clsid">Its class id; <see cref="Guid.Empty"/> for a Store codec listed without one.</param>
+public sealed record DecoderMft(VideoFormat Format, string Name, bool IsHardware, Guid Clsid);
+
 /// <summary>
 /// Lists the H.264 and HEVC encoders installed (<c>MFTEnumEx</c>), hardware first, then software, in the order
-/// Media Foundation prefers them. A listed encoder is not proof it works: <see cref="EncoderProbe"/> checks that.
+/// Media Foundation prefers them, and the decoders. A listed encoder is not proof it works:
+/// <see cref="EncoderProbe"/> checks that.
 /// </summary>
 public static class EncoderCatalog
 {
@@ -37,27 +45,50 @@ public static class EncoderCatalog
         return Enumerate(format);
     }
 
-    private static List<EncoderMft> Enumerate(VideoFormat format)
+    /// <summary>
+    /// The decoders for one codec (video in that codec, any output), hardware first. The H.264 decoder ships with
+    /// Windows; an HEVC decoder comes only with the HEVC Video Extensions (or a PC maker's copy of them).
+    /// </summary>
+    public static IReadOnlyList<DecoderMft> FindDecoders(VideoFormat format)
     {
-        const MFT_ENUM_FLAG Sorted = MFT_ENUM_FLAG.MFT_ENUM_FLAG_SORTANDFILTER;
-        return
+        using var session = new MediaFoundationSession();
+        List<EncoderMft> found =
         [
-            .. Enumerate(format, MFT_ENUM_FLAG.MFT_ENUM_FLAG_HARDWARE | Sorted, isHardware: true),
-            .. Enumerate(
-                format,
-                MFT_ENUM_FLAG.MFT_ENUM_FLAG_SYNCMFT | MFT_ENUM_FLAG.MFT_ENUM_FLAG_ASYNCMFT | MFT_ENUM_FLAG.MFT_ENUM_FLAG_LOCALMFT | Sorted,
-                isHardware: false),
+            .. Enumerate(format, decoders: true, HardwareFlags, isHardware: true),
+            .. Enumerate(format, decoders: true, SoftwareFlags, isHardware: false),
         ];
+        return [.. found.Select(mft => new DecoderMft(mft.Format, mft.Name, mft.IsHardware, mft.Clsid))];
     }
 
-    private static unsafe List<EncoderMft> Enumerate(VideoFormat format, MFT_ENUM_FLAG flags, bool isHardware)
+    private const MFT_ENUM_FLAG HardwareFlags = MFT_ENUM_FLAG.MFT_ENUM_FLAG_HARDWARE | MFT_ENUM_FLAG.MFT_ENUM_FLAG_SORTANDFILTER;
+
+    private const MFT_ENUM_FLAG SoftwareFlags =
+        MFT_ENUM_FLAG.MFT_ENUM_FLAG_SYNCMFT | MFT_ENUM_FLAG.MFT_ENUM_FLAG_ASYNCMFT | MFT_ENUM_FLAG.MFT_ENUM_FLAG_LOCALMFT | MFT_ENUM_FLAG.MFT_ENUM_FLAG_SORTANDFILTER;
+
+    private static List<EncoderMft> Enumerate(VideoFormat format) =>
+    [
+        .. Enumerate(format, decoders: false, HardwareFlags, isHardware: true),
+        .. Enumerate(format, decoders: false, SoftwareFlags, isHardware: false),
+    ];
+
+    // Encoders: video in this codec as output. Decoders: as input.
+    private static unsafe List<EncoderMft> Enumerate(VideoFormat format, bool decoders, MFT_ENUM_FLAG flags, bool isHardware)
     {
-        var output = new MFT_REGISTER_TYPE_INFO
+        var type = new MFT_REGISTER_TYPE_INFO
         {
             guidMajorType = PInvoke.MFMediaType_Video,
             guidSubtype = format == VideoFormat.Mp4Hevc ? PInvoke.MFVideoFormat_HEVC : PInvoke.MFVideoFormat_H264,
         };
-        PInvoke.MFTEnumEx(PInvoke.MFT_CATEGORY_VIDEO_ENCODER, flags, null, output, out var activates, out var count).ThrowOnFailure();
+        IMFActivate_unmanaged** activates;
+        uint count;
+        if (decoders)
+        {
+            PInvoke.MFTEnumEx(PInvoke.MFT_CATEGORY_VIDEO_DECODER, flags, type, null, out activates, out count).ThrowOnFailure();
+        }
+        else
+        {
+            PInvoke.MFTEnumEx(PInvoke.MFT_CATEGORY_VIDEO_ENCODER, flags, null, type, out activates, out count).ThrowOnFailure();
+        }
 
         var encoders = new List<EncoderMft>((int)count);
         try

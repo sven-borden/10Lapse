@@ -15,13 +15,16 @@ public sealed class EncoderCacheTests : IDisposable
         new(VideoFormat.Mp4Hevc, "HEVCVideoExtensionEncoder", false, Guid.Empty),
     ];
 
+    private static readonly DecoderMft[] _decoders = [HevcDecoder];
+
     private static readonly EncoderCacheKey _key = new(
         EncoderCacheKey.CurrentSchema,
         "VEN_10DE&DEV_2803&SUBSYS_171719DA&REV_A1",
         "NVIDIA GeForce RTX 4060 Ti",
         "32.0.16.1714",
         "10.0.26300.9711",
-        EncoderCacheKey.EncoderList(_encoders));
+        EncoderCacheKey.EncoderList(_encoders),
+        EncoderCacheKey.DecoderList(_decoders));
 
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "TenLapse.Tests", Guid.NewGuid().ToString("N"));
 
@@ -42,7 +45,8 @@ public sealed class EncoderCacheTests : IDisposable
             Probe(VideoFormat.Mp4H264, 2560, 1440, 60, EncoderKind.Hardware),
             Probe(VideoFormat.Mp4Hevc, 3840, 2160, 60, EncoderKind.None, VideoExportFailure.SettingsRejected),
         ],
-        TimeSpan.FromMilliseconds(1082.5));
+        TimeSpan.FromMilliseconds(1082.5),
+        decoders: _decoders);
 
     [Fact]
     public void AWrittenResultReadsBackTheSame()
@@ -56,6 +60,8 @@ public sealed class EncoderCacheTests : IDisposable
         Assert.Equal(written.Encoders, read.Encoders);
         Assert.Equal(written.Probes, read.Probes);
         Assert.Equal(written.ProbeDuration, read.ProbeDuration);
+        Assert.Equal(written.Decoders, read.Decoders);
+        Assert.True(read.CanPlayBack(VideoFormat.Mp4Hevc));
         Assert.Null(read.DeviceFailure);
         Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(CachePath)!, "*.tmp"));
     }
@@ -74,6 +80,8 @@ public sealed class EncoderCacheTests : IDisposable
             _key with { OsBuild = "10.0.26300.9800" },
             _key with { Encoders = EncoderCacheKey.EncoderList(withHevc) },
             _key with { Encoders = EncoderCacheKey.EncoderList(_encoders[..2]) },
+            _key with { Decoders = EncoderCacheKey.DecoderList([]) },
+            _key with { Decoders = EncoderCacheKey.DecoderList([.. _decoders, new(VideoFormat.Mp4Hevc, "GPU HEVC Decoder", true, Guid.NewGuid())]) },
         ];
 
         foreach (var key in changed)
@@ -96,6 +104,7 @@ public sealed class EncoderCacheTests : IDisposable
     [InlineData("{}")]
     [InlineData("""{"key":null,"encoders":[],"probes":[],"probeTicks":1}""")]
     [InlineData("""{"key":{"schema":1,"adapter":"a","adapterName":"b","driver":"c","osBuild":"d","encoders":"e"},"encoders":[],"probes":[{"format":"Mp4Av1","width":1,"height":1,"framesPerSecond":30,"encoder":"Hardware","encoderName":null,"failure":null,"milliseconds":1}],"probeTicks":1}""")]
+    [InlineData("""{"key":{"schema":2,"adapter":"a","adapterName":"b","driver":"c","osBuild":"d","encoders":"e","decoders":"f"},"encoders":[],"probes":[],"probeTicks":1}""")]
     public void ABadFileIsIgnoredAndRewritten(string content)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(CachePath)!);
