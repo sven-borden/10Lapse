@@ -1,0 +1,19 @@
+<Project>
+  <!-- Shared by every project in the repository. -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Deterministic>true</Deterministic>
+    <Company>Sven Borden</Company>
+    <Product>10Lapse</Product>
+  </PropertyGroup>
+
+  <!-- Windows projects (App, Media, Tests) take their target framework from here. -->
+  <PropertyGroup>
+    <TenLapseWindowsTargetFramework>net10.0-windows10.0.19041.0</TenLapseWindowsTargetFramework>
+    <TenLapseWindowsMinVersion>10.0.17763.0</TenLapseWindowsMinVersion>
+  </PropertyGroup>
+</Project>

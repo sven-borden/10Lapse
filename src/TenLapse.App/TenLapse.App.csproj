@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>$(TenLapseWindowsTargetFramework)</TargetFramework>
+    <TargetPlatformMinVersion>$(TenLapseWindowsMinVersion)</TargetPlatformMinVersion>
+    <!-- Root namespace TenLapse, so the classes are TenLapse.App and TenLapse.MainWindow, not TenLapse.App.App. -->
+    <RootNamespace>TenLapse</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'x64'">win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'ARM64'">win-arm64</RuntimeIdentifier>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <!-- The Store installs the Windows App Runtime 2 framework package with the app (docs/STATUS.md, Decisions). -->
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+  </PropertyGroup>
+
+  <!-- Debug runs unpackaged so it can be launched on a machine without Developer Mode. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <WindowsPackageType>None</WindowsPackageType>
+  </PropertyGroup>
+
+  <!--
+    Release is a packaged MSIX. The .NET runtime travels inside the package (no
+    framework package exists for it); the Windows App Runtime does not. Pack with
+    -p:GenerateAppxPackageOnBuild=true. The Store signs uploads, so local
+    packages are unsigned.
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <WindowsPackageType>MSIX</WindowsPackageType>
+    <SelfContained>true</SelfContained>
+    <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\*.png" />
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TenLapse.Core\TenLapse.Core.csproj" />
+    <ProjectReference Include="..\TenLapse.Media\TenLapse.Media.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,30 @@
+<Solution>
+  <!--
+    Solution platforms x64 and ARM64 only. Win2D and the Windows App SDK need a
+    real architecture, so the Windows projects map to the solution platform;
+    Core stays Any CPU.
+  -->
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="ARM64" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/TenLapse.App/TenLapse.App.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+    </Project>
+    <Project Path="src/TenLapse.Core/TenLapse.Core.csproj">
+      <Platform Project="Any CPU" />
+    </Project>
+    <Project Path="src/TenLapse.Media/TenLapse.Media.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+    </Project>
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TenLapse.Tests/TenLapse.Tests.csproj">
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+    </Project>
+  </Folder>
+</Solution>
