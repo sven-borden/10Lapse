@@ -1,7 +1,8 @@
 #Requires -Version 7.0
 <#
 .SYNOPSIS
-    The merge gate: restore, build x64 Debug with warnings as errors, run every test.
+    The merge gate: check the solution lists every project, restore, build x64
+    Debug with warnings as errors, run every test, build x64 Release the same way.
 
 .DESCRIPTION
     Replaces CI (docs/STATUS.md, Decisions). Run it from anywhere:
@@ -35,21 +36,48 @@ elseif (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_NOLOGO = '1'
 $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = '1'
+# The test counts below are parsed from English output.
+$env:DOTNET_CLI_UI_LANGUAGE = 'en'
 
 $configuration = @('-c', 'Debug', '-p:Platform=x64')
+$release = @('-c', 'Release', '-p:Platform=x64')
 $quiet = @('-v:q', '-tl:off', '-nologo')
 
+# Every csproj Git tracks must be in the solution, or the gate would not build or test it.
+function Test-SolutionCoversProjects {
+    $listed = & dotnet sln $solution list 2>&1 | ForEach-Object { "$_" }
+    if ($LASTEXITCODE -ne 0) { return @{ Ok = $false; Output = $listed } }
+    $inSolution = @($listed | Where-Object { $_ -match '\.csproj\s*$' } |
+            ForEach-Object { ($_.Trim() -replace '\\', '/').ToLowerInvariant() })
+    $tracked = @(& git -C $root ls-files '*.csproj' | ForEach-Object { ($_.Trim() -replace '\\', '/') })
+    $missing = @($tracked | Where-Object { $inSolution -notcontains $_.ToLowerInvariant() })
+    if ($missing.Count -gt 0) {
+        return @{ Ok = $false; Output = @($missing | ForEach-Object { "Project not in TenLapse.slnx: $_ (add it to the solution, with the same platform mappings as its neighbours)" }) }
+    }
+    return @{ Ok = $true; Output = @() }
+}
+
 $steps = @(
+    @{ Name = 'solution'; Check = { Test-SolutionCoversProjects } }
     @{ Name = 'restore'; Args = @('restore', $solution, '-p:Platform=x64') + $quiet }
     @{ Name = 'build'; Args = @('build', $solution, '--no-restore', '-warnaserror') + $configuration + $quiet }
     @{ Name = 'test'; Args = @('test', '--solution', $solution, '--no-build') + $configuration }
+    # Release restores itself: it is self-contained, so it needs the runtime pack the Debug restore skips.
+    @{ Name = 'release'; Args = @('build', $solution, '-warnaserror') + $release + $quiet }
 )
 
 $started = Get-Date
 foreach ($step in $steps) {
     $stepStarted = Get-Date
-    $output = & dotnet @($step.Args) 2>&1 | ForEach-Object { "$_" }
-    $exitCode = $LASTEXITCODE
+    if ($step.ContainsKey('Check')) {
+        $result = & $step.Check
+        $exitCode = [int](-not $result.Ok)
+        $output = $result.Output
+    }
+    else {
+        $output = & dotnet @($step.Args) 2>&1 | ForEach-Object { "$_" }
+        $exitCode = $LASTEXITCODE
+    }
     $seconds = ((Get-Date) - $stepStarted).TotalSeconds
 
     if ($exitCode -ne 0) {
