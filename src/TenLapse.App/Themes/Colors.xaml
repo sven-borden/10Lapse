@@ -50,6 +50,9 @@
       <Color x:Key="SegmentPillColor">#FEFDFC</Color>
       <Color x:Key="TrackColor">#E4E2DE</Color>
       <Color x:Key="DropZoneStrokeColor">#CFCCC6</Color>
+      <!-- Subtle buttons (command bar): an Ink wash, 6% on hover and 4% pressed -->
+      <Color x:Key="SubtleFillHoverColor">#0F1C1B19</Color>
+      <Color x:Key="SubtleFillPressedColor">#0A1C1B19</Color>
       <Color x:Key="InkColor">#1C1B19</Color>
       <Color x:Key="InkSecondaryColor">#5D5A55</Color>
       <!-- Status (InfoBars and the finished state, always with an icon) -->
@@ -87,6 +90,8 @@
       <SolidColorBrush x:Key="SegmentPillBrush" Color="{ThemeResource SegmentPillColor}" />
       <SolidColorBrush x:Key="TrackBrush" Color="{ThemeResource TrackColor}" />
       <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="{ThemeResource DropZoneStrokeColor}" />
+      <SolidColorBrush x:Key="SubtleFillHoverBrush" Color="{ThemeResource SubtleFillHoverColor}" />
+      <SolidColorBrush x:Key="SubtleFillPressedBrush" Color="{ThemeResource SubtleFillPressedColor}" />
       <SolidColorBrush x:Key="InkBrush" Color="{ThemeResource InkColor}" />
       <SolidColorBrush x:Key="InkSecondaryBrush" Color="{ThemeResource InkSecondaryColor}" />
       <SolidColorBrush x:Key="SuccessBrush" Color="{ThemeResource SuccessColor}" />
@@ -126,6 +131,9 @@
       <Color x:Key="SegmentPillColor">#4A4743</Color>
       <Color x:Key="TrackColor">#3F3D3A</Color>
       <Color x:Key="DropZoneStrokeColor">#5A5651</Color>
+      <!-- Subtle buttons (command bar): an Ink wash, 6% on hover and 4% pressed -->
+      <Color x:Key="SubtleFillHoverColor">#0FF4F2EE</Color>
+      <Color x:Key="SubtleFillPressedColor">#0AF4F2EE</Color>
       <Color x:Key="InkColor">#F4F2EE</Color>
       <Color x:Key="InkSecondaryColor">#C3BFB8</Color>
       <!-- Status (InfoBars and the finished state, always with an icon) -->
@@ -163,6 +171,8 @@
       <SolidColorBrush x:Key="SegmentPillBrush" Color="{ThemeResource SegmentPillColor}" />
       <SolidColorBrush x:Key="TrackBrush" Color="{ThemeResource TrackColor}" />
       <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="{ThemeResource DropZoneStrokeColor}" />
+      <SolidColorBrush x:Key="SubtleFillHoverBrush" Color="{ThemeResource SubtleFillHoverColor}" />
+      <SolidColorBrush x:Key="SubtleFillPressedBrush" Color="{ThemeResource SubtleFillPressedColor}" />
       <SolidColorBrush x:Key="InkBrush" Color="{ThemeResource InkColor}" />
       <SolidColorBrush x:Key="InkSecondaryBrush" Color="{ThemeResource InkSecondaryColor}" />
       <SolidColorBrush x:Key="SuccessBrush" Color="{ThemeResource SuccessColor}" />
@@ -203,6 +213,9 @@
       <StaticResource x:Key="SegmentPillColor" ResourceKey="SystemColorWindowColor" />
       <StaticResource x:Key="TrackColor" ResourceKey="SystemColorButtonFaceColor" />
       <StaticResource x:Key="DropZoneStrokeColor" ResourceKey="SystemColorButtonTextColor" />
+      <!-- Subtle buttons keep the system button colors in high contrast (the shell scopes its washes to Light and Dark) -->
+      <Color x:Key="SubtleFillHoverColor">#00000000</Color>
+      <Color x:Key="SubtleFillPressedColor">#00000000</Color>
       <StaticResource x:Key="InkColor" ResourceKey="SystemColorWindowTextColor" />
       <StaticResource x:Key="InkSecondaryColor" ResourceKey="SystemColorGrayTextColor" />
       <!-- Status (InfoBars and the finished state, always with an icon) -->
@@ -240,6 +253,8 @@
       <SolidColorBrush x:Key="SegmentPillBrush" Color="{ThemeResource SegmentPillColor}" />
       <SolidColorBrush x:Key="TrackBrush" Color="{ThemeResource TrackColor}" />
       <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="{ThemeResource DropZoneStrokeColor}" />
+      <SolidColorBrush x:Key="SubtleFillHoverBrush" Color="{ThemeResource SubtleFillHoverColor}" />
+      <SolidColorBrush x:Key="SubtleFillPressedBrush" Color="{ThemeResource SubtleFillPressedColor}" />
       <SolidColorBrush x:Key="InkBrush" Color="{ThemeResource InkColor}" />
       <SolidColorBrush x:Key="InkSecondaryBrush" Color="{ThemeResource InkSecondaryColor}" />
       <SolidColorBrush x:Key="SuccessBrush" Color="{ThemeResource SuccessColor}" />

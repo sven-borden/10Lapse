@@ -52,7 +52,7 @@ public sealed partial class ShellViewModel : ObservableObject
 
     /// <summary>The project being edited. Only <c>New project</c> replaces it.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Title), nameof(HasUnsavedChanges))]
+    [NotifyPropertyChangedFor(nameof(Title), nameof(HasUnsavedChanges), nameof(ShowsProjectName))]
     public partial ProjectViewModel CurrentProject { get; private set; }
 
     /// <summary>The window title (see <see cref="ProjectText.WindowTitle"/>).</summary>
@@ -61,6 +61,12 @@ public sealed partial class ShellViewModel : ObservableObject
 
     /// <summary>True while the current project has unsaved work (#28 draws the title bar dot from this).</summary>
     public bool HasUnsavedChanges => CurrentProject.IsDirty;
+
+    /// <summary>
+    /// True when the title bar shows the project name next to "10Lapse": once the project has photos or unsaved
+    /// changes, the same rule as <see cref="Title"/>, so a fresh window reads only "10Lapse".
+    /// </summary>
+    public bool ShowsProjectName => CurrentProject.HasFrames || CurrentProject.IsDirty;
 
     /// <summary>
     /// <c>New project</c>: asks first when the current project has work to lose, then replaces it with an
@@ -141,12 +147,17 @@ public sealed partial class ShellViewModel : ObservableObject
     {
         switch (e.PropertyName)
         {
-            case nameof(ProjectViewModel.Name) or nameof(ProjectViewModel.HasFrames):
+            case nameof(ProjectViewModel.Name):
                 OnPropertyChanged(nameof(Title));
+                break;
+            case nameof(ProjectViewModel.HasFrames):
+                OnPropertyChanged(nameof(Title));
+                OnPropertyChanged(nameof(ShowsProjectName));
                 break;
             case nameof(ProjectViewModel.IsDirty):
                 OnPropertyChanged(nameof(Title));
                 OnPropertyChanged(nameof(HasUnsavedChanges));
+                OnPropertyChanged(nameof(ShowsProjectName));
                 break;
         }
     }

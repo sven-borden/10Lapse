@@ -68,6 +68,15 @@
   <x:Double x:Key="MinWindowWidth">640</x:Double>
   <x:Double x:Key="MinWindowHeight">480</x:Double>
 
+  <!--
+    Shell regions (prototype docs/design/canvas/Main.dc.html): the InfoBar floats 32 px below the top of the
+    stage (20 padding + 12), at most 560 wide and at least 40 px in from each side. The filmstrip holds 3:2
+    thumbnails, an 8 px gap and a 16 px caption row: 56 px in the 1280 px window.
+  -->
+  <x:Double x:Key="InfoBarMaxWidth">560</x:Double>
+  <Thickness x:Key="InfoBarHostMargin">40,32,40,0</Thickness>
+  <x:Double x:Key="FilmstripMinHeight">56</x:Double>
+
   <!-- Elevation: flyout (InfoBars over the preview, select menus, the first-launch sample frame): two layers, ambient then key -->
   <x:Double x:Key="ElevationFlyoutBlur">28</x:Double>
   <x:Double x:Key="ElevationFlyoutOffsetY">8</x:Double>
