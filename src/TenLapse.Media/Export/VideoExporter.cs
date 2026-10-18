@@ -4,63 +4,75 @@ using System.Threading.Channels;
 using Microsoft.Graphics.Canvas;
 using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
+using TenLapse.Media.Decoding;
 using TenLapse.Media.Inspection;
-using Windows.Foundation;
+using TenLapse.Media.Rendering;
 using Windows.Graphics.DirectX;
-using Windows.UI;
 
 namespace TenLapse.Media.Export;
 
 /// <summary>What an export wrote.</summary>
 /// <param name="FrameCount">Frames the encoder took.</param>
 /// <param name="Duration">The clip duration in 100 ns ticks, <see cref="FrameTiming.Duration"/>.</param>
-/// <param name="Encoder">The H.264 encoder that ran, as the sink writer reports it; null if it could not tell.</param>
+/// <param name="Encoder">The encoder that ran, as the sink writer reports it; null if it could not tell.</param>
 public sealed record VideoExportResult(int FrameCount, long Duration, VideoEncoderInfo? Encoder);
 
 /// <summary>
-/// The streaming export: decode, process (Win2D fill) and encode (H.264 MP4)
-/// run at once, connected by bounded queues, so memory stays flat whatever the
-/// frame count.
+/// The streaming export: decode, process (<see cref="FrameRenderer"/>, Fit or Fill) and encode (H.264 or HEVC
+/// MP4) run at once, connected by bounded queues, so memory stays flat whatever the frame count.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Decode runs up to <see cref="VideoExportSettings.DecodeAhead"/> frames ahead.
-/// Each frame is drawn into a new output-sized <c>CanvasRenderTarget</c>, and at
-/// most <see cref="VideoExportSettings.RenderTargets"/> of them wait for the
-/// encoder at once. A target is never drawn twice: Media Foundation may still
-/// read a surface after it has taken the sample, so the pipeline drops its own
-/// reference once the encoder has the frame and Media Foundation's reference
-/// keeps the texture alive until it is done.
+/// At most <see cref="VideoExportSettings.DecodeThreads"/> loads run at once and at most
+/// <see cref="VideoExportSettings.DecodeAhead"/> frames are loading or loaded and not yet drawn. Each frame is drawn
+/// into a new output-sized <c>CanvasRenderTarget</c>, and at most <see cref="VideoExportSettings.RenderTargets"/>
+/// of them wait for the encoder at once. A target is never drawn twice: Media Foundation may still read a surface
+/// after it has taken the sample, so the pipeline drops its own reference once the encoder has the frame and Media
+/// Foundation's reference keeps the texture alive until it is done.
 /// </para>
 /// <para>
-/// Sample time and duration of frame n are <see cref="FrameTiming.FrameStart"/>
-/// and <see cref="FrameTiming.FrameDuration"/>, never accumulated. Every export
-/// runs on its own <see cref="VideoDevice"/>, created and disposed by the export;
-/// frame sources get that device.
+/// Sample time and duration of frame n are <see cref="FrameTiming.FrameStart"/> and
+/// <see cref="FrameTiming.FrameDuration"/>, never accumulated. Every export runs on its own
+/// <see cref="VideoDevice"/>, created and disposed by the export; frame sources get that device.
+/// </para>
+/// <para>
+/// Every encoder call (opening, each frame, finishing) runs on its own thread pool thread and is timed: one that
+/// takes longer than <see cref="VideoExportSettings.StallTimeout"/> fails the export as
+/// <see cref="VideoExportFailure.EncoderStalled"/> and is abandoned. A cancellation or failure returns as soon as
+/// the pipeline has stopped and the loads in flight have finished; releasing the encoder (an unfinished sink writer
+/// can take about 5 s), deleting the unfinished file and disposing the device then finish in the background
+/// (<see cref="ExportCleanup"/>).
 /// </para>
 /// <para>
 /// <see cref="ExportAsync(IFrameSource, string, VideoExportSettings, IProgress{int}?, CancellationToken)"/>
-/// may be called from any thread, the UI thread included: the whole run, device
-/// and encoder too, lives on thread pool (MTA) threads, and frame sources are
-/// called there. A frame source must not hand the export COM objects created on
-/// an STA. The export returns only once every load it started has finished.
+/// may be called from any thread, the UI thread included: the whole run, device and encoder too, lives on thread
+/// pool (MTA) threads, and frame sources are called there. A frame source must not hand the export COM objects
+/// created on an STA.
 /// </para>
 /// </remarks>
 public static class VideoExporter
 {
-    /// <summary>How long drawing waits for the encoder to take a frame before the export fails instead of hanging.</summary>
+    /// <summary>How long one encoder call, or drawing waiting for the encoder, may take before the export fails instead of hanging.</summary>
     public static readonly TimeSpan EncoderStallTimeout = TimeSpan.FromSeconds(60);
 
-    /// <summary>Writes every frame of <paramref name="source"/> to an H.264 MP4 at <paramref name="outputPath"/>, replacing it.</summary>
+    /// <summary>How long a failed or cancelled export waits for its clean-up before it returns and leaves the rest to the background.</summary>
+    internal static readonly TimeSpan CleanupGrace = TimeSpan.FromMilliseconds(250);
+
+    /// <summary>How long the background clean-up waits for an abandoned encoder call before it gives the encoder and the device up.</summary>
+    internal static readonly TimeSpan AbandonAfter = TimeSpan.FromMinutes(5);
+
+    /// <summary>Writes every frame of <paramref name="source"/> to an MP4 at <paramref name="outputPath"/>, replacing it.</summary>
     /// <param name="progress">Receives the number of frames the encoder has taken, from worker threads.</param>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
     /// <exception cref="VideoExportException">
     /// The export failed for a reason <see cref="VideoExportException.Failure"/> names: no usable graphics device,
-    /// the output folder, the disk, the driver, memory or the encoder. Bugs in our own code surface as themselves.
+    /// the output folder, the disk, the driver, memory, the encoder, or a frame that could not be loaded or drawn
+    /// (<see cref="VideoExportException.FrameIndex"/> and <see cref="VideoExportException.SourcePath"/> say which).
+    /// Bugs in our own code surface as themselves.
     /// </exception>
     /// <remarks>
-    /// Any exception a frame source throws is rethrown as it is. Once the encoder has opened the output file, a
-    /// failure or a cancellation deletes it; a file that was there before and could not be opened is left alone.
+    /// Once the encoder has opened the output file, a failure or a cancellation deletes it (in the background,
+    /// <see cref="ExportCleanup.WhenDone"/>); a file that was there before and could not be opened is left alone.
     /// </remarks>
     public static Task<VideoExportResult> ExportAsync(
         IFrameSource source,
@@ -102,10 +114,16 @@ public static class VideoExporter
         private readonly VideoExportSettings _settings;
         private readonly IProgress<int>? _progress;
         private readonly VideoEncoderFactory _createEncoder;
-        private readonly Channel<Task<CanvasBitmap>> _decoded;
+        private readonly PixelSize _output;
+        private readonly Channel<PendingFrame> _decoded;
 
-        // Loads started and not yet owned by the drawing stage: awaited and disposed before the device goes.
+        // Loads started and not yet owned by the drawing stage: awaited and disposed before the export returns.
         private readonly ConcurrentDictionary<Task<CanvasBitmap>, byte> _loads = new();
+
+        // Never disposed: a load's continuation may release _decoding after the run (SemaphoreSlim needs no disposal
+        // unless its wait handle was used).
+        private readonly SemaphoreSlim _ahead;
+        private readonly SemaphoreSlim _decoding;
         private readonly SemaphoreSlim _slots;
         private readonly ConcurrentDictionary<CanvasRenderTarget, byte> _live = new();
         private readonly Channel<RenderedFrame> _rendered;
@@ -114,13 +132,25 @@ public static class VideoExporter
         private Exception? _failure;
         private int _framesTaken;
 
+        // The encoder once open, the opening call, and the last encoder call started: the clean-up waits for the
+        // calls before it releases the encoder (releasing it under a running WriteSample would free it in use).
+        private IVideoEncoder? _encoder;
+        private Task<IVideoEncoder>? _opening;
+        private Task? _call;
+        private bool _complete;
+
         public ExportRun(IFrameSource source, VideoExportSettings settings, IProgress<int>? progress, VideoEncoderFactory createEncoder)
         {
             _source = source;
             _settings = settings;
             _progress = progress;
             _createEncoder = createEncoder;
-            _decoded = Channel.CreateBounded<Task<CanvasBitmap>>(new BoundedChannelOptions(Math.Max(1, settings.DecodeAhead))
+            _output = new PixelSize(settings.Width, settings.Height);
+            var ahead = Math.Max(1, settings.DecodeAhead);
+            _ahead = new SemaphoreSlim(ahead, ahead);
+            var threads = Math.Clamp(settings.DecodeThreads, 1, ahead);
+            _decoding = new SemaphoreSlim(threads, threads);
+            _decoded = Channel.CreateBounded<PendingFrame>(new BoundedChannelOptions(ahead)
             {
                 SingleReader = true,
                 SingleWriter = true,
@@ -140,12 +170,11 @@ public static class VideoExporter
 
         public async Task<VideoExportResult> RunAsync(string outputPath, CancellationToken cancellationToken)
         {
-            // Disposed in the finally before _stop: a Cancel() from the caller landing as the export completes
-            // must not reach a disposed _stop (ObjectDisposedException thrown in the caller's Cancel()).
             var registration = cancellationToken.Register(_stop.Cancel);
             var producing = Task.CompletedTask;
             var processing = Task.CompletedTask;
-            VideoEncoderInfo? encoder;
+            VideoEncoderInfo? encoder = null;
+            ExceptionDispatchInfo? error = null;
             try
             {
                 _device = VideoDevice.Create();
@@ -159,142 +188,211 @@ public static class VideoExporter
             }
             catch (Exception exception)
             {
-                _stop.Cancel();
+                error = ExceptionDispatchInfo.Capture(exception);
+            }
+
+            // Both stages catch their own exceptions and stop at once on _stop.
+            _stop.Cancel();
+            await Task.WhenAll(producing, processing).ConfigureAwait(false);
+
+            // A WIC decode cannot be interrupted; the loads in flight finish before the export returns, so no frame
+            // source runs on after it.
+            await ((Task)Task.WhenAll(_loads.Keys)).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            foreach (var load in _loads.Keys)
+            {
+                if (load.IsCompletedSuccessfully)
+                {
+                    load.Result.Dispose();
+                }
+            }
+
+            // Waits for a callback already running, so nothing calls _stop.Cancel() after this.
+            registration.Dispose();
+            _stop.Dispose();
+
+            var cleanup = Task.Run(() => CleanUpAsync(outputPath));
+            ExportCleanup.Track(outputPath, cleanup);
+            if (error is null)
+            {
+                await cleanup.ConfigureAwait(false);
+            }
+            else
+            {
+                // Usually done at once; an unfinished sink writer that takes seconds to let go finishes in the background.
+                await cleanup.WaitAsync(CleanupGrace).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
                 cancellationToken.ThrowIfCancellationRequested();
                 var failure = Volatile.Read(ref _failure);
-                if (failure is not null && failure != exception)
+                if (failure is not null && failure != error.SourceException)
                 {
                     // The source or the drawing failed first; the encoder's error is only the consequence.
                     ExceptionDispatchInfo.Throw(failure);
                 }
 
-                // A VideoExportException from a native boundary (device, encoder, drawing), the source's own
-                // exception, or a bug in our code, which must not pass for an encoder failure.
-                throw;
-            }
-            finally
-            {
-                _stop.Cancel();
-                await Task.WhenAll(producing, processing).ConfigureAwait(false);
-
-                // Decodes still in flight would otherwise run on after the export returns, on a disposed device.
-                await ((Task)Task.WhenAll(_loads.Keys)).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
-                foreach (var load in _loads.Keys)
-                {
-                    if (load.IsCompletedSuccessfully)
-                    {
-                        load.Result.Dispose();
-                    }
-                }
-
-                // Frames drawn but never taken, or taken but not reported processed when the run stopped.
-                foreach (var target in _live.Keys)
-                {
-                    target.Dispose();
-                }
-
-                _device?.Dispose();
-
-                // Waits for a callback already running, so nothing calls _stop.Cancel() after this.
-                registration.Dispose();
-                _stop.Dispose();
-                _slots.Dispose();
+                // A VideoExportException from a native boundary (device, encoder, drawing, a frame), or a bug in our
+                // code, which must not pass for an export failure.
+                error.Throw();
             }
 
             var taken = Volatile.Read(ref _framesTaken);
             return new VideoExportResult(taken, FrameTiming.Duration(taken, Rate), encoder);
         }
 
-        // Runs on the thread pool (see ExportAsync): WriteSample and Finalize block.
+        // Runs on the thread pool (see ExportAsync); every encoder call runs on its own pool thread, timed (GuardAsync).
         private async Task<VideoEncoderInfo?> EncodeAsync(string outputPath, Action startPipeline)
         {
+            var opening = Task.Run(() => _createEncoder(outputPath, _settings, _device!));
+            _opening = opening;
             IVideoEncoder encoder;
             try
             {
-                encoder = _createEncoder(outputPath, _settings, _device!);
+                encoder = await GuardAsync(opening, "opening the encoder", frame: null).ConfigureAwait(false);
             }
             catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
             {
-                throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed, _settings.Format, setup: true);
+                throw Classify(exception, VideoExportFailure.EncoderFailed, frame: null, setup: true);
             }
 
-            var complete = false;
+            _encoder = encoder;
+            startPipeline();
+            while (await _rendered.Reader.WaitToReadAsync(_stop.Token).ConfigureAwait(false))
+            {
+                while (_rendered.Reader.TryRead(out var frame))
+                {
+                    _stop.Token.ThrowIfCancellationRequested();
+                    var target = frame.Target;
+                    var time = FrameTiming.FrameStart(frame.Index, Rate);
+                    var duration = FrameTiming.FrameDuration(frame.Index, Rate);
+                    var write = Task.Run(() => encoder.Write(target, time, duration));
+                    _call = write;
+                    try
+                    {
+                        await GuardAsync(write, $"writing frame {frame.Index}", frame.Index).ConfigureAwait(false);
+                    }
+                    catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
+                    {
+                        throw Classify(exception, VideoExportFailure.EncoderFailed, frame.Index);
+                    }
+
+                    FrameTaken(target);
+                }
+            }
+
+            var taken = Volatile.Read(ref _framesTaken);
+            if (taken != _source.FrameCount)
+            {
+                throw new InvalidOperationException($"The pipeline ended after {taken} of {_source.FrameCount} frames without a failure.");
+            }
+
+            var finish = Task.Run(encoder.Finish);
+            _call = finish;
             try
             {
-                startPipeline();
-                while (await _rendered.Reader.WaitToReadAsync(_stop.Token).ConfigureAwait(false))
-                {
-                    while (_rendered.Reader.TryRead(out var frame))
-                    {
-                        _stop.Token.ThrowIfCancellationRequested();
-                        try
-                        {
-                            encoder.Write(
-                                frame.Target,
-                                FrameTiming.FrameStart(frame.Index, Rate),
-                                FrameTiming.FrameDuration(frame.Index, Rate));
-                        }
-                        catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
-                        {
-                            throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed, _settings.Format);
-                        }
-
-                        FrameTaken(frame.Target);
-                    }
-                }
-
-                var taken = Volatile.Read(ref _framesTaken);
-                if (taken != _source.FrameCount)
-                {
-                    throw new InvalidOperationException($"The pipeline ended after {taken} of {_source.FrameCount} frames without a failure.");
-                }
-
-                try
-                {
-                    encoder.Finish();
-                }
-                catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
-                {
-                    throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed, _settings.Format);
-                }
-
-                complete = true;
-                return encoder.Encoder;
+                await GuardAsync(finish, "finishing the file", frame: null).ConfigureAwait(false);
             }
-            finally
+            catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
             {
-                encoder.Dispose();
-                if (!complete)
-                {
-                    DeleteIncompleteFile(outputPath);
-                }
+                throw Classify(exception, VideoExportFailure.EncoderFailed, frame: null);
             }
+
+            _complete = true;
+            return encoder.Encoder;
         }
 
-        // The encoder opened (and so truncated) the file: what is there now is not a playable video.
-        private static void DeleteIncompleteFile(string path)
+        // Waits for one encoder call, but no longer than the stall limit and not past a cancellation: a call that
+        // does not return is abandoned (the clean-up waits for it before releasing the encoder).
+        private async Task<T> GuardAsync<T>(Task<T> call, string what, int? frame)
+        {
+            await GuardAsync((Task)call, what, frame).ConfigureAwait(false);
+            return call.Result;
+        }
+
+        private async Task GuardAsync(Task call, string what, int? frame)
         {
             try
             {
-                File.Delete(path);
+                await call.WaitAsync(_settings.StallTimeout, _stop.Token).ConfigureAwait(false);
             }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            catch (TimeoutException) when (!call.IsCompleted)
             {
-                // The export's own failure is what the caller needs; a file that cannot be deleted is #22's .partial cleanup.
+                throw new VideoExportException(
+                    $"{ExportFailures.Summary(VideoExportFailure.EncoderStalled, _settings.Format)}: {what} did not return within {_settings.StallTimeout.TotalSeconds:0.#} s.",
+                    VideoExportFailure.EncoderStalled)
+                {
+                    FrameIndex = frame,
+                    SourcePath = frame is int index ? _source.SourcePath(index) : null,
+                };
+            }
+        }
+
+        private async Task CleanUpAsync(string outputPath)
+        {
+            foreach (var call in new[] { (Task?)_opening, _call })
+            {
+                if (call is null)
+                {
+                    continue;
+                }
+
+                await call.WaitAsync(AbandonAfter).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                if (!call.IsCompleted)
+                {
+                    // A stalled driver call: releasing the encoder or the device under it could crash the process.
+                    // Both are given up; the process keeps them until it exits.
+                    ExportCleanup.Report(new ExportCleanupFailure(outputPath, "release the encoder and the graphics device after a stalled encoder call", null));
+                    return;
+                }
+            }
+
+            var encoder = _encoder ?? (_opening is { IsCompletedSuccessfully: true } opened ? opened.Result : null);
+            if (encoder is not null)
+            {
+                ExportCleanup.Try(outputPath, "release the encoder", encoder.Dispose);
+
+                // The encoder opened (and so truncated) the file: what is there now is not a playable video.
+                if (!_complete)
+                {
+                    ExportCleanup.Try(outputPath, "delete the unfinished file", () => ExportCleanup.DeleteIfThere(outputPath));
+                }
+            }
+
+            // Frames drawn but never taken, or whose write was cut short.
+            foreach (var target in _live.Keys)
+            {
+                ExportCleanup.Try(outputPath, "release a frame", target.Dispose);
+            }
+
+            if (_device is { } device)
+            {
+                ExportCleanup.Try(outputPath, "release the graphics device", device.Dispose);
             }
         }
 
         private async Task ProduceAsync()
         {
-            var outputSize = new PixelSize(_settings.Width, _settings.Height);
             try
             {
                 for (var i = 0; i < _source.FrameCount; i++)
                 {
-                    _stop.Token.ThrowIfCancellationRequested();
-                    var load = _source.LoadAsync(i, Canvas, outputSize, _stop.Token);
+                    await _ahead.WaitAsync(_stop.Token).ConfigureAwait(false);
+                    await _decoding.WaitAsync(_stop.Token).ConfigureAwait(false);
+                    Task<CanvasBitmap> load;
+                    try
+                    {
+                        load = _source.LoadAsync(i, Canvas, _output, _stop.Token);
+                    }
+                    catch (Exception exception) when (exception is not OperationCanceledException && !ExportFailures.IsBug(exception))
+                    {
+                        throw LoadFailure(exception, i);
+                    }
+
                     _loads.TryAdd(load, 0);
-                    await _decoded.Writer.WriteAsync(load, _stop.Token).ConfigureAwait(false);
+                    _ = load.ContinueWith(
+                        static (_, decoding) => ((SemaphoreSlim)decoding!).Release(),
+                        _decoding,
+                        CancellationToken.None,
+                        TaskContinuationOptions.ExecuteSynchronously,
+                        TaskScheduler.Default);
+                    await _decoded.Writer.WriteAsync(new PendingFrame(i, load), _stop.Token).ConfigureAwait(false);
                 }
 
                 _decoded.Writer.TryComplete();
@@ -308,32 +406,38 @@ public static class VideoExporter
 
         private async Task ProcessAsync()
         {
-            var output = new Size(_settings.Width, _settings.Height);
-            var black = Color.FromArgb(255, 0, 0, 0);
-            var index = 0;
             try
             {
                 while (await _decoded.Reader.WaitToReadAsync(_stop.Token).ConfigureAwait(false))
                 {
-                    while (_decoded.Reader.TryRead(out var load))
+                    while (_decoded.Reader.TryRead(out var pending))
                     {
-                        // Until here the bitmap belongs to _loads (the finally disposes it); from here, to this stage.
-                        var bitmap = await load.WaitAsync(_stop.Token).ConfigureAwait(false);
-                        _loads.TryRemove(load, out _);
+                        // Until here the bitmap belongs to _loads (RunAsync disposes it); from here, to this stage.
+                        CanvasBitmap bitmap;
+                        try
+                        {
+                            bitmap = await pending.Load.WaitAsync(_stop.Token).ConfigureAwait(false);
+                        }
+                        catch (Exception exception) when (exception is not OperationCanceledException && !ExportFailures.IsBug(exception))
+                        {
+                            throw LoadFailure(exception, pending.Index);
+                        }
+
+                        _loads.TryRemove(pending.Load, out _);
                         using (bitmap)
                         {
-                            if (!await _slots.WaitAsync(EncoderStallTimeout, _stop.Token).ConfigureAwait(false))
+                            if (!await _slots.WaitAsync(_settings.StallTimeout, _stop.Token).ConfigureAwait(false))
                             {
                                 throw new VideoExportException(
-                                    $"{ExportFailures.Summary(VideoExportFailure.EncoderStalled, _settings.Format)}: it has not taken a frame for {EncoderStallTimeout.TotalSeconds:0} s.",
+                                    $"{ExportFailures.Summary(VideoExportFailure.EncoderStalled, _settings.Format)}: it has not taken a frame for {_settings.StallTimeout.TotalSeconds:0.#} s.",
                                     VideoExportFailure.EncoderStalled);
                             }
 
-                            var target = Draw(bitmap, output, black);
-                            await _rendered.Writer.WriteAsync(new RenderedFrame(index, target), _stop.Token).ConfigureAwait(false);
+                            var target = Draw(bitmap, pending.Index);
+                            await _rendered.Writer.WriteAsync(new RenderedFrame(pending.Index, target), _stop.Token).ConfigureAwait(false);
                         }
 
-                        index++;
+                        _ahead.Release();
                     }
                 }
 
@@ -347,7 +451,7 @@ public static class VideoExporter
         }
 
         // A new target per frame (never drawn twice, see the class remarks), tracked in _live until the encoder has it.
-        private CanvasRenderTarget Draw(CanvasBitmap bitmap, Size output, Color background)
+        private CanvasRenderTarget Draw(CanvasBitmap bitmap, int index)
         {
             try
             {
@@ -361,17 +465,74 @@ public static class VideoExporter
                 _live.TryAdd(target, 0);
                 using (var session = target.CreateDrawingSession())
                 {
-                    session.Clear(background);
-                    FrameFill.Draw(session, bitmap, output);
+                    FrameRenderer.Draw(session, bitmap, _settings.Fit, _output);
                 }
 
                 return target;
             }
-            catch (Exception exception) when (ExportFailures.ShouldClassify(exception) && ExportFailures.FromHResult(exception.HResult) is { } failure)
+            catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
             {
-                // A driver reset or out of video memory while drawing; anything else surfaces as it is (#22 adds frame context).
-                throw ExportFailures.Classify(exception, failure, _settings.Format);
+                throw Classify(exception, VideoExportFailure.DrawingFailed, index);
             }
+        }
+
+        // A frame that could not be loaded: the photo's own failure, or the device, memory, or the source.
+        private Exception LoadFailure(Exception exception, int index)
+        {
+            if (exception is VideoExportException)
+            {
+                return exception;
+            }
+
+            if (exception is PhotoDecodeException photo)
+            {
+                return new VideoExportException(
+                    $"{ExportFailures.Summary(VideoExportFailure.FrameUnreadable, _settings.Format)}: {photo.Message}",
+                    VideoExportFailure.FrameUnreadable,
+                    photo)
+                {
+                    FrameIndex = photo.FrameIndex,
+                    SourcePath = photo.Failure.Path,
+                };
+            }
+
+            // Uploading to a removed device, or out of memory: not the photo's fault.
+            var classified = Classify(exception, VideoExportFailure.FrameUnreadable, index);
+            return classified.Failure is VideoExportFailure.GraphicsDeviceLost or VideoExportFailure.OutOfMemory
+                ? classified
+                : new VideoExportException(classified.Message, VideoExportFailure.FrameUnreadable, exception)
+                {
+                    FrameIndex = index,
+                    SourcePath = classified.SourcePath,
+                };
+        }
+
+        // A native failure with the frame it happened at. A removed device names the failure whatever the HRESULT
+        // the call returned (a WriteSample after a driver reset often says only E_FAIL).
+        private VideoExportException Classify(Exception exception, VideoExportFailure fallback, int? frame, bool setup = false)
+        {
+            var path = frame is int index ? _source.SourcePath(index) : null;
+            var where = frame is int at ? $" (frame {at}{(path is null ? string.Empty : $", {path}")})" : string.Empty;
+            var removed = _device?.RemovedReason() ?? 0;
+            if (removed != 0)
+            {
+                return new VideoExportException(
+                    $"{ExportFailures.Summary(VideoExportFailure.GraphicsDeviceLost, _settings.Format)} ({ExportFailures.DeviceRemovedName(removed)}): {exception.Message}{where}",
+                    VideoExportFailure.GraphicsDeviceLost,
+                    exception)
+                {
+                    FrameIndex = frame,
+                    SourcePath = path,
+                    DeviceRemovedReason = removed,
+                };
+            }
+
+            var failure = ExportFailures.FromHResult(exception.HResult, setup) ?? fallback;
+            return new VideoExportException($"{ExportFailures.Summary(failure, _settings.Format)}: {exception.Message}{where}", failure, exception)
+            {
+                FrameIndex = frame,
+                SourcePath = path,
+            };
         }
 
         // The encoder has the frame: drop our reference to the target (Media Foundation holds its own) and free a slot.
@@ -403,6 +564,8 @@ public static class VideoExporter
             Interlocked.CompareExchange(ref _failure, exception, null);
         }
     }
+
+    private readonly record struct PendingFrame(int Index, Task<CanvasBitmap> Load);
 
     private readonly record struct RenderedFrame(int Index, CanvasRenderTarget Target);
 }

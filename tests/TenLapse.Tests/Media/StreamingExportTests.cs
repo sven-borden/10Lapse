@@ -112,51 +112,87 @@ public sealed class StreamingExportTests : IDisposable
     }
 
     [Fact]
-    public async Task AFailingFrameFailsTheExportWithItsOwnException()
+    public async Task AFailingFrameFailsTheExportWithItsIndexAndItsOwnException()
     {
         SkipWithoutH264Encoder();
+        var damaged = new InvalidDataException("Photo 10 is damaged.");
         var source = new NumberedFrames(Frames, 320, 180)
         {
             BeforeLoad = index =>
             {
                 if (index == 10)
                 {
-                    throw new InvalidDataException("Photo 10 is damaged.");
+                    throw damaged;
                 }
             },
         };
 
-        var exception = await Assert.ThrowsAsync<InvalidDataException>(() => VideoExporter.ExportAsync(
+        var exception = await Assert.ThrowsAsync<VideoExportException>(() => VideoExporter.ExportAsync(
             source,
             Path.Combine(_directory, "broken.mp4"),
             new VideoExportSettings(320, 180, new Fraction(30, 1)),
             cancellationToken: TestContext.Current.CancellationToken));
-        Assert.Equal("Photo 10 is damaged.", exception.Message);
+
+        Assert.Equal(VideoExportFailure.FrameUnreadable, exception.Failure);
+        Assert.Equal(10, exception.FrameIndex);
+        Assert.Same(damaged, exception.InnerException);
     }
 
     [Fact]
-    public async Task CancellingStopsTheExport()
+    public async Task ABugInAFrameSourceSurfacesAsItself()
     {
         SkipWithoutH264Encoder();
-        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        var source = new NumberedFrames(6000, 320, 180)
-        {
-            BeforeLoad = index =>
-            {
-                if (index == 20)
-                {
-                    cancellation.Cancel();
-                }
-            },
-        };
+        var bug = new ArgumentNullException("frame");
+        var source = new NumberedFrames(Frames, 320, 180) { BeforeLoad = index => { if (index == 3) throw bug; } };
 
-        var started = DateTime.UtcNow;
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => VideoExporter.ExportAsync(
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => VideoExporter.ExportAsync(
             source,
-            Path.Combine(_directory, "cancelled.mp4"),
+            Path.Combine(_directory, "bug.mp4"),
             new VideoExportSettings(320, 180, new Fraction(30, 1)),
-            cancellationToken: cancellation.Token));
-        Assert.InRange(DateTime.UtcNow - started, TimeSpan.Zero, TimeSpan.FromSeconds(10));
+            cancellationToken: TestContext.Current.CancellationToken));
+
+        Assert.Same(bug, exception);
+    }
+
+    [Fact]
+    public async Task CancellingStopsTheExportWithinASecondAndLeavesNoFile()
+    {
+        // Releasing an unfinished sink writer blocks about 5 s now and then (about 1 early cancel in 40 in #8):
+        // the export must return regardless, and the file goes once the writer lets go. Thirty rounds.
+        SkipWithoutH264Encoder();
+        var slowest = TimeSpan.Zero;
+        for (var round = 0; round < 30; round++)
+        {
+            using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            var cancelledAt = 0L;
+            var at = 5 + (round % 6 * 7);
+            var source = new NumberedFrames(6000, 320, 180)
+            {
+                BeforeLoad = index =>
+                {
+                    if (index == at)
+                    {
+                        Volatile.Write(ref cancelledAt, System.Diagnostics.Stopwatch.GetTimestamp());
+                        cancellation.Cancel();
+                    }
+                },
+            };
+            var path = Path.Combine(_directory, $"cancelled{round}.mp4");
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => VideoExporter.ExportAsync(
+                source,
+                path,
+                new VideoExportSettings(320, 180, new Fraction(30, 1)),
+                cancellationToken: cancellation.Token));
+            var took = System.Diagnostics.Stopwatch.GetElapsedTime(Volatile.Read(ref cancelledAt));
+            slowest = took > slowest ? took : slowest;
+
+            Assert.True(took < TimeSpan.FromSeconds(1), $"Round {round}: the cancel took {took.TotalMilliseconds:0} ms.");
+            await ExportCleanup.WhenDone(path).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+            Assert.False(File.Exists(path), $"Round {round}: the unfinished file is still there.");
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine($"slowest cancel of 30: {slowest.TotalMilliseconds:0} ms");
     }
 
     [Fact]

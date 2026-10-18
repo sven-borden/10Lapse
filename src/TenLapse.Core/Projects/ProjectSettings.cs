@@ -274,6 +274,51 @@ public static class OutputSize
         return width >= height ? new PixelSize(longSide, shortSide) : new PixelSize(shortSide, longSide);
     }
 
+    /// <summary>
+    /// The size of a project's video: <see cref="For"/> with its resolution and shape, and for
+    /// <see cref="FrameAspect.MatchPhotos"/> the most common photo size (<see cref="MostCommonPhotoSize"/>).
+    /// Match photos with no photo size known yet (no frames, or none read) takes 16:9.
+    /// </summary>
+    public static PixelSize For(OutputResolution resolution, FrameAspect aspect, IEnumerable<Frame> frames)
+    {
+        ArgumentNullException.ThrowIfNull(frames);
+        if (aspect != FrameAspect.MatchPhotos)
+        {
+            return For(resolution, aspect);
+        }
+
+        return MostCommonPhotoSize(frames) is { } photo
+            ? For(resolution, aspect, photo)
+            : For(resolution, FrameAspect.Ratio16x9);
+    }
+
+    /// <summary>
+    /// The oriented photo size most frames have (Match photos, #18), the first one met on a tie, or null when no
+    /// frame has a size.
+    /// </summary>
+    public static PixelSize? MostCommonPhotoSize(IEnumerable<Frame> frames)
+    {
+        ArgumentNullException.ThrowIfNull(frames);
+        var counts = new Dictionary<PixelSize, int>();
+        PixelSize? best = null;
+        var bestCount = 0;
+        foreach (var frame in frames)
+        {
+            if (frame.PixelSize is not { } size)
+            {
+                continue;
+            }
+
+            var count = counts[size] = counts.GetValueOrDefault(size) + 1;
+            if (count > bestCount)
+            {
+                (best, bestCount) = (size, count);
+            }
+        }
+
+        return best;
+    }
+
     // shortSide × longRatio / shortRatio, rounded half up to an even number.
     private static int LongSide(int shortSide, long longRatio, long shortRatio) =>
         (int)(((shortSide * longRatio) + shortRatio) / (2 * shortRatio) * 2);

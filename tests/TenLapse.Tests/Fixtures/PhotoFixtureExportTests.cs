@@ -39,9 +39,14 @@ public sealed class PhotoFixtureExportTests : IDisposable
         {
             var output = _scratch.PathOf(Path.ChangeExtension(fixture.Name, ".mp4"));
 
-            var failure = await Assert.ThrowsAsync<PhotoDecodeException>(
+            var exception = await Assert.ThrowsAsync<VideoExportException>(
                 () => ExportOrSkipAsync(new PhotoFileSource([good, good, fixture.Path, good]), output, _small));
+            await ExportCleanup.WhenDone(output);
 
+            Assert.Equal(VideoExportFailure.FrameUnreadable, exception.Failure);
+            Assert.Equal(2, exception.FrameIndex);
+            Assert.Equal(fixture.Path, exception.SourcePath);
+            var failure = Assert.IsType<PhotoDecodeException>(exception.InnerException);
             Assert.Equal(2, failure.FrameIndex);
             Assert.Equal(fixture.Reason, failure.Failure.Reason);
             Assert.Equal(fixture.Path, failure.Failure.Path);

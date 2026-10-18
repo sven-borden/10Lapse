@@ -34,6 +34,7 @@ public sealed class ExportFailureTests : IDisposable
         var exception = await Assert.ThrowsAsync<VideoExportException>(
             () => ExportWithAsync(path, output => encoder = new FakeEncoder(output) { FailAt = 20, Failure = failure }));
 
+        await ExportCleanup.WhenDone(path);
         Assert.Equal(VideoExportFailure.EncoderFailed, exception.Failure);
         Assert.Same(failure, exception.InnerException);
         Assert.Equal(20, encoder!.Written);
@@ -55,6 +56,7 @@ public sealed class ExportFailureTests : IDisposable
         var exception = await Assert.ThrowsAsync<VideoExportException>(
             () => ExportWithAsync(path, output => new FakeEncoder(output) { FailAt = 5, Failure = failure }));
 
+        await ExportCleanup.WhenDone(path);
         Assert.Equal(expected, exception.Failure);
         Assert.Same(failure, exception.InnerException);
         Assert.False(File.Exists(path));
@@ -81,6 +83,7 @@ public sealed class ExportFailureTests : IDisposable
         var exception = await Assert.ThrowsAsync<VideoExportException>(
             () => ExportWithAsync(path, _ => throw new ArgumentException("Bad size.") { HResult = unchecked((int)0x80070057) }));
 
+        await ExportCleanup.WhenDone(path);
         Assert.Equal(VideoExportFailure.SettingsRejected, exception.Failure);
         Assert.False(File.Exists(path));
     }
@@ -241,6 +244,7 @@ public sealed class ExportFailureTests : IDisposable
         var exception = await Assert.ThrowsAsync<VideoExportException>(
             () => ExportWithAsync(path, output => new FakeEncoder(output) { FailAt = 5, Failure = failure }, format: VideoFormat.Mp4Hevc));
 
+        await ExportCleanup.WhenDone(path);
         Assert.Equal(VideoExportFailure.EncoderFailed, exception.Failure);
         Assert.StartsWith("The HEVC encoder failed: ", exception.Message, StringComparison.Ordinal);
     }

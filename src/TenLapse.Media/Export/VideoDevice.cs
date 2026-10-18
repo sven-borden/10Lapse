@@ -131,6 +131,29 @@ internal sealed class VideoDevice : IDisposable
         }
     }
 
+    /// <summary>
+    /// Why the device was removed (DXGI_ERROR_DEVICE_HUNG, _REMOVED, _RESET, DXGI_ERROR_DRIVER_INTERNAL_ERROR),
+    /// or 0 while it works: <c>ID3D11Device::GetDeviceRemovedReason</c>. Any thread (the device is multithread protected).
+    /// </summary>
+    public int RemovedReason()
+    {
+        try
+        {
+            // CsWin32 turns the HRESULT into an exception; S_OK returns.
+            Direct3D.GetDeviceRemovedReason();
+            return 0;
+        }
+        catch (Exception exception) when (((uint)exception.HResult >> 16) == 0x887A)
+        {
+            // A DXGI reason. Anything else (a released wrapper) says nothing about the device.
+            return exception.HResult;
+        }
+        catch (Exception exception) when (exception is InvalidComObjectException or COMException)
+        {
+            return 0;
+        }
+    }
+
     public void Dispose()
     {
         Canvas.Dispose();

@@ -60,8 +60,38 @@ public sealed record VideoExportSettings
     /// </summary>
     public bool HardwareAcceleration { get; init; } = true;
 
-    /// <summary>How many source frames may be loading or decoded and waiting at once.</summary>
-    public int DecodeAhead { get; init; } = 4;
+    /// <summary>
+    /// How frames are placed (#18): Fill (a centred cover crop, the default) or Fit (letterboxed). The frame source
+    /// must decode for the same mode (<see cref="PhotoFileSource.Fit"/>, <see cref="Rendering.FrameRenderer.DecodeOptions"/>).
+    /// </summary>
+    public FitMode Fit
+    {
+        get;
+        init => field = Enum.IsDefined(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown fit mode.");
+    } = FitMode.Fill;
+
+    /// <summary>
+    /// How many source frames may be loading, or loaded and waiting to be drawn, at once: the frame being drawn
+    /// counts until it is drawn. This bounds the decoded bitmaps in memory. At least 1.
+    /// </summary>
+    public int DecodeAhead { get; init; } = 6;
+
+    /// <summary>
+    /// How many loads may run at once, at most <see cref="DecodeAhead"/>: the decode concurrency, bounded
+    /// separately from the queue depth. Each running WIC decode holds its CPU buffer. Defaults to half the
+    /// logical processors, 1 to 4.
+    /// </summary>
+    public int DecodeThreads { get; init; } = Math.Clamp(Environment.ProcessorCount / 2, 1, 4);
+
+    /// <summary>
+    /// How long one encoder call (opening, writing one frame, finishing) may take before the export fails as
+    /// <see cref="VideoExportFailure.EncoderStalled"/> and abandons the call: <see cref="VideoExporter.EncoderStallTimeout"/>.
+    /// </summary>
+    public TimeSpan StallTimeout
+    {
+        get;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The stall timeout must be positive.");
+    } = VideoExporter.EncoderStallTimeout;
 
     /// <summary>
     /// How many drawn output frames may wait for the encoder at once. Each frame

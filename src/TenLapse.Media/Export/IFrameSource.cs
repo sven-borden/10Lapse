@@ -1,5 +1,6 @@
 using Microsoft.Graphics.Canvas;
 using TenLapse.Core.Projects;
+using TenLapse.Media.Rendering;
 
 namespace TenLapse.Media.Export;
 
@@ -13,17 +14,27 @@ public interface IFrameSource
     /// Starts loading frame <paramref name="index"/> on <paramref name="device"/>,
     /// the export's own device: the bitmap must be made on it, not on
     /// <see cref="GraphicsDevice.Shared"/>.
-    /// The pipeline calls this in index order from one thread pool (MTA) thread, keeps up to
-    /// <see cref="VideoExportSettings.DecodeAhead"/> loads running at once, and
-    /// disposes every bitmap it gets back. The returned task must not complete on
+    /// The pipeline calls this in index order from one thread pool (MTA) thread. At most
+    /// <see cref="VideoExportSettings.DecodeThreads"/> loads run at once, and at most
+    /// <see cref="VideoExportSettings.DecodeAhead"/> frames are loading or loaded and waiting to be drawn.
+    /// It disposes every bitmap it gets back. The returned task must not complete on
     /// the caller's synchronization context (use <c>ConfigureAwait(false)</c>).
-    /// A load still running when the export stops is awaited before the device
-    /// is disposed, so honour <paramref name="cancellationToken"/> where you can.
+    /// A load still running when the export stops is awaited before the export returns,
+    /// so honour <paramref name="cancellationToken"/> where you can.
     /// </summary>
     /// <param name="outputSize">
-    /// The size the frame is drawn to (<see cref="FrameFill.Draw"/>, a centred cover crop). A source may return
-    /// any size, but one no larger than the cover size of this box (<see cref="Decoding.PhotoDecodeOptions.Cover"/>)
-    /// keeps memory down: a 24 MP photo decoded for 4K is a quarter of its full size (#22).
+    /// The size the frame is drawn to (<see cref="FrameRenderer.Draw(CanvasDrawingSession, CanvasBitmap, FitMode, PixelSize)"/>).
+    /// A source may return any size, but the one <see cref="FrameRenderer.DecodeOptions"/> asks for keeps memory
+    /// down and lets the drawing copy the pixels one to one: a 24 MP photo decoded for 4K is a quarter of its full size.
     /// </param>
+    /// <remarks>
+    /// An exception the load throws (synchronously or through the task) fails the export as a
+    /// <see cref="VideoExportException"/> with <see cref="VideoExportFailure.FrameUnreadable"/>, the frame index and
+    /// <see cref="SourcePath"/>, the exception as its inner exception; one that is a bug in our code
+    /// (<see cref="ArgumentNullException"/>, our own <see cref="InvalidOperationException"/>) surfaces as itself.
+    /// </remarks>
     Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken);
+
+    /// <summary>The file frame <paramref name="index"/> comes from, for failure messages; null when it has none.</summary>
+    string? SourcePath(int index) => null;
 }
