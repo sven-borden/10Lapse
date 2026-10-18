@@ -242,6 +242,74 @@ public sealed class RollingFileLogTests : IDisposable
         Assert.EndsWith("today", Assert.Single(log.RecentLines(200)), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void AnErrorStormIsCountedNotWritten()
+    {
+        using var log = new RollingFileLog(_folder, _clock);
+        for (var i = 0; i < 1000; i++)
+        {
+            log.Error("A thumbnail could not be made.", new IOException("disk"));
+            log.Warning("Retrying.");
+        }
+
+        // The same message with another exception type is another entry.
+        log.Error("A thumbnail could not be made.", new UnauthorizedAccessException("denied"));
+        Assert.Equal(5, ReadLines(Path.Combine(_folder, Today())).Length);
+
+        // Once the window is over, the next write says how many times each came again, then goes on.
+        _clock.Now = _clock.Now.AddSeconds(11);
+        log.Info("Export started.");
+        var lines = ReadLines(Path.Combine(_folder, Today()));
+        Assert.Equal(8, lines.Length);
+        Assert.EndsWith("ERROR Previous message repeated 999 more times since 09:30:00.000: A thumbnail could not be made. (IOException)", lines[5], StringComparison.Ordinal);
+        Assert.EndsWith("WARN  Previous message repeated 999 more times since 09:30:00.000: Retrying.", lines[6], StringComparison.Ordinal);
+        Assert.EndsWith("INFO  Export started.", lines[7], StringComparison.Ordinal);
+
+        // After the window the message is written again.
+        log.Warning("Retrying.");
+        Assert.EndsWith("WARN  Retrying.", ReadLines(Path.Combine(_folder, Today()))[^1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ClosingTheLogWritesTheCountsStillOpen()
+    {
+        var log = new RollingFileLog(_folder, _clock);
+        log.Error("Export failed.");
+        log.Error("Export failed.");
+        log.Error("Export failed.");
+        log.Dispose();
+
+        Assert.EndsWith("Previous message repeated 2 more times since 09:30:00.000: Export failed.", ReadLines(Path.Combine(_folder, Today()))[^1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ACriticalLineIsWrittenAfterTheDaysLimit()
+    {
+        var options = new RollingFileLogOptions { MaxFileBytes = 2048, MaxPartsPerDay = 1, CriticalReserveBytes = 1024 };
+        using var log = new RollingFileLog(_folder, _clock, options);
+        for (var i = 0; i < 40; i++)
+        {
+            log.Error($"{i:00} {new string('x', 200)}");
+        }
+
+        log.Critical("An unhandled exception is closing 10Lapse.", new InvalidOperationException("the cause"));
+        log.Error("After the crash line.");
+
+        var text = ReadText(Path.Combine(_folder, Today()));
+        Assert.Contains("size limit", text, StringComparison.Ordinal);
+        Assert.Contains("CRIT  An unhandled exception is closing 10Lapse.", text, StringComparison.Ordinal);
+        Assert.Contains("System.InvalidOperationException: the cause", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("After the crash line.", text, StringComparison.Ordinal);
+
+        // The reserve is bounded too.
+        for (var i = 0; i < 40; i++)
+        {
+            log.Critical($"{i:00} {new string('c', 200)}");
+        }
+
+        Assert.True(new FileInfo(Path.Combine(_folder, Today())).Length < 2048 + 512 + 1024);
+    }
+
     private static string Name(int day, int part = 0) => RollingFileLog.FileName(new DateOnly(2026, 10, day), Environment.ProcessId, part);
 
     private static string Today() => Name(18);

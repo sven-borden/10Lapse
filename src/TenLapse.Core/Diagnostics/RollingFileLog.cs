@@ -28,6 +28,19 @@ public sealed record RollingFileLogOptions
     /// of its own, so two instances of the app never write over each other's lines.
     /// </summary>
     public int ProcessId { get; init; } = Environment.ProcessId;
+
+    /// <summary>
+    /// How long after an entry is written the same entry (level, message and exception type) is only counted; at the
+    /// first write after that, one line says how many times it repeated. An error storm then costs a few lines, not
+    /// the day's budget. <see cref="TimeSpan.Zero"/> writes every entry.
+    /// </summary>
+    public TimeSpan RepeatWindow { get; init; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// How many bytes <see cref="LogLevel.Critical"/> entries may still add to the last part each day after the
+    /// day's parts are full, so the line that explains a crash reaches the disk even after an error storm.
+    /// </summary>
+    public long CriticalReserveBytes { get; init; } = 256 * 1024;
 }
 
 /// <summary>
@@ -49,6 +62,11 @@ public sealed record RollingFileLogOptions
 /// each stream keeps its own position, so with one shared file they wrote over each other's lines.
 /// <see cref="RecentLines"/> reads the files of today and yesterday, every process's, and merges them by time.
 /// </para>
+/// <para>
+/// An entry repeated within <see cref="RollingFileLogOptions.RepeatWindow"/> is counted rather than written, and
+/// <see cref="LogLevel.Critical"/> entries keep a reserve past the day's size limit
+/// (<see cref="RollingFileLogOptions.CriticalReserveBytes"/>).
+/// </para>
 /// </remarks>
 public sealed partial class RollingFileLog : ILog, IDisposable
 {
@@ -65,6 +83,9 @@ public sealed partial class RollingFileLog : ILog, IDisposable
     // After a failed write the file is left alone this long, so a broken folder is not hit on every line.
     private static readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(30);
 
+    // How many different entries are counted at once; more than that are written as they come.
+    private const int MaxTrackedRepeats = 64;
+
     private static readonly UTF8Encoding _utf8 = new(encoderShouldEmitUTF8Identifier: false);
 
     // A write that logs again from inside itself (a first-chance exception handler, a trace listener) is dropped
@@ -77,10 +98,14 @@ public sealed partial class RollingFileLog : ILog, IDisposable
     private readonly RollingFileLogOptions _options;
     private readonly Queue<string> _recent = new();
 
+    // The entries written within the repeat window, each with how many times it came again since.
+    private readonly Dictionary<(LogLevel Level, string Message, string? Exception), Repeat> _repeats = [];
+
     private FileStream? _stream;
     private DateOnly _day;
     private int _part;
     private bool _dayFull;
+    private long _reserveUsed;
     private DateTimeOffset _retryAfter = DateTimeOffset.MinValue;
     private bool _linesLost;
     private bool _disposed;
@@ -100,6 +125,8 @@ public sealed partial class RollingFileLog : ILog, IDisposable
         ArgumentOutOfRangeException.ThrowIfLessThan(_options.MaxPartsPerDay, 1);
         ArgumentOutOfRangeException.ThrowIfNegative(_options.RecentLineCapacity);
         ArgumentOutOfRangeException.ThrowIfNegative(_options.ProcessId);
+        ArgumentOutOfRangeException.ThrowIfLessThan(_options.RepeatWindow, TimeSpan.Zero);
+        ArgumentOutOfRangeException.ThrowIfNegative(_options.CriticalReserveBytes);
 
         _day = Today(_clock.GetLocalNow());
         Prune(_day);
@@ -142,17 +169,12 @@ public sealed partial class RollingFileLog : ILog, IDisposable
         try
         {
             var now = _clock.GetLocalNow();
-            var lines = Format(now, level, message, exception);
             lock (_gate)
             {
-                foreach (var line in lines)
+                WriteRepeatCounts(now, all: false);
+                if (!IsRepeat(now, level, message, exception))
                 {
-                    Remember(line);
-                }
-
-                if (!_disposed)
-                {
-                    WriteToFile(now, lines);
+                    Emit(now, level, Format(now, level, message, exception));
                 }
             }
         }
@@ -184,6 +206,8 @@ public sealed partial class RollingFileLog : ILog, IDisposable
             bool useMemory;
             lock (_gate)
             {
+                // A storm still being counted says so now, so the diagnostics show it.
+                WriteRepeatCounts(_clock.GetLocalNow(), all: true);
                 _stream?.Flush();
                 useMemory = _linesLost;
             }
@@ -213,6 +237,20 @@ public sealed partial class RollingFileLog : ILog, IDisposable
     {
         lock (_gate)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
+            try
+            {
+                WriteRepeatCounts(_clock.GetLocalNow(), all: true);
+            }
+            catch (Exception)
+            {
+                // Closing goes on; the counts are lost with the process.
+            }
+
             _disposed = true;
             CloseFile();
         }
@@ -325,8 +363,70 @@ public sealed partial class RollingFileLog : ILog, IDisposable
         _recent.Enqueue(line);
     }
 
+    // Called under the lock: keeps the entry in memory and writes it to the file.
+    private void Emit(DateTimeOffset now, LogLevel level, List<string> lines)
+    {
+        foreach (var line in lines)
+        {
+            Remember(line);
+        }
+
+        if (!_disposed)
+        {
+            WriteToFile(now, level, lines);
+        }
+    }
+
+    // Called under the lock. True when the same entry was written within the repeat window: it is only counted.
+    private bool IsRepeat(DateTimeOffset now, LogLevel level, string message, Exception? exception)
+    {
+        if (_options.RepeatWindow <= TimeSpan.Zero)
+        {
+            return false;
+        }
+
+        var key = (level, message ?? string.Empty, exception?.GetType().FullName);
+        if (_repeats.TryGetValue(key, out var repeat))
+        {
+            repeat.Count++;
+            return true;
+        }
+
+        if (_repeats.Count < MaxTrackedRepeats)
+        {
+            _repeats[key] = new Repeat(now);
+        }
+
+        return false;
+    }
+
+    // Called under the lock. Ends the windows that are over (all of them when closing or reading): an entry that came
+    // again gets one line, "Previous message repeated 41 more times since 14:03:12.345: Message (IOException)".
+    private void WriteRepeatCounts(DateTimeOffset now, bool all)
+    {
+        if (_repeats.Count == 0)
+        {
+            return;
+        }
+
+        var ended = _repeats.Where(entry => all || now - entry.Value.First >= _options.RepeatWindow).ToList();
+        foreach (var (key, repeat) in ended)
+        {
+            _repeats.Remove(key);
+            if (repeat.Count == 0)
+            {
+                continue;
+            }
+
+            var exception = key.Exception is { } type ? $" ({type[(type.LastIndexOf('.') + 1)..]})" : string.Empty;
+            var message = SplitLines(string.IsNullOrEmpty(key.Message) ? "(no message)" : key.Message)[0];
+            var since = repeat.First.ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture);
+            Emit(now, key.Level, Format(now, key.Level, $"Previous message repeated {repeat.Count} more times since {since}: {message}{exception}", null));
+        }
+    }
+
     // Called under the lock.
-    private void WriteToFile(DateTimeOffset now, List<string> lines)
+    private void WriteToFile(DateTimeOffset now, LogLevel level, List<string> lines)
     {
         var day = Today(now);
         if (day != _day)
@@ -335,46 +435,29 @@ public sealed partial class RollingFileLog : ILog, IDisposable
             _day = day;
             _part = 0;
             _dayFull = false;
+            _reserveUsed = 0;
             Prune(day);
-        }
-
-        if (_dayFull)
-        {
-            _linesLost = true;
-            return;
         }
 
         var bytes = _utf8.GetBytes(string.Join(Environment.NewLine, lines) + Environment.NewLine);
         try
         {
-            if (_stream is null && (now < _retryAfter || !OpenFile()))
+            if (!_dayFull && WriteToPart(now, bytes))
             {
-                _linesLost = true;
                 return;
             }
 
-            if (_stream!.Length > 0 && _stream.Length + bytes.Length > _options.MaxFileBytes)
+            // Past the day's limit only Critical entries are written, into a reserve of their own, so the line that
+            // explains a crash is on disk even after an error storm spent the budget.
+            if (_dayFull && level == LogLevel.Critical && _reserveUsed + bytes.Length <= _options.CriticalReserveBytes)
             {
-                CloseFile();
-                if (_part + 1 >= _options.MaxPartsPerDay)
-                {
-                    // The day's budget is spent: say so once at the end of the last part, then keep lines in memory.
-                    _dayFull = true;
-                    _linesLost = true;
-                    AppendToLastPart(now);
-                    return;
-                }
-
-                _part++;
-                if (!OpenFile())
-                {
-                    _linesLost = true;
-                    return;
-                }
+                using var stream = new FileStream(PartPath(_part), FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
+                stream.Write(bytes);
+                _reserveUsed += bytes.Length;
+                return;
             }
 
-            _stream!.Write(bytes);
-            _stream.Flush();
+            _linesLost = true;
         }
         catch (Exception)
         {
@@ -382,6 +465,38 @@ public sealed partial class RollingFileLog : ILog, IDisposable
             _retryAfter = now + _retryDelay;
             _linesLost = true;
         }
+    }
+
+    // Writes to the current part, going on in the next one when it is full. False when the line was not written:
+    // the folder waits for a retry or cannot be opened, or the day's parts are full (then _dayFull is set).
+    private bool WriteToPart(DateTimeOffset now, byte[] bytes)
+    {
+        if (_stream is null && (now < _retryAfter || !OpenFile()))
+        {
+            return false;
+        }
+
+        if (_stream!.Length > 0 && _stream.Length + bytes.Length > _options.MaxFileBytes)
+        {
+            CloseFile();
+            if (_part + 1 >= _options.MaxPartsPerDay)
+            {
+                // The day's budget is spent: say so once at the end of the last part.
+                _dayFull = true;
+                AppendToLastPart(now);
+                return false;
+            }
+
+            _part++;
+            if (!OpenFile())
+            {
+                return false;
+            }
+        }
+
+        _stream!.Write(bytes);
+        _stream.Flush();
+        return true;
     }
 
     private string PartPath(int part) => Path.Combine(Folder, FileName(_day, _options.ProcessId, part));
@@ -411,7 +526,7 @@ public sealed partial class RollingFileLog : ILog, IDisposable
 
     private void AppendToLastPart(DateTimeOffset now)
     {
-        var notice = Format(now, LogLevel.Warning, "The log reached its size limit for today; later lines today are not written to disk.", null);
+        var notice = Format(now, LogLevel.Warning, "The log reached its size limit for today; later lines today are not written to disk, except critical ones.", null);
         File.AppendAllText(PartPath(_part), notice[0] + Environment.NewLine, _utf8);
     }
 
@@ -501,5 +616,13 @@ public sealed partial class RollingFileLog : ILog, IDisposable
             .Select(line => line.Line)
             .TakeLast(count)
             .ToList();
+    }
+
+    // An entry written within the repeat window: when, and how many times it came again since.
+    private sealed class Repeat(DateTimeOffset first)
+    {
+        public DateTimeOffset First { get; } = first;
+
+        public int Count { get; set; }
     }
 }
