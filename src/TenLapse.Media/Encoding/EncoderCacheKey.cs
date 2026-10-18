@@ -26,7 +26,7 @@ namespace TenLapse.Media.Encoding;
 public sealed record EncoderCacheKey(int Schema, string Adapter, string AdapterName, string Driver, string OsBuild, string Encoders)
 {
     /// <summary>The probe schema this build writes and accepts.</summary>
-    public const int CurrentSchema = 1;
+    public const int CurrentSchema = 2;
 
     /// <summary>The key for this PC now, from the encoders <see cref="EncoderCatalog.Find()"/> listed.</summary>
     public static EncoderCacheKey ForThisMachine(IReadOnlyList<EncoderMft> encoders)

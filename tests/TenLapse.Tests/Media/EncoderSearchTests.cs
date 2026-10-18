@@ -64,13 +64,14 @@ public sealed class EncoderSearchTests
         Assert.Equal(
             [
                 // 1080 x 1920 and 1440 x 1800 fit inside 3840 x 2160, so the landscape 4K encode settles them.
-                "H.264 3840x2160@60", "H.264 2160x3840@60", "H.264 1440x2560@60",
+                "H.264 3840x2160@120", "H.264 2160x3840@120", "H.264 1440x2560@120",
+                "H.264 2160x3840@60", "H.264 1440x2560@60",
                 "H.264 2160x3840@30", "H.264 1440x2560@30",
             ],
             _encodes);
 
         var capabilities = Result(encoders, probes);
-        foreach (var rate in new[] { new Fraction(60, 1), new Fraction(30, 1) })
+        foreach (var rate in new[] { new Fraction(120, 1), new Fraction(60, 1), new Fraction(30, 1) })
         {
             Assert.Equal(OutputResolution.Uhd2160, capabilities.MaxResolution(H264, FrameAspect.Ratio16x9, rate, minimum: EncoderKind.Hardware));
             Assert.Equal(OutputResolution.Uhd2160, capabilities.MaxResolution(H264, FrameAspect.Ratio9x16, rate));
@@ -101,6 +102,8 @@ public sealed class EncoderSearchTests
 
         Assert.Equal(
             [
+                "H.264 3840x2160@120", "H.264 2560x1440@120", "H.264 1920x1080@120", "H.264 2160x3840@120", "H.264 1440x2560@120",
+                "H.264 1080x1920@120", "H.264 1920x1440@120", "H.264 1440x1440@120", "H.264 1440x1800@120",
                 "H.264 3840x2160@60", "H.264 2560x1440@60", "H.264 2160x3840@60", "H.264 1440x2560@60",
                 "H.264 2880x2160@60", "H.264 2160x2160@60", // 2160 x 2700 lies between the 1:1 and 9:16 software results
                 "H.264 3840x2160@30", "H.264 2160x3840@30",
@@ -111,6 +114,9 @@ public sealed class EncoderSearchTests
         Assert.Equal(EncoderKind.Hardware, capabilities.EncoderFor(H264, 3840, 2160, new Fraction(30, 1)));
         Assert.Equal(EncoderKind.Software, capabilities.EncoderFor(H264, 3840, 2160, new Fraction(60, 1)));
         Assert.Equal(EncoderKind.Software, capabilities.EncoderFor(H264, 3840, 2160, new Fraction(50, 1)));
+        Assert.Equal(EncoderKind.Hardware, capabilities.EncoderFor(H264, 1920, 1080, new Fraction(120, 1)));
+        Assert.Equal(EncoderKind.Software, capabilities.EncoderFor(H264, 2560, 1440, new Fraction(120, 1)));
+        Assert.Equal(OutputResolution.Hd1080, capabilities.MaxResolution(H264, FrameAspect.Ratio16x9, new Fraction(120, 1), minimum: EncoderKind.Hardware));
         Assert.Equal(OutputResolution.Qhd1440, capabilities.MaxResolution(H264, FrameAspect.Ratio16x9, new Fraction(60, 1), minimum: EncoderKind.Hardware));
         Assert.Equal(OutputResolution.Uhd2160, capabilities.MaxResolution(H264, FrameAspect.Ratio16x9, new Fraction(60, 1)));
         Assert.Equal(OutputResolution.Uhd2160, capabilities.MaxResolution(H264, FrameAspect.Ratio4x5, new Fraction(30, 1), minimum: EncoderKind.Hardware));
@@ -130,7 +136,7 @@ public sealed class EncoderSearchTests
             TestContext.Current.CancellationToken,
             out _);
 
-        Assert.Equal(["H.264 3840x2160@60", "H.264 2160x3840@60", "HEVC 3840x2160@60", "HEVC 2160x3840@60"], _encodes);
+        Assert.Equal(["H.264 3840x2160@120", "H.264 2160x3840@120", "HEVC 3840x2160@120", "HEVC 2160x3840@120"], _encodes);
         var capabilities = Result(encoders, probes);
         foreach (var shape in EncoderProbe.Shapes)
         {
@@ -158,7 +164,7 @@ public sealed class EncoderSearchTests
             out var stalled);
 
         Assert.False(stalled);
-        Assert.Equal(["H.264 3840x2160@60", "H.264 2160x3840@60", "HEVC 3840x2160@60", "HEVC 1280x720@30"], _encodes);
+        Assert.Equal(["H.264 3840x2160@120", "H.264 2160x3840@120", "HEVC 3840x2160@120", "HEVC 1280x720@30"], _encodes);
         var capabilities = Result(encoders, probes);
         Assert.True(capabilities.IsAvailable(H264));
         Assert.False(capabilities.IsAvailable(Hevc));
@@ -180,7 +186,10 @@ public sealed class EncoderSearchTests
             out _);
 
         Assert.Equal(
-            ["H.264 3840x2160@60", "H.264 1280x720@30", "H.264 2560x1440@60", "H.264 2160x3840@60", "H.264 2880x2160@60", "H.264 3840x2160@30"],
+            [
+                "H.264 3840x2160@120", "H.264 1280x720@30", "H.264 2560x1440@120", "H.264 2160x3840@120", "H.264 2880x2160@120",
+                "H.264 3840x2160@60", "H.264 3840x2160@30",
+            ],
             _encodes);
         var capabilities = Result(encoders, probes);
         Assert.Equal(OutputResolution.Qhd1440, capabilities.MaxResolution(H264, FrameAspect.Ratio16x9, new Fraction(60, 1)));

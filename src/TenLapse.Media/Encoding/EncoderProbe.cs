@@ -15,11 +15,12 @@ namespace TenLapse.Media.Encoding;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The matrix is H.264 and HEVC × 60 and 30 fps × 16:9, 9:16, 4:3, 1:1 and 4:5 × 4K, 1440p, 1080p and 720p
-/// (sizes from <see cref="OutputSize.For"/>). It is searched largest first, and a size is only encoded when the
-/// probes so far do not settle it under the rule <see cref="EncoderCapabilities"/> assumes (an encoder that takes
-/// a size and rate takes everything no larger on every axis): on a GPU that encodes 4K60 in both shapes, four
-/// encodes answer the whole matrix.
+/// The matrix is H.264 and HEVC × 120, 60 and 30 fps × 16:9, 9:16, 4:3, 1:1 and 4:5 × 4K, 1440p, 1080p and
+/// 720p (sizes from <see cref="OutputSize.For"/>). It is searched largest first, and a size is only encoded when
+/// the probes so far do not settle it under the rule <see cref="EncoderCapabilities"/> assumes (an encoder that
+/// takes a size and rate takes everything no larger on every axis): on a GPU that encodes 4K120 in both shapes,
+/// four encodes answer the whole matrix. A rate between two probed rates is answered by the next one up (90 fps
+/// by the 120 fps probes), never by a slower one.
 /// </para>
 /// <para>
 /// A failed test encode is a "not supported" answer, classified as an export failure would be, never an
@@ -34,8 +35,11 @@ namespace TenLapse.Media.Encoding;
 /// </remarks>
 public static class EncoderProbe
 {
-    /// <summary>The rates probed, fastest first. A request above the fastest is answered as unsupported.</summary>
-    public static IReadOnlyList<int> FramesPerSecond { get; } = [60, 30];
+    /// <summary>
+    /// The rates probed, fastest first: up to <see cref="FrameRates.Max"/>, so every rate the app accepts has an
+    /// answer. A request above the fastest is answered as unsupported.
+    /// </summary>
+    public static IReadOnlyList<int> FramesPerSecond { get; } = [120, 60, 30];
 
     /// <summary>The shapes probed: the widest and the tallest first, since they settle the others.</summary>
     public static IReadOnlyList<FrameAspect> Shapes { get; } =

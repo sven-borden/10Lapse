@@ -25,10 +25,10 @@ public sealed class EncoderCapabilitiesTests
 
     // What this PC (RTX 4060 Ti) answered: four encodes settle the matrix.
     private static EncoderCapabilities AllHardware() => Set(
-        Probe(H264, 3840, 2160, 60, EncoderKind.Hardware),
-        Probe(H264, 2160, 3840, 60, EncoderKind.Hardware),
-        Probe(Hevc, 3840, 2160, 60, EncoderKind.Hardware),
-        Probe(Hevc, 2160, 3840, 60, EncoderKind.Hardware));
+        Probe(H264, 3840, 2160, 120, EncoderKind.Hardware),
+        Probe(H264, 2160, 3840, 120, EncoderKind.Hardware),
+        Probe(Hevc, 3840, 2160, 120, EncoderKind.Hardware),
+        Probe(Hevc, 2160, 3840, 120, EncoderKind.Hardware));
 
     // A GPU that stops at 1440p, with the software encoder taking 4K landscape only.
     private static EncoderCapabilities HardwareTo1440() => Set(
@@ -61,7 +61,8 @@ public sealed class EncoderCapabilitiesTests
         var capabilities = AllHardware();
 
         // Above the fastest probed rate, and wider than 16:9 at 4K: no probe covers them, so no.
-        Assert.False(capabilities.Supports(H264, 1920, 1080, new Fraction(120, 1)));
+        Assert.True(capabilities.Supports(H264, 1920, 1080, new Fraction(120, 1)));
+        Assert.False(capabilities.Supports(H264, 1920, 1080, new Fraction(121, 1)));
         Assert.False(capabilities.Supports(H264, 7680, 4320, _fps30));
         Assert.False(capabilities.Supports(H264, 3840, 3840, _fps30));
 
@@ -99,6 +100,24 @@ public sealed class EncoderCapabilitiesTests
         Assert.Equal(OutputResolution.Qhd1440, capabilities.MaxResolution(H264, FrameAspect.Ratio16x9, new Fraction(50, 1)));
         Assert.Equal(OutputResolution.Uhd2160, capabilities.MaxResolution(H264, FrameAspect.Ratio16x9, _fps30));
         Assert.Equal(OutputResolution.Uhd2160, capabilities.MaxResolution(H264, FrameAspect.Ratio16x9, new Fraction(1, 10)));
+    }
+
+    [Fact]
+    public void ARateBetweenTheProbedRatesTakesTheNextRateUp()
+    {
+        // A GPU that takes 4K60 but leaves 4K120 to the software encoder.
+        var capabilities = Set(
+            Probe(H264, 3840, 2160, 120, EncoderKind.Software),
+            Probe(H264, 1920, 1080, 120, EncoderKind.Hardware),
+            Probe(H264, 3840, 2160, 60, EncoderKind.Hardware));
+
+        Assert.Equal(EncoderKind.Hardware, capabilities.EncoderFor(H264, 3840, 2160, _fps60));
+        Assert.Equal(EncoderKind.Software, capabilities.EncoderFor(H264, 3840, 2160, new Fraction(61, 1)));
+        Assert.Equal(EncoderKind.Software, capabilities.EncoderFor(H264, 3840, 2160, new Fraction(90, 1)));
+        Assert.Equal(EncoderKind.Software, capabilities.EncoderFor(H264, 3840, 2160, new Fraction(120, 1)));
+        Assert.Equal(EncoderKind.Hardware, capabilities.EncoderFor(H264, 1920, 1080, new Fraction(100, 1)));
+        Assert.Equal(OutputResolution.Hd1080, capabilities.MaxResolution(H264, FrameAspect.Ratio16x9, new Fraction(100, 1), minimum: EncoderKind.Hardware));
+        Assert.Equal(EncoderKind.None, capabilities.EncoderFor(H264, 1280, 720, new Fraction(121, 1)));
     }
 
     [Fact]

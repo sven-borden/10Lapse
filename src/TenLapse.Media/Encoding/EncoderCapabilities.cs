@@ -53,8 +53,8 @@ public sealed record ProbedSize(
 /// The answers follow from the test encodes in <see cref="Probes"/> under one assumption: an encoder that takes a
 /// size and rate also takes every size no wider, no taller and no faster. So <see cref="EncoderFor"/> is the best
 /// encoder among the probes that cover the request on every axis, and <see cref="EncoderKind.None"/> when no probe
-/// covers it (above 60 fps, or a shape wider than 16:9 or taller than 9:16 at 4K): a conservative answer, never an
-/// offer the export cannot keep.
+/// covers it (above 120 fps, or a shape wider than 16:9 or taller than 9:16 at 4K): a conservative answer, never an
+/// offer the export cannot keep. A rate between two probed rates takes the answer of the next probed rate up.
 /// </remarks>
 public sealed class EncoderCapabilities
 {
