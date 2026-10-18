@@ -4,7 +4,7 @@ Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Running: #8 (wave 3) and #16 (wave 4, started early: it touches Core and Presentation only).
+Running: #8 fix round (PR #65) and #28 (wave 5, started early: App window only).
 
 ## Waves
 
@@ -19,11 +19,11 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 1 | #6 Privacy policy and README | S | `README.md`, `PRIVACY.md` | merged #60 |
 | 2 | #4 Package identity and MSIX | S | `src/TenLapse.App` manifest, packaging props | merged #62 |
 | 2 | #10 Exact frame timing | S | `TenLapse.Core/Timing` | merged #63 |
-| 3 | #8 Spike: streaming encode | O | `TenLapse.Media`, a spike harness | running |
+| 3 | #8 Spike: streaming encode | O | `TenLapse.Media`, a spike harness | PR #65, fix round |
 | 3 | #27 Design tokens and theme resources | S | `TenLapse.App/Themes` | merged #64 |
 | 4 | #9 Spike: encoder capabilities | O | `TenLapse.Media/Encoding` | |
-| 4 | #16 Project model and view models | O | `TenLapse.Core/Projects`, new `TenLapse.Presentation` | running |
-| 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | |
+| 4 | #16 Project model and view models | O | `TenLapse.Core/Projects`, new `TenLapse.Presentation` | merged #66 |
+| 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | running |
 | 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | |
 | 6 | #26 One error path | O | App startup, `Core/Diagnostics` | |
 | 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | |
@@ -111,6 +111,20 @@ own waves once 3.0 ships.
   `_bespokeIndicatorFiles` in `tests/TenLapse.Tests/Design/AmberRuleTests.cs`.
 - 2026-10-18 (#27): High contrast was never seen on screen here; it is covered
   by key parity, resolution and tests. #41 (test matrix) checks it for real.
+- 2026-10-18 (#8, PR #65 review): encoding uses `IMFSinkWriter` through CsWin32
+  on a D3D11 device created per export, not `MediaTranscoder` (drops frames on
+  D3D surfaces, 8 GB on CPU buffers). Four pipeline requirements for #22 are
+  on #22: cancel under 1 s, decode at the output size, frame-level failure
+  context, encode-stage stall guard.
+- 2026-10-18 (#16): `Project` is single-writer (the creating thread) and
+  publishes an immutable `ProjectSnapshot` with a `Version`; readers on any
+  thread take the snapshot. A replaced project is closed: mutations throw
+  `ObjectDisposedException`, which an import treats as cancelled. Errors that
+  must not crash go to `IErrorSink` (Presentation; #26 replaces the Trace
+  implementation). Timing keeps each mode's own input; `EffectiveRate(count)`
+  clamps and says so. `OutputResolution` is the short side. Defaults: 30 fps,
+  16:9 Fill, 1080p H.264 High, capture-time sort. User-visible text in
+  `ProjectText` as whole format strings.
 
 ## Merged
 
@@ -139,3 +153,10 @@ own waves once 3.0 ships.
   color on progress, slider, toggle, check box, radio and ProgressRing, with
   hover and pressed tints. Debug gallery: `TenLapse.App.exe --gallery
   [--theme=light|dark] [--scroll=PX]`.
+- #16 PR #66: `TenLapse.Core.Projects` (`Project`, `ProjectSnapshot`, `Frame`,
+  `SkippedFile`, settings records, `ProjectChangedEventArgs` with a frame delta,
+  `AddFrames`/`InsertFrames`/`RemoveFrames`/`ReorderFrames`/`UpdateFrames`,
+  `MarkExported(version)`), `src/TenLapse.Presentation` (`ShellViewModel`,
+  `ProjectViewModel`, `ProjectText`, `IDialogService`, `DialogQueue`,
+  `IErrorSink`), App `ContentDialogService` and `TraceErrorSink`, manual
+  composition root in `App.xaml.cs`.
