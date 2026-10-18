@@ -1,0 +1,32 @@
+<Project>
+  <!--
+    Central package management: every version lives here. To add a package,
+    add a PackageVersion line below (if it is not already declared), then a
+    PackageReference without a Version attribute in the project.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Pins transitive dependencies too, so Win2D cannot pull an older Windows App SDK into Media and the tests. -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Label="Windows App SDK and toolchain">
+    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
+    <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.3.363" />
+  </ItemGroup>
+
+  <ItemGroup Label="Graphics and media">
+    <PackageVersion Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
+    <PackageVersion Include="MetadataExtractor" Version="2.9.3" />
+  </ItemGroup>
+
+  <ItemGroup Label="App">
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup Label="Tests">
+    <!-- xunit.v3 4.x runs on Microsoft.Testing.Platform v2; global.json switches dotnet test to that runner. No VSTest packages needed. -->
+    <PackageVersion Include="xunit.v3" Version="4.0.2" />
+  </ItemGroup>
+</Project>

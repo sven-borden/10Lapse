@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Decode, draw and encode: Windows-only, on Win2D and the Windows media APIs. -->
+  <PropertyGroup>
+    <TargetFramework>$(TenLapseWindowsTargetFramework)</TargetFramework>
+    <TargetPlatformMinVersion>$(TenLapseWindowsMinVersion)</TargetPlatformMinVersion>
+    <!-- Win2D ships a native DLL per architecture, so Media builds per platform like the app. -->
+    <Platforms>x64;ARM64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Graphics.Win2D" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TenLapse.Core\TenLapse.Core.csproj" />
+  </ItemGroup>
+</Project>

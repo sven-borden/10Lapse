@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    xUnit v3 on Microsoft.Testing.Platform: the project builds to an executable
+    test host, and dotnet test runs it (global.json selects the runner).
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(TenLapseWindowsTargetFramework)</TargetFramework>
+    <TargetPlatformMinVersion>$(TenLapseWindowsMinVersion)</TargetPlatformMinVersion>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'x64'">win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'ARM64'">win-arm64</RuntimeIdentifier>
+    <!-- Unpackaged, on the installed Windows App Runtime 2, like the Debug app. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <!-- The test host is a Windows App SDK executable: the metapackage brings the runtime reference and the bootstrapper. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\TenLapse.Core\TenLapse.Core.csproj" />
+    <ProjectReference Include="..\..\src\TenLapse.Media\TenLapse.Media.csproj" />
+  </ItemGroup>
+</Project>
