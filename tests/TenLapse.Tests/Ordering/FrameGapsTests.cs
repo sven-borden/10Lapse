@@ -161,6 +161,30 @@ public static class FrameGapsTests
     }
 
     [Fact]
+    public static void WholeSecondTimesWithSeveralShotsPerSecondDoNotFlagEveryStep()
+    {
+        // 2 fps with no sub-second digits: 0, 0, 1, 1, 2, 2 ... so half the steps are 0 s and the median can be 0.
+        // Names count up without a jump, so only the interval check can speak.
+        Frame[] Shots(int count, int startSecond) =>
+            [.. Enumerable.Range(0, count).Select(i => Photo($"IMG_{startSecond + i + 1:0000}.jpg", _base.AddSeconds(startSecond + (i / 2))))];
+
+        var steady = Shots(60, 0);
+        Assert.Empty(FrameGaps.Detect(steady));
+
+        // A real hole of 10 s in the same run is still found, and nothing else is.
+        Frame[] withHole =
+        [
+            .. Enumerable.Range(0, 30).Select(i => Photo($"IMG_{i + 1:0000}.jpg", _base.AddSeconds(i / 2))),
+            .. Enumerable.Range(0, 30).Select(i => Photo($"IMG_{i + 31:0000}.jpg", _base.AddSeconds(14 + 10 + (i / 2)))),
+        ];
+        var gap = Assert.Single(FrameGaps.Detect(withHole));
+        Assert.Equal(29, gap.AfterIndex);
+        Assert.Equal(FrameGapKinds.CaptureInterval, gap.Kinds);
+        Assert.Equal(TimeSpan.FromSeconds(10), gap.Interval);
+        Assert.True(gap.TypicalInterval >= FrameGaps.MinimumInterval);
+    }
+
+    [Fact]
     public static void ThreeTimesTheMedianIsTheLine()
     {
         Frame[] Series(double jump) =>

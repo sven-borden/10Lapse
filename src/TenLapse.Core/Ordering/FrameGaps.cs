@@ -62,7 +62,8 @@ public sealed record FrameGap(
 /// </para>
 /// <para>
 /// <b>Interval.</b> For each pair of neighbours that both have a capture time, in order, the interval is an outlier when
-/// it is at least one second and more than three times the median of up to five intervals on each side of it. Fewer
+/// it is at least one second and more than three times the median of up to five intervals on each side of it (a median
+/// under one second counts as one second, so whole-second EXIF times at several shots a second cannot flag every step). Fewer
 /// than three intervals around it, or a pair out of time order, never flag. The one-second floor keeps a burst
 /// (a tenth of a second between shots, a pause of half a second) from flagging.
 /// </para>
@@ -212,6 +213,10 @@ public static class FrameGaps
             var median = neighbours.Count % 2 == 1
                 ? neighbours[middle]
                 : TimeSpan.FromTicks((neighbours[middle - 1].Ticks + neighbours[middle].Ticks) / 2);
+
+            // Whole-second times with several shots a second give a median of 0 (or under a second): measure against
+            // the one-second floor then, or every 1 s step would be an outlier.
+            median = median < MinimumInterval ? MinimumInterval : median;
             if (interval > median * OutlierFactor)
             {
                 found[i - 1] = new IntervalOutlier(interval, median);
