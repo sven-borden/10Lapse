@@ -4,7 +4,7 @@ Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Running: PR #70 fix round (#13) and #15 (wave 6).
+Running: PR #71 fix round (#15) and #33 (wave 7).
 
 ## Waves
 
@@ -24,11 +24,11 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 4 | #9 Spike: encoder capabilities | O | `TenLapse.Media/Encoding` | merged #68 |
 | 4 | #16 Project model and view models | O | `TenLapse.Core/Projects`, new `TenLapse.Presentation` | merged #66 |
 | 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | merged #67 |
-| 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | PR #70, fix round |
+| 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | merged #70 |
 | 6 | #26 One error path | O | App startup, `Core/Diagnostics` | merged #69 |
-| 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | running |
+| 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | PR #71, fix round |
 | 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | |
-| 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | |
+| 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | running |
 | 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | |
 | 8 | #29 First launch drop zone | O | App empty state view | |
 | 9 | #19 Preview with proxy cache | O | preview view and cache | |
@@ -217,3 +217,13 @@ own waves once 3.0 ships.
   `DiagnosticsRedaction`; App global handlers, `TryEnqueueGuarded`,
   `VideoExportErrorMapper`, `EncoderDiagnostics`, Settings page with *Copy
   diagnostics*. Debug `--crash=command|task|ui|unhandled`.
+- #13 PR #70: `TenLapse.Media.Decoding` (`PhotoDecoder.ReadInfoAsync` header
+  plus end check, `DecodeAsync` to cover size with EXIF orientation, files read
+  through a shared handle and closed before decoding so nothing stays mapped;
+  sRGB profiles skip colour conversion, others convert after scaling;
+  truncated JPEG/PNG/GIF are `Truncated` at import; `PhotoCodecs` lists
+  installed ∩ known photo extensions; `KnownPhotoFormats` with container and
+  codec Store IDs for #14). `PhotoFileSource` decodes at the output's cover
+  size: 4K export from 24 MP JPEGs about 25–28 fps, 540–640 MB peak.
+  Presentation `SkippedFileText` and `SkippedFilesInfoBar` for #12. A JPEG
+  missing only its EOI marker is rejected as truncated (documented).

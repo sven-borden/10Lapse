@@ -1,4 +1,5 @@
 using Microsoft.Graphics.Canvas;
+using TenLapse.Core.Projects;
 using TenLapse.Media.Export;
 using TenLapse.Media.Inspection;
 using Windows.UI;
@@ -16,7 +17,7 @@ internal sealed class NumberedFrames(int count, int width, int height) : IFrameS
 
     public int FrameCount => count;
 
-    public Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, CancellationToken cancellationToken) =>
+    public Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken) =>
         Task.Run<CanvasBitmap>(
             () =>
             {
