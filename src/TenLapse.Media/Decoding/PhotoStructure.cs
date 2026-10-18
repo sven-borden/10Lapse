@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Buffers.Binary;
 
 namespace TenLapse.Media.Decoding;
 
@@ -6,9 +7,9 @@ namespace TenLapse.Media.Decoding;
 internal delegate int ReadAt(long offset, Span<byte> buffer);
 
 /// <summary>
-/// Whether a photo file holds its whole image. WIC's JPEG decoder decodes a file cut short without an error (it
-/// fills the missing rows with gray and only prints "premature end of data segment"), so a truncated photo would
-/// pass for a whole one; this finds the format's end marker instead.
+/// Whether a photo file holds its whole image. WIC decodes a JPEG, PNG or GIF cut short without an error (the
+/// JPEG decoder fills the missing rows with gray and only prints "premature end of data segment"; PNG and GIF end
+/// in a flat band), so a truncated photo would pass for a whole one; this finds the format's end marker instead.
 /// </summary>
 /// <remarks>
 /// It reads through a <see cref="ReadAt"/> bounded by a length captured once: the bytes the decoder gets (the
@@ -21,17 +22,42 @@ internal static class PhotoStructure
 
     private const int BufferSize = 256 * 1024;
 
+    // The last chunk of every PNG: length 0, "IEND", its CRC.
+    private static ReadOnlySpan<byte> PngEnd => [0, 0, 0, 0, (byte)'I', (byte)'E', (byte)'N', (byte)'D', 0xAE, 0x42, 0x60, 0x82];
+
     /// <summary>
-    /// True when the file reaches its format's end: a JPEG its end-of-image marker (EOI). A format this does not
-    /// know answers true: it is not this check's to judge.
+    /// True when the file reaches its format's end: a JPEG its end-of-image marker (EOI), a PNG its IEND chunk, a
+    /// GIF its trailer (0x3B). WIC decodes a JPEG, PNG or GIF cut short without an error, filling what is missing
+    /// with a flat colour. A format this does not know answers true: it is not this check's to judge.
     /// </summary>
     /// <param name="header">The first bytes of the file (up to <see cref="HeaderLength"/>).</param>
     /// <param name="length">The file's length, as captured when it was opened.</param>
     /// <param name="read">Reads the file at an offset.</param>
+    /// <remarks>
+    /// The common case reads the last few bytes. A file with data after its image (a motion photo's video after
+    /// the JPEG, a tool's trailer after a PNG) is walked through its structure; a GIF always is, as its last byte
+    /// alone does not tell a trailer from data.
+    /// </remarks>
     public static bool EndsCompletely(ReadOnlySpan<byte> header, long length, ReadAt read)
     {
         ArgumentNullException.ThrowIfNull(read);
-        return IsJpeg(header) ? JpegEndsCompletely(length, read) : true;
+        if (IsJpeg(header))
+        {
+            return JpegEndsCompletely(length, read);
+        }
+
+        if (header.StartsWith((ReadOnlySpan<byte>)[0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A]))
+        {
+            return PngEndsCompletely(length, read);
+        }
+
+        if (header.StartsWith("GIF87a"u8) || header.StartsWith("GIF89a"u8))
+        {
+            using var reader = new Reader(read, length);
+            return reader.WalkGif();
+        }
+
+        return true;
     }
 
     /// <summary>A reader over bytes already in memory.</summary>
@@ -70,6 +96,35 @@ internal static class PhotoStructure
 
         using var reader = new Reader(read, length);
         return reader.WalkJpeg();
+    }
+
+    // Ends with the IEND chunk, or reaches it walking the chunks (8-byte header, data, 4-byte CRC each).
+    private static bool PngEndsCompletely(long length, ReadAt read)
+    {
+        Span<byte> chunk = stackalloc byte[12];
+        if (length >= 8 + 12 && ReadFully(read, length - 12, chunk) && chunk.SequenceEqual(PngEnd))
+        {
+            return true;
+        }
+
+        var head = chunk[..8];
+        long offset = 8;
+        while (offset + 8 <= length)
+        {
+            if (!ReadFully(read, offset, head))
+            {
+                return false;
+            }
+
+            if (head[4..].SequenceEqual("IEND"u8))
+            {
+                return true;
+            }
+
+            offset += 12L + BinaryPrimitives.ReadUInt32BigEndian(head);
+        }
+
+        return false;
     }
 
     private static bool ReadFully(ReadAt read, long offset, Span<byte> buffer)
@@ -141,6 +196,75 @@ internal static class PhotoStructure
                 }
 
                 if (marker == 0xDA && !SkipEntropyCodedData())
+                {
+                    return false;
+                }
+            }
+        }
+
+        // Header, logical screen descriptor and colour table, then blocks up to the trailer: extensions and
+        // images, each ending with a run of sub-blocks (a length byte, then that many bytes; 0 ends the run).
+        public bool WalkGif()
+        {
+            if (!Skip(10))
+            {
+                return false;
+            }
+
+            var flags = Next();
+            if (flags < 0 || !Skip(2) || !SkipColourTable(flags))
+            {
+                return false;
+            }
+
+            while (true)
+            {
+                switch (Next())
+                {
+                    case 0x3B:
+                        return true;
+                    case 0x21:
+                        if (Next() < 0 || !SkipSubBlocks())
+                        {
+                            return false;
+                        }
+
+                        break;
+                    case 0x2C:
+                        if (!Skip(8))
+                        {
+                            return false;
+                        }
+
+                        var local = Next();
+                        if (local < 0 || !SkipColourTable(local) || Next() < 0 || !SkipSubBlocks())
+                        {
+                            return false;
+                        }
+
+                        break;
+                    case < 0:
+                        return false;
+                    default:
+                        // Not a block: a structure WIC made sense of anyway, as for a JPEG.
+                        return true;
+                }
+            }
+        }
+
+        private bool SkipColourTable(int flags) => (flags & 0x80) == 0 || Skip(3 << ((flags & 0x07) + 1));
+
+        private bool SkipSubBlocks()
+        {
+            while (true)
+            {
+                var size = Next();
+                if (size <= 0)
+                {
+                    return size == 0;
+                }
+
+                if (!Skip(size))
                 {
                     return false;
                 }

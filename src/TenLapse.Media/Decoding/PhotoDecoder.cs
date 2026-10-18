@@ -96,8 +96,9 @@ public static class PhotoDecoder
 
     /// <summary>
     /// Reads the size, orientation and frame count from the header, without decoding pixels: cheap enough for
-    /// every file of an import. A file whose header is whole but whose data is cut short reads fine here; only
-    /// <see cref="DecodeAsync"/> finds that (<see cref="SkipReason.Truncated"/>).
+    /// every file of an import. A JPEG, PNG or GIF cut short is <see cref="SkipReason.Truncated"/> here already (its
+    /// end marker is missing; checking the last bytes costs well under a millisecond, a JPEG with data after its
+    /// image such as a motion photo is read through once); other formats show a cut when decoded.
     /// </summary>
     public static async Task<PhotoResult<PhotoInfo>> ReadInfoAsync(string path, CancellationToken cancellationToken = default)
     {
@@ -107,9 +108,15 @@ public static class PhotoDecoder
         try
         {
             using var file = OpenFile(path);
-            if (RandomAccess.GetLength(file) == 0)
+            var length = RandomAccess.GetLength(file);
+            if (length == 0)
             {
                 return PhotoResult<PhotoInfo>.Failed(Empty(path));
+            }
+
+            if (!PhotoStructure.EndsCompletely(ReadHeader(file), length, ReadAtHandle(file)))
+            {
+                return PhotoResult<PhotoInfo>.Failed(Truncated(path));
             }
 
             // .NET's stream adapter: slower per read than Windows' own file stream, which a header does not

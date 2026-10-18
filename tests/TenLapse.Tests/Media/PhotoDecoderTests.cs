@@ -122,46 +122,55 @@ public sealed class PhotoDecoderTests : IDisposable
         var path = _files.PathOf("truncated.jpg");
         await File.WriteAllBytesAsync(path, bytes[..(bytes.Length / 2)], Token);
 
-        var info = await PhotoDecoder.ReadInfoAsync(path, Token);
-        var result = await PhotoDecoder.DecodeAsync(path, cancellationToken: Token);
-
-        Assert.True(info.Succeeded, "The header is whole, so the size is known.");
-        Assert.False(result.Succeeded, "A JPEG cut in half must not decode as if it were whole.");
-        Assert.Equal(SkipReason.Truncated, result.Failure.Reason);
+        // Import finds it (ReadInfoAsync), not only the export: the header alone would read fine.
+        await AssertFailsAsync(path, SkipReason.Truncated);
     }
 
-    [Fact]
-    public async Task AJpegWithDataAfterTheImageIsWhole()
+    public static TheoryData<string, string> TrailedFormats => new()
     {
-        // A motion photo carries its video after the JPEG's end-of-image marker; random bytes stand in for it.
-        var whole = await _files.WriteAsync("still.jpg", BitmapEncoder.JpegEncoderId, width: 256, height: 256, noise: true);
+        { "JPEG", ".jpg" },
+        { "PNG", ".png" },
+        { "GIF", ".gif" },
+    };
+
+    [Theory]
+    [MemberData(nameof(TrailedFormats))]
+    public async Task APhotoWithDataAfterTheImageIsWhole(string format, string extension)
+    {
+        // A motion photo carries its video after the JPEG's end-of-image marker, and tools append their own data
+        // after a PNG's IEND or a GIF's trailer; random bytes stand in for it.
+        var whole = await _files.WriteAsync("still" + extension, EncoderFor(format), width: 256, height: 256, noise: true);
         var bytes = await File.ReadAllBytesAsync(whole, Token);
         var trailer = new byte[200_000];
         new Random(7).NextBytes(trailer);
-        var path = _files.PathOf("motion.jpg");
+        var path = _files.PathOf("trailed" + extension);
         await File.WriteAllBytesAsync(path, [.. bytes, .. trailer], Token);
 
+        var info = await PhotoDecoder.ReadInfoAsync(path, Token);
         var result = await PhotoDecoder.DecodeAsync(path, cancellationToken: Token);
 
+        Assert.True(info.Succeeded, info.Failure?.Detail);
         Assert.True(result.Succeeded, result.Failure?.Detail);
         result.Value.Dispose();
     }
 
     [Theory]
-    [InlineData(0.99)]
-    [InlineData(0.5)]
-    [InlineData(0.1)]
-    public async Task AJpegCutAnywhereInItsDataIsTruncated(double kept)
+    [InlineData("JPEG", ".jpg", 0.99)]
+    [InlineData("JPEG", ".jpg", 0.5)]
+    [InlineData("JPEG", ".jpg", 0.1)]
+    [InlineData("PNG", ".png", 0.9)]
+    [InlineData("PNG", ".png", 0.5)]
+    [InlineData("GIF", ".gif", 0.9)]
+    [InlineData("GIF", ".gif", 0.5)]
+    public async Task APhotoCutAnywhereInItsDataIsTruncated(string format, string extension, double kept)
     {
-        var whole = await _files.WriteAsync("whole.jpg", BitmapEncoder.JpegEncoderId, width: 256, height: 256, noise: true);
+        // WIC decodes all three without an error, the missing part a flat band.
+        var whole = await _files.WriteAsync("whole" + extension, EncoderFor(format), width: 256, height: 256, noise: true);
         var bytes = await File.ReadAllBytesAsync(whole, Token);
-        var path = _files.PathOf("cut.jpg");
+        var path = _files.PathOf("cut" + extension);
         await File.WriteAllBytesAsync(path, bytes[..(int)(bytes.Length * kept)], Token);
 
-        var result = await PhotoDecoder.DecodeAsync(path, cancellationToken: Token);
-
-        Assert.False(result.Succeeded);
-        Assert.Equal(SkipReason.Truncated, result.Failure.Reason);
+        await AssertFailsAsync(path, SkipReason.Truncated);
     }
 
     [Fact]
@@ -554,6 +563,7 @@ public sealed class PhotoDecoderTests : IDisposable
         "TIFF" => BitmapEncoder.TiffEncoderId,
         "BMP" => BitmapEncoder.BmpEncoderId,
         "JPEG XR" => BitmapEncoder.JpegXREncoderId,
+        "GIF" => BitmapEncoder.GifEncoderId,
         _ => throw new ArgumentOutOfRangeException(nameof(format)),
     };
 
