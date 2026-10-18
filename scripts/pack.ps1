@@ -61,8 +61,14 @@ $buildArgs = @(
     '-p:AppxSymbolPackageEnabled=false',
     "-p:AppxPackageDir=$packageDir"
 )
-$output = & dotnet @buildArgs 2>&1 | ForEach-Object { "$_" }
-$exitCode = $LASTEXITCODE
+# Build from the repo root, wherever the script is started: dotnet resolves global.json
+# (the SDK pin) from the working directory.
+Push-Location $root
+try {
+    $output = & dotnet @buildArgs 2>&1 | ForEach-Object { "$_" }
+    $exitCode = $LASTEXITCODE
+}
+finally { Pop-Location }
 
 $upload = @(Get-ChildItem $outDir -Filter '*.msixupload' -File -Recurse)
 if ($exitCode -ne 0 -or $upload.Count -ne 1) {
