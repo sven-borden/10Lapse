@@ -7,6 +7,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Services;
+using TenLapse.Services;
 using TenLapse.Shell;
 using TenLapse.Themes;
 using Windows.Graphics;
@@ -24,6 +25,7 @@ public sealed partial class MainWindow : Window
 {
     private readonly ShellView _shell;
     private readonly TintedMicaBackdrop? _backdrop;
+    private readonly IErrorSink _errors;
 
     // Kept as a field: its events stop when nothing holds it.
     private readonly UISettings _uiSettings = new();
@@ -36,14 +38,21 @@ public sealed partial class MainWindow : Window
     // The command bar's controls, carved out of the drag region (physical pixels), as last set.
     private RectInt32[] _passthrough = [];
 
+    // Set when the window closes: the layout passes that still come must not touch the AppWindow.
+    private bool _closed;
+
     /// <param name="viewModel">The shell view model.</param>
+    /// <param name="settings">The Settings page's view model.</param>
     /// <param name="infoBars">The InfoBars to float over the stage; the composition root hands the same queue to whoever raises them.</param>
-    public MainWindow(ShellViewModel viewModel, InfoBarQueue infoBars)
+    /// <param name="errors">Logs failures of the window's dispatcher callbacks (log only, see <see cref="DispatcherQueueExtensions"/>).</param>
+    public MainWindow(ShellViewModel viewModel, SettingsViewModel settings, InfoBarQueue infoBars, IErrorSink errors)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
+        ArgumentNullException.ThrowIfNull(errors);
         ViewModel = viewModel;
+        _errors = errors;
         InitializeComponent();
-        _shell = new ShellView(viewModel, infoBars);
+        _shell = new ShellView(viewModel, settings, infoBars, errors);
         Content = _shell;
 
         // Window is not a DependencyObject, so its Title cannot take a binding: follow the view model by hand.
@@ -77,6 +86,7 @@ public sealed partial class MainWindow : Window
 
         Closed += (_, _) =>
         {
+            _closed = true;
             ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
             AppWindow.Changed -= OnAppWindowChanged;
             _uiSettings.ColorValuesChanged -= OnColorValuesChanged;
@@ -127,7 +137,8 @@ public sealed partial class MainWindow : Window
     }
 
     // Raised on a background thread.
-    private void OnColorValuesChanged(UISettings sender, object args) => DispatcherQueue.TryEnqueue(RefreshSystemColors);
+    private void OnColorValuesChanged(UISettings sender, object args) =>
+        DispatcherQueue.TryEnqueueGuarded(_errors, RefreshSystemColors, ProjectText.SystemColorsFailed);
 
     // What follows the theme by hand: the caption buttons, the shell's shadows and the Mica tint.
     private void RefreshSystemColors()
@@ -153,7 +164,8 @@ public sealed partial class MainWindow : Window
     // their own input. Their rectangles follow every layout pass, and are only sent when they moved.
     private void UpdatePassthrough()
     {
-        if (_shell.XamlRoot is null)
+        // A layout pass can still run while the window closes, when its AppWindow is already gone.
+        if (_closed || _shell.XamlRoot is null || AppWindow is null)
         {
             return;
         }

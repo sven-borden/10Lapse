@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using TenLapse.Core.Diagnostics;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
@@ -8,14 +9,42 @@ namespace TenLapse;
 /// <summary>
 /// The application entry point and composition root: builds the services and the shell view model by hand
 /// and gives them to the main window. One window and a handful of services do not need a DI container.
+/// It also holds the last line of the error path (#26): the three global handlers, and the message box for a
+/// window that cannot be created.
 /// </summary>
 public partial class App : Application
 {
+    // The first thing that exists, so a failure anywhere after it (InitializeComponent included) reaches the log.
+    // Opening it never throws: an unwritable folder makes it keep its lines in memory.
+    private static readonly RollingFileLog _log = new(AppEnvironment.LogFolder());
+
+    private ErrorPresenter? _errors;
     private Window? _window;
 
     public App()
     {
-        InitializeComponent();
+        // Logs synchronously before a dying process goes (a crash on a background thread, a fatal UI exception).
+        AppDomain.CurrentDomain.UnhandledException += OnProcessUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+        UnhandledException += OnUnhandledException;
+
+        _log.Info($"10Lapse {AppDiagnostics.AppVersion()} starting ({(AppEnvironment.HasPackageIdentity ? "packaged" : "unpackaged")}); log in {_log.Folder}.");
+
+        // App.xaml (the token dictionaries, the styles) that fails to load would escape the constructor with no
+        // message and maybe no log: as in OnLaunched, log it, say so in a plain message box and close. The process
+        // ends here, because Application.Exit would still run OnLaunched against the broken resources.
+        try
+        {
+            InitializeComponent();
+        }
+        catch (Exception exception)
+        {
+            _log.Critical(ProjectText.StartupResourcesFailed, exception);
+            StartupFailure.Show(_log.Folder);
+            _log.Dispose();
+            Environment.Exit(StartupFailure.ExitCode);
+        }
+
 #if DEBUG
         Gallery.GalleryLaunch.ApplyTheme(this);
 #endif
@@ -23,31 +52,111 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        // Before the window exists nothing can show an InfoBar: a failure here is logged and told in a plain
+        // message box, and the app closes.
+        try
+        {
 #if DEBUG
-        // Debug only: --gallery opens the token gallery instead of the main window.
-        _window = Gallery.GalleryLaunch.Requested
-            ? new Gallery.GalleryWindow(Gallery.GalleryLaunch.Scroll)
-            : CreateMainWindow();
+            // Debug only: --gallery opens the token gallery instead of the main window.
+            _window = Gallery.GalleryLaunch.Requested
+                ? new Gallery.GalleryWindow(Gallery.GalleryLaunch.Scroll)
+                : CreateMainWindow();
 #else
-        _window = CreateMainWindow();
+            _window = CreateMainWindow();
 #endif
-        _window.Activate();
+            _window.Activate();
+        }
+        catch (Exception exception)
+        {
+            _log.Critical(ProjectText.StartupWindowFailed, exception);
+            StartupFailure.Show(_log.Folder);
+            _log.Dispose();
+            Exit();
+            return;
+        }
+
+#if DEBUG
+        if (_errors is { } errors)
+        {
+            Debugging.DebugLaunch.Crash(errors, _window.DispatcherQueue);
+        }
+#endif
     }
 
-    private static MainWindow CreateMainWindow()
+    private MainWindow CreateMainWindow()
     {
         MainWindow? window = null;
-        var errors = new TraceErrorSink();
         var dialogs = new ContentDialogService(() => window?.Content?.XamlRoot);
 
-        // The one InfoBar queue: #26's error path and the import and export issues raise InfoBars through it
-        // (as IInfoBarService); the window shows them.
-        var infoBars = new InfoBarQueue(errors);
+        // The one InfoBar queue: the error path and the import and export issues raise InfoBars through it (as
+        // IInfoBarService); the window shows them. It shows its own bar when an InfoBar action fails, so it only
+        // needs the log.
+        // The window's dispatcher callbacks log their failures through the same log-only sink (never an InfoBar,
+        // so a broken InfoBar presenter cannot loop).
+        var logOnly = new LogErrorSink(_log);
+        var infoBars = new InfoBarQueue(logOnly);
+
+        // Copy diagnostics. The encoder section reads the cache #9's probe writes and never probes; #23, which starts
+        // the probe at launch, hands its result to EncoderDiagnostics as `loaded`.
+        var diagnostics = new DiagnosticsCopier(
+            new DiagnosticsCollector(
+                [new AppDiagnostics(), new GraphicsDiagnostics(), new EncoderDiagnostics(AppEnvironment.EncoderCacheFile())],
+                _log,
+                redaction: DiagnosticsRedaction.ForCurrentUser(AppEnvironment.ShortProfileFolder())),
+            new ClipboardService(),
+            infoBars);
+
+        // The error path: every command goes through it. Mappers word the failures of libraries Presentation
+        // cannot see.
+        var errors = new ErrorPresenter(_log, infoBars, [new VideoExportErrorMapper()], diagnostics.CopyAsync);
         var shell = new ShellViewModel(dialogs, errors);
-        window = new MainWindow(shell, infoBars);
+        var settings = new SettingsViewModel(errors, diagnostics);
+        window = new MainWindow(shell, settings, infoBars, logOnly);
+        _errors = errors;
 #if DEBUG
-        Debugging.DebugLaunch.Apply(shell, infoBars);
+        errors.Guard(() => Debugging.DebugLaunch.Apply(shell, infoBars), "Applying the Debug switches failed.");
 #endif
         return window;
+    }
+
+    // An exception that reached the UI thread unhandled: an event handler, a binding, a continuation. Unless it
+    // means corrupted state, the action failed and the app goes on: mark it handled and say so.
+    private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+    {
+        var context = $"{ProjectText.UnhandledUiFailure} {e.Message}";
+        if (_errors is not { } errors || ErrorMessages.IsFatal(e.Exception))
+        {
+            _log.Critical(context + " " + ProjectText.ProcessFailure, e.Exception);
+            return;
+        }
+
+        e.Handled = true;
+        errors.ShowUnhandled(e.Exception, context);
+    }
+
+    // A faulted task nobody awaited, found by the finalizer: observe it so it can never end the process, and tell
+    // the user, because something they started did not finish.
+    private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        e.SetObserved();
+        if (_errors is { } errors)
+        {
+            errors.ShowUnhandled(e.Exception, ProjectText.UnobservedTaskFailure);
+        }
+        else
+        {
+            _log.Error(ProjectText.UnobservedTaskFailure, e.Exception);
+        }
+    }
+
+    // The process is going (an exception on a thread of its own, or one WinUI could not hand back): write it down
+    // while it still can. The log writes and flushes synchronously.
+    private static void OnProcessUnhandledException(object sender, System.UnhandledExceptionEventArgs e)
+    {
+        _log.Critical(ProjectText.ProcessFailure, e.ExceptionObject as Exception);
+        if (e.IsTerminating)
+        {
+            _log.Dispose();
+        }
     }
 }

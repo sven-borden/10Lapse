@@ -20,19 +20,22 @@ public sealed class ProjectReplacedEventArgs(ProjectViewModel previous, ProjectV
 public sealed partial class ShellViewModel : ObservableObject
 {
     private readonly IDialogService _dialogs;
-    private readonly IErrorSink _errors;
+    private readonly IErrorPresenter _errors;
     private readonly Func<Project> _createProject;
     private bool _replacing;
 
     /// <summary>Creates the shell with a fresh project.</summary>
     /// <param name="dialogs">Asks before work is lost.</param>
-    /// <param name="errors">Takes the failures of closing the old project, which never fail <c>New project</c>.</param>
+    /// <param name="errors">
+    /// The error path: the commands go through it, and it takes the failures of closing the old project, which never
+    /// fail <c>New project</c>.
+    /// </param>
     /// <param name="createProject">
     /// Makes each new project; defaults to <c>new Project()</c>. #21 can pass one that applies the user's
     /// default settings with the <see cref="Project"/> settings constructor. It must return a new, empty,
     /// clean project every time, on the UI thread.
     /// </param>
-    public ShellViewModel(IDialogService dialogs, IErrorSink errors, Func<Project>? createProject = null)
+    public ShellViewModel(IDialogService dialogs, IErrorPresenter errors, Func<Project>? createProject = null)
     {
         ArgumentNullException.ThrowIfNull(dialogs);
         ArgumentNullException.ThrowIfNull(errors);
@@ -40,6 +43,9 @@ public sealed partial class ShellViewModel : ObservableObject
         _errors = errors;
         _createProject = createProject ?? (() => new Project());
         CurrentProject = new ProjectViewModel(CreateEmptyProject(previous: null), errors);
+        NewProjectCommand = errors.AsyncCommand(NewProjectAsync, ProjectText.NewProjectFailed);
+        OpenSettingsCommand = errors.Command(() => IsSettingsOpen = true, ProjectText.OpenSettingsFailed);
+        CloseSettingsCommand = errors.Command(() => IsSettingsOpen = false, ProjectText.CloseSettingsFailed);
     }
 
     /// <summary>
@@ -52,8 +58,35 @@ public sealed partial class ShellViewModel : ObservableObject
 
     /// <summary>The project being edited. Only <c>New project</c> replaces it.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Title), nameof(HasUnsavedChanges), nameof(ShowsProjectName))]
+    [NotifyPropertyChangedFor(nameof(Title), nameof(HasUnsavedChanges), nameof(ShowsProjectName), nameof(ShowsEmpty), nameof(ShowsEditing))]
     public partial ProjectViewModel CurrentProject { get; private set; }
+
+    /// <summary>
+    /// True while the Settings page covers the body (a page with a Back button, not a dialog; DESIGN.md). The
+    /// project stays as it is underneath.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsEmpty), nameof(ShowsEditing))]
+    public partial bool IsSettingsOpen { get; private set; }
+
+    /// <summary>True when the body shows the Empty state: no photos, and Settings is not open.</summary>
+    public bool ShowsEmpty => !CurrentProject.HasFrames && !IsSettingsOpen;
+
+    /// <summary>True when the body shows the Editing state: photos, and Settings is not open.</summary>
+    public bool ShowsEditing => CurrentProject.HasFrames && !IsSettingsOpen;
+
+    /// <summary>
+    /// <c>New project</c>: asks first when the current project has work to lose, then replaces it with an
+    /// empty one. Cancel keeps everything as it was. While the question is open the command cannot run again.
+    /// A failure goes to the error path and leaves the current project in place.
+    /// </summary>
+    public IAsyncRelayCommand NewProjectCommand { get; }
+
+    /// <summary>Opens the Settings page (the command bar's Settings button).</summary>
+    public IRelayCommand OpenSettingsCommand { get; }
+
+    /// <summary>Leaves the Settings page (its Back button, Escape).</summary>
+    public IRelayCommand CloseSettingsCommand { get; }
 
     /// <summary>The window title (see <see cref="ProjectText.WindowTitle"/>).</summary>
     public string Title =>
@@ -68,11 +101,6 @@ public sealed partial class ShellViewModel : ObservableObject
     /// </summary>
     public bool ShowsProjectName => CurrentProject.HasFrames || CurrentProject.IsDirty;
 
-    /// <summary>
-    /// <c>New project</c>: asks first when the current project has work to lose, then replaces it with an
-    /// empty one. Cancel keeps everything as it was. While the question is open the command cannot run again.
-    /// </summary>
-    [RelayCommand]
     private async Task NewProjectAsync()
     {
         // AsyncRelayCommand blocks re-entry only through CanExecute, which ExecuteAsync does not check, so a
@@ -126,9 +154,10 @@ public sealed partial class ShellViewModel : ObservableObject
         }
 
         previous.Dispose();
+        // A view that did not switch may still show the old project: the user should know.
         foreach (var failure in failures ?? [])
         {
-            _errors.Report(failure, ProjectText.SwitchingViewFailed);
+            _errors.Show(failure, ProjectText.SwitchingViewFailed);
         }
     }
 
@@ -153,6 +182,8 @@ public sealed partial class ShellViewModel : ObservableObject
             case nameof(ProjectViewModel.HasFrames):
                 OnPropertyChanged(nameof(Title));
                 OnPropertyChanged(nameof(ShowsProjectName));
+                OnPropertyChanged(nameof(ShowsEmpty));
+                OnPropertyChanged(nameof(ShowsEditing));
                 break;
             case nameof(ProjectViewModel.IsDirty):
                 OnPropertyChanged(nameof(Title));

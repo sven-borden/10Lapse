@@ -28,6 +28,16 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!--
+    The tests cannot reference the App exe (docs/STATUS.md, Decisions). The export failure sentences and the encoder
+    section of Copy diagnostics live in App files that need only Media and Presentation, so they are compiled in here
+    to be tested.
+  -->
+  <ItemGroup>
+    <Compile Include="..\..\src\TenLapse.App\Services\VideoExportErrorMapper.cs" Link="Linked\VideoExportErrorMapper.cs" />
+    <Compile Include="..\..\src\TenLapse.App\Services\EncoderDiagnostics.cs" Link="Linked\EncoderDiagnostics.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\TenLapse.Core\TenLapse.Core.csproj" />
     <ProjectReference Include="..\..\src\TenLapse.Media\TenLapse.Media.csproj" />

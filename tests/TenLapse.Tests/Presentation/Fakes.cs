@@ -16,12 +16,17 @@ internal sealed class FakeDialogService(bool answer = true) : IDialogService
     }
 }
 
-/// <summary>Records every reported failure, and can run a check at the moment of the report.</summary>
-internal sealed class FakeErrorSink : IErrorSink
+/// <summary>
+/// Records every reported (log only) and shown (log and InfoBar) failure, and can run a check at the moment of the
+/// report.
+/// </summary>
+internal sealed class FakeErrorSink : IErrorPresenter
 {
     private readonly Lock _gate = new();
 
     public List<(Exception Exception, string Context)> Reported { get; } = [];
+
+    public List<(Exception Exception, string Context)> Shown { get; } = [];
 
     public Action? OnReport { get; set; }
 
@@ -33,6 +38,81 @@ internal sealed class FakeErrorSink : IErrorSink
         }
 
         OnReport?.Invoke();
+    }
+
+    public void Show(Exception exception, string context)
+    {
+        lock (_gate)
+        {
+            Shown.Add((exception, context));
+        }
+
+        OnReport?.Invoke();
+    }
+}
+
+/// <summary>Records every InfoBar request.</summary>
+internal sealed class FakeInfoBarService : IInfoBarService
+{
+    private readonly Lock _gate = new();
+
+    public List<InfoBarRequest> Shown { get; } = [];
+
+    public InfoBarTicket Show(InfoBarRequest request)
+    {
+        lock (_gate)
+        {
+            Shown.Add(request);
+        }
+
+        // A real queue makes the ticket; this one only needs to hand one back.
+        return new InfoBarQueue(new FakeErrorSink()).Show(request);
+    }
+
+    public void Dismiss(InfoBarTicket ticket)
+    {
+    }
+}
+
+/// <summary>Records every log entry in memory.</summary>
+internal sealed class FakeLog : TenLapse.Core.Diagnostics.ILog
+{
+    private readonly Lock _gate = new();
+
+    public List<(TenLapse.Core.Diagnostics.LogLevel Level, string Message, Exception? Exception)> Entries { get; } = [];
+
+    public void Write(TenLapse.Core.Diagnostics.LogLevel level, string message, Exception? exception = null)
+    {
+        lock (_gate)
+        {
+            Entries.Add((level, message, exception));
+        }
+    }
+
+    public IReadOnlyList<string> RecentLines(int count)
+    {
+        lock (_gate)
+        {
+            return Entries.Select(entry => $"{entry.Level} {entry.Message}").TakeLast(count).ToArray();
+        }
+    }
+}
+
+/// <summary>Remembers the text it was given, or throws like a busy clipboard.</summary>
+internal sealed class FakeClipboard : IClipboardService
+{
+    public string? Text { get; private set; }
+
+    public Exception? Failure { get; set; }
+
+    public void SetText(string text)
+    {
+        if (Failure is not null)
+        {
+            throw Failure;
+        }
+
+        Text = text;
     }
 }
 

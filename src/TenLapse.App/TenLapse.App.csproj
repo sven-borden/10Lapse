@@ -14,6 +14,8 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <!-- The Store installs the Windows App Runtime 2 framework package with the app (docs/STATUS.md, Decisions). -->
     <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+    <!-- Copy diagnostics reads the graphics adapters through DXGI's vtable (Services/GraphicsDiagnostics.cs). -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <!-- Debug runs unpackaged so it can be launched on a machine without Developer Mode. -->
