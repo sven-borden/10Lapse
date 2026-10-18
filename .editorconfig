@@ -18,6 +18,9 @@ trim_trailing_whitespace = false
 end_of_line = crlf
 
 [*.cs]
+# The naming rules below only fail the build when IDE1006 is a warning.
+dotnet_diagnostic.IDE1006.severity = warning
+
 # Namespaces and usings
 csharp_style_namespace_declarations = file_scoped:warning
 dotnet_sort_system_directives_first = true
