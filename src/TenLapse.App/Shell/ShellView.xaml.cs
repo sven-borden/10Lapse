@@ -18,17 +18,15 @@ public sealed partial class ShellView : UserControl
 
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="infoBars">The InfoBars to float over the stage.</param>
-    /// <param name="errors">Takes the failures of InfoBar actions.</param>
-    public ShellView(ShellViewModel viewModel, InfoBarQueue infoBars, IErrorSink errors)
+    public ShellView(ShellViewModel viewModel, InfoBarQueue infoBars)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(infoBars);
-        ArgumentNullException.ThrowIfNull(errors);
         ViewModel = viewModel;
         InitializeComponent();
 
         _infoBarShadow = FlyoutShadow.Attach(InfoBarShadowCaster);
-        _infoBars = new InfoBarPresenter(infoBars, InfoBarLayer, ShellInfoBar, errors);
+        _infoBars = new InfoBarPresenter(infoBars, InfoBarLayer, ShellInfoBar, InfoBarDetails, InfoBarDetailList);
     }
 
     /// <summary>The shell's view model, for x:Bind.</summary>

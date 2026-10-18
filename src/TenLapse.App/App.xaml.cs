@@ -42,9 +42,9 @@ public partial class App : Application
 
         // The one InfoBar queue: #26's error path and the import and export issues raise InfoBars through it
         // (as IInfoBarService); the window shows them.
-        var infoBars = new InfoBarQueue();
+        var infoBars = new InfoBarQueue(errors);
         var shell = new ShellViewModel(dialogs, errors);
-        window = new MainWindow(shell, infoBars, errors);
+        window = new MainWindow(shell, infoBars);
 #if DEBUG
         Debugging.DebugLaunch.Apply(shell, infoBars);
 #endif

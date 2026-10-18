@@ -51,8 +51,19 @@ public static class ProjectText
     /// <summary>Error context: a view's <c>ProjectReplaced</c> handler threw.</summary>
     public static string SwitchingViewFailed => "A view could not switch to the new project.";
 
-    /// <summary>Error context: the action of an InfoBar failed.</summary>
-    public static string InfoBarActionFailed => "An InfoBar action failed.";
+    /// <summary>
+    /// The Critical InfoBar shown when an InfoBar's action failed, and the error context it is reported with.
+    /// </summary>
+    public static string InfoBarActionFailed => "That couldn't be done because of an unexpected problem. Try again, and restart 10Lapse if it keeps happening.";
+
+    /// <summary>The InfoBar button that shows its detail list (the prototype's "View list").</summary>
+    public static string InfoBarShowDetails => "View list";
+
+    /// <summary>The same button while the list shows.</summary>
+    public static string InfoBarHideDetails => "Hide list";
+
+    /// <summary>The accessible name of an InfoBar's close button.</summary>
+    public static string InfoBarDismiss => "Dismiss";
 
     /// <summary>
     /// The Timing readout, e.g. "742 photos → 24.7 s at 30 fps", at the effective rate for this count

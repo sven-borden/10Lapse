@@ -24,13 +24,12 @@ public sealed partial class MainWindow : Window
 
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="infoBars">The InfoBars to float over the stage; the composition root hands the same queue to whoever raises them.</param>
-    /// <param name="errors">Takes the failures of InfoBar actions.</param>
-    public MainWindow(ShellViewModel viewModel, InfoBarQueue infoBars, IErrorSink errors)
+    public MainWindow(ShellViewModel viewModel, InfoBarQueue infoBars)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ViewModel = viewModel;
         InitializeComponent();
-        _shell = new ShellView(viewModel, infoBars, errors);
+        _shell = new ShellView(viewModel, infoBars);
         Content = _shell;
 
         // Window is not a DependencyObject, so its Title cannot take a binding: follow the view model by hand.

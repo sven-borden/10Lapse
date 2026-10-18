@@ -25,6 +25,7 @@
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:core="using:TenLapse.Core"
+  xmlns:services="using:TenLapse.Presentation.Services"
   xmlns:shell="using:TenLapse.Shell">
 
   <Grid x:Name="ShellRoot">
@@ -300,7 +301,39 @@
           x:Name="ShellInfoBar"
           CornerRadius="{StaticResource RadiusCard}"
           IsClosable="True"
-          IsOpen="False" />
+          IsOpen="False">
+          <!--
+            The detail list (#13's skipped photos): under a divider, in line with the message, scrolling past
+            InfoBarDetailsMaxHeight. InfoBarPresenter fills it and its toggle opens it; collapsed by default.
+          -->
+          <Border
+            x:Name="InfoBarDetails"
+            BorderBrush="{ThemeResource DividerBrush}"
+            BorderThickness="0,1,0,0"
+            Visibility="Collapsed">
+            <ScrollViewer MaxHeight="{StaticResource InfoBarDetailsMaxHeight}" VerticalScrollBarVisibility="Auto">
+              <ItemsControl x:Name="InfoBarDetailList" Margin="{StaticResource InfoBarDetailsMargin}" IsTabStop="False">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="{StaticResource InfoBarDetailsSpacing}" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="services:InfoBarDetail">
+                    <Grid ColumnSpacing="{StaticResource SpacingMd}">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <TextBlock Style="{StaticResource CaptionTabularTextStyle}" Text="{x:Bind Text}" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Grid.Column="1" Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind Note}" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Border>
+        </InfoBar>
       </Grid>
     </Grid>
   </Grid>

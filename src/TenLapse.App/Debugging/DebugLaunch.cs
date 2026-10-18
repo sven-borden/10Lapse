@@ -7,7 +7,8 @@ namespace TenLapse.Debugging;
 /// <summary>
 /// Debug-only switches for looking at the shell before import exists (this folder is not built in Release):
 /// <c>--sample-frames=N</c> fills the project with N frames whose files do not exist, so the Editing state
-/// shows, and <c>--infobar</c> raises a sample InfoBar. <c>--theme=light|dark</c> is the gallery's switch.
+/// shows, and <c>--infobar</c> raises #13's skipped-photos InfoBar with its detail list, and a neutral one behind
+/// it. <c>--theme=light|dark</c> is the gallery's switch.
 /// </summary>
 internal static class DebugLaunch
 {
@@ -25,16 +26,18 @@ internal static class DebugLaunch
 
         if (_args.Contains("--infobar", StringComparer.OrdinalIgnoreCase))
         {
-            infoBars.Show(
+            // #13's InfoBar: View list / Hide list opens the list inside the bar and keeps it open.
+            infoBars.ShowWithDetails(
                 InfoBarSeverity.Caution,
                 "3 photos couldn't be read and were skipped.",
-                "Show list",
-                () =>
-                {
-                    // A second InfoBar, so the exit and the next entrance can be watched too.
-                    infoBars.Show(InfoBarSeverity.Neutral, "Export cancelled. The unfinished file was removed.");
-                    return Task.CompletedTask;
-                });
+                [
+                    new InfoBarDetail("IMG_4402.HEIC", "Damaged file: it ends early"),
+                    new InfoBarDetail("IMG_4417.HEIC", "Empty file (0 bytes)"),
+                    new InfoBarDetail("IMG_4630.HEIC", "HEIF image sequence, not a photo"),
+                ]);
+
+            // A second one waits behind it, so the exit and the next entrance can be watched too.
+            infoBars.Show(InfoBarSeverity.Neutral, "Export cancelled. The unfinished file was removed.");
         }
     }
 

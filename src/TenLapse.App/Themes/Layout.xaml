@@ -79,6 +79,13 @@
   <x:Double x:Key="InfoBarMaxWidth">560</x:Double>
   <Thickness x:Key="InfoBarHostMargin">40,32,40,0</Thickness>
   <x:Double x:Key="FilmstripMinHeight">56</x:Double>
+  <!--
+    An InfoBar's detail list (prototype: 8 / 14 / 12 / 42 around 16 px lines 6 apart, the left edge in line
+    with the message). Past seven lines it scrolls.
+  -->
+  <Thickness x:Key="InfoBarDetailsMargin">42,8,14,12</Thickness>
+  <x:Double x:Key="InfoBarDetailsSpacing">6</x:Double>
+  <x:Double x:Key="InfoBarDetailsMaxHeight">168</x:Double>
 
   <!-- Elevation: flyout (InfoBars over the preview, select menus, the first-launch sample frame): two layers, ambient then key -->
   <x:Double x:Key="ElevationFlyoutBlur">28</x:Double>
