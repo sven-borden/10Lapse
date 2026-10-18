@@ -4,7 +4,7 @@ Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Running: PR #68 fix round (#9) and #26 (wave 6, started early: Core diagnostics, Presentation, App).
+Running: #26 (wave 6) and #13 (wave 5).
 
 ## Waves
 
@@ -21,10 +21,10 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 2 | #10 Exact frame timing | S | `TenLapse.Core/Timing` | merged #63 |
 | 3 | #8 Spike: streaming encode | O | `TenLapse.Media`, a spike harness | merged #65 |
 | 3 | #27 Design tokens and theme resources | S | `TenLapse.App/Themes` | merged #64 |
-| 4 | #9 Spike: encoder capabilities | O | `TenLapse.Media/Encoding` | PR #68, fix round |
+| 4 | #9 Spike: encoder capabilities | O | `TenLapse.Media/Encoding` | merged #68 |
 | 4 | #16 Project model and view models | O | `TenLapse.Core/Projects`, new `TenLapse.Presentation` | merged #66 |
 | 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | merged #67 |
-| 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | |
+| 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | running |
 | 6 | #26 One error path | O | App startup, `Core/Diagnostics` | running |
 | 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | |
 | 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | |
@@ -137,6 +137,11 @@ own waves once 3.0 ships.
   `UISettings.ColorValuesChanged`. Ctrl+N goes on `ShellRoot`.
 - 2026-10-18 (#9 review): HEVC is offered only when an HEVC encoder works and
   an HEVC decoder is present, so Windows can play the file.
+- 2026-10-18 (#9): the probe tests 30, 60 and 120 fps; a cold probe takes
+  about 3.5 s in the background (H.264 4K120 refusals cost about 550 ms each),
+  a cached load about 0.25 s. It runs once per adapter, driver, OS build,
+  codec versions and Media build. #23 must never block on it; if the cold time
+  matters, #23 can move 120 fps to an on-demand probe.
 
 ## Merged
 
@@ -187,3 +192,9 @@ own waves once 3.0 ships.
   1280×800, inspector 320, filmstrip row), InfoBar host, `FlyoutShadow`,
   `TintedMicaBackdrop`, minimum window 640×480. Debug switches
   `--sample-frames=N`, `--infobar`, `--theme=light|dark`.
+- #9 PR #68: `TenLapse.Media.Encoding` (`EncoderProbe.LoadOrProbeAsync(cachePath)`,
+  `EncoderCapabilities` with `Supports`/`MaxShortSide`/summary text,
+  `EncoderCatalog`, JSON cache, 8 s per test encode, transient results not
+  cached). HEVC export (Main profile; below 1 fps the nominal rate is a whole
+  multiple ≥ 1 fps with frame-rate conversion off, after a software-encoder
+  crash). This PC: H.264 4K at 30/60, 1440p at 120; HEVC 4K at all three.

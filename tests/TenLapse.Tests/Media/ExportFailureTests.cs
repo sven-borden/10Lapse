@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using Microsoft.Graphics.Canvas;
+using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 using TenLapse.Media.Export;
 using TenLapse.Media.Inspection;
@@ -214,11 +215,45 @@ public sealed class ExportFailureTests : IDisposable
         Assert.False(ExportFailures.IsBug(new UnauthorizedAccessException()));
     }
 
-    private Task<VideoExportResult> ExportWithAsync(string path, Func<string, IVideoEncoder> createEncoder, int frames = 60) =>
+    [Fact]
+    public void TheSummaryNamesTheCodecBeingWritten()
+    {
+        Assert.Equal("No HEVC encoder could be loaded", ExportFailures.Summary(VideoExportFailure.EncoderUnavailable, VideoFormat.Mp4Hevc));
+        Assert.Equal("The HEVC encoder refused these settings", ExportFailures.Summary(VideoExportFailure.SettingsRejected, VideoFormat.Mp4Hevc));
+        Assert.Equal("The HEVC encoder stopped taking frames", ExportFailures.Summary(VideoExportFailure.EncoderStalled, VideoFormat.Mp4Hevc));
+        Assert.Equal("The HEVC encoder failed", ExportFailures.Summary(VideoExportFailure.EncoderFailed, VideoFormat.Mp4Hevc));
+        Assert.Equal("The H.264 encoder failed", ExportFailures.Summary(VideoExportFailure.EncoderFailed, VideoFormat.Mp4H264));
+        Assert.Equal("The disk is full", ExportFailures.Summary(VideoExportFailure.DiskFull, VideoFormat.Mp4Hevc));
+
+        var refused = ExportFailures.Classify(
+            new COMException("Refused.", unchecked((int)0xC00D36B4)), VideoExportFailure.EncoderFailed, VideoFormat.Mp4Hevc, setup: true);
+        Assert.Equal(VideoExportFailure.SettingsRejected, refused.Failure);
+        Assert.StartsWith("The HEVC encoder refused these settings: ", refused.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnHevcExportThatFailsNamesHevc()
+    {
+        SkipWithoutGraphicsDevice();
+        var path = Path.Combine(_directory, "hevc.mp4");
+        var failure = new COMException("The fake encoder broke.", unchecked((int)0x80004005)); // E_FAIL
+
+        var exception = await Assert.ThrowsAsync<VideoExportException>(
+            () => ExportWithAsync(path, output => new FakeEncoder(output) { FailAt = 5, Failure = failure }, format: VideoFormat.Mp4Hevc));
+
+        Assert.Equal(VideoExportFailure.EncoderFailed, exception.Failure);
+        Assert.StartsWith("The HEVC encoder failed: ", exception.Message, StringComparison.Ordinal);
+    }
+
+    private Task<VideoExportResult> ExportWithAsync(
+        string path,
+        Func<string, IVideoEncoder> createEncoder,
+        int frames = 60,
+        VideoFormat format = VideoFormat.Mp4H264) =>
         VideoExporter.ExportAsync(
             new NumberedFrames(frames, 320, 180),
             path,
-            new VideoExportSettings(320, 180, _rate),
+            new VideoExportSettings(320, 180, _rate) { Format = format },
             progress: null,
             TestContext.Current.CancellationToken,
             (output, _, _) => createEncoder(output));

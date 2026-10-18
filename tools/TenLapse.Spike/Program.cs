@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 using TenLapse.Media.Export;
 using TenLapse.Media.Inspection;
@@ -10,10 +11,12 @@ using TenLapse.Spike;
 //   TenLapse.Spike generate --dir D [--frames 1000] [--source-size 6000x4000]
 //   TenLapse.Spike encode [--source synthetic|jpeg] [--dir D] [--frames 1000] [--source-size 6000x4000]
 //                         [--output-size 3840x2160] [--fps 30] [--out file.mp4] [--software]
-//                         [--targets 4] [--decode-ahead 4] [--verify]
+//                         [--targets 4] [--decode-ahead 4] [--verify] [--format h264|hevc]
 // --verify decodes the output and checks every frame's FrameCode. Results go to the console, the
 // last line is a Markdown table row. Large files belong in %TEMP%, never in the repository.
 //   TenLapse.Spike inspect FILE [--decode]
+//   TenLapse.Spike probe [--cache file.json] [--fresh] [--software]   (#9: what this PC can encode, as Markdown;
+//                         --software answers as a PC without a GPU encoder would, uncached)
 var command = args.Length > 0 ? args[0] : "help";
 var options = Options.Parse(args.Skip(1));
 try
@@ -24,6 +27,7 @@ try
         "generate" => await GenerateAsync(options),
         "encode" => await EncodeAsync(options),
         "inspect" => Inspect(options),
+        "probe" => await ProbeReport.RunAsync(options.Text("cache", Path.Combine(Path.GetTempPath(), "10lapse-encoders.json")), options.Flag("fresh"), options.Flag("software")),
         _ => Help(),
     };
 }
@@ -35,7 +39,7 @@ catch (Exception exception) when (exception is ArgumentException or FormatExcept
 
 static int Help()
 {
-    Console.WriteLine("TenLapse.Spike encoders | generate --dir D | encode [options] | inspect FILE [--decode]");
+    Console.WriteLine("TenLapse.Spike encoders | generate --dir D | encode [options] | inspect FILE [--decode] | probe [--cache F] [--fresh]");
     return 1;
 }
 
@@ -72,6 +76,12 @@ static async Task<int> EncodeAsync(Options options)
     var settings = new VideoExportSettings(width, height, rate)
     {
         HardwareAcceleration = !options.Flag("software"),
+        Format = options.Text("format", "h264") switch
+        {
+            "h264" => VideoFormat.Mp4H264,
+            "hevc" => VideoFormat.Mp4Hevc,
+            var other => throw new ArgumentException($"--format must be h264 or hevc, not {other}."),
+        },
         RenderTargets = options.Int("targets", 4),
         DecodeAhead = options.Int("decode-ahead", 4),
     };
@@ -84,7 +94,7 @@ static async Task<int> EncodeAsync(Options options)
         _ => throw new ArgumentException($"--source must be synthetic or jpeg, not {mode}."),
     };
 
-    Console.WriteLine($"encode: {stage}, {mode}, {frames} frames, {sourceWidth}x{sourceHeight} -> {width}x{height} at {rate} fps, " +
+    Console.WriteLine($"encode: {stage}, {settings.Format}, {mode}, {frames} frames, {sourceWidth}x{sourceHeight} -> {width}x{height} at {rate} fps, " +
         $"hardware {(settings.HardwareAcceleration ? "allowed" : "off")}, {settings.RenderTargets} targets, decode ahead {settings.DecodeAhead}, " +
         $"{settings.EffectiveBitrate / 1e6:0.0} Mbit/s");
     var encoders = H264Encoders.Find();

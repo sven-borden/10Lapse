@@ -38,7 +38,7 @@ public static class VideoFileReader
             try
             {
                 codec = CodecName(type);
-                (width, height) = FrameSize(type);
+                (width, height) = VisibleSize(type);
                 rate = FrameRate(type);
             }
             finally
@@ -350,6 +350,28 @@ public static class VideoFileReader
         }
 
         return subtype.ToString("B");
+    }
+
+    // The MP4 source reports HEVC at its coded size (320x180 comes back as 320x192) with the visible part as the
+    // aperture; H.264 comes back at the visible size already.
+    private static unsafe (int Width, int Height) VisibleSize(IMFMediaType type)
+    {
+        try
+        {
+            var blob = new byte[sizeof(MFVideoArea)];
+            type.GetBlob(PInvoke.MF_MT_MINIMUM_DISPLAY_APERTURE, blob);
+            var area = MemoryMarshal.Read<MFVideoArea>(blob);
+            if (area.Area.cx > 0 && area.Area.cy > 0)
+            {
+                return (area.Area.cx, area.Area.cy);
+            }
+        }
+        catch (COMException)
+        {
+            // No aperture: the whole frame is visible.
+        }
+
+        return FrameSize(type);
     }
 
     private static (int Width, int Height) FrameSize(IMFMediaType type)
