@@ -185,7 +185,31 @@ public sealed class Project
     private readonly HashSet<string> _paths = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<Guid> _ids = [];
 
-    private volatile ProjectSnapshot _state = ProjectSnapshot.Empty;
+    private volatile ProjectSnapshot _state;
+
+    /// <summary>Creates an empty, clean project with the default settings, owned by the calling thread.</summary>
+    public Project()
+        : this(TimingSettings.Default, FrameSettings.Default, OutputSettings.Default, SortMode.CaptureTime)
+    {
+    }
+
+    /// <summary>
+    /// Creates an empty, clean project that starts with these settings (#21 passes the user's defaults), owned
+    /// by the calling thread. Setting the properties afterwards (or in an object initializer) is an edit and
+    /// makes the project dirty; this constructor does not.
+    /// </summary>
+    public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode)
+    {
+        ArgumentNullException.ThrowIfNull(timing);
+        ArgumentNullException.ThrowIfNull(frameSettings);
+        ArgumentNullException.ThrowIfNull(output);
+        if (!Enum.IsDefined(sortMode))
+        {
+            throw new ArgumentOutOfRangeException(nameof(sortMode), sortMode, "Unknown sort mode.");
+        }
+
+        _state = ProjectSnapshot.Empty with { Timing = timing, FrameSettings = frameSettings, Output = output, SortMode = sortMode };
+    }
 
     /// <summary>Raised after every mutation, once per call, on the owner thread.</summary>
     public event EventHandler<ProjectChangedEventArgs>? Changed;

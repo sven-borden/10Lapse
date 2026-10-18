@@ -109,9 +109,10 @@ public sealed partial class ShellViewModel : ObservableObject
     private Project CreateEmptyProject(Project? previous)
     {
         var project = _createProject();
-        if (project is null || ReferenceEquals(project, previous) || project.Frames.Length > 0 || project.SkippedFiles.Length > 0)
+        if (project is null || ReferenceEquals(project, previous) || project.Frames.Length > 0 || project.SkippedFiles.Length > 0 || project.IsDirty)
         {
-            throw new InvalidOperationException("The project factory must return a new, empty project.");
+            throw new InvalidOperationException(
+                "The project factory must return a new, empty, clean project: pass the settings to the Project constructor instead of setting them.");
         }
 
         return project;

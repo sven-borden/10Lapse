@@ -268,12 +268,30 @@ public sealed class ShellViewModelTests
     [Fact]
     public async Task TheFactoryCanSeedTheUsersDefaults()
     {
-        var shell = new ShellViewModel(
-            new FakeDialogService(),
-            () => new Project { Timing = new TimingSettings(new Fraction(24, 1), SpeedMode.PerSecond) });
+        var timing = new TimingSettings(new Fraction(24, 1), SpeedMode.PerSecond);
+        var frame = new FrameSettings(FrameAspect.Ratio9x16, FitMode.Fit);
+        var output = OutputSettings.Default with { Quality = OutputQuality.Maximum };
+        var dialogs = new FakeDialogService(answer: false);
+        var shell = new ShellViewModel(dialogs, () => new Project(timing, frame, output, SortMode.Name));
 
         await shell.NewProjectCommand.ExecuteAsync(null);
 
-        Assert.Equal(new Fraction(24, 1), shell.CurrentProject.Model.Timing.Rate);
+        var model = shell.CurrentProject.Model;
+        Assert.Equal(timing, model.Timing);
+        Assert.Equal(frame, model.FrameSettings);
+        Assert.Equal(output, model.Output);
+        Assert.Equal(SortMode.Name, model.SortMode);
+        Assert.False(model.IsDirty);
+        Assert.False(shell.HasUnsavedChanges);
+        Assert.Equal("10Lapse", shell.Title);
+        Assert.Empty(dialogs.Asked);
+    }
+
+    [Fact]
+    public void AFactoryThatSetsSettingsAfterwardsGivesADirtyProjectAndIsRejected()
+    {
+        Assert.Throws<InvalidOperationException>(() => new ShellViewModel(
+            new FakeDialogService(),
+            () => new Project { SortMode = SortMode.Name }));
     }
 }
