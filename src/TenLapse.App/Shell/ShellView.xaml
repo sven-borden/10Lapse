@@ -200,7 +200,7 @@
         </ResourceDictionary>
       </Grid.Resources>
 
-      <!-- On the Settings page the bar holds only Back (Escape and Alt+Left too). -->
+      <!-- On the Settings page the bar holds only Back (Escape, Alt+Left and the mouse back button too, the last in ShellView.xaml.cs). -->
       <Button
         x:Name="BackButton"
         Height="{StaticResource ControlHeight}"

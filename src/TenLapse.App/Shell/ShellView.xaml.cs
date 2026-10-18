@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Services;
@@ -39,6 +40,9 @@ public sealed partial class ShellView : UserControl
         _infoBarShadow = FlyoutShadow.Attach(InfoBarShadowCaster);
         _infoBars = new InfoBarPresenter(infoBars, InfoBarLayer, ShellInfoBar, InfoBarDetails, InfoBarDetailList, errors);
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+        // Handled events too: a button or the page's ScrollViewer under the pointer may have handled the press.
+        ShellRoot.AddHandler(PointerPressedEvent, new PointerEventHandler(OnShellPointerPressed), handledEventsToo: true);
 
         // The shell leaves the tree only when the window closes; the shadow goes with it.
         Unloaded += (_, _) => _infoBarShadow.Dispose();
@@ -88,6 +92,7 @@ public sealed partial class ShellView : UserControl
     public void Detach()
     {
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        ShellRoot.RemoveHandler(PointerPressedEvent, new PointerEventHandler(OnShellPointerPressed));
         _infoBars.Detach();
         _infoBarShadow.Dispose();
     }
@@ -100,6 +105,18 @@ public sealed partial class ShellView : UserControl
         {
             var target = ViewModel.IsSettingsOpen ? BackButton : SettingsButton;
             DispatcherQueue.TryEnqueueGuarded(_errors, () => target.Focus(FocusState.Programmatic), ProjectText.SettingsFocusFailed);
+        }
+    }
+
+    // The mouse's back button (XButton1) leaves Settings, as Back, Escape and Alt+Left do.
+    private void OnShellPointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        if (ViewModel.IsSettingsOpen
+            && e.GetCurrentPoint(ShellRoot).Properties.IsXButton1Pressed
+            && ViewModel.CloseSettingsCommand.CanExecute(null))
+        {
+            ViewModel.CloseSettingsCommand.Execute(null);
+            e.Handled = true;
         }
     }
 
