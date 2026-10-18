@@ -13,6 +13,9 @@ BundleArtifacts/
 *.appxbundle
 *.appxupload
 
+# Store upload output of scripts/pack.ps1
+dist/
+
 # Certificates and keys: never commit them
 *.pfx
 *.p12
