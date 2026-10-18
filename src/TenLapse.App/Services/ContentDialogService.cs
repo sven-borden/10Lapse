@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation.Services;
 
 namespace TenLapse.Services;
@@ -8,21 +9,44 @@ namespace TenLapse.Services;
 /// <param name="xamlRoot">Gives the root of the window the dialog belongs to, once its content is loaded.</param>
 public sealed class ContentDialogService(Func<XamlRoot?> xamlRoot) : IDialogService
 {
-    private bool _isOpen;
+    // WinUI allows one open ContentDialog per window and throws on a second ShowAsync. Questions therefore wait
+    // their turn here, and each waits for any ContentDialog it did not open, so none is lost or read as "no".
+    private readonly DialogQueue _queue = new();
 
     /// <inheritdoc />
-    public async Task<bool> ConfirmAsync(Confirmation confirmation)
+    public Task<bool> ConfirmAsync(Confirmation confirmation)
     {
         ArgumentNullException.ThrowIfNull(confirmation);
 
-        // WinUI allows one open ContentDialog per thread; a second ShowAsync throws. The commands that ask are
-        // AsyncRelayCommands (they cannot overlap themselves), so this only guards two different commands.
-        if (_isOpen)
-        {
-            return false;
-        }
-
         var root = xamlRoot() ?? throw new InvalidOperationException("The window has no XAML root yet, so the dialog cannot be shown.");
+        return _queue.RunAsync(() => WaitForOpenDialogsAsync(root), () => ShowAsync(confirmation, root));
+    }
+
+    // While the queue holds the turn none of its own dialogs is open, so any open ContentDialog belongs to
+    // someone else: wait until its popup closes, then look again.
+    private static async Task WaitForOpenDialogsAsync(XamlRoot root)
+    {
+        while (VisualTreeHelper.GetOpenPopupsForXamlRoot(root).FirstOrDefault(popup => popup.Child is ContentDialog) is { } popup)
+        {
+            var closed = new TaskCompletionSource();
+            void OnClosed(object? sender, object e) => closed.TrySetResult();
+            popup.Closed += OnClosed;
+            try
+            {
+                if (popup.IsOpen)
+                {
+                    await closed.Task;
+                }
+            }
+            finally
+            {
+                popup.Closed -= OnClosed;
+            }
+        }
+    }
+
+    private static async Task<bool> ShowAsync(Confirmation confirmation, XamlRoot root)
+    {
         var dialog = new ContentDialog
         {
             XamlRoot = root,
@@ -45,14 +69,6 @@ public sealed class ContentDialogService(Func<XamlRoot?> xamlRoot) : IDialogServ
             dialog.RequestedTheme = content.ActualTheme;
         }
 
-        _isOpen = true;
-        try
-        {
-            return await dialog.ShowAsync() == ContentDialogResult.Primary;
-        }
-        finally
-        {
-            _isOpen = false;
-        }
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 }
