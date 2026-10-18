@@ -98,6 +98,8 @@ public static class PhotoDecoder
 
     private const int FileBufferSize = 64 * 1024;
 
+    private const int CopyBufferSize = 1024 * 1024;
+
     /// <summary>
     /// Reads the size, orientation and frame count from the header, without decoding pixels: cheap enough for
     /// every file of an import. A JPEG, PNG or GIF cut short is <see cref="SkipReason.Truncated"/> here already (its
@@ -143,10 +145,12 @@ public static class PhotoDecoder
     /// <paramref name="options"/> asks (Fant filtering), never upscaled.
     /// </summary>
     /// <remarks>
-    /// The file is read whole into memory and closed before decoding. Windows' own file stream maps the file, and
-    /// the mapping lasts until a garbage collection finalizes the decoder, all that time keeping other programs
-    /// from rewriting the file in place; .NET's stream adapter makes every read an async call, about 90 ms more
-    /// per 24 MP JPEG. The copy costs a few milliseconds and is what the end-marker check reads.
+    /// The file is copied whole into Windows' in-memory stream and closed before decoding. Windows' own file
+    /// stream maps the file, and the mapping lasts until a garbage collection finalizes the decoder, all that
+    /// time keeping other programs from rewriting the file in place; .NET's stream adapter makes every read an
+    /// async call, about 90 ms more per 24 MP JPEG. The copy goes through a 1 MB buffer and costs a few
+    /// milliseconds; reading the file into one pooled array instead kept a 16 MB array per thread in the pool and
+    /// raised a 1,000-frame 4K export's peak working set from about 540 to 900 MB.
     /// </remarks>
     public static async Task<PhotoResult<DecodedPhoto>> DecodeAsync(
         string path, PhotoDecodeOptions? options = null, CancellationToken cancellationToken = default)
@@ -170,7 +174,7 @@ public static class PhotoDecoder
             var inMemory = length <= MaxInMemoryFileBytes;
             if (inMemory)
             {
-                var (copy, failure) = await CopyToMemoryAsync(path, file, (int)length, cancellationToken).ConfigureAwait(false);
+                var (copy, failure) = await CopyToMemoryAsync(path, file, header, length, cancellationToken).ConfigureAwait(false);
                 file.Dispose();
                 if (failure is not null)
                 {
@@ -361,25 +365,28 @@ public static class PhotoDecoder
         File.OpenHandle(Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, FileOptions.RandomAccess);
 
     /// <summary>
-    /// The whole file in Windows' in-memory stream, checked for a cut first on exactly the bytes the decoder will
-    /// get; or why not. The file may change while it is read: the copy is what was read, up to the length
-    /// captured at open.
+    /// The whole file in Windows' in-memory stream, through a small buffer, then checked for a cut through the
+    /// same handle up to the length copied; or why not. The file may change while it is read: a file that came
+    /// out shorter than the length captured at open is cut.
     /// </summary>
     private static async Task<(IRandomAccessStream? Stream, PhotoFailure? Failure)> CopyToMemoryAsync(
-        string path, SafeFileHandle file, int length, CancellationToken cancellationToken)
+        string path, SafeFileHandle file, byte[] header, long length, CancellationToken cancellationToken)
     {
-        var bytes = ArrayPool<byte>.Shared.Rent(length);
+        var stream = new InMemoryRandomAccessStream { Size = (ulong)length };
+        var buffer = ArrayPool<byte>.Shared.Rent((int)Math.Min(CopyBufferSize, length));
+        var kept = false;
         try
         {
-            var count = 0;
+            long count = 0;
             while (count < length)
             {
-                var step = RandomAccess.Read(file, bytes.AsSpan(count, length - count), count);
+                var step = RandomAccess.Read(file, buffer.AsSpan(0, (int)Math.Min(buffer.Length, length - count)), count);
                 if (step == 0)
                 {
                     break;
                 }
 
+                await stream.WriteAsync(buffer.AsBuffer(0, step)).AsTask(cancellationToken).ConfigureAwait(false);
                 count += step;
             }
 
@@ -388,28 +395,22 @@ public static class PhotoDecoder
                 return (null, Empty(path));
             }
 
-            var header = bytes.AsSpan(0, Math.Min(count, PhotoStructure.HeaderLength));
-            if (count < length || !PhotoStructure.EndsCompletely(header, count, PhotoStructure.Over(bytes, count)))
+            if (count < length || !PhotoStructure.EndsCompletely(header, count, ReadAtHandle(file)))
             {
                 return (null, Truncated(path));
             }
 
-            var stream = new InMemoryRandomAccessStream();
-            try
-            {
-                await stream.WriteAsync(bytes.AsBuffer(0, count)).AsTask(cancellationToken).ConfigureAwait(false);
-                stream.Seek(0);
-                return (stream, null);
-            }
-            catch
-            {
-                stream.Dispose();
-                throw;
-            }
+            stream.Seek(0);
+            kept = true;
+            return (stream, null);
         }
         finally
         {
-            ArrayPool<byte>.Shared.Return(bytes);
+            ArrayPool<byte>.Shared.Return(buffer);
+            if (!kept)
+            {
+                stream.Dispose();
+            }
         }
     }
 

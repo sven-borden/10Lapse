@@ -12,8 +12,8 @@ internal delegate int ReadAt(long offset, Span<byte> buffer);
 /// in a flat band), so a truncated photo would pass for a whole one; this finds the format's end marker instead.
 /// </summary>
 /// <remarks>
-/// It reads through a <see cref="ReadAt"/> bounded by a length captured once: the bytes the decoder gets (the
-/// in-memory copy) or the handle the header was read through, never the file again by its path.
+/// It reads through a <see cref="ReadAt"/> over the handle the photo was opened and copied through, bounded by
+/// the length captured then: never the file again by its path.
 /// </remarks>
 internal static class PhotoStructure
 {
@@ -59,19 +59,6 @@ internal static class PhotoStructure
 
         return true;
     }
-
-    /// <summary>A reader over bytes already in memory.</summary>
-    public static ReadAt Over(byte[] bytes, int length) => (offset, buffer) =>
-    {
-        if (offset >= length)
-        {
-            return 0;
-        }
-
-        var count = (int)Math.Min(buffer.Length, length - offset);
-        bytes.AsSpan((int)offset, count).CopyTo(buffer);
-        return count;
-    };
 
     private static bool IsJpeg(ReadOnlySpan<byte> header) => header is [0xFF, 0xD8, 0xFF, ..];
 

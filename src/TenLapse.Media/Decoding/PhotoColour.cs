@@ -1,11 +1,10 @@
-using System.Buffers;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 using Windows.Win32;
 using Windows.Win32.Graphics.Imaging;
 using Windows.Win32.System.Com;
+using Windows.Win32.System.WinRT;
 
 namespace TenLapse.Media.Decoding;
 
@@ -46,6 +45,9 @@ internal static class PhotoColour
 {
     private const uint ExifSrgb = 1;
     private const uint ExifAdobeRgb = 2;
+
+    // WICBitmapLockWrite.
+    private const uint LockWrite = 2;
 
     /// <summary>
     /// What a decode of the photo in <paramref name="stream"/> must do with its colour, from the first colour
@@ -107,21 +109,32 @@ internal static class PhotoColour
     /// Converts <paramref name="pixels"/> (BGRA8) in place from the plan's profile to sRGB. The pixels are
     /// treated as straight alpha: exact for photos, which are opaque.
     /// </summary>
-    public static void ConvertToSrgb(SoftwareBitmap pixels, ColourPlan plan)
+    /// <remarks>
+    /// No managed buffer: the pixels are copied once into a WIC bitmap's own memory, and the transform writes
+    /// straight back into the <see cref="SoftwareBitmap"/>'s. A pooled 4K buffer (64 MB) per thread raised a
+    /// 1,000-frame 4K export's peak working set from about 540 MB to 1.7 GB.
+    /// </remarks>
+    public static unsafe void ConvertToSrgb(SoftwareBitmap pixels, ColourPlan plan)
     {
-        var width = pixels.PixelWidth;
-        var height = pixels.PixelHeight;
-        var stride = width * 4;
-        var size = stride * height;
-        var bytes = ArrayPool<byte>.Shared.Rent(size);
+        using var buffer = pixels.LockBuffer(BitmapBufferAccessMode.ReadWrite);
+        var plane = buffer.GetPlaneDescription(0);
+        using var reference = buffer.CreateReference();
+        var inspectable = WinRT.MarshalInspectable<object>.FromManaged(reference);
+        IMemoryBufferByteAccess? access = null;
         IWICImagingFactory? factory = null;
         IWICColorContext? from = null;
         IWICColorContext? to = null;
         IWICBitmap? bitmap = null;
+        IWICBitmapLock? locked = null;
         IWICColorTransform? transform = null;
         try
         {
-            pixels.CopyToBuffer(bytes.AsBuffer(0, size));
+            access = (IMemoryBufferByteAccess)Marshal.GetObjectForIUnknown(inspectable);
+            byte* data;
+            access.GetBuffer(&data, out var capacity);
+            data += plane.StartIndex;
+            var (width, height, stride) = ((uint)plane.Width, (uint)plane.Height, (uint)plane.Stride);
+
             factory = CreateFactory();
             factory.CreateColorContext(out from);
             if (plan.Profile is { } profile)
@@ -135,25 +148,53 @@ internal static class PhotoColour
 
             factory.CreateColorContext(out to);
             to.InitializeFromExifColorSpace(ExifSrgb);
+
             var format = PInvoke.GUID_WICPixelFormat32bppBGRA;
-            unsafe
+            factory.CreateBitmap(width, height, &format, WICBitmapCreateCacheOption.WICBitmapCacheOnLoad, out bitmap);
+            var all = new WICRect { X = 0, Y = 0, Width = (int)width, Height = (int)height };
+            bitmap.Lock(&all, LockWrite, out locked);
+            locked.GetStride(out var bitmapStride);
+            byte* bitmapData;
+            locked.GetDataPointer(out _, &bitmapData);
+            for (var row = 0u; row < height; row++)
             {
-                factory.CreateBitmapFromMemory((uint)width, (uint)height, &format, (uint)stride, (uint)size, bytes, out bitmap);
-                factory.CreateColorTransformer(out transform);
-                transform.Initialize(bitmap, from, to, &format);
-                transform.CopyPixels(null, (uint)stride, (uint)size, bytes);
+                System.Buffer.MemoryCopy(data + (row * stride), bitmapData + (row * bitmapStride), bitmapStride, width * 4);
             }
 
-            pixels.CopyFromBuffer(bytes.AsBuffer(0, size));
+            // Unlocked before the transform reads the bitmap.
+            Release(locked);
+            locked = null;
+            factory.CreateColorTransformer(out transform);
+            transform.Initialize(bitmap, from, to, &format);
+            CopyPixels(transform, stride, capacity - (uint)plane.StartIndex, data);
         }
         finally
         {
             Release(transform);
+            Release(locked);
             Release(bitmap);
             Release(to);
             Release(from);
             Release(factory);
-            ArrayPool<byte>.Shared.Return(bytes);
+            Release(access);
+            Marshal.Release(inspectable);
+        }
+    }
+
+    // CsWin32 marshals CopyPixels' buffer as a managed array, and these pixels are native memory: call it through
+    // the vtable instead. IUnknown's three methods, then IWICBitmapSource's GetSize, GetPixelFormat,
+    // GetResolution, CopyPalette and CopyPixels: slot 7.
+    private static unsafe void CopyPixels(IWICColorTransform transform, uint stride, uint size, byte* destination)
+    {
+        var source = Marshal.GetComInterfaceForObject<IWICColorTransform, IWICColorTransform>(transform);
+        try
+        {
+            var copyPixels = (delegate* unmanaged[Stdcall]<nint, WICRect*, uint, uint, byte*, int>)(*(void***)source)[7];
+            Marshal.ThrowExceptionForHR(copyPixels(source, null, stride, size, destination));
+        }
+        finally
+        {
+            Marshal.Release(source);
         }
     }
 
