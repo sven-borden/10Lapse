@@ -315,6 +315,29 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
+    public async Task TheTitleBarShowsTheProjectNameOnceThereIsWork()
+    {
+        var shell = Shell(new FakeDialogService(answer: true));
+        var raised = new List<string?>();
+        shell.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        Assert.False(shell.ShowsProjectName);
+
+        shell.CurrentProject.Model.AddFrames(TestFrames.Folder("a", 2));
+        Assert.True(shell.ShowsProjectName);
+        Assert.Contains(nameof(ShellViewModel.ShowsProjectName), raised);
+
+        // Exported: clean, but it still has photos, so the name stays.
+        shell.CurrentProject.Model.MarkExported(shell.CurrentProject.Model.Version);
+        Assert.True(shell.ShowsProjectName);
+
+        raised.Clear();
+        await shell.NewProjectCommand.ExecuteAsync(null);
+        Assert.False(shell.ShowsProjectName);
+        Assert.Contains(nameof(ShellViewModel.ShowsProjectName), raised);
+    }
+
+    [Fact]
     public async Task TheTitleFollowsOnlyTheCurrentProject()
     {
         var shell = Shell(new FakeDialogService());

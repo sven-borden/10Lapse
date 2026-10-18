@@ -121,6 +121,22 @@
       <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="{ThemeResource EmberLinkColor}" />
       <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="{ThemeResource EmberLinkColor}" />
       <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="{ThemeResource EmberLinkColor}" Opacity="0.8" />
+      <!-- InfoBar (DESIGN.md, Cards and InfoBars): the status fill (Neutral is Card), the icon in the status color, Ink text, a Control Stroke border. The tokens map to system colors in HighContrast. -->
+      <SolidColorBrush x:Key="InfoBarErrorSeverityBackgroundBrush" Color="{ThemeResource CriticalFillColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityBackgroundBrush" Color="{ThemeResource CautionFillColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityBackgroundBrush" Color="{ThemeResource SuccessFillColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityBackgroundBrush" Color="{ThemeResource CardColor}" />
+      <SolidColorBrush x:Key="InfoBarErrorSeverityIconBackground" Color="{ThemeResource CriticalColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityIconBackground" Color="{ThemeResource CautionColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityIconBackground" Color="{ThemeResource SuccessColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityIconBackground" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="InfoBarErrorSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarTitleForeground" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InfoBarMessageForeground" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InfoBarBorderBrush" Color="{ThemeResource ControlStrokeColor}" />
     </ResourceDictionary>
 
     <ResourceDictionary x:Key="Dark">
@@ -221,6 +237,22 @@
       <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="{ThemeResource EmberLinkColor}" />
       <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="{ThemeResource EmberLinkColor}" />
       <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="{ThemeResource EmberLinkColor}" Opacity="0.8" />
+      <!-- InfoBar (DESIGN.md, Cards and InfoBars): the status fill (Neutral is Card), the icon in the status color, Ink text, a Control Stroke border. The tokens map to system colors in HighContrast. -->
+      <SolidColorBrush x:Key="InfoBarErrorSeverityBackgroundBrush" Color="{ThemeResource CriticalFillColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityBackgroundBrush" Color="{ThemeResource CautionFillColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityBackgroundBrush" Color="{ThemeResource SuccessFillColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityBackgroundBrush" Color="{ThemeResource CardColor}" />
+      <SolidColorBrush x:Key="InfoBarErrorSeverityIconBackground" Color="{ThemeResource CriticalColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityIconBackground" Color="{ThemeResource CautionColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityIconBackground" Color="{ThemeResource SuccessColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityIconBackground" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="InfoBarErrorSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarTitleForeground" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InfoBarMessageForeground" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InfoBarBorderBrush" Color="{ThemeResource ControlStrokeColor}" />
     </ResourceDictionary>
 
     <ResourceDictionary x:Key="HighContrast">
@@ -321,8 +353,210 @@
       <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="{ThemeResource EmberLinkColor}" />
       <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
       <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="{ThemeResource SystemColorHighlightColor}" />
+      <!-- InfoBar (DESIGN.md, Cards and InfoBars): the status fill (Neutral is Card), the icon in the status color, Ink text, a Control Stroke border. The tokens map to system colors in HighContrast. -->
+      <SolidColorBrush x:Key="InfoBarErrorSeverityBackgroundBrush" Color="{ThemeResource CriticalFillColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityBackgroundBrush" Color="{ThemeResource CautionFillColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityBackgroundBrush" Color="{ThemeResource SuccessFillColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityBackgroundBrush" Color="{ThemeResource CardColor}" />
+      <SolidColorBrush x:Key="InfoBarErrorSeverityIconBackground" Color="{ThemeResource CriticalColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityIconBackground" Color="{ThemeResource CautionColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityIconBackground" Color="{ThemeResource SuccessColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityIconBackground" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="InfoBarErrorSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarWarningSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarSuccessSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarInformationalSeverityIconForeground" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="InfoBarTitleForeground" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InfoBarMessageForeground" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InfoBarBorderBrush" Color="{ThemeResource ControlStrokeColor}" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
+
+  <!--
+    InfoBarStyle: the InfoBar laid out as the prototype's (docs/design/canvas/Main.dc.html, InfoBar): one row
+    in PaddingInfoBar (10 / 8 / 10 / 14) with 12 px gaps: the severity icon, the message, the action or list
+    toggle (28 px, PaddingInfoBarButton) and the 28 px Dismiss button; the InfoBar's Content (the detail
+    list) spans the width under it. The row is as tall as its buttons, so every InfoBar is 50 px with or
+    without an action. The stock template's StaticResource paddings cannot be overridden from the app, hence a
+    template. It keeps the stock part and state names (CloseButton, SeverityLevels, IconStates and the rest),
+    which the control drives; it has no Title, which no InfoBar here uses. Layout and Typography keys are
+    ThemeResource because those dictionaries merge after this one.
+  -->
+  <Style x:Key="InfoBarDismissButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+    <Setter Property="Width" Value="{ThemeResource InfoBarButtonHeight}" />
+    <Setter Property="Height" Value="{ThemeResource InfoBarButtonHeight}" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="{ThemeResource RadiusControl}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style x:Key="InfoBarStyle" TargetType="InfoBar">
+    <Setter Property="IsTabStop" Value="False" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{ThemeResource InfoBarBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{ThemeResource RadiusCard}" />
+    <Setter Property="CloseButtonStyle" Value="{StaticResource InfoBarDismissButtonStyle}" />
+    <Setter Property="AutomationProperties.LandmarkType" Value="Custom" />
+    <Setter Property="AutomationProperties.IsDialog" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="InfoBar">
+          <Border
+            x:Name="ContentRoot"
+            VerticalAlignment="Top"
+            Background="{ThemeResource InfoBarInformationalSeverityBackgroundBrush}"
+            BorderBrush="{TemplateBinding BorderBrush}"
+            BorderThickness="{TemplateBinding BorderThickness}"
+            CornerRadius="{TemplateBinding CornerRadius}">
+            <VisualStateManager.VisualStateGroups>
+              <VisualStateGroup x:Name="SeverityLevels">
+                <VisualState x:Name="Informational" />
+                <VisualState x:Name="Error">
+                  <VisualState.Setters>
+                    <Setter Target="ContentRoot.Background" Value="{ThemeResource InfoBarErrorSeverityBackgroundBrush}" />
+                    <Setter Target="IconBackground.Foreground" Value="{ThemeResource InfoBarErrorSeverityIconBackground}" />
+                    <Setter Target="StandardIcon.Text" Value="&#xF13D;" />
+                    <Setter Target="StandardIcon.Foreground" Value="{ThemeResource InfoBarErrorSeverityIconForeground}" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Warning">
+                  <VisualState.Setters>
+                    <Setter Target="ContentRoot.Background" Value="{ThemeResource InfoBarWarningSeverityBackgroundBrush}" />
+                    <Setter Target="IconBackground.Foreground" Value="{ThemeResource InfoBarWarningSeverityIconBackground}" />
+                    <Setter Target="StandardIcon.Text" Value="&#xF13C;" />
+                    <Setter Target="StandardIcon.Foreground" Value="{ThemeResource InfoBarWarningSeverityIconForeground}" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Success">
+                  <VisualState.Setters>
+                    <Setter Target="ContentRoot.Background" Value="{ThemeResource InfoBarSuccessSeverityBackgroundBrush}" />
+                    <Setter Target="IconBackground.Foreground" Value="{ThemeResource InfoBarSuccessSeverityIconBackground}" />
+                    <Setter Target="StandardIcon.Text" Value="&#xF13E;" />
+                    <Setter Target="StandardIcon.Foreground" Value="{ThemeResource InfoBarSuccessSeverityIconForeground}" />
+                  </VisualState.Setters>
+                </VisualState>
+              </VisualStateGroup>
+              <VisualStateGroup x:Name="IconStates">
+                <VisualState x:Name="StandardIconVisible">
+                  <VisualState.Setters>
+                    <Setter Target="StandardIconArea.Visibility" Value="Visible" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="UserIconVisible" />
+                <VisualState x:Name="NoIconVisible" />
+              </VisualStateGroup>
+              <VisualStateGroup x:Name="CloseButtonStates">
+                <VisualState x:Name="CloseButtonVisible" />
+                <VisualState x:Name="CloseButtonCollapsed">
+                  <VisualState.Setters>
+                    <Setter Target="CloseButton.Visibility" Value="Collapsed" />
+                  </VisualState.Setters>
+                </VisualState>
+              </VisualStateGroup>
+              <VisualStateGroup x:Name="InfoBarVisibility">
+                <VisualState x:Name="InfoBarVisible" />
+                <VisualState x:Name="InfoBarCollapsed">
+                  <VisualState.Setters>
+                    <Setter Target="ContentRoot.Visibility" Value="Collapsed" />
+                  </VisualState.Setters>
+                </VisualState>
+              </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
+              <Grid Padding="{ThemeResource PaddingInfoBar}" ColumnSpacing="{ThemeResource SpacingMd}">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid x:Name="StandardIconArea" VerticalAlignment="Center" Visibility="Collapsed">
+                  <TextBlock
+                    x:Name="IconBackground"
+                    AutomationProperties.AccessibilityView="Raw"
+                    FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                    FontSize="16"
+                    Foreground="{ThemeResource InfoBarInformationalSeverityIconBackground}"
+                    Text="&#xF136;" />
+                  <TextBlock
+                    x:Name="StandardIcon"
+                    FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                    FontSize="16"
+                    Foreground="{ThemeResource InfoBarInformationalSeverityIconForeground}"
+                    Text="&#xF13F;" />
+                </Grid>
+                <TextBlock
+                  x:Name="Message"
+                  Grid.Column="1"
+                  VerticalAlignment="Center"
+                  Foreground="{ThemeResource InfoBarMessageForeground}"
+                  Style="{ThemeResource BodyTextStyle}"
+                  Text="{TemplateBinding Message}"
+                  TextWrapping="WrapWholeWords" />
+                <ContentPresenter Grid.Column="2" VerticalAlignment="Center" Content="{TemplateBinding ActionButton}">
+                  <ContentPresenter.Resources>
+                    <Style TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+                      <Setter Property="Height" Value="{ThemeResource InfoBarButtonHeight}" />
+                      <Setter Property="Padding" Value="{ThemeResource PaddingInfoBarButton}" />
+                      <Setter Property="VerticalContentAlignment" Value="Center" />
+                    </Style>
+                  </ContentPresenter.Resources>
+                </ContentPresenter>
+                <Button
+                  x:Name="CloseButton"
+                  Grid.Column="3"
+                  Command="{TemplateBinding CloseButtonCommand}"
+                  CommandParameter="{TemplateBinding CloseButtonCommandParameter}"
+                  Style="{TemplateBinding CloseButtonStyle}">
+                  <!-- A subtle button: transparent with the Ink wash on hover, the glyph in Ink Secondary. -->
+                  <Button.Resources>
+                    <ResourceDictionary>
+                      <ResourceDictionary.ThemeDictionaries>
+                        <ResourceDictionary x:Key="Light">
+                          <SolidColorBrush x:Key="ButtonBackground" Color="Transparent" />
+                          <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{ThemeResource SubtleFillHoverColor}" />
+                          <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{ThemeResource SubtleFillPressedColor}" />
+                          <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent" />
+                          <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+                          <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+                          <SolidColorBrush x:Key="ButtonForeground" Color="{ThemeResource InkSecondaryColor}" />
+                          <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{ThemeResource InkColor}" />
+                          <SolidColorBrush x:Key="ButtonForegroundPressed" Color="{ThemeResource InkSecondaryColor}" />
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="Dark">
+                          <SolidColorBrush x:Key="ButtonBackground" Color="Transparent" />
+                          <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{ThemeResource SubtleFillHoverColor}" />
+                          <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{ThemeResource SubtleFillPressedColor}" />
+                          <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent" />
+                          <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+                          <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+                          <SolidColorBrush x:Key="ButtonForeground" Color="{ThemeResource InkSecondaryColor}" />
+                          <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{ThemeResource InkColor}" />
+                          <SolidColorBrush x:Key="ButtonForegroundPressed" Color="{ThemeResource InkSecondaryColor}" />
+                        </ResourceDictionary>
+                      </ResourceDictionary.ThemeDictionaries>
+                    </ResourceDictionary>
+                  </Button.Resources>
+                  <FontIcon FontSize="12" Glyph="&#xE711;" />
+                </Button>
+              </Grid>
+              <ContentPresenter
+                x:Name="ContentArea"
+                Grid.Row="1"
+                Content="{TemplateBinding Content}"
+                ContentTemplate="{TemplateBinding ContentTemplate}" />
+            </Grid>
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
 
   <!--
     ExportButtonStyle: the one amber button (DESIGN.md, Buttons: the accent button is the Export fill). It is

@@ -45,6 +45,7 @@
   <Thickness x:Key="PaddingSelect">8,0,8,0</Thickness>
   <Thickness x:Key="PaddingSegmentedTrack">2</Thickness>
   <Thickness x:Key="PaddingInfoBar">14,10,8,10</Thickness>
+  <Thickness x:Key="PaddingInfoBarButton">10,0,10,0</Thickness>
 
   <!-- Radius tokens -->
   <CornerRadius x:Key="RadiusThumb">3</CornerRadius>
@@ -56,6 +57,8 @@
 
   <!-- Sizes -->
   <x:Double x:Key="ControlHeight">32</x:Double>
+  <!-- An InfoBar's buttons (its action or list toggle, and Dismiss), so every InfoBar is 50 px tall -->
+  <x:Double x:Key="InfoBarButtonHeight">28</x:Double>
   <x:Double x:Key="PlayButtonSize">36</x:Double>
   <x:Double x:Key="TitleBarHeight">40</x:Double>
   <x:Double x:Key="CommandBarHeight">48</x:Double>
@@ -67,6 +70,25 @@
   <x:Double x:Key="InspectorDockMinWindowWidth">1000</x:Double>
   <x:Double x:Key="MinWindowWidth">640</x:Double>
   <x:Double x:Key="MinWindowHeight">480</x:Double>
+  <!-- The size a new window opens at (the prototype's frame), when the screen's work area has room for it -->
+  <x:Double x:Key="DefaultWindowWidth">1280</x:Double>
+  <x:Double x:Key="DefaultWindowHeight">800</x:Double>
+
+  <!--
+    Shell regions (prototype docs/design/canvas/Main.dc.html): the InfoBar floats 32 px below the top of the
+    stage (20 padding + 12), at most 560 wide and at least 40 px in from each side. The filmstrip holds 3:2
+    thumbnails, an 8 px gap and a 16 px caption row: 56 px in the 1280 px window.
+  -->
+  <x:Double x:Key="InfoBarMaxWidth">560</x:Double>
+  <Thickness x:Key="InfoBarHostMargin">40,32,40,0</Thickness>
+  <x:Double x:Key="FilmstripMinHeight">56</x:Double>
+  <!--
+    An InfoBar's detail list (prototype: 8 / 14 / 12 / 42 around 16 px lines 6 apart, the left edge in line
+    with the message). Past seven lines it scrolls.
+  -->
+  <Thickness x:Key="InfoBarDetailsMargin">42,8,14,12</Thickness>
+  <x:Double x:Key="InfoBarDetailsSpacing">6</x:Double>
+  <x:Double x:Key="InfoBarDetailsMaxHeight">168</x:Double>
 
   <!-- Elevation: flyout (InfoBars over the preview, select menus, the first-launch sample frame): two layers, ambient then key -->
   <x:Double x:Key="ElevationFlyoutBlur">28</x:Double>

@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using TenLapse.Presentation;
+using TenLapse.Presentation.Services;
 using TenLapse.Services;
 
 namespace TenLapse;
@@ -36,8 +37,17 @@ public partial class App : Application
     private static MainWindow CreateMainWindow()
     {
         MainWindow? window = null;
+        var errors = new TraceErrorSink();
         var dialogs = new ContentDialogService(() => window?.Content?.XamlRoot);
-        window = new MainWindow(new ShellViewModel(dialogs, new TraceErrorSink()));
+
+        // The one InfoBar queue: #26's error path and the import and export issues raise InfoBars through it
+        // (as IInfoBarService); the window shows them.
+        var infoBars = new InfoBarQueue(errors);
+        var shell = new ShellViewModel(dialogs, errors);
+        window = new MainWindow(shell, infoBars);
+#if DEBUG
+        Debugging.DebugLaunch.Apply(shell, infoBars);
+#endif
         return window;
     }
 }

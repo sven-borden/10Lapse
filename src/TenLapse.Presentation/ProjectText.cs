@@ -52,6 +52,20 @@ public static class ProjectText
     public static string SwitchingViewFailed => "A view could not switch to the new project.";
 
     /// <summary>
+    /// The Critical InfoBar shown when an InfoBar's action failed, and the error context it is reported with.
+    /// </summary>
+    public static string InfoBarActionFailed => "That couldn't be done because of an unexpected problem. Try again, and restart 10Lapse if it keeps happening.";
+
+    /// <summary>The InfoBar button that shows its detail list (the prototype's "View list").</summary>
+    public static string InfoBarShowDetails => "View list";
+
+    /// <summary>The same button while the list shows.</summary>
+    public static string InfoBarHideDetails => "Hide list";
+
+    /// <summary>The accessible name of an InfoBar's close button.</summary>
+    public static string InfoBarDismiss => "Dismiss";
+
+    /// <summary>
     /// The Timing readout, e.g. "742 photos → 24.7 s at 30 fps", at the effective rate for this count
     /// (<see cref="TimingSettings.EffectiveRate"/>: in Length mode a clamped rate gives the length the clip
     /// really has). In <see cref="SpeedMode.PerPhoto"/> the rate reads per photo ("40 photos → 20.0 s at
