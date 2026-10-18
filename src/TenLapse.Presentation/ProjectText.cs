@@ -97,6 +97,15 @@ public static class ProjectText
     /// <summary>Out of memory.</summary>
     public static string ErrorOutOfMemory => "Your PC ran out of memory. Close some other apps, then try again.";
 
+    /// <summary>A removable drive or network share went away while in use (not ready, device gone, network name deleted).</summary>
+    public static string ErrorDriveDisconnected => "The drive or network folder was disconnected. Connect it again, then try again.";
+
+    /// <summary>A file's data cannot be read (a CRC error): a damaged disk or card.</summary>
+    public static string ErrorCannotRead => "A file can't be read: its drive or memory card may be damaged. Copy the photos to another drive, then try again.";
+
+    /// <summary>Another app holds the clipboard open. No Copy diagnostics: that needs the clipboard too.</summary>
+    public static string ErrorClipboardBusy => "Another app is using the clipboard. Try again in a moment.";
+
     /// <summary>Export: no H.264 encoder loads.</summary>
     public static string ExportFailedEncoderUnavailable => "Windows couldn't load a video encoder. Install the latest Windows updates and graphics driver, then export again.";
 

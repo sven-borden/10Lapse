@@ -23,6 +23,15 @@ public static class ErrorMessages
     private const int BadNetPath = unchecked((int)0x80070035);
     private const int InvalidDrive = unchecked((int)0x8007000F);
 
+    // A removable drive or a network share that went away while the app used it, or a medium that cannot be read.
+    private const int NotReady = unchecked((int)0x80070015);
+    private const int DeviceNotExist = unchecked((int)0x80070037);
+    private const int NetNameDeleted = unchecked((int)0x80070040);
+    private const int Crc = unchecked((int)0x80070017);
+
+    // Another app holds the clipboard open (CLIPBRD_E_CANT_OPEN).
+    private const int ClipboardCantOpen = unchecked((int)0x800401D0);
+
     // How deep the inner exceptions are searched for a kind the user can act on.
     private const int MaxDepth = 8;
 
@@ -32,8 +41,10 @@ public static class ErrorMessages
     /// <summary>
     /// What the user is told about <paramref name="exception"/>. The exception and then its inner exceptions are
     /// each offered to the <paramref name="mappers"/> in order, then to the built-in kinds: a file or folder that is
-    /// gone, access denied, a file open in another app, a full disk, too little memory, a path too long. Anything
-    /// else is <see cref="Unexpected"/>. A mapper that throws is skipped.
+    /// gone, a drive or share disconnected, a file that cannot be read, access denied, a file open in another app, a
+    /// full disk, too little memory, a path too long, a busy clipboard. A missing or unloadable .NET assembly is a
+    /// broken install, not a file of the user's: it stops the search at <see cref="Unexpected"/>. Anything else is
+    /// <see cref="Unexpected"/>. A mapper that throws is skipped.
     /// </summary>
     public static ErrorMessage For(Exception exception, IReadOnlyList<IErrorMessageMapper>? mappers = null)
     {
@@ -107,8 +118,26 @@ public static class ErrorMessages
         }
     }
 
+    // A .NET assembly that is missing or cannot be loaded: a broken install, not a file of the user's. Its
+    // FileNotFoundException names the assembly ("TenLapse.Media, Version=3.0.0.0, Culture=neutral, ...").
+    private static bool IsAssemblyLoadFailure(Exception exception) => exception switch
+    {
+        FileLoadException => true,
+        FileNotFoundException { FileName: { } name } => name.Contains(", Version=", StringComparison.OrdinalIgnoreCase)
+            || name.Contains(", Culture=", StringComparison.OrdinalIgnoreCase)
+            || name.Contains("PublicKeyToken=", StringComparison.OrdinalIgnoreCase),
+        FileNotFoundException { Message: { } message } => message.StartsWith("Could not load file or assembly", StringComparison.Ordinal),
+        _ => false,
+    };
+
     private static ErrorMessage? BuiltIn(Exception exception)
     {
+        if (IsAssemblyLoadFailure(exception))
+        {
+            // The unexpected path (with Copy diagnostics), not "couldn't be found, it may have been moved".
+            return Unexpected;
+        }
+
         switch (exception)
         {
             case FileNotFoundException { FileName: { Length: > 0 } path } when Path.GetFileName(path) is { Length: > 0 } name:
@@ -133,6 +162,9 @@ public static class ErrorMessages
             SharingViolation or LockViolation => Critical(ProjectText.ErrorFileInUse),
             DiskFull or HandleDiskFull => Critical(ProjectText.ErrorDiskFull),
             OutOfMemoryHResult or NotEnoughMemory => Critical(ProjectText.ErrorOutOfMemory),
+            NotReady or DeviceNotExist or NetNameDeleted => Critical(ProjectText.ErrorDriveDisconnected),
+            Crc => Critical(ProjectText.ErrorCannotRead),
+            ClipboardCantOpen => Critical(ProjectText.ErrorClipboardBusy),
             _ => null,
         };
     }

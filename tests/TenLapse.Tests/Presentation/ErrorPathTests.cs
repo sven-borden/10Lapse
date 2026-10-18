@@ -31,6 +31,15 @@ public sealed class ErrorPathTests
     [InlineData("aggregate")]
     [InlineData("inner")]
     [InlineData("unexpected")]
+    [InlineData("drive not ready")]
+    [InlineData("device gone")]
+    [InlineData("network name deleted")]
+    [InlineData("crc")]
+    [InlineData("clipboard busy")]
+    [InlineData("assembly missing")]
+    [InlineData("assembly missing by message")]
+    [InlineData("assembly load")]
+    [InlineData("assembly inside")]
     public async Task ACommandThatThrowsShowsWhatHappenedAndKeepsWorking(string kind)
     {
         var (exception, expected, offersDiagnostics) = Case(kind);
@@ -348,6 +357,15 @@ public sealed class ErrorPathTests
         "export" => (new VideoExportException("lost", VideoExportFailure.GraphicsDeviceLost), ProjectText.ExportFailedGraphicsDeviceLost, true),
         "aggregate" => (new AggregateException(new FileNotFoundException("gone")), ProjectText.ErrorFileNotFound, false),
         "inner" => (new InvalidOperationException("wrapped", new UnauthorizedAccessException()), ProjectText.ErrorAccessDenied, false),
+        "drive not ready" => (new IOException("The device is not ready.", unchecked((int)0x80070015)), ProjectText.ErrorDriveDisconnected, false),
+        "device gone" => (new IOException("The specified network resource or device is no longer available.", unchecked((int)0x80070037)), ProjectText.ErrorDriveDisconnected, false),
+        "network name deleted" => (new IOException("The specified network name is no longer available.", unchecked((int)0x80070040)), ProjectText.ErrorDriveDisconnected, false),
+        "crc" => (new IOException("Data error (cyclic redundancy check).", unchecked((int)0x80070017)), ProjectText.ErrorCannotRead, false),
+        "clipboard busy" => (new COMException("OpenClipboard Failed", unchecked((int)0x800401D0)), ProjectText.ErrorClipboardBusy, false),
+        "assembly missing" => (new FileNotFoundException("Could not load file or assembly 'Microsoft.Graphics.Canvas, Version=1.4.0.0, Culture=neutral, PublicKeyToken=null'.", "Microsoft.Graphics.Canvas, Version=1.4.0.0, Culture=neutral, PublicKeyToken=null"), ProjectText.ErrorUnexpected, true),
+        "assembly missing by message" => (new FileNotFoundException("Could not load file or assembly 'Microsoft.Graphics.Canvas'. The system cannot find the file specified."), ProjectText.ErrorUnexpected, true),
+        "assembly load" => (new FileLoadException("Could not load file or assembly 'TenLapse.Media'.", "TenLapse.Media", new UnauthorizedAccessException()), ProjectText.ErrorUnexpected, true),
+        "assembly inside" => (new TypeInitializationException("TenLapse.Media.Export.VideoExporter", new FileNotFoundException("Could not load file or assembly.", "TenLapse.Media, Version=3.0.0.0, Culture=neutral, PublicKeyToken=null", new UnauthorizedAccessException())), ProjectText.ErrorUnexpected, true),
         _ => (new InvalidOperationException("a bug"), ProjectText.ErrorUnexpected, true),
     };
 
