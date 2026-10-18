@@ -189,6 +189,22 @@ public sealed class FrameRatesTests
     }
 
     [Fact]
+    public void TotalLengthThrowsInsteadOfWrappingTheProduct()
+    {
+        // (2^62 + 1) * 4 is 2^64 + 4: in 64-bit math it wrapped to 4 and silently gave 4/3 s.
+        Assert.Throws<OverflowException>(() => FrameRates.TotalLengthSeconds((1L << 62) + 1, new Fraction(3, 4)));
+        Assert.Throws<OverflowException>(() => FrameRates.TotalLengthSeconds(long.MaxValue, new Fraction(1, 2)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => FrameRates.TotalLengthSeconds(10, default));
+    }
+
+    [Fact]
+    public void TotalLengthStaysExactForBigCounts()
+    {
+        // 3,000,000,000 frames at 30 fps: 100,000,000 s, a valid Fraction.
+        Assert.Equal(new Fraction(100_000_000, 1), FrameRates.TotalLengthSeconds(3_000_000_000, new Fraction(30, 1)));
+    }
+
+    [Fact]
     public void ConversionsRejectNonsense()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => FrameRates.FromTotalLength(0, new Fraction(1, 1)));

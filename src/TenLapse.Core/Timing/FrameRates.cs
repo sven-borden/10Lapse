@@ -104,7 +104,15 @@ public static class FrameRates
         return Fraction.Nearest((Int128)frameCount * lengthSeconds.Denominator, lengthSeconds.Numerator, MaxDenominator);
     }
 
-    /// <summary>The exact length in seconds of <paramref name="frameCount"/> frames at <paramref name="rate"/>; the inverse of <see cref="FromTotalLength"/>. For ticks use <see cref="FrameTiming.Duration"/>.</summary>
+    /// <summary>The exact length in seconds of <paramref name="frameCount"/> frames at <paramref name="rate"/>; the inverse of <see cref="FromTotalLength"/>.</summary>
+    /// <remarks>
+    /// The product is computed in 128-bit integers, so it never wraps. The result is a
+    /// <see cref="Fraction"/> with 32-bit parts, so it only fits for lengths up to about 2 billion
+    /// seconds, and for a rate with a big denominator (30000/1001) the frame count must stay small
+    /// enough to reduce into 32-bit parts. Display code should not use this method: take
+    /// <see cref="FrameTiming.Duration"/> (ticks, valid for any count that fits) and format it with
+    /// <see cref="TimingFormat.Duration"/>.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The frame count is not positive.</exception>
     /// <exception cref="OverflowException">The reduced result does not fit in 32-bit parts.</exception>
     public static Fraction TotalLengthSeconds(long frameCount, Fraction rate)
@@ -114,6 +122,11 @@ public static class FrameRates
             throw new ArgumentOutOfRangeException(nameof(frameCount), frameCount, "At least one frame is needed.");
         }
 
-        return new Fraction(frameCount * rate.Denominator, rate.Numerator);
+        if (rate.Numerator <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(rate), rate, "The frame rate must be positive.");
+        }
+
+        return Fraction.FromWide((Int128)frameCount * rate.Denominator, rate.Numerator);
     }
 }

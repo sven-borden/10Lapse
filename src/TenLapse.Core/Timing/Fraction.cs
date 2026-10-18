@@ -193,6 +193,12 @@ public readonly struct Fraction : IEquatable<Fraction>, IComparable<Fraction>
             : new Fraction(Narrow(numerator, denominator));
     }
 
+    /// <summary>
+    /// <c>numerator / denominator</c> from 128-bit parts, reduced. Throws
+    /// <see cref="OverflowException"/> when the reduced result does not fit in 32-bit parts.
+    /// </summary>
+    internal static Fraction FromWide(Int128 numerator, Int128 denominator) => new(Reduce(numerator, denominator));
+
     /// <summary>Exact product. Throws <see cref="OverflowException"/> when the reduced result does not fit.</summary>
     public static Fraction operator *(Fraction left, Fraction right) =>
         new(Reduce((Int128)left.Numerator * right.Numerator, (Int128)left.Denominator * right.Denominator));
