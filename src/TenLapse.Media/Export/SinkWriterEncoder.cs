@@ -230,8 +230,9 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
 
     /// <summary>
     /// The colour tags of the output. The matrix is the one the sink writer's colour converter uses: BT.601 up to
-    /// 576 lines, BT.709 above, whatever the width (measured 2026-10 with NVIDIA and with the software encoder:
-    /// 1920x540 is BT.601, 1024x578 and 360x640 BT.709). Tagging the types does not change its choice, so the
+    /// 576 lines, BT.709 above, whatever the width (measured 2026-10 on an RTX 4060 Ti: 1920x540 and 1024x576 are
+    /// BT.601, 1024x578 and 360x640 BT.709; the software encoder agrees at 640x360 and 1280x720, since the converter
+    /// runs on the export's device either way). Tagging the types does not change its choice, so the
     /// tags follow it. Up to 576 lines the primaries say SMPTE 170M rather than the source's BT.709: Media
     /// Foundation's decoder decodes BT.601 only when the primaries are SD too (with BT.709 primaries it used the
     /// BT.709 matrix and shifted saturated colours by up to 20 levels); no mainstream player converts between
