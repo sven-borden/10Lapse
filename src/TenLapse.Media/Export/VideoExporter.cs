@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using Microsoft.Graphics.Canvas;
 using TenLapse.Core.Timing;
@@ -16,33 +15,6 @@ namespace TenLapse.Media.Export;
 /// <param name="Duration">The clip duration in 100 ns ticks, <see cref="FrameTiming.Duration"/>.</param>
 /// <param name="Encoder">The H.264 encoder that ran, as the sink writer reports it; null if it could not tell.</param>
 public sealed record VideoExportResult(int FrameCount, long Duration, VideoEncoderInfo? Encoder);
-
-/// <summary>Why an export failed in the encoder.</summary>
-public enum VideoExportFailure
-{
-    /// <summary>No H.264 encoder could be loaded.</summary>
-    EncoderUnavailable,
-
-    /// <summary>The encoder refused the size, frame rate or bitrate.</summary>
-    SettingsRejected,
-
-    /// <summary>The encoder failed while writing.</summary>
-    EncoderFailed,
-
-    /// <summary>The encoder stopped taking frames.</summary>
-    EncoderStalled,
-}
-
-/// <summary>The encoder could not be set up or failed while writing.</summary>
-public sealed class VideoExportException : Exception
-{
-    /// <summary>Creates the exception.</summary>
-    public VideoExportException(string message, VideoExportFailure failure, Exception? innerException = null)
-        : base(message, innerException) => Failure = failure;
-
-    /// <summary>What went wrong, for the message the app shows (#22).</summary>
-    public VideoExportFailure Failure { get; }
-}
 
 /// <summary>
 /// The streaming export: decode, process (Win2D fill) and encode (H.264 MP4)
@@ -179,12 +151,9 @@ public static class VideoExporter
                     ExceptionDispatchInfo.Throw(failure);
                 }
 
-                if (exception is VideoExportException or OperationCanceledException || exception == failure)
-                {
-                    throw;
-                }
-
-                throw new VideoExportException($"The H.264 encoder failed: {exception.Message}", VideoExportFailure.EncoderFailed, exception);
+                // A VideoExportException from a native boundary (device, encoder, drawing), the source's own
+                // exception, or a bug in our code, which must not pass for an encoder failure.
+                throw;
             }
             finally
             {
@@ -218,9 +187,9 @@ public static class VideoExporter
             {
                 encoder = _createEncoder(outputPath, _settings, _device!);
             }
-            catch (COMException exception)
+            catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
             {
-                throw SetupFailure(exception);
+                throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed, setup: true);
             }
 
             var complete = false;
@@ -232,10 +201,18 @@ public static class VideoExporter
                     while (_rendered.Reader.TryRead(out var frame))
                     {
                         _stop.Token.ThrowIfCancellationRequested();
-                        encoder.Write(
-                            frame.Target,
-                            FrameTiming.FrameStart(frame.Index, Rate),
-                            FrameTiming.FrameDuration(frame.Index, Rate));
+                        try
+                        {
+                            encoder.Write(
+                                frame.Target,
+                                FrameTiming.FrameStart(frame.Index, Rate),
+                                FrameTiming.FrameDuration(frame.Index, Rate));
+                        }
+                        catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
+                        {
+                            throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed);
+                        }
+
                         FrameTaken(frame.Target);
                     }
                 }
@@ -243,12 +220,18 @@ public static class VideoExporter
                 var taken = Volatile.Read(ref _framesTaken);
                 if (taken != _source.FrameCount)
                 {
-                    throw new VideoExportException(
-                        $"The pipeline stopped after {taken} of {_source.FrameCount} frames.",
-                        VideoExportFailure.EncoderFailed);
+                    throw new InvalidOperationException($"The pipeline ended after {taken} of {_source.FrameCount} frames without a failure.");
                 }
 
-                encoder.Finish();
+                try
+                {
+                    encoder.Finish();
+                }
+                catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
+                {
+                    throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed);
+                }
+
                 complete = true;
                 return encoder.Encoder;
             }
@@ -274,19 +257,6 @@ public static class VideoExporter
                 // The export's own failure is what the caller needs; a file that cannot be deleted is #22's .partial cleanup.
             }
         }
-
-        private static VideoExportException SetupFailure(COMException exception) => (uint)exception.HResult switch
-        {
-            // MF_E_TOPO_CODEC_NOT_FOUND, MF_E_TRANSFORM_NOT_POSSIBLE_FOR_CURRENT_MEDIATYPE_COMBINATION
-            0xC00D5212 or 0xC00D6D60 => new VideoExportException(
-                $"No H.264 encoder could be loaded ({exception.Message}).", VideoExportFailure.EncoderUnavailable, exception),
-
-            // MF_E_INVALIDMEDIATYPE, MF_E_UNSUPPORTED_RATE, E_INVALIDARG
-            0xC00D36B4 or 0xC00D3E9D or 0x80070057 => new VideoExportException(
-                $"The H.264 encoder refused these settings ({exception.Message}).", VideoExportFailure.SettingsRejected, exception),
-
-            _ => new VideoExportException($"The H.264 encoder could not start: {exception.Message}", VideoExportFailure.EncoderFailed, exception),
-        };
 
         private async Task ProduceAsync()
         {
@@ -347,20 +317,7 @@ public static class VideoExporter
                                     VideoExportFailure.EncoderStalled);
                             }
 
-                            var target = new CanvasRenderTarget(
-                                Canvas,
-                                _settings.Width,
-                                _settings.Height,
-                                96f,
-                                DirectXPixelFormat.B8G8R8A8UIntNormalized,
-                                CanvasAlphaMode.Premultiplied);
-                            _live.TryAdd(target, 0);
-                            using (var session = target.CreateDrawingSession())
-                            {
-                                session.Clear(black);
-                                FrameFill.Draw(session, bitmap, output);
-                            }
-
+                            var target = Draw(bitmap, output, black);
                             await _rendered.Writer.WriteAsync(new RenderedFrame(index, target), _stop.Token).ConfigureAwait(false);
                         }
 
@@ -374,6 +331,34 @@ public static class VideoExporter
             {
                 RecordFailure(exception);
                 _rendered.Writer.TryComplete(exception);
+            }
+        }
+
+        // A new target per frame (never drawn twice, see the class remarks), tracked in _live until the encoder has it.
+        private CanvasRenderTarget Draw(CanvasBitmap bitmap, Size output, Color background)
+        {
+            try
+            {
+                var target = new CanvasRenderTarget(
+                    Canvas,
+                    _settings.Width,
+                    _settings.Height,
+                    96f,
+                    DirectXPixelFormat.B8G8R8A8UIntNormalized,
+                    CanvasAlphaMode.Premultiplied);
+                _live.TryAdd(target, 0);
+                using (var session = target.CreateDrawingSession())
+                {
+                    session.Clear(background);
+                    FrameFill.Draw(session, bitmap, output);
+                }
+
+                return target;
+            }
+            catch (Exception exception) when (ExportFailures.ShouldClassify(exception) && ExportFailures.FromHResult(exception.HResult) is { } failure)
+            {
+                // A driver reset or out of video memory while drawing; anything else surfaces as it is (#22 adds frame context).
+                throw ExportFailures.Classify(exception, failure);
             }
         }
 

@@ -34,7 +34,29 @@ internal sealed class VideoDevice : IDisposable
     /// <summary>The Win2D device every source bitmap and render target of the export is made on.</summary>
     public CanvasDevice Canvas { get; }
 
-    public static unsafe VideoDevice Create()
+    /// <summary>Creates the device on the default adapter. Call it on an MTA thread (the export runs on the thread pool).</summary>
+    /// <exception cref="VideoExportException">
+    /// <see cref="VideoExportFailure.NoGraphicsDevice"/> when there is no hardware device with video support (only
+    /// the Microsoft Basic Render Driver, for one) or creating it failed; <see cref="VideoExportFailure.OutOfMemory"/>.
+    /// </exception>
+    public static VideoDevice Create()
+    {
+        try
+        {
+            return CreateCore();
+        }
+        catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
+        {
+            // DXGI_ERROR_UNSUPPORTED on a PC with only WARP, or anything else: no device. Memory is the one exception.
+            throw ExportFailures.Wrap(
+                exception,
+                ExportFailures.FromHResult(exception.HResult) == VideoExportFailure.OutOfMemory
+                    ? VideoExportFailure.OutOfMemory
+                    : VideoExportFailure.NoGraphicsDevice);
+        }
+    }
+
+    private static unsafe VideoDevice CreateCore()
     {
         ReadOnlySpan<D3D_FEATURE_LEVEL> levels = [D3D_FEATURE_LEVEL.D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL.D3D_FEATURE_LEVEL_11_0];
         PInvoke.D3D11CreateDevice(
@@ -49,22 +71,29 @@ internal sealed class VideoDevice : IDisposable
                 out var context)
             .ThrowOnFailure();
         Marshal.ReleaseComObject(context);
-
-        ((ID3D11Multithread)device).SetMultithreadProtected(true);
-
-        PInvoke.CreateDirect3D11DeviceFromDXGIDevice((IDXGIDevice)device, out var inspectable).ThrowOnFailure();
-        var pointer = Marshal.GetIUnknownForObject(inspectable);
         try
         {
-            // Win2D keeps its own reference. Disposed here, or the wrapper holds the whole device (about 90 MB
-            // private and 160 handles for a 640x360 export, 300 MB and 230 MB of video memory at 4K) until a GC.
-            using var direct3DDevice = WinRT.MarshalInterface<IDirect3DDevice>.FromAbi(pointer);
-            return new VideoDevice(device, CanvasDevice.CreateFromDirect3D11Device(direct3DDevice));
+            ((ID3D11Multithread)device).SetMultithreadProtected(true);
+
+            PInvoke.CreateDirect3D11DeviceFromDXGIDevice((IDXGIDevice)device, out var inspectable).ThrowOnFailure();
+            var pointer = Marshal.GetIUnknownForObject(inspectable);
+            try
+            {
+                // Win2D keeps its own reference. Disposed here, or the wrapper holds the whole device (about 90 MB
+                // private and 160 handles for a 640x360 export, 300 MB and 230 MB of video memory at 4K) until a GC.
+                using var direct3DDevice = WinRT.MarshalInterface<IDirect3DDevice>.FromAbi(pointer);
+                return new VideoDevice(device, CanvasDevice.CreateFromDirect3D11Device(direct3DDevice));
+            }
+            finally
+            {
+                Marshal.Release(pointer);
+                Marshal.ReleaseComObject(inspectable);
+            }
         }
-        finally
+        catch
         {
-            Marshal.Release(pointer);
-            Marshal.ReleaseComObject(inspectable);
+            Marshal.ReleaseComObject(device);
+            throw;
         }
     }
 
