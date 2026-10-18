@@ -24,9 +24,12 @@ namespace TenLapse.Core.Ordering;
 /// as in Windows' word sort.</item>
 /// </list>
 /// <para>
-/// The tests compare this against <c>StrCmpLogicalW</c> on a few hundred generated and hand-picked names
-/// (ASCII, Latin accents, long digit runs, Arabic-Indic digits). Windows' tables for other scripts and rare
-/// symbols are not copied: those fall back to code-point order, which only matters for ties between them.
+/// The tests compare this against <c>StrCmpLogicalW</c>: every short string over six small alphabets, every ASCII,
+/// Latin-1 and Latin Extended-A character in five contexts, long digit runs, and generated camera names. What does
+/// not match, because Windows' collation tables are not copied: Latin Extended-B and a few Latin Extended-A letters
+/// (Ĳ, Ŀ, ŉ, ı, ĸ, Ŋ), ª, µ and º; non-Latin scripts and rare symbols order by code point; and digits of different
+/// scripts with the same value (٣ and 3) compare equal here. None of these changes the order of ordinary
+/// camera, phone and screenshot file names.
 /// </para>
 /// </remarks>
 public sealed class NaturalNameComparer : IComparer<string?>
