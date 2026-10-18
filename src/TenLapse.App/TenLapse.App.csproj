@@ -31,6 +31,13 @@
     <WindowsPackageType>MSIX</WindowsPackageType>
     <SelfContained>true</SelfContained>
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
+    <!--
+      Packing (GenerateAppxPackageOnBuild) warns "Path to mspdbcmf.exe could not be
+      found" on a machine without Visual Studio, and the packaging tools give that
+      warning no code to exempt. So pack builds alone do not treat MSBuild warnings
+      as errors; the gate's Release build (no pack) still does.
+    -->
+    <MSBuildTreatWarningsAsErrors Condition="'$(GenerateAppxPackageOnBuild)' == 'true'">false</MSBuildTreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
