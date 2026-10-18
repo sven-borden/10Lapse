@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Brushes;
 using Microsoft.Graphics.Canvas.Text;
+using TenLapse.Core.Projects;
 using TenLapse.Media.Export;
 using TenLapse.Media.Inspection;
 using Windows.Foundation;
@@ -56,7 +57,7 @@ internal sealed class SyntheticFrameSource(int count, int width, int height) : I
 {
     public int FrameCount => count;
 
-    public Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, CancellationToken cancellationToken) =>
+    public Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken) =>
         Task.Run<CanvasBitmap>(
             () =>
             {

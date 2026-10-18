@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Runtime.ExceptionServices;
 using System.Threading.Channels;
 using Microsoft.Graphics.Canvas;
+using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 using TenLapse.Media.Inspection;
 using Windows.Foundation;
@@ -285,12 +286,13 @@ public static class VideoExporter
 
         private async Task ProduceAsync()
         {
+            var outputSize = new PixelSize(_settings.Width, _settings.Height);
             try
             {
                 for (var i = 0; i < _source.FrameCount; i++)
                 {
                     _stop.Token.ThrowIfCancellationRequested();
-                    var load = _source.LoadAsync(i, Canvas, _stop.Token);
+                    var load = _source.LoadAsync(i, Canvas, outputSize, _stop.Token);
                     _loads.TryAdd(load, 0);
                     await _decoded.Writer.WriteAsync(load, _stop.Token).ConfigureAwait(false);
                 }
