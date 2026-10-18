@@ -4,7 +4,7 @@ Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Wave 2 is running: #4 and #10.
+Wave 3 is running: #8 and #27.
 
 ## Waves
 
@@ -17,10 +17,10 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 0 | #1 Toolchain | orchestrator | machine | done |
 | 1 | #3 Tag legacy, new solution layout, gate script | O | repo root, all projects | merged #61 |
 | 1 | #6 Privacy policy and README | S | `README.md`, `PRIVACY.md` | merged #60 |
-| 2 | #4 Package identity and MSIX | S | `src/TenLapse.App` manifest, packaging props | running |
-| 2 | #10 Exact frame timing | S | `TenLapse.Core/Timing` | running |
-| 3 | #8 Spike: streaming encode | O | `TenLapse.Media`, a spike harness | |
-| 3 | #27 Design tokens and theme resources | S | `TenLapse.App/Themes` | |
+| 2 | #4 Package identity and MSIX | S | `src/TenLapse.App` manifest, packaging props | merged #62 |
+| 2 | #10 Exact frame timing | S | `TenLapse.Core/Timing` | merged #63 |
+| 3 | #8 Spike: streaming encode | O | `TenLapse.Media`, a spike harness | running |
+| 3 | #27 Design tokens and theme resources | S | `TenLapse.App/Themes` | running |
 | 4 | #9 Spike: encoder capabilities | O | `TenLapse.Media/Encoding` | |
 | 4 | #16 Project model and view models | O | `TenLapse.Core/Projects`, new `TenLapse.Presentation` | |
 | 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | |
@@ -106,3 +106,15 @@ own waves once 3.0 ships.
   reserved).
 - #3 PR #61: tag `v2.1.1-legacy`, legacy UWP removed, new solution, gate
   (`solution`, `restore`, Debug `build`, `test`, Release `build`, about 19 s).
+- #4 PR #62: Store identity `62394glaglasven.10Lapse` 3.0.0.0, Application Id
+  `App` kept, `Windows.Desktop` 17763 to 26100, `runFullTrust` only.
+  `pwsh -File scripts/pack.ps1` writes the unsigned x64 + ARM64 `.msixupload`
+  (about 124 MB, 65 MB per architecture) to `dist/store` and checks the built
+  identity and version. Bump the manifest `Version` for every submission. Owner
+  notes for the first submission are on #40.
+- #10 PR #63: `TenLapse.Core.Timing`. `Fraction` (reduced rational),
+  `FrameTiming.FrameStart/FrameDuration/Duration` in 100 ns ticks with floor
+  rounding, `FrameRates` (presets, NTSC snapping within 0.01, the three speed
+  modes), `TimingFormat` ("24.7 s", "1 min 12 s", "1 h 02 min", "29.97 fps",
+  "2 s per photo"), every user-visible word in `TimingWords`. A single comma is
+  a decimal point.
