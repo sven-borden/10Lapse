@@ -83,7 +83,22 @@ public sealed class TimingFormatTests
     [InlineData(2, 1, "0.5 s per photo")]
     [InlineData(1, 1, "1 s per photo")]
     [InlineData(1, 2, "2 s per photo")]
-    [InlineData(30, 1, "0.03 s per photo")]
+    [InlineData(3, 1, "0.33 s per photo")]
+    [InlineData(11, 1, "0.0909 s per photo")]
+    [InlineData(30, 1, "0.0333 s per photo")]
+    [InlineData(30000, 1001, "0.0334 s per photo")]  // 29.97 fps differs from 30 fps
+    [InlineData(60, 1, "0.0167 s per photo")]
+    [InlineData(60000, 1001, "0.0167 s per photo")]
+    [InlineData(50, 1, "0.02 s per photo")]
+    [InlineData(120, 1, "0.00833 s per photo")]
+    [InlineData(100, 1, "0.01 s per photo")]
+    [InlineData(1000, 1, "0.001 s per photo")]
+    [InlineData(10000, 99, "0.0099 s per photo")]
+    [InlineData(1000, 9, "0.009 s per photo")]
+    [InlineData(1000, 99, "0.099 s per photo")]
+    [InlineData(100000, 999, "0.00999 s per photo")]
+    [InlineData(10000, 1, "0.0001 s per photo")]
+    [InlineData(2501, 250, "0.1 s per photo")]      // 0.09996 s rounds up to 0.100, written 0.1
     public void SecondsPerPhotoLabelWhateverTheRate(int num, int den, string expected)
     {
         Assert.Equal(expected, TimingFormat.SecondsPerPhoto(new Fraction(num, den)));

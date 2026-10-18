@@ -49,11 +49,37 @@ public static class TimingFormat
             : SecondsPerPhoto(rate);
     }
 
-    /// <summary>The per-photo label whatever the rate: "0.5 s per photo", "2 s per photo", "3.33 s per photo".</summary>
+    /// <summary>
+    /// The per-photo label whatever the rate: "0.5 s per photo", "2 s per photo", "3.33 s per photo".
+    /// From 0.1 s up two decimals; below 0.1 s three significant figures, so 30 fps reads
+    /// "0.0333 s per photo" and 29.97 fps "0.0334 s per photo" instead of both "0.03".
+    /// Trailing zeros are dropped.
+    /// </summary>
     public static string SecondsPerPhoto(Fraction rate)
     {
         RequirePositive(rate);
-        return $"{Hundredths(rate.Denominator, rate.Numerator)} {TimingWords.Second} {TimingWords.PerPhoto}";
+        var seconds = rate.Denominator * 10 >= rate.Numerator
+            ? Hundredths(rate.Denominator, rate.Numerator)
+            : ThreeSignificant(rate.Denominator, rate.Numerator);
+        return $"{seconds} {TimingWords.Second} {TimingWords.PerPhoto}";
+    }
+
+    /// <summary><c>numerator / denominator</c> (below 0.1) rounded half up to three significant figures, trailing zeros dropped.</summary>
+    private static string ThreeSignificant(long numerator, long denominator)
+    {
+        // The smallest number of decimals that keeps three significant figures: value * 10^decimals >= 100.
+        var decimals = 2;
+        Int128 scale = 100;
+        while ((Int128)numerator * scale < 100 * (Int128)denominator)
+        {
+            decimals++;
+            scale *= 10;
+        }
+
+        var scaled = (((Int128)numerator * scale * 2) + denominator) / (2 * (Int128)denominator);
+        var digits = ((long)scaled).ToString(CultureInfo.InvariantCulture).PadLeft(decimals + 1, '0');
+        var text = $"{digits[..^decimals]}.{digits[^decimals..]}".TrimEnd('0');
+        return text.EndsWith('.') ? text[..^1] : text;
     }
 
     private static void RequirePositive(Fraction rate)
