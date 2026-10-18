@@ -250,7 +250,7 @@ public sealed class EncoderCapabilitiesTests
             TimeSpan.FromSeconds(1)).IsProvisional);
     }
 
-    private static EncoderCacheKey Key { get; } = new(EncoderCacheKey.CurrentSchema, "adapter", "name", "1.0", "10.0.1.1", "encoders", "decoders");
+    private static EncoderCacheKey Key { get; } = new(EncoderCacheKey.CurrentSchema, "adapter", "name", "1.0", "10.0.1.1", "encoders", "decoders", "1.0", "codecs");
 
     [Fact]
     public void AProbeWithANonsenseSizeIsRefused() =>

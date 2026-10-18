@@ -24,7 +24,9 @@ public sealed class EncoderCacheTests : IDisposable
         "32.0.16.1714",
         "10.0.26300.9711",
         EncoderCacheKey.EncoderList(_encoders),
-        EncoderCacheKey.DecoderList(_decoders));
+        EncoderCacheKey.DecoderList(_decoders),
+        "1.0.0+0123abcd",
+        "60f44560-5a20-4857-bfef-d29773cb8040=32.0.15.6070;6ca50344-051a-4ded-9779-a43305165e35=10.0.26100.1;Microsoft.HEVCVideoExtension_8wekyb3d8bbwe=2.5.33.0");
 
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "TenLapse.Tests", Guid.NewGuid().ToString("N"));
 
@@ -80,6 +82,9 @@ public sealed class EncoderCacheTests : IDisposable
             _key with { OsBuild = "10.0.26300.9800" },
             _key with { Encoders = EncoderCacheKey.EncoderList(withHevc) },
             _key with { Encoders = EncoderCacheKey.EncoderList(_encoders[..2]) },
+            _key with { MediaVersion = "1.0.0+4567cdef" },
+            _key with { CodecVersions = _key.CodecVersions.Replace("2.5.33.0", "2.5.34.0", StringComparison.Ordinal) },
+            _key with { CodecVersions = _key.CodecVersions.Replace("32.0.15.6070", "32.0.15.6094", StringComparison.Ordinal) },
             _key with { Decoders = EncoderCacheKey.DecoderList([]) },
             _key with { Decoders = EncoderCacheKey.DecoderList([.. _decoders, new(VideoFormat.Mp4Hevc, "GPU HEVC Decoder", true, Guid.NewGuid())]) },
         ];
@@ -104,7 +109,7 @@ public sealed class EncoderCacheTests : IDisposable
     [InlineData("{}")]
     [InlineData("""{"key":null,"encoders":[],"probes":[],"probeTicks":1}""")]
     [InlineData("""{"key":{"schema":1,"adapter":"a","adapterName":"b","driver":"c","osBuild":"d","encoders":"e"},"encoders":[],"probes":[{"format":"Mp4Av1","width":1,"height":1,"framesPerSecond":30,"encoder":"Hardware","encoderName":null,"failure":null,"milliseconds":1}],"probeTicks":1}""")]
-    [InlineData("""{"key":{"schema":2,"adapter":"a","adapterName":"b","driver":"c","osBuild":"d","encoders":"e","decoders":"f"},"encoders":[],"probes":[],"probeTicks":1}""")]
+    [InlineData("""{"key":{"schema":2,"adapter":"a","adapterName":"b","driver":"c","osBuild":"d","encoders":"e","decoders":"f"},"encoders":[],"decoders":[],"probes":[],"probeTicks":1}""")]
     public void ABadFileIsIgnoredAndRewritten(string content)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(CachePath)!);

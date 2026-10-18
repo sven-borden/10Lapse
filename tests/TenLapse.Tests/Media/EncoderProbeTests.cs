@@ -56,6 +56,31 @@ public sealed class EncoderProbeTests : IDisposable
     }
 
     [Fact]
+    public void TheKeyHasThisBuildAndTheVersionOfEveryListedCodec()
+    {
+        var encoders = EncoderCatalog.Find();
+        var decoders = EncoderCatalog.FindDecoders(VideoFormat.Mp4Hevc);
+
+        var key = EncoderCacheKey.ForThisMachine(encoders, decoders);
+
+        Assert.Equal(EncoderCacheKey.ThisMediaVersion, key.MediaVersion);
+        Assert.NotEqual("unknown", key.MediaVersion);
+        foreach (var clsid in encoders.Select(encoder => encoder.Clsid).Concat(decoders.Select(decoder => decoder.Clsid)).Where(clsid => clsid != Guid.Empty))
+        {
+            Assert.Contains($"{clsid:D}=", key.CodecVersions, StringComparison.Ordinal);
+        }
+
+        Assert.DoesNotContain("=unknown", key.CodecVersions, StringComparison.Ordinal);
+        if (encoders.Any(encoder => encoder.Clsid == Guid.Empty) || decoders.Any(decoder => decoder.Clsid == Guid.Empty))
+        {
+            Assert.Contains("Microsoft.HEVCVideoExtension_8wekyb3d8bbwe=", key.CodecVersions, StringComparison.Ordinal);
+        }
+
+        // The same PC asked twice gives the same key.
+        Assert.Equal(key, EncoderCacheKey.ForThisMachine(encoders, decoders));
+    }
+
+    [Fact]
     public async Task AnHevcExportWritesHevcWhereTheEncoderIsListed()
     {
         SkipWithoutGraphicsDevice();

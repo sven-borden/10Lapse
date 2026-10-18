@@ -37,6 +37,7 @@ internal static class ProbeReport
         var second = clock.Elapsed;
         Console.WriteLine($"Listing the encoders: {catalog.TotalMilliseconds:0} ms; the rest of the key: {keyTime.TotalMilliseconds:0} ms");
         Console.WriteLine($"Adapter: {key.AdapterName} ({key.Adapter}), driver {key.Driver}, Windows {key.OsBuild}");
+        Console.WriteLine($"TenLapse.Media {key.MediaVersion}; codec versions {key.CodecVersions}");
         Console.WriteLine($"First load ({(software ? "software probe" : hadCache ? "from the cache" : "probe, no cache")}): {first.TotalMilliseconds:0} ms; second (cache, same process): {second.TotalMilliseconds:0} ms; probe itself: {capabilities.ProbeDuration.TotalMilliseconds:0} ms");
         if (capabilities.DeviceFailure is { } failure)
         {
