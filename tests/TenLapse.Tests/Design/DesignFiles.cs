@@ -19,6 +19,13 @@ internal static class DesignFiles
 
     public static string ThemesFolder => Path.Combine(Root, "src", "TenLapse.App", "Themes");
 
+    /// <summary>Every source file with one of the extensions under src/TenLapse.App, build output (bin, obj) excluded.</summary>
+    public static IEnumerable<string> AppSources(params string[] extensions) =>
+        Directory.EnumerateFiles(Path.Combine(Root, "src", "TenLapse.App"), "*", SearchOption.AllDirectories)
+            .Where(file => extensions.Any(extension => file.EndsWith(extension, StringComparison.OrdinalIgnoreCase)))
+            .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                && !file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase));
+
     public static XDocument LoadTheme(string file) => XDocument.Load(Path.Combine(ThemesFolder, file));
 
     /// <summary>The entries of a theme dictionary ("Light", "Dark" or "HighContrast"), by x:Key.</summary>
@@ -79,6 +86,14 @@ internal static class DesignFiles
         }
 
         return tokens;
+    }
+
+    /// <summary>The Deep Amber Indicator tonal ramp from .impeccable/design.json, as upper-case #RRGGBB.</summary>
+    public static HashSet<string> IndicatorRamp()
+    {
+        using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(Root, ".impeccable", "design.json")));
+        return document.RootElement.GetProperty("extensions").GetProperty("colorMeta").GetProperty("deep-amber-indicator").GetProperty("tonalRamp")
+            .EnumerateArray().Select(step => step.GetString()!.ToUpperInvariant()).ToHashSet();
     }
 
     /// <summary>"golden-hour-amber" becomes "GoldenHourAmber"; "2xl" stays "2xl".</summary>
