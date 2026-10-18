@@ -60,42 +60,33 @@ public sealed class DiagnosticsCollector
     /// <summary>How many log lines the diagnostics end with.</summary>
     public const int LogLineCount = 200;
 
-    /// <summary>What the user's profile folder reads as in the copied text.</summary>
-    public const string ProfilePlaceholder = "%USERPROFILE%";
-
     private readonly IReadOnlyList<IDiagnosticsContributor> _contributors;
     private readonly ILog _log;
     private readonly TimeProvider _clock;
-    private readonly string? _profileFolder;
+    private readonly DiagnosticsRedaction _redaction;
 
     /// <param name="contributors">The sections, in order.</param>
     /// <param name="log">Whose last <see cref="LogLineCount"/> lines end the text.</param>
     /// <param name="clock">For the time stamp at the top; the system clock by default.</param>
-    /// <param name="profileFolder">
-    /// The user's profile folder (C:\Users\name), replaced by <see cref="ProfilePlaceholder"/> everywhere in the text
-    /// so a pasted report does not carry the account name; the current user's by default.
+    /// <param name="redaction">
+    /// Takes the account out of the whole text (profile folder, user name, work OneDrive organization) so a pasted
+    /// report does not name the person; the current user's by default.
     /// </param>
-    public DiagnosticsCollector(IEnumerable<IDiagnosticsContributor> contributors, ILog log, TimeProvider? clock = null, string? profileFolder = null)
+    public DiagnosticsCollector(IEnumerable<IDiagnosticsContributor> contributors, ILog log, TimeProvider? clock = null, DiagnosticsRedaction? redaction = null)
     {
         ArgumentNullException.ThrowIfNull(contributors);
         ArgumentNullException.ThrowIfNull(log);
         _contributors = contributors.ToArray();
         _log = log;
         _clock = clock ?? TimeProvider.System;
-        _profileFolder = profileFolder ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        _redaction = redaction ?? DiagnosticsRedaction.ForCurrentUser();
     }
 
     /// <summary>
-    /// The diagnostics text, with the profile folder replaced. Never throws for a contributor: its failure becomes a
-    /// line in its section.
+    /// The diagnostics text, with the account redacted (<see cref="DiagnosticsRedaction"/>). Never throws for a
+    /// contributor: its failure becomes a line in its section.
     /// </summary>
-    public string Collect()
-    {
-        var text = Build();
-        return string.IsNullOrEmpty(_profileFolder) || _profileFolder.Length < 4
-            ? text
-            : text.Replace(_profileFolder.TrimEnd('\\', '/'), ProfilePlaceholder, StringComparison.OrdinalIgnoreCase);
-    }
+    public string Collect() => _redaction.Apply(Build());
 
     private string Build()
     {

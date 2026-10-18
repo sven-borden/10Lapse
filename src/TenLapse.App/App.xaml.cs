@@ -83,7 +83,10 @@ public partial class App : Application
 
         // Copy diagnostics. #9 and #23 add an encoder capabilities contributor to this list.
         var diagnostics = new DiagnosticsCopier(
-            new DiagnosticsCollector([new AppDiagnostics(), new GraphicsDiagnostics()], _log),
+            new DiagnosticsCollector(
+                [new AppDiagnostics(), new GraphicsDiagnostics()],
+                _log,
+                redaction: DiagnosticsRedaction.ForCurrentUser(AppEnvironment.ShortProfileFolder())),
             new ClipboardService(),
             infoBars);
 

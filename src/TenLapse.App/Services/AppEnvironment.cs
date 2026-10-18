@@ -39,6 +39,30 @@ internal static class AppEnvironment
         return Path.Combine(string.IsNullOrEmpty(local) ? Path.GetTempPath() : local, "10Lapse", "Logs");
     }
 
+    /// <summary>
+    /// The profile folder's 8.3 short form (<c>C:\Users\JANEDO~1</c>), which some paths in exception messages carry,
+    /// so Copy diagnostics can redact it too. Null when Windows has none or cannot say. Never throws.
+    /// </summary>
+    public static string? ShortProfileFolder()
+    {
+        try
+        {
+            var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (string.IsNullOrEmpty(profile))
+            {
+                return null;
+            }
+
+            var buffer = new char[1024];
+            var length = GetShortPathNameW(profile, buffer, (uint)buffer.Length);
+            return length is > 0 and < 1024 ? new string(buffer, 0, (int)length) : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     private static bool ReadPackageIdentity()
     {
         try
@@ -55,4 +79,8 @@ internal static class AppEnvironment
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern int GetCurrentPackageFullName(ref uint packageFullNameLength, IntPtr packageFullName);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static extern uint GetShortPathNameW(string longPath, [Out] char[] shortPath, uint bufferLength);
 }

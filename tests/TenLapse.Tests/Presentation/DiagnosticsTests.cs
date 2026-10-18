@@ -15,7 +15,7 @@ public sealed class DiagnosticsTests
             log.Write(TenLapse.Core.Diagnostics.LogLevel.Info, $"line {i}");
         }
 
-        var text = new DiagnosticsCollector([new Section("App", "Version", "3.0.0.0"), new Section("Encoders", "H.264", "NVIDIA, hardware")], log, profileFolder: @"C:\Users\Sven").Collect();
+        var text = new DiagnosticsCollector([new Section("App", "Version", "3.0.0.0"), new Section("Encoders", "H.264", "NVIDIA, hardware")], log, redaction: new DiagnosticsRedaction(@"C:\Users\Sven")).Collect();
 
         Assert.StartsWith("10Lapse diagnostics", text, StringComparison.Ordinal);
         Assert.Contains("## App\r\nVersion: 3.0.0.0", text.ReplaceLineEndings("\r\n"), StringComparison.Ordinal);
@@ -29,7 +29,7 @@ public sealed class DiagnosticsTests
     [Fact]
     public void AContributorThatFailsIsNotedAndTheRestStillCome()
     {
-        var text = new DiagnosticsCollector([new Failing(), new Section("Graphics", "Adapter 1", "GPU")], new FakeLog(), profileFolder: @"C:\Users\Sven").Collect();
+        var text = new DiagnosticsCollector([new Failing(), new Section("Graphics", "Adapter 1", "GPU")], new FakeLog(), redaction: new DiagnosticsRedaction(@"C:\Users\Sven")).Collect();
 
         Assert.Contains("## Broken", text, StringComparison.Ordinal);
         Assert.Contains("Not available: InvalidOperationException: DXGI is gone", text, StringComparison.Ordinal);
@@ -43,10 +43,51 @@ public sealed class DiagnosticsTests
         var log = new FakeLog();
         log.Write(TenLapse.Core.Diagnostics.LogLevel.Error, @"Could not read c:\users\sven\Pictures\Harbor\IMG_4402.JPG");
 
-        var text = new DiagnosticsCollector([], log, profileFolder: @"C:\Users\Sven\").Collect();
+        var text = new DiagnosticsCollector([], log, redaction: new DiagnosticsRedaction(@"C:\Users\Sven\")).Collect();
 
         Assert.Contains(@"%USERPROFILE%\Pictures\Harbor\IMG_4402.JPG", text, StringComparison.Ordinal);
         Assert.DoesNotContain("sven", text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(@"Could not read C:\Users\Sven\Pictures\a.jpg", @"Could not read %USERPROFILE%\Pictures\a.jpg")]
+    [InlineData(@"Could not read c:/users/sven/Pictures/b.jpg", @"Could not read %USERPROFILE%/Pictures/b.jpg")]
+    [InlineData(@"Uri file:///C:/Users/Sven/Pictures/c.jpg failed", @"Uri file:///%USERPROFILE%/Pictures/c.jpg failed")]
+    [InlineData(@"Temp C:\Users\SVEN~1\AppData\Local\Temp\x.tmp is locked", @"Temp %USERPROFILE%\AppData\Local\Temp\x.tmp is locked")]
+    [InlineData(@"{""path"":""C:\\Users\\Sven\\Pictures\\g.jpg""}", @"{""path"":""%USERPROFILE%\\Pictures\\g.jpg""}")]
+    [InlineData(@"Copying D:\Backup\Sven\Harbor\d.jpg", @"Copying D:\Backup\%USERNAME%\Harbor\d.jpg")]
+    [InlineData(@"Share \\nas\homes\sven is offline", @"Share \\nas\homes\%USERNAME% is offline")]
+    [InlineData(@"Reading C:\Users\Sven\OneDrive - Contoso Ltd\Pictures\e.jpg", @"Reading %USERPROFILE%\OneDrive - <organization>\Pictures\e.jpg")]
+    [InlineData(@"Reading E:\OneDrive - Fabrikam\f.jpg", @"Reading E:\OneDrive - <organization>\f.jpg")]
+    [InlineData(@"Reading D:\Photos\Svenja\h.jpg", @"Reading D:\Photos\Svenja\h.jpg")]
+    public void TheAccountIsTakenOutOfEveryFormOfAPath(string line, string expected)
+    {
+        var redaction = new DiagnosticsRedaction(@"C:\Users\Sven", "Sven", @"C:\Users\SVEN~1");
+
+        Assert.Equal(expected, redaction.Apply(line));
+    }
+
+    [Fact]
+    public void AProfileWithASpaceIsRedactedInItsEscapedForm()
+    {
+        var redaction = new DiagnosticsRedaction(@"C:\Users\Jane Doe", "Jane Doe");
+
+        Assert.Equal("file:///%USERPROFILE%/Pictures/a.jpg", redaction.Apply("file:///C:/Users/Jane%20Doe/Pictures/a.jpg"));
+        Assert.Equal(@"E:\Backup\%USERNAME%\a.jpg", redaction.Apply(@"E:\Backup\Jane Doe\a.jpg"));
+    }
+
+    [Fact]
+    public void TheCollectorRedactsTheContributorsAndTheLog()
+    {
+        var log = new FakeLog();
+        log.Write(TenLapse.Core.Diagnostics.LogLevel.Error, @"Could not open C:\Users\SVEN~1\OneDrive - Contoso\Pictures\Harbor");
+
+        var text = new DiagnosticsCollector([new Section("App", "Data", @"C:/Users/Sven/AppData")], log, redaction: new DiagnosticsRedaction(@"C:\Users\Sven", "Sven", @"C:\Users\SVEN~1")).Collect();
+
+        Assert.DoesNotContain("sven", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Contoso", text, StringComparison.Ordinal);
+        Assert.Contains("Data: %USERPROFILE%/AppData", text, StringComparison.Ordinal);
+        Assert.Contains(@"%USERPROFILE%\OneDrive - <organization>\Pictures\Harbor", text, StringComparison.Ordinal);
     }
 
     [Fact]
