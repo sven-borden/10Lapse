@@ -34,7 +34,15 @@ public sealed record VideoExportResult(int FrameCount, long Duration, VideoEncod
 /// <para>
 /// Sample time and duration of frame n are <see cref="FrameTiming.FrameStart"/>
 /// and <see cref="FrameTiming.FrameDuration"/>, never accumulated. Every export
-/// runs on its own <see cref="VideoDevice"/>; frame sources get that device.
+/// runs on its own <see cref="VideoDevice"/>, created and disposed by the export;
+/// frame sources get that device.
+/// </para>
+/// <para>
+/// <see cref="ExportAsync(IFrameSource, string, VideoExportSettings, IProgress{int}?, CancellationToken)"/>
+/// may be called from any thread, the UI thread included: the whole run, device
+/// and encoder too, lives on thread pool (MTA) threads, and frame sources are
+/// called there. A frame source must not hand the export COM objects created on
+/// an STA. The export returns only once every load it started has finished.
 /// </para>
 /// </remarks>
 public static class VideoExporter
@@ -45,7 +53,10 @@ public static class VideoExporter
     /// <summary>Writes every frame of <paramref name="source"/> to an H.264 MP4 at <paramref name="outputPath"/>, replacing it.</summary>
     /// <param name="progress">Receives the number of frames the encoder has taken, from worker threads.</param>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
-    /// <exception cref="VideoExportException">The encoder refused the settings or failed.</exception>
+    /// <exception cref="VideoExportException">
+    /// The export failed for a reason <see cref="VideoExportException.Failure"/> names: no usable graphics device,
+    /// the output folder, the disk, the driver, memory or the encoder. Bugs in our own code surface as themselves.
+    /// </exception>
     /// <remarks>
     /// Any exception a frame source throws is rethrown as it is. Once the encoder has opened the output file, a
     /// failure or a cancellation deletes it; a file that was there before and could not be opened is left alone.
