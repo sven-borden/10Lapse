@@ -174,8 +174,43 @@ public sealed class EncoderCapabilitiesTests
         Assert.True(new EncoderCapabilities([], [], TimeSpan.Zero, VideoExportFailure.NoGraphicsDevice).IsProvisional);
         Assert.True(Set(Probe(H264, 3840, 2160, 60, EncoderKind.None, VideoExportFailure.GraphicsDeviceLost)).IsProvisional);
         Assert.True(Set(Probe(H264, 3840, 2160, 60, EncoderKind.None, VideoExportFailure.DiskFull)).IsProvisional);
+        Assert.True(Set(Probe(H264, 3840, 2160, 60, EncoderKind.None, VideoExportFailure.EncoderStalled)).IsProvisional);
         Assert.False(Set(Probe(H264, 3840, 2160, 60, EncoderKind.None, VideoExportFailure.EncoderUnavailable)).IsProvisional);
+        Assert.False(Set(Probe(H264, 3840, 2160, 60, EncoderKind.None, VideoExportFailure.SettingsRejected)).IsProvisional);
     }
+
+    [Fact]
+    public void AnEncoderFailureWithoutACauseIsNotCached()
+    {
+        // E_FAIL on the first sample: maybe a driver hiccup, so the next start asks again.
+        var failed = Set(Probe(H264, 3840, 2160, 60, EncoderKind.Hardware), Probe(Hevc, 3840, 2160, 60, EncoderKind.None, VideoExportFailure.EncoderFailed));
+
+        Assert.True(failed.IsProvisional);
+        Assert.Throws<ArgumentException>(() => EncoderCapabilitiesCache.Write(Path.Combine(Path.GetTempPath(), "TenLapse.Tests", "never.json"), Key, failed));
+    }
+
+    [Fact]
+    public void AListedGpuEncoderThatNeverRanOnTheHardwareIsNotCached()
+    {
+        EncoderMft gpu = new(H264, "GPU H.264 Encoder MFT", true, Guid.NewGuid());
+        EncoderMft software = new(H264, "H264 Encoder MFT", false, Guid.NewGuid());
+        EncoderMft hevcSoftware = new(Hevc, "HEVCVideoExtensionEncoder", false, Guid.Empty);
+        ProbedSize[] softwareOnly = [Probe(H264, 3840, 2160, 120, EncoderKind.Software), Probe(H264, 2160, 3840, 120, EncoderKind.Software)];
+
+        // The GPU encoder is listed, yet every size came back from the software encoder: the GPU may be busy or mid-update.
+        var withGpu = new EncoderCapabilities([gpu, software, hevcSoftware], softwareOnly, TimeSpan.FromSeconds(1));
+        Assert.True(withGpu.IsProvisional);
+        Assert.Throws<ArgumentException>(() => EncoderCapabilitiesCache.Write(Path.Combine(Path.GetTempPath(), "TenLapse.Tests", "never.json"), Key, withGpu));
+
+        // No GPU encoder listed: software is the answer, and it is cached. One hardware result is enough too.
+        Assert.False(new EncoderCapabilities([software, hevcSoftware], softwareOnly, TimeSpan.FromSeconds(1)).IsProvisional);
+        Assert.False(new EncoderCapabilities(
+            [gpu, software],
+            [Probe(H264, 3840, 2160, 120, EncoderKind.Software), Probe(H264, 1920, 1080, 120, EncoderKind.Hardware)],
+            TimeSpan.FromSeconds(1)).IsProvisional);
+    }
+
+    private static EncoderCacheKey Key { get; } = new(EncoderCacheKey.CurrentSchema, "adapter", "name", "1.0", "10.0.1.1", "encoders");
 
     [Fact]
     public void AProbeWithANonsenseSizeIsRefused() =>

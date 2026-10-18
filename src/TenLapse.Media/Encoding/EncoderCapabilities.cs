@@ -58,8 +58,12 @@ public sealed record ProbedSize(
 /// </remarks>
 public sealed class EncoderCapabilities
 {
+    // Failures that may not happen on the next try. EncoderFailed counts: it names no cause (E_FAIL from a driver
+    // mid-update, an encoder that fails its first sample), while a size the encoder cannot take comes back as
+    // SettingsRejected and a missing encoder as EncoderUnavailable, which are answers.
     private static readonly HashSet<VideoExportFailure> _transient =
     [
+        VideoExportFailure.EncoderFailed,
         VideoExportFailure.NoGraphicsDevice,
         VideoExportFailure.GraphicsDeviceLost,
         VideoExportFailure.OutOfMemory,
@@ -115,11 +119,17 @@ public sealed class EncoderCapabilities
     public VideoExportFailure? DeviceFailure { get; }
 
     /// <summary>
-    /// True when the answer may change on the next try (no device, a driver reset, a full disk during the
-    /// probe): it is not cached, so the next start probes again.
+    /// True when the answer may change on the next try: it is not cached, so the next start probes again. That is
+    /// when no probe could run (no device), when a test encode failed in a way that may not repeat (a driver reset,
+    /// a full disk, a stall, or <see cref="VideoExportFailure.EncoderFailed"/>, which names no cause), or when a
+    /// listed GPU encoder never produced a hardware result for its codec: a GPU encoder that takes no size at all is
+    /// more likely busy, mid-update or still starting than really unable, and caching that would hide the GPU until
+    /// the next driver update. A probe with hardware transforms off is provisional on a PC with a GPU encoder.
     /// </summary>
     public bool IsProvisional =>
-        DeviceFailure is not null || Probes.Any(probe => probe.Failure is { } failure && _transient.Contains(failure));
+        DeviceFailure is not null
+        || Probes.Any(probe => probe.Failure is { } failure && _transient.Contains(failure))
+        || Encoders.Any(encoder => encoder.IsHardware && !HasHardware(encoder.Format));
 
     /// <summary>The encoder an export of this size and rate would run on (see the remarks).</summary>
     public EncoderKind EncoderFor(VideoFormat format, int width, int height, Fraction frameRate)

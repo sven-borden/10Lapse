@@ -169,6 +169,7 @@ public sealed class EncoderSearchTests
         Assert.True(capabilities.IsAvailable(H264));
         Assert.False(capabilities.IsAvailable(Hevc));
         Assert.Null(capabilities.MaxResolution(Hevc, FrameAspect.Ratio9x16, new Fraction(30, 1)));
+        Assert.True(capabilities.IsProvisional, "A failure without a cause must not be cached.");
     }
 
     [Fact]
@@ -226,6 +227,7 @@ public sealed class EncoderSearchTests
             Assert.Equal(3, probes.Count);
             Assert.Equal(EncoderKind.None, last.Encoder);
             Assert.InRange(last.Milliseconds, 150, 10_000);
+            Assert.True(Result(encoders, probes).IsProvisional, "A stalled probe must not be cached.");
         }
         finally
         {
