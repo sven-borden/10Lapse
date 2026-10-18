@@ -38,6 +38,9 @@ public sealed partial class MainWindow : Window
     // The command bar's controls, carved out of the drag region (physical pixels), as last set.
     private RectInt32[] _passthrough = [];
 
+    // Set when the window closes: the layout passes that still come must not touch the AppWindow.
+    private bool _closed;
+
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
     /// <param name="infoBars">The InfoBars to float over the stage; the composition root hands the same queue to whoever raises them.</param>
@@ -83,6 +86,7 @@ public sealed partial class MainWindow : Window
 
         Closed += (_, _) =>
         {
+            _closed = true;
             ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
             AppWindow.Changed -= OnAppWindowChanged;
             _uiSettings.ColorValuesChanged -= OnColorValuesChanged;
@@ -160,7 +164,8 @@ public sealed partial class MainWindow : Window
     // their own input. Their rectangles follow every layout pass, and are only sent when they moved.
     private void UpdatePassthrough()
     {
-        if (_shell.XamlRoot is null)
+        // A layout pass can still run while the window closes, when its AppWindow is already gone.
+        if (_closed || _shell.XamlRoot is null || AppWindow is null)
         {
             return;
         }
