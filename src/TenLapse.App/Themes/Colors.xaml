@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Color tokens from DESIGN.md (and its sidecar .impeccable/design.json): the only place literal colors may live.
+
+  Every token is a Color (<Name>Color) and a SolidColorBrush (<Name>Brush) in each of the Light, Dark
+  and HighContrast theme dictionaries, so a control looks up one key and gets the value for the current
+  theme. HighContrast maps to Windows system colors and has no amber (DESIGN.md Overview; Color canvas,
+  high contrast table). Keys not tied to a theme (letterbox, the day-to-night ramp) sit at the root.
+  Control-level overrides that use these are in ControlOverrides.xaml.
+
+  Keys follow the DESIGN.md token names in PascalCase: golden-hour-amber is GoldenHourAmberColor and
+  GoldenHourAmberBrush; the "-light" and "-dark" variants are the same key in the Light and Dark dictionaries.
+
+  Amber rule: GoldenHourAmber* is the Export fill only. DeepAmberIndicator* is the state indicator
+  (progress, scrubber, playhead ring, toggles that are on, selection). Never use GoldenHourAmber for an
+  indicator in the light theme (2.26:1 on the layer).
+-->
+<ResourceDictionary
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <!-- Brand and indicator -->
+      <Color x:Key="GoldenHourAmberColor">#E8962E</Color>
+      <Color x:Key="GoldenHourAmberHoverColor">#EEA444</Color>
+      <Color x:Key="GoldenHourAmberPressedColor">#D78722</Color>
+      <Color x:Key="GoldenHourAmberStrokeColor">#3878460A</Color>
+      <Color x:Key="GoldenHourAmberTintColor">#14E8962E</Color>
+      <Color x:Key="DeepAmberIndicatorColor">#B5620D</Color>
+      <Color x:Key="OnIndicatorColor">#FEFDFC</Color>
+      <Color x:Key="EmberLinkColor">#9A5208</Color>
+      <Color x:Key="NightInkOnAmberColor">#1F1404</Color>
+      <Color x:Key="NightInkOnAmberPressedColor">#3A2508</Color>
+      <!-- Neutral -->
+      <Color x:Key="MicaColor">#F3F2F0</Color>
+      <Color x:Key="LayerColor">#FAF9F7</Color>
+      <Color x:Key="CardColor">#FEFDFC</Color>
+      <Color x:Key="ControlFillColor">#FEFDFC</Color>
+      <Color x:Key="ControlStrokeColor">#DCDAD5</Color>
+      <Color x:Key="DividerColor">#E7E5E1</Color>
+      <Color x:Key="SegmentTrackColor">#F0EEEB</Color>
+      <Color x:Key="SegmentPillColor">#FEFDFC</Color>
+      <Color x:Key="TrackColor">#E4E2DE</Color>
+      <Color x:Key="DropZoneStrokeColor">#CFCCC6</Color>
+      <Color x:Key="InkColor">#1C1B19</Color>
+      <Color x:Key="InkSecondaryColor">#5D5A55</Color>
+      <!-- Status (InfoBars and the finished state, always with an icon) -->
+      <Color x:Key="SuccessColor">#0F7B0F</Color>
+      <Color x:Key="SuccessFillColor">#DFF6DD</Color>
+      <Color x:Key="CautionColor">#9D5D00</Color>
+      <Color x:Key="CautionFillColor">#FFF7DB</Color>
+      <Color x:Key="CriticalColor">#C42B1C</Color>
+      <Color x:Key="CriticalFillColor">#FDE7E9</Color>
+      <!-- Shadow colors for the elevation tokens in Layout.xaml (translucent, so the alpha leads) -->
+      <Color x:Key="ShadowFlyoutColor">#291C1B19</Color>
+      <Color x:Key="ShadowFlyoutKeyColor">#0F1C1B19</Color>
+      <Color x:Key="ShadowPillColor">#241C1B19</Color>
+      <Color x:Key="ShadowPillRingColor">#0A1C1B19</Color>
+
+      <SolidColorBrush x:Key="GoldenHourAmberBrush" Color="{ThemeResource GoldenHourAmberColor}" />
+      <SolidColorBrush x:Key="GoldenHourAmberHoverBrush" Color="{ThemeResource GoldenHourAmberHoverColor}" />
+      <SolidColorBrush x:Key="GoldenHourAmberPressedBrush" Color="{ThemeResource GoldenHourAmberPressedColor}" />
+      <SolidColorBrush x:Key="GoldenHourAmberStrokeBrush" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
+      <SolidColorBrush x:Key="GoldenHourAmberTintBrush" Color="{ThemeResource GoldenHourAmberTintColor}" />
+      <SolidColorBrush x:Key="DeepAmberIndicatorBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="OnIndicatorBrush" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="EmberLinkBrush" Color="{ThemeResource EmberLinkColor}" />
+      <SolidColorBrush x:Key="NightInkOnAmberBrush" Color="{ThemeResource NightInkOnAmberColor}" />
+      <SolidColorBrush x:Key="NightInkOnAmberPressedBrush" Color="{ThemeResource NightInkOnAmberPressedColor}" />
+      <SolidColorBrush x:Key="MicaBrush" Color="{ThemeResource MicaColor}" />
+      <SolidColorBrush x:Key="LayerBrush" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="CardBrush" Color="{ThemeResource CardColor}" />
+      <SolidColorBrush x:Key="ControlFillBrush" Color="{ThemeResource ControlFillColor}" />
+      <SolidColorBrush x:Key="ControlStrokeBrush" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="DividerBrush" Color="{ThemeResource DividerColor}" />
+      <SolidColorBrush x:Key="SegmentTrackBrush" Color="{ThemeResource SegmentTrackColor}" />
+      <SolidColorBrush x:Key="SegmentPillBrush" Color="{ThemeResource SegmentPillColor}" />
+      <SolidColorBrush x:Key="TrackBrush" Color="{ThemeResource TrackColor}" />
+      <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="{ThemeResource DropZoneStrokeColor}" />
+      <SolidColorBrush x:Key="InkBrush" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InkSecondaryBrush" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="SuccessBrush" Color="{ThemeResource SuccessColor}" />
+      <SolidColorBrush x:Key="SuccessFillBrush" Color="{ThemeResource SuccessFillColor}" />
+      <SolidColorBrush x:Key="CautionBrush" Color="{ThemeResource CautionColor}" />
+      <SolidColorBrush x:Key="CautionFillBrush" Color="{ThemeResource CautionFillColor}" />
+      <SolidColorBrush x:Key="CriticalBrush" Color="{ThemeResource CriticalColor}" />
+      <SolidColorBrush x:Key="CriticalFillBrush" Color="{ThemeResource CriticalFillColor}" />
+      <SolidColorBrush x:Key="ShadowFlyoutBrush" Color="{ThemeResource ShadowFlyoutColor}" />
+      <SolidColorBrush x:Key="ShadowFlyoutKeyBrush" Color="{ThemeResource ShadowFlyoutKeyColor}" />
+      <SolidColorBrush x:Key="ShadowPillBrush" Color="{ThemeResource ShadowPillColor}" />
+      <SolidColorBrush x:Key="ShadowPillRingBrush" Color="{ThemeResource ShadowPillRingColor}" />
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Dark">
+      <!-- Brand and indicator -->
+      <Color x:Key="GoldenHourAmberColor">#F0A54A</Color>
+      <Color x:Key="GoldenHourAmberHoverColor">#F4B35F</Color>
+      <Color x:Key="GoldenHourAmberPressedColor">#D9923A</Color>
+      <Color x:Key="GoldenHourAmberStrokeColor">#2EFFE6BE</Color>
+      <Color x:Key="GoldenHourAmberTintColor">#1AF0A54A</Color>
+      <Color x:Key="DeepAmberIndicatorColor">#F0A54A</Color>
+      <Color x:Key="OnIndicatorColor">#1F1404</Color>
+      <Color x:Key="EmberLinkColor">#F3B05C</Color>
+      <Color x:Key="NightInkOnAmberColor">#1F1404</Color>
+      <Color x:Key="NightInkOnAmberPressedColor">#1F1404</Color>
+      <!-- Neutral -->
+      <Color x:Key="MicaColor">#1F1E1D</Color>
+      <Color x:Key="LayerColor">#282726</Color>
+      <Color x:Key="CardColor">#302F2D</Color>
+      <Color x:Key="ControlFillColor">#363431</Color>
+      <Color x:Key="ControlStrokeColor">#4A4743</Color>
+      <Color x:Key="DividerColor">#393735</Color>
+      <Color x:Key="SegmentTrackColor">#2E2D2B</Color>
+      <Color x:Key="SegmentPillColor">#4A4743</Color>
+      <Color x:Key="TrackColor">#3F3D3A</Color>
+      <Color x:Key="DropZoneStrokeColor">#5A5651</Color>
+      <Color x:Key="InkColor">#F4F2EE</Color>
+      <Color x:Key="InkSecondaryColor">#C3BFB8</Color>
+      <!-- Status (InfoBars and the finished state, always with an icon) -->
+      <Color x:Key="SuccessColor">#6CCB5F</Color>
+      <Color x:Key="SuccessFillColor">#26381F</Color>
+      <Color x:Key="CautionColor">#FCE100</Color>
+      <Color x:Key="CautionFillColor">#3B321A</Color>
+      <Color x:Key="CriticalColor">#FF99A4</Color>
+      <Color x:Key="CriticalFillColor">#442726</Color>
+      <!-- Shadow colors for the elevation tokens in Layout.xaml (translucent, so the alpha leads) -->
+      <Color x:Key="ShadowFlyoutColor">#80000000</Color>
+      <Color x:Key="ShadowFlyoutKeyColor">#4D000000</Color>
+      <Color x:Key="ShadowPillColor">#66000000</Color>
+      <Color x:Key="ShadowPillRingColor">#00000000</Color>
+
+      <SolidColorBrush x:Key="GoldenHourAmberBrush" Color="{ThemeResource GoldenHourAmberColor}" />
+      <SolidColorBrush x:Key="GoldenHourAmberHoverBrush" Color="{ThemeResource GoldenHourAmberHoverColor}" />
+      <SolidColorBrush x:Key="GoldenHourAmberPressedBrush" Color="{ThemeResource GoldenHourAmberPressedColor}" />
+      <SolidColorBrush x:Key="GoldenHourAmberStrokeBrush" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
+      <SolidColorBrush x:Key="GoldenHourAmberTintBrush" Color="{ThemeResource GoldenHourAmberTintColor}" />
+      <SolidColorBrush x:Key="DeepAmberIndicatorBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="OnIndicatorBrush" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="EmberLinkBrush" Color="{ThemeResource EmberLinkColor}" />
+      <SolidColorBrush x:Key="NightInkOnAmberBrush" Color="{ThemeResource NightInkOnAmberColor}" />
+      <SolidColorBrush x:Key="NightInkOnAmberPressedBrush" Color="{ThemeResource NightInkOnAmberPressedColor}" />
+      <SolidColorBrush x:Key="MicaBrush" Color="{ThemeResource MicaColor}" />
+      <SolidColorBrush x:Key="LayerBrush" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="CardBrush" Color="{ThemeResource CardColor}" />
+      <SolidColorBrush x:Key="ControlFillBrush" Color="{ThemeResource ControlFillColor}" />
+      <SolidColorBrush x:Key="ControlStrokeBrush" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="DividerBrush" Color="{ThemeResource DividerColor}" />
+      <SolidColorBrush x:Key="SegmentTrackBrush" Color="{ThemeResource SegmentTrackColor}" />
+      <SolidColorBrush x:Key="SegmentPillBrush" Color="{ThemeResource SegmentPillColor}" />
+      <SolidColorBrush x:Key="TrackBrush" Color="{ThemeResource TrackColor}" />
+      <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="{ThemeResource DropZoneStrokeColor}" />
+      <SolidColorBrush x:Key="InkBrush" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InkSecondaryBrush" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="SuccessBrush" Color="{ThemeResource SuccessColor}" />
+      <SolidColorBrush x:Key="SuccessFillBrush" Color="{ThemeResource SuccessFillColor}" />
+      <SolidColorBrush x:Key="CautionBrush" Color="{ThemeResource CautionColor}" />
+      <SolidColorBrush x:Key="CautionFillBrush" Color="{ThemeResource CautionFillColor}" />
+      <SolidColorBrush x:Key="CriticalBrush" Color="{ThemeResource CriticalColor}" />
+      <SolidColorBrush x:Key="CriticalFillBrush" Color="{ThemeResource CriticalFillColor}" />
+      <SolidColorBrush x:Key="ShadowFlyoutBrush" Color="{ThemeResource ShadowFlyoutColor}" />
+      <SolidColorBrush x:Key="ShadowFlyoutKeyBrush" Color="{ThemeResource ShadowFlyoutKeyColor}" />
+      <SolidColorBrush x:Key="ShadowPillBrush" Color="{ThemeResource ShadowPillColor}" />
+      <SolidColorBrush x:Key="ShadowPillRingBrush" Color="{ThemeResource ShadowPillRingColor}" />
+    </ResourceDictionary>
+
+    <!-- Every token maps to a Windows system color; photos keep their own colors. -->
+    <ResourceDictionary x:Key="HighContrast">
+      <!-- Brand and indicator -->
+      <StaticResource x:Key="GoldenHourAmberColor" ResourceKey="SystemColorHighlightColor" />
+      <StaticResource x:Key="GoldenHourAmberHoverColor" ResourceKey="SystemColorHighlightColor" />
+      <StaticResource x:Key="GoldenHourAmberPressedColor" ResourceKey="SystemColorHighlightColor" />
+      <StaticResource x:Key="GoldenHourAmberStrokeColor" ResourceKey="SystemColorHighlightTextColor" />
+      <Color x:Key="GoldenHourAmberTintColor">#00000000</Color>
+      <StaticResource x:Key="DeepAmberIndicatorColor" ResourceKey="SystemColorHighlightColor" />
+      <StaticResource x:Key="OnIndicatorColor" ResourceKey="SystemColorHighlightTextColor" />
+      <StaticResource x:Key="EmberLinkColor" ResourceKey="SystemColorHotlightColor" />
+      <StaticResource x:Key="NightInkOnAmberColor" ResourceKey="SystemColorHighlightTextColor" />
+      <StaticResource x:Key="NightInkOnAmberPressedColor" ResourceKey="SystemColorHighlightTextColor" />
+      <!-- Neutral -->
+      <StaticResource x:Key="MicaColor" ResourceKey="SystemColorWindowColor" />
+      <StaticResource x:Key="LayerColor" ResourceKey="SystemColorWindowColor" />
+      <StaticResource x:Key="CardColor" ResourceKey="SystemColorWindowColor" />
+      <StaticResource x:Key="ControlFillColor" ResourceKey="SystemColorButtonFaceColor" />
+      <StaticResource x:Key="ControlStrokeColor" ResourceKey="SystemColorButtonTextColor" />
+      <StaticResource x:Key="DividerColor" ResourceKey="SystemColorButtonTextColor" />
+      <StaticResource x:Key="SegmentTrackColor" ResourceKey="SystemColorButtonFaceColor" />
+      <StaticResource x:Key="SegmentPillColor" ResourceKey="SystemColorWindowColor" />
+      <StaticResource x:Key="TrackColor" ResourceKey="SystemColorButtonFaceColor" />
+      <StaticResource x:Key="DropZoneStrokeColor" ResourceKey="SystemColorButtonTextColor" />
+      <StaticResource x:Key="InkColor" ResourceKey="SystemColorWindowTextColor" />
+      <StaticResource x:Key="InkSecondaryColor" ResourceKey="SystemColorGrayTextColor" />
+      <!-- Status (InfoBars and the finished state, always with an icon) -->
+      <StaticResource x:Key="SuccessColor" ResourceKey="SystemColorWindowTextColor" />
+      <StaticResource x:Key="SuccessFillColor" ResourceKey="SystemColorWindowColor" />
+      <StaticResource x:Key="CautionColor" ResourceKey="SystemColorWindowTextColor" />
+      <StaticResource x:Key="CautionFillColor" ResourceKey="SystemColorWindowColor" />
+      <StaticResource x:Key="CriticalColor" ResourceKey="SystemColorWindowTextColor" />
+      <StaticResource x:Key="CriticalFillColor" ResourceKey="SystemColorWindowColor" />
+      <!-- Shadow colors for the elevation tokens in Layout.xaml (translucent, so the alpha leads) -->
+      <Color x:Key="ShadowFlyoutColor">#00000000</Color>
+      <Color x:Key="ShadowFlyoutKeyColor">#00000000</Color>
+      <Color x:Key="ShadowPillColor">#00000000</Color>
+      <Color x:Key="ShadowPillRingColor">#00000000</Color>
+
+      <SolidColorBrush x:Key="GoldenHourAmberBrush" Color="{ThemeResource GoldenHourAmberColor}" />
+      <SolidColorBrush x:Key="GoldenHourAmberHoverBrush" Color="{ThemeResource GoldenHourAmberHoverColor}" />
+      <SolidColorBrush x:Key="GoldenHourAmberPressedBrush" Color="{ThemeResource GoldenHourAmberPressedColor}" />
+      <SolidColorBrush x:Key="GoldenHourAmberStrokeBrush" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
+      <SolidColorBrush x:Key="GoldenHourAmberTintBrush" Color="{ThemeResource GoldenHourAmberTintColor}" />
+      <SolidColorBrush x:Key="DeepAmberIndicatorBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="OnIndicatorBrush" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="EmberLinkBrush" Color="{ThemeResource EmberLinkColor}" />
+      <SolidColorBrush x:Key="NightInkOnAmberBrush" Color="{ThemeResource NightInkOnAmberColor}" />
+      <SolidColorBrush x:Key="NightInkOnAmberPressedBrush" Color="{ThemeResource NightInkOnAmberPressedColor}" />
+      <SolidColorBrush x:Key="MicaBrush" Color="{ThemeResource MicaColor}" />
+      <SolidColorBrush x:Key="LayerBrush" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="CardBrush" Color="{ThemeResource CardColor}" />
+      <SolidColorBrush x:Key="ControlFillBrush" Color="{ThemeResource ControlFillColor}" />
+      <SolidColorBrush x:Key="ControlStrokeBrush" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="DividerBrush" Color="{ThemeResource DividerColor}" />
+      <SolidColorBrush x:Key="SegmentTrackBrush" Color="{ThemeResource SegmentTrackColor}" />
+      <SolidColorBrush x:Key="SegmentPillBrush" Color="{ThemeResource SegmentPillColor}" />
+      <SolidColorBrush x:Key="TrackBrush" Color="{ThemeResource TrackColor}" />
+      <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="{ThemeResource DropZoneStrokeColor}" />
+      <SolidColorBrush x:Key="InkBrush" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="InkSecondaryBrush" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="SuccessBrush" Color="{ThemeResource SuccessColor}" />
+      <SolidColorBrush x:Key="SuccessFillBrush" Color="{ThemeResource SuccessFillColor}" />
+      <SolidColorBrush x:Key="CautionBrush" Color="{ThemeResource CautionColor}" />
+      <SolidColorBrush x:Key="CautionFillBrush" Color="{ThemeResource CautionFillColor}" />
+      <SolidColorBrush x:Key="CriticalBrush" Color="{ThemeResource CriticalColor}" />
+      <SolidColorBrush x:Key="CriticalFillBrush" Color="{ThemeResource CriticalFillColor}" />
+      <SolidColorBrush x:Key="ShadowFlyoutBrush" Color="{ThemeResource ShadowFlyoutColor}" />
+      <SolidColorBrush x:Key="ShadowFlyoutKeyBrush" Color="{ThemeResource ShadowFlyoutKeyColor}" />
+      <SolidColorBrush x:Key="ShadowPillBrush" Color="{ThemeResource ShadowPillColor}" />
+      <SolidColorBrush x:Key="ShadowPillRingBrush" Color="{ThemeResource ShadowPillRingColor}" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <!-- Not tied to a theme: the preview letterbox and the brand's day-to-night ramp (icon, Store art, sample sequence, empty-state visuals; never chrome or text). -->
+  <Color x:Key="LetterboxColor">#0C0C0D</Color>
+  <Color x:Key="DaylightColor">#C4E0F3</Color>
+  <Color x:Key="GoldenColor">#F6CF86</Color>
+  <Color x:Key="AmberColor">#F29A55</Color>
+  <Color x:Key="RoseColor">#D9677A</Color>
+  <Color x:Key="DuskColor">#6D5A9E</Color>
+  <Color x:Key="BlueHourColor">#2E3A72</Color>
+  <Color x:Key="NightColor">#10162E</Color>
+
+  <SolidColorBrush x:Key="LetterboxBrush" Color="{StaticResource LetterboxColor}" />
+  <SolidColorBrush x:Key="DaylightBrush" Color="{StaticResource DaylightColor}" />
+  <SolidColorBrush x:Key="GoldenBrush" Color="{StaticResource GoldenColor}" />
+  <SolidColorBrush x:Key="AmberBrush" Color="{StaticResource AmberColor}" />
+  <SolidColorBrush x:Key="RoseBrush" Color="{StaticResource RoseColor}" />
+  <SolidColorBrush x:Key="DuskBrush" Color="{StaticResource DuskColor}" />
+  <SolidColorBrush x:Key="BlueHourBrush" Color="{StaticResource BlueHourColor}" />
+  <SolidColorBrush x:Key="NightBrush" Color="{StaticResource NightColor}" />
+
+</ResourceDictionary>

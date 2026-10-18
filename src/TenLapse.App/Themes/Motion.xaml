@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Motion tokens from DESIGN.md (Overview, Motion tokens) and docs/design/canvas/motion/Motion.dc.html.
+  Nothing here animates anything: #35 builds the transitions on these.
+
+  Durations: Tap 83 (press and hover color, linear), Control 167 (toggles, exits, focus, Move),
+  Reveal 250 (InfoBars, readout, segment pill, Enter), Scene 400 (screens, panels, thumbnails, gate, Enter),
+  Cinema 700 (preview develop on arrival, Enter). The theme crossfade is 250 ms linear.
+  Easings: Enter cubic-bezier(0.16, 1, 0.3, 1) for things arriving, Exit cubic-bezier(0.7, 0, 0.84, 0)
+  for things leaving, Move cubic-bezier(0.65, 0, 0.35, 1) for pills, knobs and the gate, and linear for
+  playback and progress (Storyboards are linear without an easing function).
+
+  In a Storyboard: <SplineDoubleKeyFrame KeyTime="0:0:0.250" Value="0" KeySpline="{StaticResource MotionEnterKeySpline}" />
+  and Duration="{StaticResource MotionRevealDuration}". From code and Composition animations use
+  TenLapse.Themes.MotionTokens, which also holds the AnimationsEnabled check. With animations off,
+  movement becomes the short fade (MotionReducedFadeInDuration / MotionReducedFadeOutDuration) or nothing.
+-->
+<ResourceDictionary
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Duration x:Key="MotionTapDuration">0:0:0.083</Duration>
+  <Duration x:Key="MotionControlDuration">0:0:0.167</Duration>
+  <Duration x:Key="MotionRevealDuration">0:0:0.25</Duration>
+  <Duration x:Key="MotionSceneDuration">0:0:0.4</Duration>
+  <Duration x:Key="MotionCinemaDuration">0:0:0.7</Duration>
+  <Duration x:Key="MotionThemeCrossfadeDuration">0:0:0.25</Duration>
+
+  <!-- Reduced motion: movement becomes a short fade -->
+  <Duration x:Key="MotionReducedFadeInDuration">0:0:0.15</Duration>
+  <Duration x:Key="MotionReducedFadeOutDuration">0:0:0.09</Duration>
+
+  <KeySpline x:Key="MotionEnterKeySpline" ControlPoint1="0.16,1" ControlPoint2="0.3,1" />
+  <KeySpline x:Key="MotionExitKeySpline" ControlPoint1="0.7,0" ControlPoint2="0.84,0" />
+  <KeySpline x:Key="MotionMoveKeySpline" ControlPoint1="0.65,0" ControlPoint2="0.35,1" />
+
+</ResourceDictionary>

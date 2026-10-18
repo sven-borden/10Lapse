@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Fluent control overrides so stock controls follow the brand rules without per-page work. Merged after
+  XamlControlsResources and Colors.xaml.
+
+  Decision: each control's own theme resource keys are overridden, not SystemAccentColor. The accent
+  split (amber fill for Export, indicator for state, neutral for everything else) cannot be expressed
+  by one global accent, and XamlControlsResources resolves its internal aliases (ToggleSwitchFillOn to
+  AccentFillColorDefaultBrush) inside its own dictionary, so only the specific keys are reliable.
+  Everything not listed keeps Fluent's neutral defaults.
+
+  The same keys appear in Light, Dark and HighContrast. The values are token brushes from Colors.xaml,
+  which in HighContrast resolve to system colors (Highlight and HighlightText, no amber).
+-->
+<ResourceDictionary
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <!-- Accent button: the Export fill. Amber with night-ink text, a faint warm border; disabled is 40% opacity. -->
+      <SolidColorBrush x:Key="AccentButtonBackground" Color="{ThemeResource GoldenHourAmberColor}" />
+      <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="{ThemeResource GoldenHourAmberHoverColor}" />
+      <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="{ThemeResource GoldenHourAmberPressedColor}" />
+      <SolidColorBrush x:Key="AccentButtonBackgroundDisabled" Color="{ThemeResource GoldenHourAmberColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="AccentButtonForeground" Color="{ThemeResource NightInkOnAmberColor}" />
+      <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="{ThemeResource NightInkOnAmberColor}" />
+      <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="{ThemeResource NightInkOnAmberPressedColor}" />
+      <SolidColorBrush x:Key="AccentButtonForegroundDisabled" Color="{ThemeResource NightInkOnAmberColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
+      <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
+      <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
+      <SolidColorBrush x:Key="AccentButtonBorderBrushDisabled" Color="{ThemeResource GoldenHourAmberStrokeColor}" Opacity="0.4" />
+      <!-- Progress: the indicator on the Track ground. -->
+      <SolidColorBrush x:Key="ProgressBarForeground" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ProgressBarBackground" Color="{ThemeResource TrackColor}" />
+      <SolidColorBrush x:Key="ProgressRingForegroundThemeBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <!-- Slider (the scrubber): the filled part and the thumb dot are the indicator. -->
+      <SolidColorBrush x:Key="SliderTrackFill" Color="{ThemeResource TrackColor}" />
+      <SolidColorBrush x:Key="SliderTrackValueFill" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <!-- Toggle switch: on is the indicator with an OnIndicator knob; off is an Ink Secondary outline and knob. -->
+      <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOnDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="{ThemeResource OnIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="{ThemeResource InkSecondaryColor}" />
+      <!-- Check box and radio button: checked is the indicator. -->
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="{ThemeResource OnIndicatorColor}" />
+      <!-- Selection indicators: the pip beside a selected list item, navigation or pivot entry. -->
+      <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ListViewItemSelectionIndicatorDisabledBrush" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="PivotHeaderItemSelectedPipeFill" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <!-- Focus: the Windows double ring, Ink over the ground (DESIGN.md Elevation, Focus). Text boxes underline in Ink, not accent. -->
+      <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="{ThemeResource InkColor}" />
+      <!-- Text actions: Ember Link. -->
+      <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="{ThemeResource EmberLinkColor}" />
+      <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="{ThemeResource EmberLinkColor}" />
+      <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="{ThemeResource EmberLinkColor}" Opacity="0.8" />
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Dark">
+      <!-- Accent button: the Export fill. Amber with night-ink text, a faint warm border; disabled is 40% opacity. -->
+      <SolidColorBrush x:Key="AccentButtonBackground" Color="{ThemeResource GoldenHourAmberColor}" />
+      <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="{ThemeResource GoldenHourAmberHoverColor}" />
+      <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="{ThemeResource GoldenHourAmberPressedColor}" />
+      <SolidColorBrush x:Key="AccentButtonBackgroundDisabled" Color="{ThemeResource GoldenHourAmberColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="AccentButtonForeground" Color="{ThemeResource NightInkOnAmberColor}" />
+      <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="{ThemeResource NightInkOnAmberColor}" />
+      <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="{ThemeResource NightInkOnAmberPressedColor}" />
+      <SolidColorBrush x:Key="AccentButtonForegroundDisabled" Color="{ThemeResource NightInkOnAmberColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
+      <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
+      <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
+      <SolidColorBrush x:Key="AccentButtonBorderBrushDisabled" Color="{ThemeResource GoldenHourAmberStrokeColor}" Opacity="0.4" />
+      <!-- Progress: the indicator on the Track ground. -->
+      <SolidColorBrush x:Key="ProgressBarForeground" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ProgressBarBackground" Color="{ThemeResource TrackColor}" />
+      <SolidColorBrush x:Key="ProgressRingForegroundThemeBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <!-- Slider (the scrubber): the filled part and the thumb dot are the indicator. -->
+      <SolidColorBrush x:Key="SliderTrackFill" Color="{ThemeResource TrackColor}" />
+      <SolidColorBrush x:Key="SliderTrackValueFill" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <!-- Toggle switch: on is the indicator with an OnIndicator knob; off is an Ink Secondary outline and knob. -->
+      <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOnDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="{ThemeResource OnIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="{ThemeResource InkSecondaryColor}" />
+      <!-- Check box and radio button: checked is the indicator. -->
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="{ThemeResource OnIndicatorColor}" />
+      <!-- Selection indicators: the pip beside a selected list item, navigation or pivot entry. -->
+      <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ListViewItemSelectionIndicatorDisabledBrush" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="PivotHeaderItemSelectedPipeFill" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <!-- Focus: the Windows double ring, Ink over the ground (DESIGN.md Elevation, Focus). Text boxes underline in Ink, not accent. -->
+      <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="{ThemeResource InkColor}" />
+      <!-- Text actions: Ember Link. -->
+      <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="{ThemeResource EmberLinkColor}" />
+      <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="{ThemeResource EmberLinkColor}" />
+      <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="{ThemeResource EmberLinkColor}" Opacity="0.8" />
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="HighContrast">
+      <!-- Accent button: the Export fill. Amber with night-ink text, a faint warm border; disabled is 40% opacity. -->
+      <SolidColorBrush x:Key="AccentButtonBackground" Color="{ThemeResource GoldenHourAmberColor}" />
+      <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="{ThemeResource GoldenHourAmberHoverColor}" />
+      <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="{ThemeResource GoldenHourAmberPressedColor}" />
+      <SolidColorBrush x:Key="AccentButtonBackgroundDisabled" Color="{ThemeResource GoldenHourAmberColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="AccentButtonForeground" Color="{ThemeResource NightInkOnAmberColor}" />
+      <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="{ThemeResource NightInkOnAmberColor}" />
+      <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="{ThemeResource NightInkOnAmberPressedColor}" />
+      <SolidColorBrush x:Key="AccentButtonForegroundDisabled" Color="{ThemeResource NightInkOnAmberColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
+      <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
+      <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="{ThemeResource GoldenHourAmberStrokeColor}" />
+      <SolidColorBrush x:Key="AccentButtonBorderBrushDisabled" Color="{ThemeResource GoldenHourAmberStrokeColor}" Opacity="0.4" />
+      <!-- Progress: the indicator on the Track ground. -->
+      <SolidColorBrush x:Key="ProgressBarForeground" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ProgressBarBackground" Color="{ThemeResource TrackColor}" />
+      <SolidColorBrush x:Key="ProgressRingForegroundThemeBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <!-- Slider (the scrubber): the filled part and the thumb dot are the indicator. -->
+      <SolidColorBrush x:Key="SliderTrackFill" Color="{ThemeResource TrackColor}" />
+      <SolidColorBrush x:Key="SliderTrackValueFill" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <!-- Toggle switch: on is the indicator with an OnIndicator knob; off is an Ink Secondary outline and knob. -->
+      <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOnDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="{ThemeResource OnIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="{ThemeResource InkSecondaryColor}" />
+      <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="{ThemeResource InkSecondaryColor}" />
+      <!-- Check box and radio button: checked is the indicator. -->
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="{ThemeResource OnIndicatorColor}" />
+      <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="{ThemeResource OnIndicatorColor}" />
+      <!-- Selection indicators: the pip beside a selected list item, navigation or pivot entry. -->
+      <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="ListViewItemSelectionIndicatorDisabledBrush" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
+      <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <SolidColorBrush x:Key="PivotHeaderItemSelectedPipeFill" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <!-- Focus: the Windows double ring, Ink over the ground (DESIGN.md Elevation, Focus). Text boxes underline in Ink, not accent. -->
+      <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="{ThemeResource InkColor}" />
+      <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="{ThemeResource LayerColor}" />
+      <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="{ThemeResource InkColor}" />
+      <!-- Text actions: Ember Link. -->
+      <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="{ThemeResource EmberLinkColor}" />
+      <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="{ThemeResource EmberLinkColor}" />
+      <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="{ThemeResource EmberLinkColor}" Opacity="0.8" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+</ResourceDictionary>
