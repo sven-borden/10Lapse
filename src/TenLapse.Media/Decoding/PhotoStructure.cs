@@ -2,59 +2,104 @@ using System.Buffers;
 
 namespace TenLapse.Media.Decoding;
 
+/// <summary>Reads bytes of a file at <paramref name="offset"/> into <paramref name="buffer"/>; returns how many (0 past the end).</summary>
+internal delegate int ReadAt(long offset, Span<byte> buffer);
+
 /// <summary>
-/// Whether a JPEG file holds its whole image. WIC's JPEG decoder decodes a file cut short without an error (it
+/// Whether a photo file holds its whole image. WIC's JPEG decoder decodes a file cut short without an error (it
 /// fills the missing rows with gray and only prints "premature end of data segment"), so a truncated photo would
-/// pass for a whole one; this finds the end-of-image marker instead.
+/// pass for a whole one; this finds the format's end marker instead.
 /// </summary>
-internal static class JpegStructure
+/// <remarks>
+/// It reads through a <see cref="ReadAt"/> bounded by a length captured once: the bytes the decoder gets (the
+/// in-memory copy) or the handle the header was read through, never the file again by its path.
+/// </remarks>
+internal static class PhotoStructure
 {
+    /// <summary>How many bytes from the start of the file the checks look at to tell the format.</summary>
+    public const int HeaderLength = 64;
+
     private const int BufferSize = 256 * 1024;
 
     /// <summary>
-    /// True when the file's image data reaches its end-of-image marker (EOI). A file that ends with EOI answers at
-    /// once; one that does not (cut short, or with data after the image such as a motion photo's video) is
-    /// walked marker by marker through its compressed data, which reads it whole. A file that does not start like
-    /// a JPEG answers true: it is not this check's to judge.
+    /// True when the file reaches its format's end: a JPEG its end-of-image marker (EOI). A format this does not
+    /// know answers true: it is not this check's to judge.
     /// </summary>
-    public static bool EndsCompletely(string path)
+    /// <param name="header">The first bytes of the file (up to <see cref="HeaderLength"/>).</param>
+    /// <param name="length">The file's length, as captured when it was opened.</param>
+    /// <param name="read">Reads the file at an offset.</param>
+    public static bool EndsCompletely(ReadOnlySpan<byte> header, long length, ReadAt read)
     {
-        using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, bufferSize: 1, FileOptions.SequentialScan);
-        if (file.Length < 4)
+        ArgumentNullException.ThrowIfNull(read);
+        return IsJpeg(header) ? JpegEndsCompletely(length, read) : true;
+    }
+
+    /// <summary>A reader over bytes already in memory.</summary>
+    public static ReadAt Over(byte[] bytes, int length) => (offset, buffer) =>
+    {
+        if (offset >= length)
+        {
+            return 0;
+        }
+
+        var count = (int)Math.Min(buffer.Length, length - offset);
+        bytes.AsSpan((int)offset, count).CopyTo(buffer);
+        return count;
+    };
+
+    private static bool IsJpeg(ReadOnlySpan<byte> header) => header is [0xFF, 0xD8, 0xFF, ..];
+
+    /// <remarks>
+    /// A file that ends with EOI answers at once; one that does not (cut short, or with data after the image such
+    /// as a motion photo's video) is walked marker by marker through its compressed data, which reads it whole.
+    /// A JPEG whose data is complete but whose EOI alone is missing counts as cut: telling the two apart would
+    /// take decoding the entropy-coded data, and such files are rare (a writer that stopped one marker short).
+    /// </remarks>
+    private static bool JpegEndsCompletely(long length, ReadAt read)
+    {
+        if (length < 4)
         {
             return false;
         }
 
         Span<byte> tail = stackalloc byte[2];
-        file.Seek(-2, SeekOrigin.End);
-        file.ReadExactly(tail);
-        if (tail[0] == 0xFF && tail[1] == 0xD9)
+        if (ReadFully(read, length - 2, tail) && tail[0] == 0xFF && tail[1] == 0xD9)
         {
             return true;
         }
 
-        file.Seek(0, SeekOrigin.Begin);
-        var reader = new Reader(file);
-        try
-        {
-            return reader.Walk();
-        }
-        finally
-        {
-            reader.Dispose();
-        }
+        using var reader = new Reader(read, length);
+        return reader.WalkJpeg();
     }
 
-    // A forward-only reader over the file in large chunks, so the scan of compressed data is a vectorised search.
-    private sealed class Reader(Stream stream) : IDisposable
+    private static bool ReadFully(ReadAt read, long offset, Span<byte> buffer)
+    {
+        while (!buffer.IsEmpty)
+        {
+            var count = read(offset, buffer);
+            if (count <= 0)
+            {
+                return false;
+            }
+
+            offset += count;
+            buffer = buffer[count..];
+        }
+
+        return true;
+    }
+
+    // A forward-only reader in large chunks, so the scan of compressed data is a vectorised search.
+    private sealed class Reader(ReadAt read, long length) : IDisposable
     {
         private readonly byte[] _buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
+        private long _fileOffset;
         private int _position;
         private int _length;
 
         public void Dispose() => ArrayPool<byte>.Shared.Return(_buffer);
 
-        public bool Walk()
+        public bool WalkJpeg()
         {
             if (Next() != 0xFF || Next() != 0xD8)
             {
@@ -146,7 +191,7 @@ internal static class JpegStructure
             return _buffer[_position++];
         }
 
-        private bool Skip(int count)
+        private bool Skip(long count)
         {
             if (count < 0)
             {
@@ -160,7 +205,7 @@ internal static class JpegStructure
                     return false;
                 }
 
-                var step = Math.Min(count, _length - _position);
+                var step = (int)Math.Min(count, _length - _position);
                 _position += step;
                 count -= step;
             }
@@ -177,13 +222,15 @@ internal static class JpegStructure
                 _buffer[0] = _buffer[_length - 1];
             }
 
-            var read = stream.Read(_buffer, keep, BufferSize - keep);
-            if (read <= 0)
+            var wanted = (int)Math.Min(BufferSize - keep, length - _fileOffset);
+            var count = wanted > 0 ? read(_fileOffset, _buffer.AsSpan(keep, wanted)) : 0;
+            if (count <= 0)
             {
                 return false;
             }
 
-            _length = keep + read;
+            _fileOffset += count;
+            _length = keep + count;
             _position = keep;
             return true;
         }

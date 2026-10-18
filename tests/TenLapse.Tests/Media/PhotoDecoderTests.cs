@@ -297,15 +297,60 @@ public sealed class PhotoDecoderTests : IDisposable
     }
 
     [Fact]
-    public async Task ADecodeLeavesTheFileFreeToDelete()
+    public async Task AFileReadOrDecodedCanBeRewrittenInPlaceAndDeletedAtOnce()
     {
-        var path = await _files.WriteAsync("then-deleted.jpg", BitmapEncoder.JpegEncoderId);
+        // An editor saving over the photo truncates and rewrites it, which Windows refuses while any process maps
+        // the file (ERROR_USER_MAPPED_FILE). No garbage collection in between: nothing may wait for a finalizer.
+        var path = await _files.WriteAsync("rewritten.jpg", BitmapEncoder.JpegEncoderId);
+        var original = await File.ReadAllBytesAsync(path, Token);
+        var edited = await File.ReadAllBytesAsync(await _files.WriteAsync("edited.jpg", BitmapEncoder.JpegEncoderId, width: 32, height: 32), Token);
 
+        var info = await PhotoDecoder.ReadInfoAsync(path, Token);
+        await File.WriteAllBytesAsync(path, edited, Token);
         var result = await PhotoDecoder.DecodeAsync(path, cancellationToken: Token);
-        result.Value?.Dispose();
+        using (var file = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete))
+        {
+            file.SetLength(0);
+            await file.WriteAsync(original, Token);
+        }
+
         File.Delete(path);
 
+        Assert.True(info.Succeeded, info.Failure?.Detail);
+        Assert.True(result.Succeeded, result.Failure?.Detail);
+        using var photo = result.Value;
+        Assert.Equal(new PixelSize(32, 32), photo.Size);
         Assert.False(File.Exists(path));
+    }
+
+    public static TheoryData<string> PathForms => ["extended", "extended UNC", "UNC", "forward slashes", "dot segment", "dot-dot segment", "relative"];
+
+    [Theory]
+    [MemberData(nameof(PathForms))]
+    public async Task EveryFormOfPathOpens(string form)
+    {
+        var path = await _files.WriteAsync("form.jpg", BitmapEncoder.JpegEncoderId);
+        var share = @"\\localhost\" + path[0] + "$" + path[2..];
+        var name = Path.GetFileName(_files.Directory);
+        var written = form switch
+        {
+            "extended" => @"\\?\" + path,
+            "extended UNC" => @"\\?\UNC\localhost\" + path[0] + "$" + path[2..],
+            "UNC" => share,
+            "forward slashes" => path.Replace('\\', '/'),
+            "dot segment" => Path.Combine(_files.Directory, ".", "form.jpg"),
+            "dot-dot segment" => Path.Combine(_files.Directory, "..", name, ".", "form.jpg"),
+            "relative" => Path.GetRelativePath(Environment.CurrentDirectory, path),
+            _ => throw new ArgumentOutOfRangeException(nameof(form)),
+        };
+        Assert.SkipWhen(form.Contains("UNC", StringComparison.Ordinal) && !File.Exists(share), $"The administrative share {share} is not reachable here.");
+
+        var info = await PhotoDecoder.ReadInfoAsync(written, Token);
+        var result = await PhotoDecoder.DecodeAsync(written, cancellationToken: Token);
+
+        Assert.True(info.Succeeded, $"{written}: {info.Failure?.Detail}");
+        Assert.True(result.Succeeded, $"{written}: {result.Failure?.Detail}");
+        result.Value.Dispose();
     }
 
     [Fact]
