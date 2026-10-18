@@ -18,7 +18,7 @@ pwsh -File scripts/gate.ps1
 
 The script restores packages, builds, and runs every test.
 
-The solution is `TenLapse.sln`:
+The solution at the repo root has four projects:
 
 - `src/TenLapse.App`: the WinUI 3 app, packaged as a single-project MSIX
 - `src/TenLapse.Core`: project model and timing, with no UI or Windows types
