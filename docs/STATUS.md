@@ -4,7 +4,7 @@ Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Running: PR #71 fix round (#15) and #33 (wave 7).
+Running: PR #71 fix round (#15) and #22 (wave 8).
 
 ## Waves
 
@@ -28,8 +28,8 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 6 | #26 One error path | O | App startup, `Core/Diagnostics` | merged #69 |
 | 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | PR #71, fix round |
 | 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | |
-| 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | running |
-| 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | |
+| 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | merged #72 |
+| 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | running |
 | 8 | #29 First launch drop zone | O | App empty state view | |
 | 9 | #19 Preview with proxy cache | O | preview view and cache | |
 | 9 | #23 Output panel | S | output inspector section | |
@@ -227,3 +227,9 @@ own waves once 3.0 ships.
   size: 4K export from 24 MP JPEGs about 25–28 fps, 540–640 MB peak.
   Presentation `SkippedFileText` and `SkippedFilesInfoBar` for #12. A JPEG
   missing only its EOI marker is rejected as truncated (documented).
+- #33 PR #72: `tests/TenLapse.Tests/Fixtures/Photos/` (20 generated files,
+  288 KB; `make_fixtures.py`, run with `python -P`; README with expected
+  outcomes), `PhotoFixtureCatalogue`, `RuntimeFixtures` (100 MP, locked,
+  deleted, long Unicode path, read-only). #12's import test must skip exactly
+  `empty.jpg`, `truncated.jpg`, `no-eoi.jpg`, `text.heic` and import the other
+  16.
