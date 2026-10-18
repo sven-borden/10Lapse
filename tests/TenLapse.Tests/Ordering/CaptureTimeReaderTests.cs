@@ -219,6 +219,38 @@ public static class CaptureTimeReaderTests
         Assert.Null(Read([.. good[..2], .. Enumerable.Range(0, 400).Select(_ => (byte)0xFF)]));
     }
 
+    [Theory]
+    [InlineData(0xFFFFFFFFu)]
+    [InlineData(0x7FFFFFFFu)]
+    [InlineData(0x40000000u)]
+    [InlineData(0x10000000u)]
+    public static void AHostileValueCountIsAFailureOfThatFileNotAnOutOfMemoryException(uint count)
+    {
+        // A batch of 5,000 photos must survive one file whose IFD claims billions of bytes: the entry for
+        // DateTimeOriginal says it holds `count` values, so a reader that trusts it tries to allocate that much.
+        // (Whether MetadataExtractor refuses before allocating or allocates and fails, the result is null and no exception.)
+        var file = ExifFiles.Jpeg(new ExifFiles.Tags(Original: "2026:05:01 18:30:07"));
+
+        // The entry: tag 0x9003, type 2 (ASCII), count 20 (19 characters and the terminator), little-endian.
+        ReadOnlySpan<byte> entry = [0x03, 0x90, 0x02, 0x00, 0x14, 0x00, 0x00, 0x00];
+        var at = file.AsSpan().IndexOf(entry);
+        Assert.True(at > 0, "The DateTimeOriginal entry was not found in the test file.");
+        BitConverter.GetBytes(count).CopyTo(file, at + 4);
+
+        Assert.Null(Read(file));
+
+        var path = Path.Combine(Path.GetTempPath(), $"tenlapse-hostile-{Guid.NewGuid():N}.jpg");
+        try
+        {
+            File.WriteAllBytes(path, file);
+            Assert.Null(CaptureTimeReader.ReadFile(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public static void NeverThrowsOnEveryTruncationOrCorruptionOfARealisticFile()
     {

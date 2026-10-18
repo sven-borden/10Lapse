@@ -71,7 +71,7 @@ public static class CaptureTimeReader
                 FileOptions.None);
             return Read(stream);
         }
-        catch (Exception ex) when (IsReadFailure(ex))
+        catch (Exception)
         {
             return null;
         }
@@ -90,15 +90,14 @@ public static class CaptureTimeReader
             return Find(directories, DateTimeOriginalTag, SubSecTimeOriginalTag, OffsetTimeOriginalTag, CaptureTimeSource.DateTimeOriginal)
                 ?? Find(directories, DateTimeDigitizedTag, SubSecTimeDigitizedTag, OffsetTimeDigitizedTag, CaptureTimeSource.DateTimeDigitized);
         }
-        catch (Exception ex) when (IsReadFailure(ex))
+        catch (Exception)
         {
+            // Whatever a damaged or odd file makes MetadataExtractor throw (it has no single exception type for them) means
+            // "no time" for that file, an OutOfMemoryException from a hostile length field included: one bad file must not
+            // fail a 5,000-file batch. (MetadataExtractor 2.9 refuses such lengths before allocating; this is the backstop.)
             return null;
         }
     }
-
-    // Whatever a damaged or odd file makes MetadataExtractor throw (it has no single exception type for them) means
-    // "no time". Running out of memory is not about the file, so it is not swallowed.
-    private static bool IsReadFailure(Exception ex) => ex is not OutOfMemoryException;
 
     private static CaptureTimeReading? Find(
         List<ExifSubIfdDirectory> directories,
