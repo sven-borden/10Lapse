@@ -146,6 +146,25 @@ public sealed class StreamingExportTests : IDisposable
     }
 
     [Fact]
+    public async Task ACancelledExportWaitsForTheDecodesInFlightBeforeItReturns()
+    {
+        // A WIC decode cannot be interrupted: the export must not dispose the device under it and return.
+        SkipWithoutH264Encoder();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var source = new SlowFrames(200, TimeSpan.FromMilliseconds(150)) { OnStart = index => { if (index == 6) cancellation.Cancel(); } };
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => VideoExporter.ExportAsync(
+            source,
+            Path.Combine(_directory, "inflight.mp4"),
+            new VideoExportSettings(320, 180, new Fraction(30, 1)) { DecodeAhead = 4 },
+            cancellationToken: cancellation.Token));
+
+        Assert.True(source.Started > 6, $"Only {source.Started} loads started.");
+        Assert.Equal(source.Started, source.Finished);
+        Assert.Empty(source.Errors);
+    }
+
+    [Fact]
     public void ReadingAMissingFileThrowsFileNotFound()
     {
         Assert.Throws<FileNotFoundException>(() => VideoFileReader.Read(Path.Combine(_directory, "missing.mp4")));

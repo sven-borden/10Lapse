@@ -91,6 +91,9 @@ public static class VideoExporter
         private readonly IProgress<int>? _progress;
         private readonly VideoEncoderFactory _createEncoder;
         private readonly Channel<Task<CanvasBitmap>> _decoded;
+
+        // Loads started and not yet owned by the drawing stage: awaited and disposed before the device goes.
+        private readonly ConcurrentDictionary<Task<CanvasBitmap>, byte> _loads = new();
         private readonly SemaphoreSlim _slots;
         private readonly ConcurrentDictionary<CanvasRenderTarget, byte> _live = new();
         private readonly Channel<RenderedFrame> _rendered;
@@ -159,9 +162,15 @@ public static class VideoExporter
             {
                 _stop.Cancel();
                 await Task.WhenAll(producing, processing).ConfigureAwait(false);
-                while (_decoded.Reader.TryRead(out var load))
+
+                // Decodes still in flight would otherwise run on after the export returns, on a disposed device.
+                await ((Task)Task.WhenAll(_loads.Keys)).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                foreach (var load in _loads.Keys)
                 {
-                    DisposeWhenLoaded(load);
+                    if (load.IsCompletedSuccessfully)
+                    {
+                        load.Result.Dispose();
+                    }
                 }
 
                 // Frames drawn but never taken, or taken but not reported processed when the run stopped.
@@ -266,15 +275,8 @@ public static class VideoExporter
                 {
                     _stop.Token.ThrowIfCancellationRequested();
                     var load = _source.LoadAsync(i, Canvas, _stop.Token);
-                    try
-                    {
-                        await _decoded.Writer.WriteAsync(load, _stop.Token).ConfigureAwait(false);
-                    }
-                    catch
-                    {
-                        DisposeWhenLoaded(load);
-                        throw;
-                    }
+                    _loads.TryAdd(load, 0);
+                    await _decoded.Writer.WriteAsync(load, _stop.Token).ConfigureAwait(false);
                 }
 
                 _decoded.Writer.TryComplete();
@@ -297,17 +299,9 @@ public static class VideoExporter
                 {
                     while (_decoded.Reader.TryRead(out var load))
                     {
-                        CanvasBitmap bitmap;
-                        try
-                        {
-                            bitmap = await load.WaitAsync(_stop.Token).ConfigureAwait(false);
-                        }
-                        catch
-                        {
-                            DisposeWhenLoaded(load);
-                            throw;
-                        }
-
+                        // Until here the bitmap belongs to _loads (the finally disposes it); from here, to this stage.
+                        var bitmap = await load.WaitAsync(_stop.Token).ConfigureAwait(false);
+                        _loads.TryRemove(load, out _);
                         using (bitmap)
                         {
                             if (!await _slots.WaitAsync(EncoderStallTimeout, _stop.Token).ConfigureAwait(false))
@@ -390,13 +384,6 @@ public static class VideoExporter
 
             Interlocked.CompareExchange(ref _failure, exception, null);
         }
-
-        private static void DisposeWhenLoaded(Task<CanvasBitmap> load) =>
-            _ = load.ContinueWith(
-                static completed => completed.Result.Dispose(),
-                CancellationToken.None,
-                TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
     }
 
     private readonly record struct RenderedFrame(int Index, CanvasRenderTarget Target);
