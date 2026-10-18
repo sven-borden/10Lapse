@@ -216,7 +216,7 @@ public static class EncoderProbe
             }
             catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
             {
-                throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed, setup: true);
+                throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed, format, setup: true);
             }
 
             using (encoder)
@@ -239,7 +239,7 @@ public static class EncoderProbe
                 }
                 catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
                 {
-                    throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed);
+                    throw ExportFailures.Classify(exception, VideoExportFailure.EncoderFailed, format);
                 }
 
                 var info = encoder.Encoder;

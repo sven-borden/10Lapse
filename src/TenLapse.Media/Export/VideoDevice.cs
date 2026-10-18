@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Microsoft.Graphics.Canvas;
+using TenLapse.Core.Projects;
 using Windows.Graphics.DirectX.Direct3D11;
 using Windows.Win32;
 using Windows.Win32.Graphics.Direct3D;
@@ -52,7 +53,8 @@ internal sealed class VideoDevice : IDisposable
                 exception,
                 ExportFailures.FromHResult(exception.HResult) == VideoExportFailure.OutOfMemory
                     ? VideoExportFailure.OutOfMemory
-                    : VideoExportFailure.NoGraphicsDevice);
+                    : VideoExportFailure.NoGraphicsDevice,
+                VideoFormat.Mp4H264); // Neither summary names a codec.
         }
     }
 
