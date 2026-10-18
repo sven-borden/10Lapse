@@ -10,7 +10,10 @@ public sealed record PhotoCodecExtension(string Name, string? StoreProductId);
 
 /// <summary>A photo format 10Lapse knows by name, whether or not this PC can read it.</summary>
 /// <param name="Name">The friendly name ("HEIF", "Camera RAW").</param>
-/// <param name="Extensions">Its file extensions, lower case with the dot (".heic").</param>
+/// <param name="Extensions">
+/// Its file extensions, lower case with the dot (".heic"), the primary one first: the format counts as available
+/// when a decoder reads that one (<see cref="KnownPhotoFormats.Missing"/>).
+/// </param>
 /// <param name="Extension">The Store extension that adds its decoder, or null when Windows has it built in.</param>
 public sealed record KnownPhotoFormat(string Name, IReadOnlyList<string> Extensions, PhotoCodecExtension? Extension)
 {
@@ -76,12 +79,14 @@ public static class KnownPhotoFormats
     }
 
     /// <summary>
-    /// The known formats none of whose extensions <paramref name="readable"/> contains: on this PC, the ones
-    /// #14 explains how to add (<see cref="PhotoCodecs.MissingFormats"/> passes the installed decoders' list).
+    /// The known formats whose primary extension (the first) <paramref name="readable"/> does not contain: on this
+    /// PC, the ones #14 explains how to add (<see cref="PhotoCodecs.MissingFormats"/> passes the installed
+    /// decoders' list). The primary one, not any: Windows reads DNG on its own, so ".dng" says nothing about the
+    /// Raw Image Extension, and its JPEG XR decoder does not register ".hdp".
     /// </summary>
     public static IReadOnlyList<KnownPhotoFormat> Missing(IReadOnlySet<string> readable)
     {
         ArgumentNullException.ThrowIfNull(readable);
-        return [.. All.Where(format => !format.Extensions.Any(readable.Contains))];
+        return [.. All.Where(format => !readable.Contains(format.Extensions[0]))];
     }
 }

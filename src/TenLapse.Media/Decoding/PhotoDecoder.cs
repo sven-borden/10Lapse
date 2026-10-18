@@ -86,7 +86,11 @@ public static class PhotoDecoder
 
     private const string OrientationProperty = "System.Photo.Orientation";
 
-    /// <summary>Reads the size, orientation and frame count from the header, without decoding pixels.</summary>
+    /// <summary>
+    /// Reads the size, orientation and frame count from the header, without decoding pixels: cheap enough for
+    /// every file of an import. A file whose header is whole but whose data is cut short reads fine here; only
+    /// <see cref="DecodeAsync"/> finds that (<see cref="SkipReason.Truncated"/>).
+    /// </summary>
     public static async Task<PhotoResult<PhotoInfo>> ReadInfoAsync(string path, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(path);

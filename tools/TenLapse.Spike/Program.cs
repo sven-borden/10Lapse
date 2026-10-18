@@ -17,6 +17,7 @@ using TenLapse.Spike;
 // --noise adds grain so the JPEGs compress like real photos (#13); --distinct N cycles the export over the
 // first N files of --dir, so a few realistic JPEGs make a 1,000-frame run.
 //   TenLapse.Spike inspect FILE [--decode]
+//   TenLapse.Spike decode-bench PHOTO [--runs 5] [--output-size 3840x2160]   (#13: ms per decode for each choice)
 //   TenLapse.Spike probe [--cache file.json] [--fresh] [--software]   (#9: what this PC can encode, as Markdown;
 //                         --software answers as a PC without a GPU encoder would, uncached)
 var command = args.Length > 0 ? args[0] : "help";
