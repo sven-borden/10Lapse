@@ -164,6 +164,31 @@ public sealed class FractionTests
     }
 
     [Fact]
+    public void NearestPicksTheSmallerDenominatorOnATie()
+    {
+        // 5/12 is exactly 1/12 from both 1/3 and 1/2, and neither is closer within denominators up to 3.
+        Assert.Equal(new Fraction(1, 2), Fraction.Nearest(5, 12, 3));
+        Assert.Equal(new Fraction(1, 2), Fraction.Nearest(10, 24, 3));
+    }
+
+    [Fact]
+    public void DefaultFractionIsZeroOverOneAndComparesAsSuch()
+    {
+        var zero = default(Fraction);
+
+        Assert.Equal(0, zero.Numerator);
+        Assert.Equal(1, zero.Denominator);
+        Assert.True(zero == default(Fraction));
+        Assert.True(zero.Equals((object)default(Fraction)));
+        Assert.Equal(zero.GetHashCode(), default(Fraction).GetHashCode());
+        Assert.NotEqual(new Fraction(1, 1), zero);
+        Assert.True(zero < new Fraction(1, int.MaxValue));
+        Assert.Equal(0, zero.CompareTo(default));
+        Assert.Equal("0", zero.ToString());
+        Assert.Equal(0.0, zero.ToDouble());
+    }
+
+    [Fact]
     public void NearestClampsInsteadOfOverflowing()
     {
         Assert.Equal(new Fraction(int.MaxValue, 1), Fraction.Nearest(long.MaxValue, 1, 10_000));
