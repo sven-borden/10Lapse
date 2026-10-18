@@ -233,30 +233,19 @@ public sealed class Project
 
     /// <summary>
     /// Appends frames in the given order (#12 calls this for every batch, also for Add photos). A frame whose
-    /// id or path (case-insensitive) is already in the project is left out, so adding a folder twice does
-    /// not double it.
+    /// id or path is already in the project, or earlier in the same batch, is left out, so adding a folder
+    /// twice does not double it. Paths compare case-insensitively in their canonical spelling
+    /// (<see cref="Frame.NormalizePath"/>). The whole batch is read and checked before anything changes: if
+    /// it holds a null, or enumerating it throws, the project stays as it was.
     /// </summary>
     /// <returns>How many frames were added.</returns>
     public int AddFrames(IEnumerable<Frame> frames)
     {
         EnsureWritable();
-        ArgumentNullException.ThrowIfNull(frames);
-
-        var added = new List<Frame>();
-        foreach (var frame in frames)
-        {
-            ArgumentNullException.ThrowIfNull(frame, nameof(frames));
-            if (_ids.Contains(frame.Id) || !_paths.Add(frame.SourcePath))
-            {
-                continue;
-            }
-
-            _ids.Add(frame.Id);
-            added.Add(frame);
-        }
-
+        var added = NewFrames(frames);
         if (added.Count > 0)
         {
+            Accept(added);
             Commit(_state with { Frames = _state.Frames.AddRange(added) }, ProjectChanges.Frames);
         }
 
@@ -311,18 +300,14 @@ public sealed class Project
         Commit(_state with { Frames = [.. order.Select(id => byId[id])] }, ProjectChanges.Frames);
     }
 
-    /// <summary>Appends files import could not read (#13).</summary>
+    /// <summary>
+    /// Appends files import could not read (#13). The whole batch is read and checked first: a null entry, or
+    /// an enumeration that throws, leaves the project as it was.
+    /// </summary>
     public void AddSkippedFiles(IEnumerable<SkippedFile> files)
     {
         EnsureWritable();
-        ArgumentNullException.ThrowIfNull(files);
-
-        var batch = files.ToList();
-        foreach (var file in batch)
-        {
-            ArgumentNullException.ThrowIfNull(file, nameof(files));
-        }
-
+        var batch = Materialize(files, nameof(files));
         if (batch.Count > 0)
         {
             Commit(_state with { SkippedFiles = _state.SkippedFiles.AddRange(batch) }, ProjectChanges.SkippedFiles);
@@ -336,6 +321,38 @@ public sealed class Project
         if (_state.IsDirty)
         {
             Publish(_state with { IsDirty = false }, ProjectChanges.Dirty);
+        }
+    }
+
+    private static List<T> Materialize<T>(IEnumerable<T> items, string parameterName)
+        where T : class
+    {
+        ArgumentNullException.ThrowIfNull(items, parameterName);
+        var batch = items.ToList();
+        if (batch.Any(item => item is null))
+        {
+            throw new ArgumentNullException(parameterName, "The batch holds a null entry; nothing was changed.");
+        }
+
+        return batch;
+    }
+
+    // The frames of the batch that are new to the project, in order, without touching any state.
+    private List<Frame> NewFrames(IEnumerable<Frame> frames)
+    {
+        var batch = Materialize(frames, nameof(frames));
+        var ids = new HashSet<Guid>();
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        return [.. batch.Where(frame =>
+            !_ids.Contains(frame.Id) && !_paths.Contains(frame.SourcePath) && ids.Add(frame.Id) && paths.Add(frame.SourcePath))];
+    }
+
+    private void Accept(List<Frame> added)
+    {
+        foreach (var frame in added)
+        {
+            _ids.Add(frame.Id);
+            _paths.Add(frame.SourcePath);
         }
     }
 
