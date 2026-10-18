@@ -18,6 +18,8 @@
     packages are complete. AppxSymbolPackageEnabled=false is required: with the
     symbols package on, the StoreUpload step fails with MSB6011 (it needs
     mspdbcmf.exe) after the upload file is already written, and the build exits 1.
+    So the upload has no symbols package (mspdbcmf.exe ships only with Visual
+    Studio): Store crash reports in Partner Center Health will not be symbolicated.
 #>
 [CmdletBinding()]
 param()
