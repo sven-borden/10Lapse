@@ -4,7 +4,7 @@ Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Wave 3 is running: #8 and #27.
+Running: #8 (wave 3) and #16 (wave 4, started early: it touches Core and Presentation only).
 
 ## Waves
 
@@ -20,9 +20,9 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 2 | #4 Package identity and MSIX | S | `src/TenLapse.App` manifest, packaging props | merged #62 |
 | 2 | #10 Exact frame timing | S | `TenLapse.Core/Timing` | merged #63 |
 | 3 | #8 Spike: streaming encode | O | `TenLapse.Media`, a spike harness | running |
-| 3 | #27 Design tokens and theme resources | S | `TenLapse.App/Themes` | running |
+| 3 | #27 Design tokens and theme resources | S | `TenLapse.App/Themes` | merged #64 |
 | 4 | #9 Spike: encoder capabilities | O | `TenLapse.Media/Encoding` | |
-| 4 | #16 Project model and view models | O | `TenLapse.Core/Projects`, new `TenLapse.Presentation` | |
+| 4 | #16 Project model and view models | O | `TenLapse.Core/Projects`, new `TenLapse.Presentation` | running |
 | 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | |
 | 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | |
 | 6 | #26 One error path | O | App startup, `Core/Diagnostics` | |
@@ -98,6 +98,19 @@ own waves once 3.0 ships.
   `ApplicationData.Current`, `Package.Current` and `StoreContext` throw there.
   Code that needs identity guards for it or has a path that works without it
   (#21 settings, #31 rating).
+- 2026-10-18 (#27): `ExportButtonStyle` is the only amber button. It carries a
+  copy of Fluent's accent button template (WinUI 3 styles cannot hold
+  resources), so a Fluent template change will not reach it. Fluent's own
+  `AccentButtonStyle` and the `AccentButton*` keys stay untouched, so dialog
+  primary buttons keep the system accent.
+- 2026-10-18 (#27): `ThemeShadow.Receivers.Add` throws on Windows App SDK 2.5.1.
+  Elevation is built with a Composition `DropShadow` from the `Shadow*` color
+  tokens and the blur and offset numbers in `Layout.xaml` (#28, #24).
+- 2026-10-18 (#27): a test fails on `DeepAmberIndicator*` outside the indicator
+  override keys. A bespoke indicator (scrubber, playhead) must add its file to
+  `_bespokeIndicatorFiles` in `tests/TenLapse.Tests/Design/AmberRuleTests.cs`.
+- 2026-10-18 (#27): High contrast was never seen on screen here; it is covered
+  by key parity, resolution and tests. #41 (test matrix) checks it for real.
 
 ## Merged
 
@@ -118,3 +131,11 @@ own waves once 3.0 ships.
   modes), `TimingFormat` ("24.7 s", "1 min 12 s", "1 h 02 min", "29.97 fps",
   "2 s per photo"), every user-visible word in `TimingWords`. A single comma is
   a decimal point.
+- #27 PR #64: tokens in `src/TenLapse.App/Themes/` (`<Token>Color`/`<Token>Brush`
+  for Light, Dark, HighContrast; `<Step>TextStyle` and `<Step>TabularTextStyle`;
+  `Spacing*`, `Thickness*`, `Radius*`, `ControlHeight`; `Motion*Duration` and
+  `Motion*KeySpline`; C# `TenLapse.Themes.MotionTokens`, `AnimationsEnabled`
+  polled at each animation start). Per-control overrides put the indicator
+  color on progress, slider, toggle, check box, radio and ProgressRing, with
+  hover and pressed tints. Debug gallery: `TenLapse.App.exe --gallery
+  [--theme=light|dark] [--scroll=PX]`.
