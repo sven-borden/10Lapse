@@ -17,6 +17,13 @@ BundleArtifacts/
 *.pfx
 *.p12
 *.cer
+*.snk
+*.pvk
+*.pem
+*.key
+
+# MSBuild binary logs
+*.binlog
 
 # IDE and user state
 .vs/
