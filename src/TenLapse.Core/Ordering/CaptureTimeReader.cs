@@ -1,0 +1,244 @@
+using System.Globalization;
+using MetadataExtractor;
+using MetadataExtractor.Formats.Exif;
+
+namespace TenLapse.Core.Ordering;
+
+/// <summary>Which EXIF tag a capture time came from.</summary>
+public enum CaptureTimeSource
+{
+    /// <summary><c>DateTimeOriginal</c>: when the shutter fired. The first choice.</summary>
+    DateTimeOriginal,
+
+    /// <summary><c>DateTimeDigitized</c>: used only when the file has no usable <c>DateTimeOriginal</c>.</summary>
+    DateTimeDigitized,
+}
+
+/// <summary>When a photo was taken, as the camera wrote it.</summary>
+/// <param name="Time">
+/// The camera's wall-clock time with the sub-second part, <see cref="DateTimeKind.Unspecified"/> (EXIF has no zone
+/// in the main tag). This is what <see cref="Projects.Frame.CaptureTime"/> holds and what the sort compares.
+/// </param>
+/// <param name="UtcOffset">
+/// The offset from UTC (<c>OffsetTimeOriginal</c> or <c>OffsetTimeDigitized</c>) when the camera wrote one, else null.
+/// Most cameras do not, so the sort never applies it: mixing offset and wall-clock times would put one camera's
+/// photos hours away from another's.
+/// </param>
+/// <param name="Source">Which tag <paramref name="Time"/> came from.</param>
+public readonly record struct CaptureTimeReading(DateTime Time, TimeSpan? UtcOffset, CaptureTimeSource Source);
+
+/// <summary>
+/// Reads when a photo was taken from its EXIF block with MetadataExtractor: <c>DateTimeOriginal</c> plus
+/// <c>SubSecTimeOriginal</c> and, when present, <c>OffsetTimeOriginal</c>; <c>DateTimeDigitized</c> (with its own
+/// sub-seconds and offset) only when the original is missing or unusable. It never falls back to file times:
+/// a copied or exported file has a new write time but the same capture time, and a file without EXIF should be
+/// ordered by name, not by when it was copied.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Metadata only: the reader looks at the container's metadata boxes and segments and never decodes pixels.
+/// It never throws: a file that is missing, locked, truncated, not an image or has no usable time gives null.
+/// </para>
+/// <para>
+/// Formats are found by content, not by extension. JPEG, TIFF and the TIFF-based RAW formats (CR2, NEF, ARW, DNG,
+/// ORF, RW2, PEF) keep the time in an Exif IFD; HEIC and HEIF keep an Exif item in the ISO base media file; CR3
+/// keeps the Exif IFDs in Canon's metadata boxes. All of them end up as an Exif SubIFD in MetadataExtractor.
+/// </para>
+/// </remarks>
+public static class CaptureTimeReader
+{
+    // Exif tag numbers (the names exist on ExifDirectoryBase, but the offset tags are newer than its constants).
+    private const int DateTimeOriginalTag = 0x9003;
+    private const int DateTimeDigitizedTag = 0x9004;
+    private const int SubSecTimeOriginalTag = 0x9291;
+    private const int SubSecTimeDigitizedTag = 0x9292;
+    private const int OffsetTimeOriginalTag = 0x9011;
+    private const int OffsetTimeDigitizedTag = 0x9012;
+
+    private const int FileBufferSize = 8 * 1024;
+
+    /// <summary>Reads the capture time of the photo at <paramref name="path"/>; null when there is none or the file cannot be read.</summary>
+    public static CaptureTimeReading? ReadFile(string path)
+    {
+        try
+        {
+            using var stream = new FileStream(
+                path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete,
+                FileBufferSize,
+                FileOptions.None);
+            return Read(stream);
+        }
+        catch (Exception ex) when (IsReadFailure(ex))
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Reads the capture time from a photo's bytes. The stream must be seekable and positioned at the start of the
+    /// file; it is left open. Null when there is no usable time, the stream is not seekable or the data is damaged.
+    /// </summary>
+    public static CaptureTimeReading? Read(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        try
+        {
+            var directories = ImageMetadataReader.ReadMetadata(stream).OfType<ExifSubIfdDirectory>().ToList();
+            return Find(directories, DateTimeOriginalTag, SubSecTimeOriginalTag, OffsetTimeOriginalTag, CaptureTimeSource.DateTimeOriginal)
+                ?? Find(directories, DateTimeDigitizedTag, SubSecTimeDigitizedTag, OffsetTimeDigitizedTag, CaptureTimeSource.DateTimeDigitized);
+        }
+        catch (Exception ex) when (IsReadFailure(ex))
+        {
+            return null;
+        }
+    }
+
+    // Whatever a damaged or odd file makes MetadataExtractor throw (it has no single exception type for them) means
+    // "no time". Running out of memory is not about the file, so it is not swallowed.
+    private static bool IsReadFailure(Exception ex) => ex is not OutOfMemoryException;
+
+    private static CaptureTimeReading? Find(
+        List<ExifSubIfdDirectory> directories,
+        int timeTag,
+        int subSecondTag,
+        int offsetTag,
+        CaptureTimeSource source)
+    {
+        foreach (var directory in directories)
+        {
+            if (TryParseExifTime(directory.GetString(timeTag), out var time))
+            {
+                return new CaptureTimeReading(
+                    time.AddTicks(ParseSubSeconds(directory.GetString(subSecondTag))),
+                    ParseOffset(directory.GetString(offsetTag)),
+                    source);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Parses an Exif date and time, <c>yyyy:MM:dd HH:mm:ss</c>. Some firmware writes <c>-</c> or <c>/</c> between the
+    /// date parts or a <c>T</c> between date and time; an unset clock (<c>0000:00:00 00:00:00</c>, blanks) is not a time.
+    /// </summary>
+    internal static bool TryParseExifTime(string? text, out DateTime time)
+    {
+        time = default;
+        if (text is null)
+        {
+            return false;
+        }
+
+        var s = text.AsSpan().Trim().TrimEnd('\0');
+        if (s.Length < 19
+            || !IsSeparator(s[4]) || !IsSeparator(s[7]) || s[10] is not (' ' or 'T') || s[13] != ':' || s[16] != ':'
+            || !TryTwo(s, 0, 2, out var century) || !TryTwo(s, 2, 2, out var yearInCentury)
+            || !TryTwo(s, 5, 2, out var month) || !TryTwo(s, 8, 2, out var day)
+            || !TryTwo(s, 11, 2, out var hour) || !TryTwo(s, 14, 2, out var minute) || !TryTwo(s, 17, 2, out var second))
+        {
+            return false;
+        }
+
+        var year = (century * 100) + yearInCentury;
+        if (year is < 1 or > 9999 || month is < 1 or > 12 || day < 1 || day > DateTime.DaysInMonth(year, month)
+            || hour > 23 || minute > 59 || second > 59)
+        {
+            return false;
+        }
+
+        time = new DateTime(year, month, day, hour, minute, second, DateTimeKind.Unspecified);
+        return true;
+
+        static bool IsSeparator(char c) => c is ':' or '-' or '/' or '.';
+
+        static bool TryTwo(ReadOnlySpan<char> span, int start, int length, out int value)
+        {
+            value = 0;
+            for (var i = start; i < start + length; i++)
+            {
+                if (span[i] is not (>= '0' and <= '9'))
+                {
+                    return false;
+                }
+
+                value = (value * 10) + (span[i] - '0');
+            }
+
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// The sub-second part as ticks. The tag is the digits after the decimal point: <c>"03"</c> is 0.03 s and
+    /// <c>"3"</c> is 0.3 s. Anything that is not digits (or nothing) is zero; digits past the seventh are dropped.
+    /// </summary>
+    internal static long ParseSubSeconds(string? text)
+    {
+        if (text is null)
+        {
+            return 0;
+        }
+
+        var s = text.AsSpan().Trim().TrimEnd('\0');
+        long ticks = 0;
+        var scale = TimeSpan.TicksPerSecond / 10;
+        foreach (var c in s)
+        {
+            if (c is not (>= '0' and <= '9'))
+            {
+                return 0;
+            }
+
+            if (scale == 0)
+            {
+                break;
+            }
+
+            ticks += (c - '0') * scale;
+            scale /= 10;
+        }
+
+        return ticks;
+    }
+
+    /// <summary>The UTC offset from <c>OffsetTime*</c> (<c>+02:00</c>, <c>-05:30</c>, <c>Z</c>), or null when absent or unreadable.</summary>
+    internal static TimeSpan? ParseOffset(string? text)
+    {
+        if (text is null)
+        {
+            return null;
+        }
+
+        var s = text.AsSpan().Trim().TrimEnd('\0');
+        if (s is "Z" or "z")
+        {
+            return TimeSpan.Zero;
+        }
+
+        if (s.Length is not (6 or 5) || s[0] is not ('+' or '-'))
+        {
+            return null;
+        }
+
+        var colon = s.Length == 6;
+        if (colon && s[3] != ':')
+        {
+            return null;
+        }
+
+        var minutesAt = colon ? 4 : 3;
+        if (!int.TryParse(s[1..3], NumberStyles.None, CultureInfo.InvariantCulture, out var hours)
+            || !int.TryParse(s.Slice(minutesAt, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var minutes)
+            || hours > 14 || minutes > 59)
+        {
+            return null;
+        }
+
+        var offset = new TimeSpan(hours, minutes, 0);
+        return s[0] == '-' ? -offset : offset;
+    }
+}
