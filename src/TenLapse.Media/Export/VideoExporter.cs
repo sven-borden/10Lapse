@@ -424,6 +424,7 @@ public static class VideoExporter
                         }
 
                         _loads.TryRemove(pending.Load, out _);
+                        CanvasRenderTarget target;
                         using (bitmap)
                         {
                             if (!await _slots.WaitAsync(_settings.StallTimeout, _stop.Token).ConfigureAwait(false))
@@ -433,11 +434,12 @@ public static class VideoExporter
                                     VideoExportFailure.EncoderStalled);
                             }
 
-                            var target = Draw(bitmap, pending.Index);
-                            await _rendered.Writer.WriteAsync(new RenderedFrame(pending.Index, target), _stop.Token).ConfigureAwait(false);
+                            target = Draw(bitmap, pending.Index);
                         }
 
+                        // Drawn: the photo is gone, so the next one may load. The target is in _live until the encoder has it.
                         _ahead.Release();
+                        await _rendered.Writer.WriteAsync(new RenderedFrame(pending.Index, target), _stop.Token).ConfigureAwait(false);
                     }
                 }
 

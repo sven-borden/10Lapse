@@ -8,3 +8,6 @@ PDH_FMT_COUNTERVALUE_ITEM_W
 PDH_FMT
 PDH_MORE_DATA
 PDH_CSTATUS_VALID_DATA
+
+// Hard links, so export-project can make a 1,000-frame project out of a few distinct files without Developer Mode.
+CreateHardLink

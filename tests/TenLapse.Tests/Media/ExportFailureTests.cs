@@ -203,6 +203,20 @@ public sealed class ExportFailureTests : IDisposable
         Assert.Equal(expected, ExportFailures.FromHResult(unchecked((int)hresult)));
 
     [Fact]
+    public void AWorkingDeviceHasNoRemovedReasonAndTheReasonsHaveTheirNames()
+    {
+        // A real driver reset (TDR) cannot be provoked here; the export asks GetDeviceRemovedReason on every
+        // frame-level failure and reports GraphicsDeviceLost with the reason when it is not S_OK.
+        SkipWithoutGraphicsDevice();
+        using var device = VideoDevice.Create();
+
+        Assert.Equal(0, device.RemovedReason());
+        Assert.Equal("DXGI_ERROR_DEVICE_HUNG", ExportFailures.DeviceRemovedName(unchecked((int)0x887A0006)));
+        Assert.Equal("DXGI_ERROR_DEVICE_RESET", ExportFailures.DeviceRemovedName(unchecked((int)0x887A0007)));
+        Assert.Equal("0x80004005", ExportFailures.DeviceRemovedName(unchecked((int)0x80004005)));
+    }
+
+    [Fact]
     public void AnInvalidArgumentRejectsTheSettingsOnlyDuringSetup()
     {
         Assert.Equal(VideoExportFailure.SettingsRejected, ExportFailures.FromHResult(unchecked((int)0x80070057), setup: true));

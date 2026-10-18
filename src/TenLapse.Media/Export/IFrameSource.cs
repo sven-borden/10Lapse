@@ -30,8 +30,9 @@ public interface IFrameSource
     /// <remarks>
     /// An exception the load throws (synchronously or through the task) fails the export as a
     /// <see cref="VideoExportException"/> with <see cref="VideoExportFailure.FrameUnreadable"/>, the frame index and
-    /// <see cref="SourcePath"/>, the exception as its inner exception; one that is a bug in our code
-    /// (<see cref="ArgumentNullException"/>, our own <see cref="InvalidOperationException"/>) surfaces as itself.
+    /// <see cref="SourcePath"/>, the exception as its inner exception (as <see cref="VideoExportFailure.GraphicsDeviceLost"/>
+    /// or <see cref="VideoExportFailure.OutOfMemory"/> when the device or memory is the cause); one that is a bug in our
+    /// code (<see cref="ArgumentNullException"/>, our own <see cref="InvalidOperationException"/>) surfaces as itself.
     /// </remarks>
     Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken);
 
