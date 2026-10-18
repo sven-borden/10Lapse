@@ -27,13 +27,17 @@ public static class PhotoCodecs
     /// <summary>The installed decoders, in the order Windows lists them.</summary>
     public static IReadOnlyList<PhotoDecoderInfo> Decoders => _installed.Value.Decoders;
 
-    /// <summary>Every file extension an installed decoder registers, lower case with the dot.</summary>
+    /// <summary>
+    /// The file extensions 10Lapse reads as photos on this PC, lower case with the dot: those of the known photo
+    /// formats (<see cref="KnownPhotoFormats.All"/>) that an installed decoder registers. Not every extension a
+    /// decoder registers: icons (.ico), cursors (.cur), textures (.dds) and RLE bitmaps (.rle) are no photos.
+    /// </summary>
     public static IReadOnlySet<string> Extensions => _installed.Value.Extensions;
 
     /// <summary>The known formats (<see cref="KnownPhotoFormats.All"/>) no installed decoder reads, with the extension that adds each.</summary>
     public static IReadOnlyList<KnownPhotoFormat> MissingFormats => KnownPhotoFormats.Missing(Extensions);
 
-    /// <summary>True when an installed decoder registers this file's extension (any case). A file with no extension is not.</summary>
+    /// <summary>True when this file's extension (any case) is in <see cref="Extensions"/>: a known photo format an installed decoder reads. A file with no extension is not.</summary>
     public static bool IsReadable(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -66,7 +70,8 @@ public static class PhotoCodecs
                 [.. info.FileExtensions.Select(NormalizeExtension).Where(e => e.Length > 1).Distinct()],
                 [.. info.MimeTypes.Select(m => m.Trim().ToLowerInvariant()).Where(m => m.Length > 0).Distinct()]))
             .ToArray();
-        return new Snapshot(decoders, decoders.SelectMany(d => d.Extensions).ToFrozenSet(StringComparer.Ordinal));
+        var known = KnownPhotoFormats.All.SelectMany(format => format.Extensions).ToHashSet(StringComparer.Ordinal);
+        return new Snapshot(decoders, decoders.SelectMany(d => d.Extensions).Where(known.Contains).ToFrozenSet(StringComparer.Ordinal));
     }
 
     private sealed record Snapshot(IReadOnlyList<PhotoDecoderInfo> Decoders, FrozenSet<string> Extensions);

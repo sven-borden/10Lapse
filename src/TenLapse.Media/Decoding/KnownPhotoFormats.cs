@@ -60,6 +60,7 @@ public static class KnownPhotoFormats
         [
             ".cr2", ".cr3", ".crw", ".nef", ".nrw", ".arw", ".srf", ".sr2", ".dng", ".orf", ".ori", ".rw2", ".rwl",
             ".raf", ".pef", ".srw", ".3fr", ".erf", ".kdc", ".dcr", ".mrw", ".mef", ".mos", ".iiq", ".x3f",
+            ".ari", ".bay", ".cap", ".dcs", ".drf", ".eip", ".fff", ".k25", ".ptx", ".pxn", ".raw",
         ],
         RawExtension);
 

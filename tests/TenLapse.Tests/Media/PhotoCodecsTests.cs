@@ -23,7 +23,31 @@ public sealed class PhotoCodecsTests
     [InlineData("clip.mp4")]
     [InlineData("no-extension")]
     [InlineData("trailing.")]
+    [InlineData("icon.ico")]
+    [InlineData("icon.icon")]
+    [InlineData("pointer.cur")]
+    [InlineData("texture.dds")]
+    [InlineData("bitmap.rle")]
+    [InlineData("metadata.exif")]
     public void OtherFilesAreNotReadable(string name) => Assert.False(PhotoCodecs.IsReadable(name));
+
+    [Fact]
+    public void OnlyKnownPhotoFormatsAreReadableEvenWhenADecoderRegistersMore()
+    {
+        // Windows' decoders register .ico, .cur, .dds and .rle too: an import must not pick up icons and textures.
+        Assert.Contains(PhotoCodecs.Decoders, d => d.Extensions.Contains(".ico"));
+        Assert.All(PhotoCodecs.Extensions, e => Assert.NotNull(KnownPhotoFormats.Find(e)));
+        Assert.All(PhotoCodecs.Decoders.SelectMany(d => d.Extensions).Where(e => KnownPhotoFormats.Find(e) is not null), e => Assert.True(PhotoCodecs.IsReadable("x" + e), e));
+    }
+
+    [Fact]
+    public void EveryExtensionTheRawDecoderRegistersIsKnown()
+    {
+        var raw = PhotoCodecs.Decoders.FirstOrDefault(d => d.Extensions.Contains(".cr3"));
+        Assert.SkipWhen(raw is null, "No Raw Image Extension on this PC.");
+
+        Assert.All(raw.Extensions, e => Assert.True(KnownPhotoFormats.Raw.HasExtension(e), $"{e} is not in KnownPhotoFormats.Raw"));
+    }
 
     [Fact]
     public void TheMissingFormatsAreTheKnownOnesNoDecoderReads()
