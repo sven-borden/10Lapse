@@ -30,6 +30,21 @@ Set-StrictMode -Version Latest
 $root = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $root 'src\TenLapse.App\TenLapse.App.csproj'
 $outDir = Join-Path $root 'dist\store'
+$manifestPath = Join-Path $root 'src\TenLapse.App\Package.appxmanifest'
+
+# The identity of the existing Store listing. Partner Center rejects any other, so
+# these literals are checked against the manifest and the built bundle on purpose.
+$storeName = '62394glaglasven.10Lapse'
+$storePublisher = 'CN=A4CDA1AE-2891-435C-B73F-FCA7B39485F4'
+$legacyVersion = [version]'2.1.1.0'
+
+$manifestIdentity = ([xml](Get-Content $manifestPath -Raw)).SelectSingleNode("//*[local-name()='Package']/*[local-name()='Identity']")
+if ($manifestIdentity.GetAttribute('Name') -ne $storeName -or $manifestIdentity.GetAttribute('Publisher') -ne $storePublisher) {
+    Write-Host ("pack: FAILED, Package.appxmanifest Identity is {0} / {1}, expected {2} / {3}" -f $manifestIdentity.GetAttribute('Name'), $manifestIdentity.GetAttribute('Publisher'), $storeName, $storePublisher) -ForegroundColor Red
+    exit 1
+}
+$expectedName = $manifestIdentity.GetAttribute('Name')
+$expectedPublisher = $manifestIdentity.GetAttribute('Publisher')
 
 # Same handling as gate.ps1: the user install of the .NET 10 SDK wins when it exists.
 $userDotnet = Join-Path $env:LOCALAPPDATA 'Microsoft\dotnet'
@@ -79,12 +94,19 @@ if ($exitCode -ne 0 -or $upload.Count -ne 1) {
     exit 1
 }
 
-# The upload wraps the bundle; check the bundle holds both architectures.
+# The upload wraps the bundle; check it holds both architectures and the Store identity.
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $bundle = Get-ChildItem $outDir -Filter '*.msixbundle' -File -Recurse | Select-Object -First 1
 $zip = [System.IO.Compression.ZipFile]::OpenRead($bundle.FullName)
 try {
     $parts = @($zip.Entries | Where-Object { $_.FullName -like '*.msix' } | ForEach-Object { $_.FullName })
+    $entry = $zip.GetEntry('AppxMetadata/AppxBundleManifest.xml')
+    if (-not $entry) {
+        Write-Host 'pack: FAILED, the bundle has no AppxMetadata/AppxBundleManifest.xml' -ForegroundColor Red
+        exit 1
+    }
+    $reader = [System.IO.StreamReader]::new($entry.Open())
+    try { $bundleManifest = [xml]$reader.ReadToEnd() } finally { $reader.Dispose() }
 }
 finally { $zip.Dispose() }
 foreach ($arch in 'x64', 'arm64') {
@@ -94,7 +116,26 @@ foreach ($arch in 'x64', 'arm64') {
     }
 }
 
+$identity = $bundleManifest.SelectSingleNode("//*[local-name()='Identity']")
+$bundleName = $identity.GetAttribute('Name')
+$bundlePublisher = $identity.GetAttribute('Publisher')
+$bundleVersionText = $identity.GetAttribute('Version')
+$bundleVersion = $null
+if ($bundleName -ne $expectedName) {
+    Write-Host "pack: FAILED, the bundle Identity Name is '$bundleName', expected '$expectedName'" -ForegroundColor Red
+    exit 1
+}
+if ($bundlePublisher -ne $expectedPublisher) {
+    Write-Host "pack: FAILED, the bundle Identity Publisher is '$bundlePublisher', expected '$expectedPublisher'" -ForegroundColor Red
+    exit 1
+}
+if (-not [version]::TryParse($bundleVersionText, [ref]$bundleVersion) -or $bundleVersion.Revision -ne 0 -or $bundleVersion -le $legacyVersion) {
+    Write-Host "pack: FAILED, the bundle Version is '$bundleVersionText'; it must be above $legacyVersion and end in .0 (the Store reserves the fourth part)" -ForegroundColor Red
+    exit 1
+}
+
 Write-Host ('pack: ok in {0:N1} s' -f ((Get-Date) - $started).TotalSeconds)
+Write-Host "pack: version  $bundleVersionText"
 Write-Host ('pack: bundle   {0:N1} MB  {1}' -f ($bundle.Length / 1MB), $bundle.FullName)
 Write-Host ('pack: upload   {0:N1} MB  {1}' -f ($upload[0].Length / 1MB), $upload[0].FullName) -ForegroundColor Green
 exit 0
