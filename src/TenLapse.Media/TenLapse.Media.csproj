@@ -5,10 +5,14 @@
     <TargetPlatformMinVersion>$(TenLapseWindowsMinVersion)</TargetPlatformMinVersion>
     <!-- Win2D ships a native DLL per architecture, so Media builds per platform like the app. -->
     <Platforms>x64;ARM64</Platforms>
+    <!-- CsWin32 generates the Media Foundation interop (NativeMethods.txt) as unsafe code. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Graphics.Win2D" />
+    <PackageReference Include="Microsoft.Windows.CsWin32" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
