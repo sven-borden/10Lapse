@@ -27,6 +27,9 @@ public sealed partial class ShellView : UserControl
 
         _infoBarShadow = FlyoutShadow.Attach(InfoBarShadowCaster);
         _infoBars = new InfoBarPresenter(infoBars, InfoBarLayer, ShellInfoBar, InfoBarDetails, InfoBarDetailList);
+
+        // The shell leaves the tree only when the window closes; the shadow goes with it.
+        Unloaded += (_, _) => _infoBarShadow.Dispose();
     }
 
     /// <summary>The shell's view model, for x:Bind.</summary>
@@ -48,6 +51,10 @@ public sealed partial class ShellView : UserControl
     /// <summary>Takes the theme again for what follows it by hand (high contrast switched, say).</summary>
     public void RefreshTheme() => _infoBarShadow.Recolor();
 
-    /// <summary>Stops following the InfoBar queue (the window closed).</summary>
-    public void Detach() => _infoBars.Detach();
+    /// <summary>Stops following the InfoBar queue and takes the InfoBar shadow down (the window closed).</summary>
+    public void Detach()
+    {
+        _infoBars.Detach();
+        _infoBarShadow.Dispose();
+    }
 }
