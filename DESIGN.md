@@ -139,7 +139,7 @@ components:
     height: "32px"
   segmented-track:
     backgroundColor: "{colors.segment-track-light}"
-    rounded: "{rounded.card}"
+    rounded: "5px"
     padding: "2px"
     height: "32px"
   segmented-selected:
