@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+using System.Collections.Immutable;
 
 namespace TenLapse.Core.Projects;
 
@@ -35,48 +35,101 @@ public enum ProjectChanges
 }
 
 /// <summary>Carries the <see cref="ProjectChanges"/> of one mutation.</summary>
-public sealed class ProjectChangedEventArgs(ProjectChanges changes) : EventArgs
+public sealed class ProjectChangedEventArgs(ProjectChanges changes, ProjectSnapshot snapshot) : EventArgs
 {
     /// <summary>What changed.</summary>
     public ProjectChanges Changes { get; } = changes;
+
+    /// <summary>The project as this change left it.</summary>
+    public ProjectSnapshot Snapshot { get; } = snapshot;
+}
+
+/// <summary>
+/// The whole state of a <see cref="Project"/> at one <see cref="Version"/>. Immutable, so any thread can hold
+/// one for as long as it likes (the preview's draw thread, #19; the encoder, #22): it never changes under it.
+/// </summary>
+public sealed record ProjectSnapshot
+{
+    internal static ProjectSnapshot Empty { get; } = new();
+
+    private ProjectSnapshot()
+    {
+    }
+
+    /// <summary>Counts the changes: 0 for a new project, one more after every mutation that changed something.</summary>
+    public long Version { get; internal init; }
+
+    /// <summary>The frames in playback order.</summary>
+    public ImmutableArray<Frame> Frames { get; internal init; } = [];
+
+    /// <summary>The files import could not read, in the order they were reported.</summary>
+    public ImmutableArray<SkippedFile> SkippedFiles { get; internal init; } = [];
+
+    /// <summary>The project name.</summary>
+    public string Name { get; internal init; } = Project.DefaultName;
+
+    /// <summary>The speed.</summary>
+    public TimingSettings Timing { get; internal init; } = TimingSettings.Default;
+
+    /// <summary>The output shape.</summary>
+    public FrameSettings FrameSettings { get; internal init; } = FrameSettings.Default;
+
+    /// <summary>Resolution, format and quality.</summary>
+    public OutputSettings Output { get; internal init; } = OutputSettings.Default;
+
+    /// <summary>The order the user chose.</summary>
+    public SortMode SortMode { get; internal init; } = SortMode.CaptureTime;
+
+    /// <summary>True after any change since the project was created or last exported.</summary>
+    public bool IsDirty { get; internal init; }
 }
 
 /// <summary>
 /// One timelapse being edited: the ordered frames, the files import skipped, and the timing, frame, output
-/// and sort settings. A small mutable aggregate: every mutation goes through a method or setter here, marks
-/// the project dirty and raises <see cref="Changed"/> once. The frame and setting values themselves are
-/// immutable records.
+/// and sort settings. Every mutation goes through a method or setter here, publishes a new
+/// <see cref="ProjectSnapshot"/>, marks the project dirty and raises <see cref="Changed"/> once.
 /// </summary>
 /// <remarks>
-/// Not thread-safe: mutate it on one thread (the UI thread; #12 marshals its import batches there). A
-/// project is never cleared: <c>New project</c> replaces the whole instance, so nothing of the old one can
+/// <para>
+/// <b>Single writer, many readers.</b> Only the thread that created the project (the UI thread) may change
+/// it; every mutating method and setter throws <see cref="InvalidOperationException"/> on any other thread
+/// (#12 marshals its import batches to the UI thread). Any thread may read: <see cref="Snapshot"/>,
+/// <see cref="Frames"/> and the other getters read one immutable snapshot that a mutation replaces in a
+/// single reference write, so a reader never sees a half-made change. A reader that needs several values to
+/// agree (the frames and the timing, say) takes <see cref="Snapshot"/> once and reads from it.
+/// </para>
+/// <para>
+/// A project is never cleared: <c>New project</c> replaces the whole instance, so nothing of the old one can
 /// survive into the new one. Removing a frame removes it from the project, never from disk.
+/// </para>
 /// </remarks>
 public sealed class Project
 {
     /// <summary>The name of a project that has no folder to be named after.</summary>
     public const string DefaultName = "Timelapse";
 
-    private readonly List<Frame> _frames = [];
+    private readonly int _ownerThreadId = Environment.CurrentManagedThreadId;
+
+    // Owner-thread bookkeeping for the duplicate checks; readers never touch these.
     private readonly HashSet<string> _paths = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<Guid> _ids = [];
-    private readonly List<SkippedFile> _skippedFiles = [];
 
-    /// <summary>Creates an empty, clean project with the default settings.</summary>
-    public Project()
-    {
-        Frames = new ReadOnlyCollection<Frame>(_frames);
-        SkippedFiles = new ReadOnlyCollection<SkippedFile>(_skippedFiles);
-    }
+    private volatile ProjectSnapshot _state = ProjectSnapshot.Empty;
 
-    /// <summary>Raised after every mutation, once per call, on the mutating thread.</summary>
+    /// <summary>Raised after every mutation, once per call, on the owner thread.</summary>
     public event EventHandler<ProjectChangedEventArgs>? Changed;
 
-    /// <summary>The frames in playback order. A live read-only view.</summary>
-    public IReadOnlyList<Frame> Frames { get; }
+    /// <summary>The current state, whole. Safe on any thread.</summary>
+    public ProjectSnapshot Snapshot => _state;
 
-    /// <summary>The files import could not read, in the order they were reported. A live read-only view.</summary>
-    public IReadOnlyList<SkippedFile> SkippedFiles { get; }
+    /// <summary>See <see cref="ProjectSnapshot.Version"/>.</summary>
+    public long Version => _state.Version;
+
+    /// <summary>The frames in playback order: an immutable snapshot, safe on any thread.</summary>
+    public ImmutableArray<Frame> Frames => _state.Frames;
+
+    /// <summary>The files import could not read, in the order they were reported: an immutable snapshot.</summary>
+    public ImmutableArray<SkippedFile> SkippedFiles => _state.SkippedFiles;
 
     /// <summary>
     /// The project name, for the title bar and the suggested export file name. Setting null, empty or
@@ -84,60 +137,78 @@ public sealed class Project
     /// </summary>
     public string Name
     {
-        get;
+        get => _state.Name;
         set
         {
+            EnsureWritable();
             var name = string.IsNullOrWhiteSpace(value) ? DefaultName : value.Trim();
-            if (name != field)
+            if (name != _state.Name)
             {
-                field = name;
-                Commit(ProjectChanges.Name);
+                Commit(_state with { Name = name }, ProjectChanges.Name);
             }
         }
-    } = DefaultName;
+    }
 
     /// <summary>The speed (#17).</summary>
     public TimingSettings Timing
     {
-        get;
-        set => Set(ref field, value, ProjectChanges.Timing);
-    } = TimingSettings.Default;
+        get => _state.Timing;
+        set
+        {
+            if (Changes(_state.Timing, value))
+            {
+                Commit(_state with { Timing = value }, ProjectChanges.Timing);
+            }
+        }
+    }
 
     /// <summary>The output shape (#18).</summary>
     public FrameSettings FrameSettings
     {
-        get;
-        set => Set(ref field, value, ProjectChanges.FrameSettings);
-    } = FrameSettings.Default;
+        get => _state.FrameSettings;
+        set
+        {
+            if (Changes(_state.FrameSettings, value))
+            {
+                Commit(_state with { FrameSettings = value }, ProjectChanges.FrameSettings);
+            }
+        }
+    }
 
     /// <summary>Resolution, format and quality (#23).</summary>
     public OutputSettings Output
     {
-        get;
-        set => Set(ref field, value, ProjectChanges.Output);
-    } = OutputSettings.Default;
+        get => _state.Output;
+        set
+        {
+            if (Changes(_state.Output, value))
+            {
+                Commit(_state with { Output = value }, ProjectChanges.Output);
+            }
+        }
+    }
 
     /// <summary>The order the user chose (#15). Setting it does not reorder; #15 calls <see cref="ReorderFrames"/>.</summary>
     public SortMode SortMode
     {
-        get;
+        get => _state.SortMode;
         set
         {
+            EnsureWritable();
             if (!Enum.IsDefined(value))
             {
                 throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown sort mode.");
             }
 
-            if (value != field)
+            if (value != _state.SortMode)
             {
-                field = value;
-                Commit(ProjectChanges.SortMode);
+                Commit(_state with { SortMode = value }, ProjectChanges.SortMode);
             }
         }
-    } = SortMode.CaptureTime;
+    }
 
     /// <summary>True after any change since the project was created or last exported.</summary>
-    public bool IsDirty { get; private set; }
+    public bool IsDirty => _state.IsDirty;
 
     /// <summary>
     /// True when replacing this project would lose something the user did: it changed since it was created
@@ -168,9 +239,10 @@ public sealed class Project
     /// <returns>How many frames were added.</returns>
     public int AddFrames(IEnumerable<Frame> frames)
     {
+        EnsureWritable();
         ArgumentNullException.ThrowIfNull(frames);
 
-        var added = 0;
+        var added = new List<Frame>();
         foreach (var frame in frames)
         {
             ArgumentNullException.ThrowIfNull(frame, nameof(frames));
@@ -180,22 +252,22 @@ public sealed class Project
             }
 
             _ids.Add(frame.Id);
-            _frames.Add(frame);
-            added++;
+            added.Add(frame);
         }
 
-        if (added > 0)
+        if (added.Count > 0)
         {
-            Commit(ProjectChanges.Frames);
+            Commit(_state with { Frames = _state.Frames.AddRange(added) }, ProjectChanges.Frames);
         }
 
-        return added;
+        return added.Count;
     }
 
     /// <summary>Removes the frames with these ids from the project; the files stay on disk. Unknown ids are ignored.</summary>
     /// <returns>How many frames were removed.</returns>
     public int RemoveFrames(IEnumerable<Guid> ids)
     {
+        EnsureWritable();
         ArgumentNullException.ThrowIfNull(ids);
 
         var doomed = ids.Where(_ids.Contains).ToHashSet();
@@ -204,15 +276,15 @@ public sealed class Project
             return 0;
         }
 
-        foreach (var frame in _frames.Where(frame => doomed.Contains(frame.Id)))
+        var frames = _state.Frames;
+        foreach (var frame in frames.Where(frame => doomed.Contains(frame.Id)))
         {
             _ids.Remove(frame.Id);
             _paths.Remove(frame.SourcePath);
         }
 
-        var removed = _frames.RemoveAll(frame => doomed.Contains(frame.Id));
-        Commit(ProjectChanges.Frames);
-        return removed;
+        Commit(_state with { Frames = frames.RemoveAll(frame => doomed.Contains(frame.Id)) }, ProjectChanges.Frames);
+        return doomed.Count;
     }
 
     /// <summary>
@@ -221,71 +293,83 @@ public sealed class Project
     /// </summary>
     public void ReorderFrames(IReadOnlyList<Guid> order)
     {
+        EnsureWritable();
         ArgumentNullException.ThrowIfNull(order);
 
-        var byId = _frames.ToDictionary(frame => frame.Id);
-        if (order.Count != _frames.Count || order.Distinct().Count() != order.Count || !order.All(byId.ContainsKey))
+        var frames = _state.Frames;
+        var byId = frames.ToDictionary(frame => frame.Id);
+        if (order.Count != frames.Length || order.Distinct().Count() != order.Count || !order.All(byId.ContainsKey))
         {
             throw new ArgumentException("The order must list every frame id in the project exactly once.", nameof(order));
         }
 
-        if (order.SequenceEqual(_frames.Select(frame => frame.Id)))
+        if (order.SequenceEqual(frames.Select(frame => frame.Id)))
         {
             return;
         }
 
-        _frames.Clear();
-        _frames.AddRange(order.Select(id => byId[id]));
-        Commit(ProjectChanges.Frames);
+        Commit(_state with { Frames = [.. order.Select(id => byId[id])] }, ProjectChanges.Frames);
     }
 
     /// <summary>Appends files import could not read (#13).</summary>
     public void AddSkippedFiles(IEnumerable<SkippedFile> files)
     {
+        EnsureWritable();
         ArgumentNullException.ThrowIfNull(files);
 
-        var before = _skippedFiles.Count;
-        foreach (var file in files)
+        var batch = files.ToList();
+        foreach (var file in batch)
         {
             ArgumentNullException.ThrowIfNull(file, nameof(files));
-            _skippedFiles.Add(file);
         }
 
-        if (_skippedFiles.Count > before)
+        if (batch.Count > 0)
         {
-            Commit(ProjectChanges.SkippedFiles);
+            Commit(_state with { SkippedFiles = _state.SkippedFiles.AddRange(batch) }, ProjectChanges.SkippedFiles);
         }
     }
 
     /// <summary>Records a finished export (#24): the project has no unsaved work until it changes again.</summary>
     public void MarkExported()
     {
-        if (IsDirty)
+        EnsureWritable();
+        if (_state.IsDirty)
         {
-            IsDirty = false;
-            Changed?.Invoke(this, new ProjectChangedEventArgs(ProjectChanges.Dirty));
+            Publish(_state with { IsDirty = false }, ProjectChanges.Dirty);
         }
     }
 
-    private void Set<T>(ref T field, T value, ProjectChanges change)
+    private bool Changes<T>(T current, T value)
         where T : class
     {
+        EnsureWritable();
         ArgumentNullException.ThrowIfNull(value);
-        if (!EqualityComparer<T>.Default.Equals(field, value))
+        return !EqualityComparer<T>.Default.Equals(current, value);
+    }
+
+    private void EnsureWritable()
+    {
+        if (Environment.CurrentManagedThreadId != _ownerThreadId)
         {
-            field = value;
-            Commit(change);
+            throw new InvalidOperationException(
+                "A project is changed only on the thread that created it (the UI thread). Other threads read its Snapshot.");
         }
     }
 
-    private void Commit(ProjectChanges changes)
+    // A real change: the next version, dirty.
+    private void Commit(ProjectSnapshot next, ProjectChanges changes)
     {
-        if (!IsDirty)
+        if (!_state.IsDirty)
         {
-            IsDirty = true;
             changes |= ProjectChanges.Dirty;
         }
 
-        Changed?.Invoke(this, new ProjectChangedEventArgs(changes));
+        Publish(next with { Version = _state.Version + 1, IsDirty = true }, changes);
+    }
+
+    private void Publish(ProjectSnapshot next, ProjectChanges changes)
+    {
+        _state = next;
+        Changed?.Invoke(this, new ProjectChangedEventArgs(changes, next));
     }
 }

@@ -109,10 +109,10 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     [MemberNotNull(nameof(Name), nameof(TimingReadout))]
     private void Refresh()
     {
-        FrameCount = Model.Frames.Count;
-        SkippedFileCount = Model.SkippedFiles.Count;
+        FrameCount = Model.Frames.Length;
+        SkippedFileCount = Model.SkippedFiles.Length;
         Name = Model.Name;
         IsDirty = Model.IsDirty;
-        TimingReadout = ProjectText.TimingReadout(Model.Frames.Count, Model.Timing);
+        TimingReadout = ProjectText.TimingReadout(Model.Frames.Length, Model.Timing);
     }
 }

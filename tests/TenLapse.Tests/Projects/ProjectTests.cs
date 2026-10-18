@@ -204,8 +204,8 @@ public sealed class ProjectTests
         first.AddFrames(TestFrames.Folder("a", 3));
         second.AddFrames(TestFrames.Folder("b", 2));
 
-        Assert.Equal(3, first.Frames.Count);
-        Assert.Equal(2, second.Frames.Count);
+        Assert.Equal(3, first.Frames.Length);
+        Assert.Equal(2, second.Frames.Length);
         Assert.All(second.Frames, frame => Assert.Contains(@"\b\", frame.SourcePath));
     }
 }
