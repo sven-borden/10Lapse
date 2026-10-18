@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Placeholder identity so a local MSIX builds. Issue #4 replaces Identity and
-  PublisherDisplayName with the Store values (product 9NBN2XH6S4D8) and owns
-  the capabilities: runFullTrust and nothing else (CLAUDE.md, invariants).
+  The Store identity of the 10Lapse listing (product 9NBN2XH6S4D8), identical to
+  the 2.1.1 UWP package so 3.0 installs as an update. Name, Publisher,
+  PublisherDisplayName and the Application Id must not change. Capabilities:
+  runFullTrust and nothing else (CLAUDE.md, invariants).
 -->
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
@@ -11,13 +12,13 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="TenLapse.Placeholder"
-    Publisher="CN=TenLapse Placeholder"
+    Name="62394glaglasven.10Lapse"
+    Publisher="CN=A4CDA1AE-2891-435C-B73F-FCA7B39485F4"
     Version="3.0.0.0" />
 
   <Properties>
     <DisplayName>10Lapse</DisplayName>
-    <PublisherDisplayName>10Lapse placeholder publisher</PublisherDisplayName>
+    <PublisherDisplayName>glaglasven</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
