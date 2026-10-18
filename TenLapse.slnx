@@ -1,15 +1,19 @@
 <Solution>
   <!--
-    Solution platforms x64 and ARM64 only. Win2D and the Windows App SDK need a
-    real architecture, so the Windows projects map to the solution platform;
-    Core stays Any CPU.
+    Win2D and the Windows App SDK need a real architecture, so the Windows
+    projects (App, Media, Tests) always build as x64 or ARM64; Core is Any CPU.
+    "Any CPU" is listed so that plain `dotnet build` and `dotnet test` default
+    to it (otherwise they pick ARM64, the first platform alphabetically, which
+    cannot run here); it builds the Windows projects as x64.
   -->
   <Configurations>
+    <Platform Name="Any CPU" />
     <Platform Name="x64" />
     <Platform Name="ARM64" />
   </Configurations>
   <Folder Name="/src/">
     <Project Path="src/TenLapse.App/TenLapse.App.csproj">
+      <Platform Solution="*|Any CPU" Project="x64" />
       <Platform Solution="*|x64" Project="x64" />
       <Platform Solution="*|ARM64" Project="ARM64" />
     </Project>
@@ -17,12 +21,14 @@
       <Platform Project="Any CPU" />
     </Project>
     <Project Path="src/TenLapse.Media/TenLapse.Media.csproj">
+      <Platform Solution="*|Any CPU" Project="x64" />
       <Platform Solution="*|x64" Project="x64" />
       <Platform Solution="*|ARM64" Project="ARM64" />
     </Project>
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/TenLapse.Tests/TenLapse.Tests.csproj">
+      <Platform Solution="*|Any CPU" Project="x64" />
       <Platform Solution="*|x64" Project="x64" />
       <Platform Solution="*|ARM64" Project="ARM64" />
     </Project>
