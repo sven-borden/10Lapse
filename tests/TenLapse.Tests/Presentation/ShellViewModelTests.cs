@@ -61,6 +61,27 @@ public sealed class ShellViewModelTests
         Assert.Equal([true, true], disposedAtReport);
     }
 
+    [Fact]
+    public async Task TwoDirectCallsWhileTheQuestionIsOpenAskOnceAndReplaceOnce()
+    {
+        var dialogs = new PendingDialogService();
+        var shell = Shell(dialogs);
+        shell.CurrentProject.Model.AddFrames(TestFrames.Folder("a", 2));
+        var replaced = 0;
+        shell.ProjectReplaced += (_, _) => replaced++;
+
+        // ExecuteAsync does not check CanExecute, so a second caller (a key accelerator, say) gets straight in.
+        var first = shell.NewProjectCommand.ExecuteAsync(null);
+        var second = shell.NewProjectCommand.ExecuteAsync(null);
+        dialogs.Answer(confirmed: true);
+        await first;
+        await second;
+
+        Assert.Equal(1, dialogs.Asked);
+        Assert.Equal(1, replaced);
+        Assert.Equal(0, shell.CurrentProject.FrameCount);
+    }
+
     private static ShellViewModel Shell(IDialogService dialogs, Func<Project>? createProject = null, FakeErrorSink? errors = null) =>
         new(dialogs, errors ?? new FakeErrorSink(), createProject);
 

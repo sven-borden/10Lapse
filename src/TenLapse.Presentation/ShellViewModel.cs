@@ -22,6 +22,7 @@ public sealed partial class ShellViewModel : ObservableObject
     private readonly IDialogService _dialogs;
     private readonly IErrorSink _errors;
     private readonly Func<Project> _createProject;
+    private bool _replacing;
 
     /// <summary>Creates the shell with a fresh project.</summary>
     /// <param name="dialogs">Asks before work is lost.</param>
@@ -68,7 +69,28 @@ public sealed partial class ShellViewModel : ObservableObject
     [RelayCommand]
     private async Task NewProjectAsync()
     {
-        // Only this command replaces CurrentProject, and it never runs twice at once, so it is the same after the await.
+        // AsyncRelayCommand blocks re-entry only through CanExecute, which ExecuteAsync does not check, so a
+        // second caller while the question is open would ask again and replace twice. Ignore it instead.
+        if (_replacing)
+        {
+            return;
+        }
+
+        _replacing = true;
+        try
+        {
+            await ReplaceProjectAsync();
+        }
+        finally
+        {
+            _replacing = false;
+        }
+    }
+
+    private async Task ReplaceProjectAsync()
+    {
+        // Only this method replaces CurrentProject, and _replacing keeps it from running twice at once, so it
+        // is the same after the await.
         var previous = CurrentProject;
         if (previous.Model.HasWorkToLose
             && !await _dialogs.ConfirmAsync(ProjectText.NewProjectConfirmation(previous.FrameCount)))
