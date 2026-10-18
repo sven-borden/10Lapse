@@ -38,8 +38,9 @@ conventions live next to the code; do not duplicate them here.
   early; opens the PR once the gate is green; and hands back at "PR open". It
   never merges.
 - No CI/CD (Sven, 2026-10-18). The local gate replaces it:
-  `pwsh -File scripts/gate.ps1` (restore, build x64 Debug with warnings as
-  errors, run every test). The orchestrator reruns the gate on the PR branch
+  `pwsh -File scripts/gate.ps1` (checks every csproj is in `TenLapse.slnx`,
+  restores, builds x64 Debug with warnings as errors, runs every test, builds
+  x64 Release). The orchestrator reruns the gate on the PR branch
   before merging.
 - Review: one read-only reviewer agent per PR, same model tier as the build.
   The findings go to a **fresh** implementer with a fixer brief, not back to
@@ -54,7 +55,8 @@ conventions live next to the code; do not duplicate them here.
   not have it: prepend the folder to `PATH`. Set `DOTNET_CLI_TELEMETRY_OPTOUT=1`
   and `DOTNET_NOLOGO=1`.
 - No Visual Studio. The .NET CLI alone builds a WinUI 3 app (Windows App SDK
-  2.5.1, `Microsoft.Windows.SDK.BuildTools` 10.0.28000.2705, Win2D 1.4.0),
+  2.5.1, `Microsoft.Windows.SDK.BuildTools` 10.0.28000.2705, Win2D 1.4.0,
+  target `net10.0-windows10.0.26100.0`),
   launches it unpackaged, and packs an MSIX with
   `-p:GenerateAppxPackageOnBuild=true`. On MSIX builds the warning "Path to
   `mspdbcmf.exe` could not be found" is expected: that tool ships with Visual

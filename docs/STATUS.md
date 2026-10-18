@@ -4,7 +4,7 @@ Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Wave 1 is running: #3 and #6.
+Wave 2 is running: #4 and #10.
 
 ## Waves
 
@@ -15,14 +15,14 @@ Opus 5.5, **S** is Sonnet 5.5.
 | Wave | Issue | Model | Area | Status |
 |---|---|---|---|---|
 | 0 | #1 Toolchain | orchestrator | machine | done |
-| 1 | #3 Tag legacy, new solution layout, gate script | O | repo root, all projects | running |
-| 1 | #6 Privacy policy and README | S | `README.md`, `PRIVACY.md` | running |
-| 2 | #4 Package identity and MSIX | S | `src/TenLapse.App` manifest, packaging props | |
-| 2 | #10 Exact frame timing | S | `TenLapse.Core/Timing` | |
+| 1 | #3 Tag legacy, new solution layout, gate script | O | repo root, all projects | merged #61 |
+| 1 | #6 Privacy policy and README | S | `README.md`, `PRIVACY.md` | merged #60 |
+| 2 | #4 Package identity and MSIX | S | `src/TenLapse.App` manifest, packaging props | running |
+| 2 | #10 Exact frame timing | S | `TenLapse.Core/Timing` | running |
 | 3 | #8 Spike: streaming encode | O | `TenLapse.Media`, a spike harness | |
 | 3 | #27 Design tokens and theme resources | S | `TenLapse.App/Themes` | |
 | 4 | #9 Spike: encoder capabilities | O | `TenLapse.Media/Encoding` | |
-| 4 | #16 Project model and view models | O | `TenLapse.Core/Projects`, `TenLapse.App/ViewModels` | |
+| 4 | #16 Project model and view models | O | `TenLapse.Core/Projects`, new `TenLapse.Presentation` | |
 | 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | |
 | 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | |
 | 6 | #26 One error path | O | App startup, `Core/Diagnostics` | |
@@ -76,7 +76,33 @@ own waves once 3.0 ships.
   Debug builds run unpackaged for local checks.
 - 2026-10-18: Architectures x64 and ARM64. x86 only if #2 shows real x86
   installs.
+- 2026-10-18 (Sven): the orchestrator merges each PR itself after the review,
+  the fix round and a green gate on the PR branch.
+- 2026-10-18 (#3): solution `TenLapse.slnx`. Windows projects target
+  `net10.0-windows10.0.26100.0`, minimum 10.0.17763.0; Core is `net10.0`. Each
+  new project needs the same three platform mappings in the slnx (Any CPU maps
+  Windows projects to x64), and the gate fails if a tracked csproj is missing
+  from it. App root namespace is `TenLapse`; Core's is `TenLapse.Core`.
+- 2026-10-18 (#3): Release is an MSIX that carries the .NET runtime
+  (`SelfContained`, there is no Store framework package for .NET) and depends on
+  the Windows App Runtime 2 framework package. Pack builds
+  (`GenerateAppxPackageOnBuild=true`) do not treat MSBuild warnings as errors,
+  because the uncoded `mspdbcmf.exe` warning cannot be exempted; every other
+  build does.
+- 2026-10-18 (#3): NuGet audit: NU1900 to NU1902 stay warnings, NU1903 (high)
+  and NU1904 (critical) fail the build.
+- 2026-10-18 (#3): tests never reference the App exe (NETSDK1151 against the
+  self-contained Release App). View models live in a separate `net10.0`
+  library, `src/TenLapse.Presentation`, created in #16.
+- 2026-10-18 (#3): Debug is unpackaged, so it has no package identity:
+  `ApplicationData.Current`, `Package.Current` and `StoreContext` throw there.
+  Code that needs identity guards for it or has a path that works without it
+  (#21 settings, #31 rating).
 
 ## Merged
 
-Nothing yet.
+- #6 PR #60: `PRIVACY.md` and `README.md`. Owner: point the Partner Center
+  privacy URL at `PRIVACY.md`; choose a license (none yet, all rights
+  reserved).
+- #3 PR #61: tag `v2.1.1-legacy`, legacy UWP removed, new solution, gate
+  (`solution`, `restore`, Debug `build`, `test`, Release `build`, about 19 s).
