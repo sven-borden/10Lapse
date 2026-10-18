@@ -35,12 +35,14 @@ public sealed class EncoderProbeTests : IDisposable
         var cache = Path.Combine(_directory, "encoders.json");
         var token = TestContext.Current.CancellationToken;
 
-        var probed = await EncoderProbe.LoadOrProbeAsync(cache, token);
+        var scratch = Directory.CreateDirectory(Path.Combine(_directory, "scratch")).FullName;
+
+        var probed = await EncoderProbe.LoadOrProbeAsync(cache, scratch, token);
         Assert.False(probed.IsProvisional, $"The probe could not finish: {string.Join(", ", probed.Probes.Select(p => p.Failure))}");
         Assert.True(probed.Supports(VideoFormat.Mp4H264, 1920, 1080, new Fraction(30, 1)));
         Assert.True(probed.MaxResolution(VideoFormat.Mp4H264, FrameAspect.Ratio16x9, new Fraction(30, 1)) >= OutputResolution.Hd1080);
         Assert.True(File.Exists(cache));
-        Assert.Empty(Directory.GetFiles(Path.GetTempPath(), "10lapse-probe-*"));
+        Assert.Empty(Directory.GetFiles(scratch));
 
         var clock = Stopwatch.StartNew();
         var cached = await EncoderProbe.LoadOrProbeAsync(cache, token);
