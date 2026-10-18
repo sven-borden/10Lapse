@@ -1,7 +1,11 @@
+using System.Collections.Concurrent;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Channels;
 using Microsoft.Graphics.Canvas;
 using TenLapse.Core.Timing;
+using TenLapse.Media.Inspection;
 using Windows.Foundation;
 using Windows.Graphics.DirectX;
 using Windows.Media.Core;
@@ -14,49 +18,73 @@ using Windows.UI;
 namespace TenLapse.Media.Export;
 
 /// <summary>What an export wrote.</summary>
-/// <param name="FrameCount">Frames handed to the encoder and released by it.</param>
+/// <param name="FrameCount">Frames the encoder took.</param>
 /// <param name="Duration">The clip duration in 100 ns ticks, <see cref="FrameTiming.Duration"/>.</param>
-/// <param name="HardwareAccelerationEnabled">Whether <c>MediaTranscoder</c> was allowed a GPU encoder.</param>
-public sealed record VideoExportResult(int FrameCount, long Duration, bool HardwareAccelerationEnabled);
+/// <param name="EncodeStage">The encode stage that wrote the file.</param>
+/// <param name="Encoder">
+/// The H.264 encoder that ran, as the sink writer reports it; null for
+/// <see cref="VideoEncodeStage.MediaTranscoder"/>, which does not say.
+/// </param>
+public sealed record VideoExportResult(int FrameCount, long Duration, VideoEncodeStage EncodeStage, VideoEncoderInfo? Encoder);
+
+/// <summary>Why an export failed in the encoder.</summary>
+public enum VideoExportFailure
+{
+    /// <summary>No H.264 encoder could be loaded.</summary>
+    EncoderUnavailable,
+
+    /// <summary>The encoder refused the size, frame rate or bitrate.</summary>
+    SettingsRejected,
+
+    /// <summary>The encoder failed while writing.</summary>
+    EncoderFailed,
+
+    /// <summary>The encoder stopped taking frames.</summary>
+    EncoderStalled,
+}
 
 /// <summary>The encoder could not be set up or failed while writing.</summary>
 public sealed class VideoExportException : Exception
 {
     /// <summary>Creates the exception.</summary>
-    public VideoExportException(string message, TranscodeFailureReason reason, Exception? innerException = null)
-        : base(message, innerException) => Reason = reason;
+    public VideoExportException(string message, VideoExportFailure failure, Exception? innerException = null)
+        : base(message, innerException) => Failure = failure;
 
-    /// <summary>Why <c>MediaTranscoder</c> refused, or <see cref="TranscodeFailureReason.Unknown"/> for a failure while encoding.</summary>
-    public TranscodeFailureReason Reason { get; }
+    /// <summary>What went wrong, for the message the app shows (#22).</summary>
+    public VideoExportFailure Failure { get; }
 }
 
 /// <summary>
-/// The streaming export: decode, process (Win2D fill) and encode (H.264 MP4
-/// through <c>MediaTranscoder</c>) run at once, connected by bounded queues, so
-/// memory stays flat whatever the frame count.
+/// The streaming export: decode, process (Win2D fill) and encode (H.264 MP4)
+/// run at once, connected by bounded queues, so memory stays flat whatever the
+/// frame count.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Decode runs up to <see cref="VideoExportSettings.DecodeAhead"/> frames ahead.
-/// Drawing takes one of <see cref="VideoExportSettings.RenderTargets"/>
-/// output-sized <c>CanvasRenderTarget</c>s and blocks when none is free; the
-/// <c>MediaStreamSource</c> hands each target to Media Foundation as a Direct3D
-/// surface sample and gets it back when the sample's <c>Processed</c> event fires.
+/// Each frame is drawn into a new output-sized <c>CanvasRenderTarget</c>, and at
+/// most <see cref="VideoExportSettings.RenderTargets"/> of them wait for the
+/// encoder at once. A target is never drawn twice: Media Foundation may still
+/// read a surface after it has taken the sample, so the pipeline drops its own
+/// reference once the encoder has the frame and Media Foundation's reference
+/// keeps the texture alive until it is done.
+/// </para>
+/// <para>
 /// Sample time and duration of frame n are <see cref="FrameTiming.FrameStart"/>
-/// and <see cref="FrameTiming.FrameDuration"/>, never accumulated.
+/// and <see cref="FrameTiming.FrameDuration"/>, never accumulated. Every export
+/// runs on its own <see cref="VideoDevice"/>; frame sources get that device.
+/// </para>
 /// </remarks>
 public static class VideoExporter
 {
-    /// <summary>
-    /// How long drawing waits for the encoder to release a render target before
-    /// the export fails instead of hanging.
-    /// </summary>
+    /// <summary>How long drawing waits for the encoder to take a frame before the export fails instead of hanging.</summary>
     public static readonly TimeSpan EncoderStallTimeout = TimeSpan.FromSeconds(60);
 
     /// <summary>Writes every frame of <paramref name="source"/> to an H.264 MP4 at <paramref name="outputPath"/>, replacing it.</summary>
-    /// <param name="progress">Receives the number of frames the encoder has taken, from Media Foundation threads.</param>
+    /// <param name="progress">Receives the number of frames the encoder has taken, from worker threads.</param>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
     /// <exception cref="VideoExportException">The encoder refused the settings or failed.</exception>
-    /// <remarks>Any exception a frame source throws is rethrown as it is. The file is left behind on failure.</remarks>
+    /// <remarks>Any exception a frame source throws is rethrown as it is. The file is left behind on failure and cancellation.</remarks>
     public static async Task<VideoExportResult> ExportAsync(
         IFrameSource source,
         string outputPath,
@@ -81,14 +109,14 @@ public static class VideoExporter
         private readonly IFrameSource _source;
         private readonly VideoExportSettings _settings;
         private readonly IProgress<int>? _progress;
-        private readonly CanvasDevice _device = GraphicsDevice.Shared;
         private readonly Channel<Task<CanvasBitmap>> _decoded;
-        private readonly Channel<CanvasRenderTarget> _free = Channel.CreateUnbounded<CanvasRenderTarget>();
+        private readonly SemaphoreSlim _slots;
+        private readonly ConcurrentDictionary<CanvasRenderTarget, byte> _live = new();
         private readonly Channel<RenderedFrame> _rendered;
         private readonly CancellationTokenSource _stop = new();
+        private VideoDevice? _device;
         private Exception? _failure;
-        private int _framesSupplied;
-        private int _framesEncoded;
+        private int _framesTaken;
 
         public ExportRun(IFrameSource source, VideoExportSettings settings, IProgress<int>? progress)
         {
@@ -100,7 +128,9 @@ public static class VideoExporter
                 SingleReader = true,
                 SingleWriter = true,
             });
-            _rendered = Channel.CreateBounded<RenderedFrame>(new BoundedChannelOptions(Math.Max(1, settings.RenderTargets))
+            var slots = Math.Max(1, settings.RenderTargets);
+            _slots = new SemaphoreSlim(slots, slots);
+            _rendered = Channel.CreateBounded<RenderedFrame>(new BoundedChannelOptions(slots)
             {
                 SingleReader = true,
                 SingleWriter = true,
@@ -109,30 +139,123 @@ public static class VideoExporter
 
         private Fraction Rate => _settings.FrameRate;
 
+        private CanvasDevice Canvas => _device!.Canvas;
+
         public async Task<VideoExportResult> RunAsync(string outputPath, CancellationToken cancellationToken)
         {
             using var registration = cancellationToken.Register(_stop.Cancel);
-            var targets = new List<CanvasRenderTarget>();
-            var source = CreateMediaStreamSource();
-            source.SampleRequested += OnSampleRequested;
-            var transcoder = new MediaTranscoder { HardwareAccelerationEnabled = _settings.HardwareAcceleration };
             var producing = Task.CompletedTask;
             var processing = Task.CompletedTask;
+            VideoEncoderInfo? encoder;
             try
             {
-                for (var i = 0; i < Math.Max(1, _settings.RenderTargets); i++)
+                _device = VideoDevice.Create();
+                void StartPipeline()
                 {
-                    var target = new CanvasRenderTarget(
-                        _device,
-                        _settings.Width,
-                        _settings.Height,
-                        96f,
-                        DirectXPixelFormat.B8G8R8A8UIntNormalized,
-                        CanvasAlphaMode.Premultiplied);
-                    targets.Add(target);
-                    _free.Writer.TryWrite(target);
+                    producing = Task.Run(ProduceAsync);
+                    processing = Task.Run(ProcessAsync);
                 }
 
+                encoder = _settings.EncodeStage == VideoEncodeStage.SinkWriter
+                    ? await EncodeWithSinkWriterAsync(outputPath, StartPipeline).ConfigureAwait(false)
+                    : await EncodeWithTranscoderAsync(outputPath, StartPipeline).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                _stop.Cancel();
+                cancellationToken.ThrowIfCancellationRequested();
+                var failure = Volatile.Read(ref _failure);
+                if (failure is not null && failure != exception)
+                {
+                    // The source or the drawing failed first; the encoder's error is only the consequence.
+                    ExceptionDispatchInfo.Throw(failure);
+                }
+
+                if (exception is VideoExportException or OperationCanceledException || exception == failure)
+                {
+                    throw;
+                }
+
+                throw new VideoExportException($"The H.264 encoder failed: {exception.Message}", VideoExportFailure.EncoderFailed, exception);
+            }
+            finally
+            {
+                _stop.Cancel();
+                await Task.WhenAll(producing, processing).ConfigureAwait(false);
+                while (_decoded.Reader.TryRead(out var load))
+                {
+                    DisposeWhenLoaded(load);
+                }
+
+                // Frames drawn but never taken, or taken but not reported processed when the run stopped.
+                foreach (var target in _live.Keys)
+                {
+                    target.Dispose();
+                }
+
+                _device?.Dispose();
+                _stop.Dispose();
+                _slots.Dispose();
+            }
+
+            var taken = Volatile.Read(ref _framesTaken);
+            if (taken != _source.FrameCount)
+            {
+                throw new VideoExportException(
+                    $"The encoder finished after {taken} of {_source.FrameCount} frames.",
+                    VideoExportFailure.EncoderFailed);
+            }
+
+            return new VideoExportResult(taken, FrameTiming.Duration(taken, Rate), _settings.EncodeStage, encoder);
+        }
+
+        private async Task<VideoEncoderInfo?> EncodeWithSinkWriterAsync(string outputPath, Action startPipeline)
+        {
+            // The sink writer blocks in WriteSample and Finalize: keep it off the caller's thread.
+            return await Task.Run(
+                    async () =>
+                    {
+                        SinkWriterEncoder encoder;
+                        try
+                        {
+                            encoder = new SinkWriterEncoder(outputPath, _settings, _device!);
+                        }
+                        catch (COMException exception)
+                        {
+                            throw SetupFailure(exception);
+                        }
+
+                        using (encoder)
+                        {
+                            startPipeline();
+                            while (await _rendered.Reader.WaitToReadAsync(_stop.Token).ConfigureAwait(false))
+                            {
+                                while (_rendered.Reader.TryRead(out var frame))
+                                {
+                                    _stop.Token.ThrowIfCancellationRequested();
+                                    encoder.Write(
+                                        frame.Target,
+                                        FrameTiming.FrameStart(frame.Index, Rate),
+                                        FrameTiming.FrameDuration(frame.Index, Rate));
+                                    FrameTaken(frame.Target);
+                                }
+                            }
+
+                            encoder.Finish();
+                            return encoder.Encoder;
+                        }
+                    },
+                    _stop.Token)
+                .ConfigureAwait(false);
+        }
+
+        private async Task<VideoEncoderInfo?> EncodeWithTranscoderAsync(string outputPath, Action startPipeline)
+        {
+            var source = CreateMediaStreamSource();
+            source.SampleRequested += OnSampleRequested;
+            try
+            {
+                var transcoder = new MediaTranscoder { HardwareAccelerationEnabled = _settings.HardwareAcceleration };
                 using var output = await FileRandomAccessStream.OpenAsync(
                         outputPath,
                         FileAccessMode.ReadWrite,
@@ -147,59 +270,34 @@ public static class VideoExporter
                 {
                     throw new VideoExportException(
                         $"The H.264 encoder cannot take this export ({prepared.FailureReason}).",
-                        prepared.FailureReason);
+                        prepared.FailureReason == TranscodeFailureReason.CodecNotFound
+                            ? VideoExportFailure.EncoderUnavailable
+                            : VideoExportFailure.SettingsRejected);
                 }
 
-                producing = Task.Run(ProduceAsync);
-                processing = Task.Run(ProcessAsync);
+                startPipeline();
                 await prepared.TranscodeAsync().AsTask(_stop.Token).ConfigureAwait(false);
                 await output.FlushAsync().AsTask(_stop.Token).ConfigureAwait(false);
-            }
-            catch (Exception exception)
-            {
-                _stop.Cancel();
-                cancellationToken.ThrowIfCancellationRequested();
-                if (Volatile.Read(ref _failure) is { } failure)
-                {
-                    // The source or the drawing failed first; the transcoder's error is only the consequence.
-                    ExceptionDispatchInfo.Throw(failure);
-                }
-
-                if (exception is VideoExportException or OperationCanceledException)
-                {
-                    throw;
-                }
-
-                throw new VideoExportException($"The H.264 encoder failed: {exception.Message}", TranscodeFailureReason.Unknown, exception);
+                return null;
             }
             finally
             {
-                _stop.Cancel();
-                await Task.WhenAll(producing, processing).ConfigureAwait(false);
-                while (_decoded.Reader.TryRead(out var load))
-                {
-                    DisposeWhenLoaded(load);
-                }
-
                 source.SampleRequested -= OnSampleRequested;
-                foreach (var target in targets)
-                {
-                    target.Dispose();
-                }
-
-                _stop.Dispose();
             }
-
-            var supplied = Volatile.Read(ref _framesSupplied);
-            if (supplied != _source.FrameCount)
-            {
-                throw new VideoExportException(
-                    $"The encoder finished after {supplied} of {_source.FrameCount} frames.",
-                    TranscodeFailureReason.Unknown);
-            }
-
-            return new VideoExportResult(supplied, FrameTiming.Duration(supplied, Rate), transcoder.HardwareAccelerationEnabled);
         }
+
+        private static VideoExportException SetupFailure(COMException exception) => (uint)exception.HResult switch
+        {
+            // MF_E_TOPO_CODEC_NOT_FOUND, MF_E_TRANSFORM_NOT_POSSIBLE_FOR_CURRENT_MEDIATYPE_COMBINATION
+            0xC00D5212 or 0xC00D6D60 => new VideoExportException(
+                $"No H.264 encoder could be loaded ({exception.Message}).", VideoExportFailure.EncoderUnavailable, exception),
+
+            // MF_E_INVALIDMEDIATYPE, MF_E_UNSUPPORTED_RATE, E_INVALIDARG
+            0xC00D36B4 or 0xC00D3E9D or 0x80070057 => new VideoExportException(
+                $"The H.264 encoder refused these settings ({exception.Message}).", VideoExportFailure.SettingsRejected, exception),
+
+            _ => new VideoExportException($"The H.264 encoder could not start: {exception.Message}", VideoExportFailure.EncoderFailed, exception),
+        };
 
         private MediaStreamSource CreateMediaStreamSource()
         {
@@ -243,7 +341,7 @@ public static class VideoExporter
                 for (var i = 0; i < _source.FrameCount; i++)
                 {
                     _stop.Token.ThrowIfCancellationRequested();
-                    var load = _source.LoadAsync(i, _device, _stop.Token);
+                    var load = _source.LoadAsync(i, Canvas, _stop.Token);
                     try
                     {
                         await _decoded.Writer.WriteAsync(load, _stop.Token).ConfigureAwait(false);
@@ -288,7 +386,21 @@ public static class VideoExporter
 
                         using (bitmap)
                         {
-                            var target = await TakeFreeTargetAsync().ConfigureAwait(false);
+                            if (!await _slots.WaitAsync(EncoderStallTimeout, _stop.Token).ConfigureAwait(false))
+                            {
+                                throw new VideoExportException(
+                                    $"The encoder has not taken a frame for {EncoderStallTimeout.TotalSeconds:0} s.",
+                                    VideoExportFailure.EncoderStalled);
+                            }
+
+                            var target = new CanvasRenderTarget(
+                                Canvas,
+                                _settings.Width,
+                                _settings.Height,
+                                96f,
+                                DirectXPixelFormat.B8G8R8A8UIntNormalized,
+                                CanvasAlphaMode.Premultiplied);
+                            _live.TryAdd(target, 0);
                             using (var session = target.CreateDrawingSession())
                             {
                                 session.Clear(black);
@@ -311,19 +423,18 @@ public static class VideoExporter
             }
         }
 
-        private async Task<CanvasRenderTarget> TakeFreeTargetAsync()
+        // The encoder has the frame: drop our reference to the target (Media Foundation holds its own) and free a slot.
+        private void FrameTaken(CanvasRenderTarget target)
         {
-            try
+            if (_live.TryRemove(target, out _))
             {
-                return await _free.Reader.ReadAsync(_stop.Token).AsTask().WaitAsync(EncoderStallTimeout, _stop.Token).ConfigureAwait(false);
+                target.Dispose();
             }
-            catch (TimeoutException exception)
-            {
-                throw new VideoExportException(
-                    $"The encoder has not released a frame for {EncoderStallTimeout.TotalSeconds:0} s.",
-                    TranscodeFailureReason.Unknown,
-                    exception);
-            }
+
+            _slots.Release();
+            // Not inside ?.Report(...): with no progress the count would never move.
+            var taken = Interlocked.Increment(ref _framesTaken);
+            _progress?.Report(taken);
         }
 
         // Media Foundation raises this on its own threads, one request at a time per stream.
@@ -365,18 +476,15 @@ public static class VideoExporter
 
         private MediaStreamSample CreateSample(RenderedFrame frame)
         {
-            var sample = MediaStreamSample.CreateFromDirect3D11Surface(
-                frame.Target,
-                TimeSpan.FromTicks(FrameTiming.FrameStart(frame.Index, Rate)));
+            var time = TimeSpan.FromTicks(FrameTiming.FrameStart(frame.Index, Rate));
+            var sample = _settings.TranscoderInput == TranscoderInput.Direct3DSurface
+                ? MediaStreamSample.CreateFromDirect3D11Surface(frame.Target, time)
+                : MediaStreamSample.CreateFromBuffer(frame.Target.GetPixelBytes().AsBuffer(), time);
             sample.Duration = TimeSpan.FromTicks(FrameTiming.FrameDuration(frame.Index, Rate));
             sample.KeyFrame = true;
-            sample.Processed += (_, _) =>
-            {
-                // The encoder no longer reads the surface: the target can be drawn again.
-                _free.Writer.TryWrite(frame.Target);
-                _progress?.Report(Interlocked.Increment(ref _framesEncoded));
-            };
-            Interlocked.Increment(ref _framesSupplied);
+
+            // Processed means Media Foundation has taken the sample, not that it has read the surface.
+            sample.Processed += (_, _) => FrameTaken(frame.Target);
             return sample;
         }
 

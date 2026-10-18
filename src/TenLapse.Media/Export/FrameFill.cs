@@ -18,10 +18,15 @@ public static class FrameFill
             throw new ArgumentException($"Sizes must be positive; got source {source}, output {output}.");
         }
 
-        var scale = Math.Max(output.Width / source.Width, output.Height / source.Height);
-        var width = Math.Min(source.Width, output.Width / scale);
-        var height = Math.Min(source.Height, output.Height / scale);
-        return new Rect((source.Width - width) / 2, (source.Height - height) / 2, width, height);
+        // Keep the whole of the side that limits the scale, so it is exact rather than off by rounding.
+        if (output.Width * source.Height >= source.Width * output.Height)
+        {
+            var height = source.Width * output.Height / output.Width;
+            return new Rect(0, (source.Height - height) / 2, source.Width, height);
+        }
+
+        var width = source.Height * output.Width / output.Height;
+        return new Rect((source.Width - width) / 2, 0, width, source.Height);
     }
 
     /// <summary>Draws <paramref name="source"/> filled into a session whose target is <paramref name="output"/> DIPs.</summary>
