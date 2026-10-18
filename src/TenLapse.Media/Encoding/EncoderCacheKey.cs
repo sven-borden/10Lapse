@@ -19,7 +19,10 @@ namespace TenLapse.Media.Encoding;
 /// <param name="AdapterName">The adapter's description, such as "NVIDIA GeForce RTX 4060 Ti".</param>
 /// <param name="Driver">The user-mode driver version, such as "32.0.16.1714".</param>
 /// <param name="OsBuild">The Windows version with its update revision, such as "10.0.26300.6899".</param>
-/// <param name="Encoders">Every listed encoder as <c>format:clsid</c>, sorted, separated by semicolons.</param>
+/// <param name="Encoders">
+/// Every listed encoder as <c>format:clsid:name</c>, sorted, separated by semicolons. The name counts because a
+/// Store codec (the HEVC Video Extensions' "HEVCVideoExtensionEncoder") is listed without a class id.
+/// </param>
 public sealed record EncoderCacheKey(int Schema, string Adapter, string AdapterName, string Driver, string OsBuild, string Encoders)
 {
     /// <summary>The probe schema this build writes and accepts.</summary>
@@ -35,7 +38,7 @@ public sealed record EncoderCacheKey(int Schema, string Adapter, string AdapterN
 
     /// <summary>The <see cref="Encoders"/> string for a list of encoders: order does not matter.</summary>
     public static string EncoderList(IEnumerable<EncoderMft> encoders) =>
-        string.Join(';', encoders.Select(encoder => $"{encoder.Format}:{encoder.Clsid:D}").Distinct().Order(StringComparer.Ordinal));
+        string.Join(';', encoders.Select(encoder => $"{encoder.Format}:{encoder.Clsid:D}:{encoder.Name}").Distinct().Order(StringComparer.Ordinal));
 
     // The adapter D3D11CreateDevice(null, HARDWARE) uses: the first one DXGI lists (Windows orders them by the
     // app's GPU preference). If DXGI cannot say, the key says "unknown" and the probe itself finds out.

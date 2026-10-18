@@ -14,6 +14,8 @@ using TenLapse.Spike;
 // --verify decodes the output and checks every frame's FrameCode. Results go to the console, the
 // last line is a Markdown table row. Large files belong in %TEMP%, never in the repository.
 //   TenLapse.Spike inspect FILE [--decode]
+//   TenLapse.Spike probe [--cache file.json] [--fresh] [--software]   (#9: what this PC can encode, as Markdown;
+//                         --software answers as a PC without a GPU encoder would, uncached)
 var command = args.Length > 0 ? args[0] : "help";
 var options = Options.Parse(args.Skip(1));
 try
@@ -24,6 +26,7 @@ try
         "generate" => await GenerateAsync(options),
         "encode" => await EncodeAsync(options),
         "inspect" => Inspect(options),
+        "probe" => await ProbeReport.RunAsync(options.Text("cache", Path.Combine(Path.GetTempPath(), "10lapse-encoders.json")), options.Flag("fresh"), options.Flag("software")),
         _ => Help(),
     };
 }
@@ -35,7 +38,7 @@ catch (Exception exception) when (exception is ArgumentException or FormatExcept
 
 static int Help()
 {
-    Console.WriteLine("TenLapse.Spike encoders | generate --dir D | encode [options] | inspect FILE [--decode]");
+    Console.WriteLine("TenLapse.Spike encoders | generate --dir D | encode [options] | inspect FILE [--decode] | probe [--cache F] [--fresh]");
     return 1;
 }
 

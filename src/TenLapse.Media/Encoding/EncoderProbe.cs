@@ -78,10 +78,18 @@ public static class EncoderProbe
 
     /// <summary>Probes without the cache. Runs on the thread pool.</summary>
     public static Task<EncoderCapabilities> ProbeAsync(CancellationToken cancellationToken = default) =>
-        Task.Run(() => Probe(EncoderCatalog.Find(), cancellationToken), cancellationToken);
+        ProbeAsync(hardwareAcceleration: true, cancellationToken);
+
+    /// <summary>
+    /// Probes without the cache; with <paramref name="hardwareAcceleration"/> off, as a PC without a GPU encoder
+    /// would answer (the sink writer then loads only software encoders). For diagnostics and tests; the app uses
+    /// <see cref="LoadOrProbeAsync"/>.
+    /// </summary>
+    public static Task<EncoderCapabilities> ProbeAsync(bool hardwareAcceleration, CancellationToken cancellationToken = default) =>
+        Task.Run(() => Probe(EncoderCatalog.Find(), cancellationToken, hardwareAcceleration), cancellationToken);
 
     // On an MTA thread: the device must not belong to an STA (see VideoExporter's thread rule).
-    private static EncoderCapabilities Probe(IReadOnlyList<EncoderMft> encoders, CancellationToken cancellationToken)
+    private static EncoderCapabilities Probe(IReadOnlyList<EncoderMft> encoders, CancellationToken cancellationToken, bool hardwareAcceleration = true)
     {
         var clock = Stopwatch.StartNew();
         VideoDevice device;
@@ -104,6 +112,12 @@ public static class EncoderProbe
                     continue;
                 }
 
+                // Without a listed GPU encoder (or with hardware off) nothing can come out as hardware, so a
+                // software result settles every smaller size too.
+                var ceiling = hardwareAcceleration && encoders.Any(encoder => encoder.Format == format && encoder.IsHardware)
+                    ? EncoderKind.Hardware
+                    : EncoderKind.Software;
+
                 foreach (var fps in FramesPerSecond)
                 {
                     foreach (var shape in Shapes)
@@ -112,12 +126,12 @@ public static class EncoderProbe
                         {
                             cancellationToken.ThrowIfCancellationRequested();
                             var size = OutputSize.For(resolution, shape);
-                            if (IsSettled(probes, format, size.Width, size.Height, fps))
+                            if (IsSettled(probes, format, size.Width, size.Height, fps, ceiling))
                             {
                                 continue;
                             }
 
-                            var probe = TestEncode(device, format, size.Width, size.Height, fps);
+                            var probe = TestEncode(device, format, size.Width, size.Height, fps, hardwareAcceleration);
                             probes.Add(probe);
                             if (probe.Failure == VideoExportFailure.GraphicsDeviceLost)
                             {
@@ -135,13 +149,14 @@ public static class EncoderProbe
 
     /// <summary>
     /// True when the probes so far fix the answer for this size and rate: the best result among the probes that
-    /// cover it equals the worst among those it covers.
+    /// cover it equals the worst among those it covers (or <paramref name="ceiling"/>, the best any encode of this
+    /// codec can get).
     /// </summary>
-    internal static bool IsSettled(IReadOnlyList<ProbedSize> probes, VideoFormat format, int width, int height, int fps)
+    internal static bool IsSettled(IReadOnlyList<ProbedSize> probes, VideoFormat format, int width, int height, int fps, EncoderKind ceiling)
     {
         var rate = new Fraction(fps, 1);
         var atLeast = EncoderKind.None;
-        var atMost = EncoderKind.Hardware;
+        var atMost = ceiling;
         foreach (var probe in probes)
         {
             if (probe.Format != format)
@@ -163,12 +178,12 @@ public static class EncoderProbe
         return atLeast >= atMost;
     }
 
-    private static ProbedSize TestEncode(VideoDevice device, VideoFormat format, int width, int height, int fps)
+    private static ProbedSize TestEncode(VideoDevice device, VideoFormat format, int width, int height, int fps, bool hardwareAcceleration)
     {
         var path = Path.Combine(Path.GetTempPath(), $"10lapse-probe-{Guid.NewGuid():N}.mp4");
         var clock = Stopwatch.StartNew();
         var rate = new Fraction(fps, 1);
-        var settings = new VideoExportSettings(width, height, rate) { Format = format };
+        var settings = new VideoExportSettings(width, height, rate) { Format = format, HardwareAcceleration = hardwareAcceleration };
         try
         {
             SinkWriterEncoder encoder;

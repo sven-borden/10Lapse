@@ -11,7 +11,10 @@ namespace TenLapse.Media.Encoding;
 /// <param name="Format">The codec it writes.</param>
 /// <param name="Name">Its friendly name, such as "NVIDIA HEVC Encoder MFT".</param>
 /// <param name="IsHardware">True for a GPU encoder (NVENC, Quick Sync, AMF, a Qualcomm or Arm SoC block).</param>
-/// <param name="Clsid">Its class id; the list of them is part of the probe's cache key.</param>
+/// <param name="Clsid">
+/// Its class id, part of the probe's cache key; <see cref="Guid.Empty"/> for a Store codec, which is listed
+/// without one (the HEVC Video Extensions' encoder).
+/// </param>
 public sealed record EncoderMft(VideoFormat Format, string Name, bool IsHardware, Guid Clsid);
 
 /// <summary>
@@ -111,7 +114,7 @@ public static class EncoderCatalog
         }
         catch (COMException)
         {
-            // Every registered MFT has one; an activate without it still counts in the key, as the empty id.
+            // A Store codec's activate has none (MF_E_ATTRIBUTENOTFOUND); the key also has the name.
             return Guid.Empty;
         }
     }
