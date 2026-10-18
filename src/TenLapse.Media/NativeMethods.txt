@@ -66,3 +66,11 @@ IMFTransform
 MF_LOW_LATENCY
 ICodecAPI
 CODECAPI_AVEncMPVDefaultBPictureCount
+MF_MT_YUV_MATRIX
+MF_MT_VIDEO_PRIMARIES
+MF_MT_TRANSFER_FUNCTION
+MF_MT_VIDEO_NOMINAL_RANGE
+MFVideoTransferMatrix
+MFVideoPrimaries
+MFVideoTransferFunction
+MFNominalRange

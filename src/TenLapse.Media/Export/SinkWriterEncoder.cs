@@ -67,6 +67,9 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
             {
                 output.SetUINT32(PInvoke.MF_MT_AVG_BITRATE, settings.EffectiveBitrate);
                 output.SetUINT32(PInvoke.MF_MT_MPEG2_PROFILE, (uint)eAVEncH264VProfile.eAVEncH264VProfile_High);
+                var (matrix, primaries) = ColourFor(settings.Height);
+                SetColour(output, primaries, MFNominalRange.MFNominalRange_16_235);
+                output.SetUINT32(PInvoke.MF_MT_YUV_MATRIX, (uint)matrix);
                 _writer.AddStream(output, out _stream);
             }
             finally
@@ -79,6 +82,7 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
             try
             {
                 input.SetUINT32(PInvoke.MF_MT_ALL_SAMPLES_INDEPENDENT, 1);
+                SetColour(input, MFVideoPrimaries.MFVideoPrimaries_BT709, MFNominalRange.MFNominalRange_0_255);
                 _writer.SetInputMediaType(_stream, input, null);
             }
             finally
@@ -222,6 +226,30 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
         {
             Release(codec);
         }
+    }
+
+    /// <summary>
+    /// The colour tags of the output. The matrix is the one the sink writer's colour converter uses: BT.601 up to
+    /// 576 lines, BT.709 above, whatever the width (measured 2026-10 with NVIDIA and with the software encoder:
+    /// 1920x540 is BT.601, 1024x578 and 360x640 BT.709). Tagging the types does not change its choice, so the
+    /// tags follow it. Up to 576 lines the primaries say SMPTE 170M rather than the source's BT.709: Media
+    /// Foundation's decoder decodes BT.601 only when the primaries are SD too (with BT.709 primaries it used the
+    /// BT.709 matrix and shifted saturated colours by up to 20 levels); no mainstream player converts between
+    /// those two sets of primaries. <c>ColourTests</c> fails if a converter or decoder ever decides otherwise.
+    /// </summary>
+    internal static (MFVideoTransferMatrix Matrix, MFVideoPrimaries Primaries) ColourFor(int height) =>
+        height > 576
+            ? (MFVideoTransferMatrix.MFVideoTransferMatrix_BT709, MFVideoPrimaries.MFVideoPrimaries_BT709)
+            : (MFVideoTransferMatrix.MFVideoTransferMatrix_BT601, MFVideoPrimaries.MFVideoPrimaries_SMPTE170M);
+
+    // Win2D draws sRGB-encoded BGRA: BT.709 primaries with (close enough to) the BT.709 transfer, full range in,
+    // studio range (16-235) out. With these and MF_MT_YUV_MATRIX the encoder writes the VUI colour description,
+    // so players decode with the matrix the converter used instead of guessing by size.
+    private static void SetColour(IMFMediaType type, MFVideoPrimaries primaries, MFNominalRange range)
+    {
+        type.SetUINT32(PInvoke.MF_MT_VIDEO_PRIMARIES, (uint)primaries);
+        type.SetUINT32(PInvoke.MF_MT_TRANSFER_FUNCTION, (uint)MFVideoTransferFunction.MFVideoTransFunc_709);
+        type.SetUINT32(PInvoke.MF_MT_VIDEO_NOMINAL_RANGE, (uint)range);
     }
 
     private IMFMediaType VideoType(VideoExportSettings settings, Guid subtype)
