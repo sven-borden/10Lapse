@@ -399,8 +399,8 @@ public sealed partial class ImportViewModel : ObservableObject
 
         if (failed.Count > 0)
         {
-            target.RemoveFrames(failed);
-            target.AddSkippedFiles(skipped);
+            // One commit, so no reader sees a frame gone that is not listed as skipped yet.
+            target.RemoveFramesAndSkip(failed, skipped);
         }
 
         if (updates.Count > 0)

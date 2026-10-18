@@ -132,6 +132,7 @@ public sealed class ProjectThreadingTests
         Assert.Throws<ObjectDisposedException>(() => project.InsertFrames(0, TestFrames.Folder("b", 1)));
         Assert.Throws<ObjectDisposedException>(() => project.UpdateFrames([frames[0]]));
         Assert.Throws<ObjectDisposedException>(() => project.RemoveFrames([frames[0].Id]));
+        Assert.Throws<ObjectDisposedException>(() => project.RemoveFramesAndSkip([frames[0].Id], []));
         Assert.Throws<ObjectDisposedException>(() => project.ReorderFrames([frames[1].Id, frames[0].Id]));
         Assert.Throws<ObjectDisposedException>(() => project.AddSkippedFiles([]));
         Assert.Throws<ObjectDisposedException>(() => project.Name = "Other");
