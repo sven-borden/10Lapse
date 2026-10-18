@@ -11,6 +11,9 @@ using TenLapse.Spike;
 //   TenLapse.Spike encode [--source synthetic|jpeg] [--dir D] [--frames 1000] [--source-size 6000x4000]
 //                         [--output-size 3840x2160] [--fps 30] [--out file.mp4] [--software]
 //                         [--targets 4] [--decode-ahead 4] [--verify]
+//                         [--stage sinkwriter|transcoder] [--input cpu|d3d]   (--input: transcoder only)
+// --verify decodes the output and checks every frame's FrameCode. Results go to the console, the
+// last line is a Markdown table row. Large files belong in %TEMP%, never in the repository.
 //   TenLapse.Spike inspect FILE [--decode]
 var command = args.Length > 0 ? args[0] : "help";
 var options = Options.Parse(args.Skip(1));
@@ -25,7 +28,7 @@ try
         _ => Help(),
     };
 }
-catch (Exception exception) when (exception is ArgumentException or FormatException or FileNotFoundException)
+catch (Exception exception) when (exception is ArgumentException or FormatException or FileNotFoundException or VideoExportException)
 {
     Console.Error.WriteLine($"error: {exception.Message}");
     return 2;

@@ -43,8 +43,9 @@ public sealed record VideoExportSettings
     public uint? Bitrate { get; init; }
 
     /// <summary>
-    /// Lets <c>MediaTranscoder</c> use a GPU encoder when there is one (the
-    /// default). Off forces the software encoder, for comparison.
+    /// Lets Media Foundation use a GPU encoder when there is one (the default;
+    /// <c>MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS</c> for the sink writer). Off
+    /// forces the Microsoft software encoder, for comparison.
     /// </summary>
     public bool HardwareAcceleration { get; init; } = true;
 
@@ -52,8 +53,8 @@ public sealed record VideoExportSettings
     public int DecodeAhead { get; init; } = 4;
 
     /// <summary>
-    /// How many output-sized render targets cycle between drawing and the encoder.
-    /// A target is reused only after Media Foundation reports its sample processed.
+    /// How many drawn output frames may wait for the encoder at once. Each frame
+    /// gets a new render target; none is ever drawn twice (see <see cref="VideoExporter"/>).
     /// </summary>
     public int RenderTargets { get; init; } = 4;
 

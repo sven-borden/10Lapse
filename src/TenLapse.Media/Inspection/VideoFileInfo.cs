@@ -11,7 +11,11 @@ namespace TenLapse.Media.Inspection;
 /// <param name="Width">Frame width in pixels.</param>
 /// <param name="Height">Frame height in pixels.</param>
 /// <param name="FrameRate">The nominal frame rate the stream declares, or null if it declares none.</param>
-/// <param name="Duration">The presentation duration (<c>MF_PD_DURATION</c>).</param>
+/// <param name="Duration">
+/// The presentation duration (<c>MF_PD_DURATION</c>). Media Foundation's MP4
+/// sink keeps 1000 time units per frame and rounds the track duration down to
+/// one, so it can be up to a thousandth of a frame short of the exact clip length.
+/// </param>
 /// <param name="SampleTimes">Every sample's presentation time, ascending.</param>
 /// <param name="SampleDurations">Each sample's duration, in the same order; -1 where the file gives none.</param>
 public sealed record VideoFileInfo(

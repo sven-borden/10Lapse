@@ -11,9 +11,9 @@ public sealed record VideoEncoderInfo(string Name, bool IsHardware);
 
 /// <summary>
 /// Lists the H.264 encoders installed, in the order Media Foundation prefers
-/// them: hardware first, then software. <c>MediaTranscoder</c> with hardware
-/// acceleration on picks from the same list, so the first entry is the encoder
-/// it is expected to use (which one actually ran is measured, see the #8 spike).
+/// them: hardware first, then software. The sink writer with hardware
+/// transforms on picks from the same list, so the first entry is the encoder it
+/// is expected to use; <see cref="Export.VideoExportResult.Encoder"/> says which one ran.
 /// </summary>
 public static class H264Encoders
 {

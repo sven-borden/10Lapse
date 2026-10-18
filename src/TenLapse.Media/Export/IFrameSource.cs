@@ -9,7 +9,9 @@ public interface IFrameSource
     int FrameCount { get; }
 
     /// <summary>
-    /// Starts loading frame <paramref name="index"/> on <paramref name="device"/>.
+    /// Starts loading frame <paramref name="index"/> on <paramref name="device"/>,
+    /// the export's own device: the bitmap must be made on it, not on
+    /// <see cref="GraphicsDevice.Shared"/>.
     /// The pipeline calls this in index order from one thread, keeps up to
     /// <see cref="VideoExportSettings.DecodeAhead"/> loads running at once, and
     /// disposes every bitmap it gets back. The returned task must not complete on

@@ -12,6 +12,9 @@ public enum VideoEncodeStage
     /// <summary>
     /// <c>MediaTranscoder</c> fed by a <c>MediaStreamSource</c>. Kept for the
     /// comparison; see <see cref="TranscoderInput"/> for why it is not the default.
+    /// It also failed outright at 0.5 fps (a COMException with no message), cannot
+    /// set low-latency mode (so the software encoder shifts every frame by one),
+    /// and does not say which encoder ran.
     /// </summary>
     MediaTranscoder,
 }
@@ -27,9 +30,12 @@ public enum TranscoderInput
     CpuBuffer,
 
     /// <summary>
-    /// <c>MediaStreamSample.CreateFromDirect3D11Surface</c>: GPU only and fast,
-    /// but with a hardware encoder about one export in three has a black frame
-    /// (seen on NVIDIA, 2026-10). Do not ship.
+    /// <c>MediaStreamSample.CreateFromDirect3D11Surface</c>. Do not ship. Measured
+    /// with NVENC (2026-10): on Win2D's shared device (with multithread protection
+    /// turned on) it ran at 130 fps for 4K but about one export in three had a
+    /// black frame; on the export's own video device (what the pipeline uses now)
+    /// the transcoder never takes the first frame and the export fails after
+    /// <see cref="VideoExporter.EncoderStallTimeout"/>.
     /// </summary>
     Direct3DSurface,
 }
