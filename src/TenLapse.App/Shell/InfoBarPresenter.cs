@@ -309,9 +309,10 @@ internal sealed class InfoBarPresenter
         {
             var button = new Button { Content = label };
 
-            // An event handler that awaits one guarded call (CLAUDE.md): RunActionAsync never throws, and the
-            // ticket captured here keeps a press during the exit (or a second press) from running it again.
-            button.Click += async (_, _) => await RunActionAsync(ticket);
+            // An event handler that awaits one guarded call (CLAUDE.md): the queue's RunActionAsync never throws, and
+            // it runs the action only while this ticket is the current one and its action is not already running, so
+            // a press during the exit (the ticket is no longer current) or a second press does nothing.
+            button.Click += async (_, _) => await _queue.RunActionAsync(ticket);
             _bar.ActionButton = button;
         }
         else
@@ -319,6 +320,4 @@ internal sealed class InfoBarPresenter
             _bar.ActionButton = null;
         }
     }
-
-    private Task RunActionAsync(InfoBarTicket ticket) => IsLive(ticket) ? _queue.RunActionAsync(ticket) : Task.CompletedTask;
 }
