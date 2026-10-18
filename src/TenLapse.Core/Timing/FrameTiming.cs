@@ -33,7 +33,22 @@ public static class FrameTiming
     }
 
     /// <summary>The length of frame <paramref name="index"/>: the next frame's start minus its own. One of two neighbouring tick values.</summary>
-    public static long FrameDuration(long index, Fraction rate) => FrameStart(index + 1, rate) - FrameStart(index, rate);
+    /// <exception cref="ArgumentOutOfRangeException">The index is negative, or the rate is zero or above 10 million fps.</exception>
+    /// <exception cref="OverflowException">The next frame's start does not fit in a <see cref="long"/>, which includes the index <see cref="long.MaxValue"/>.</exception>
+    public static long FrameDuration(long index, Fraction rate)
+    {
+        if (index < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), index, "A frame index cannot be negative.");
+        }
+
+        if (index == long.MaxValue)
+        {
+            throw new OverflowException("The frame index is too large: the next frame has no index.");
+        }
+
+        return FrameStart(index + 1, rate) - FrameStart(index, rate);
+    }
 
     /// <summary>The length of a clip of <paramref name="frameCount"/> frames, which is where frame number <paramref name="frameCount"/> would start.</summary>
     public static long Duration(long frameCount, Fraction rate) => FrameStart(frameCount, rate);

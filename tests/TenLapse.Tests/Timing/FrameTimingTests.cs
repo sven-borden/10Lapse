@@ -71,7 +71,10 @@ public sealed class FrameTimingTests
         Assert.Equal(333_333, FrameTiming.FrameStart(2, rate));
         Assert.Equal(500_000, FrameTiming.FrameStart(3, rate));
         Assert.Equal(10_000_000, FrameTiming.FrameStart(60, rate));
-        Assert.Equal(FrameTiming.FrameStart(1_234_567, rate), FrameTiming.FrameStart(1_234_567, rate));
+        // Literals worked out by hand: floor(n * 10^7 * den / num).
+        Assert.Equal(205_761_166_666, FrameTiming.FrameStart(1_234_567, rate));                  // 1,234,567 / 60 s
+        Assert.Equal(833_333_333_333, FrameTiming.FrameStart(10_000_000, new Fraction(120, 1))); // 10^7 / 120 s
+        Assert.Equal(123_456_700_000_000, FrameTiming.FrameStart(1_234_567, new Fraction(1, 10))); // 10 s per photo
     }
 
     [Fact]
@@ -128,6 +131,18 @@ public sealed class FrameTimingTests
         Assert.Throws<ArgumentOutOfRangeException>(() => FrameTiming.FrameStart(1, default));
         // Above 10 million fps a frame is shorter than one tick and starts would repeat.
         Assert.Throws<ArgumentOutOfRangeException>(() => FrameTiming.FrameStart(1, new Fraction(int.MaxValue, 1)));
+    }
+
+    [Fact]
+    public void FrameDurationOfTheLastIndexThrowsOverflowNotAMisleadingNegativeIndexError()
+    {
+        var rate = new Fraction(30, 1);
+
+        // index + 1 used to wrap to long.MinValue and report "A frame index cannot be negative".
+        var ex = Assert.Throws<OverflowException>(() => FrameTiming.FrameDuration(long.MaxValue, rate));
+        Assert.DoesNotContain("negative", ex.Message);
+        Assert.Throws<OverflowException>(() => FrameTiming.FrameDuration(long.MaxValue - 1, new Fraction(1, 10)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => FrameTiming.FrameDuration(-1, rate));
     }
 
     [Fact]
