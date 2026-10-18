@@ -18,4 +18,9 @@
   <ItemGroup>
     <ProjectReference Include="..\TenLapse.Core\TenLapse.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- The encoder seam (IVideoEncoder) and the device check the Media tests skip on. -->
+    <InternalsVisibleTo Include="TenLapse.Tests" />
+  </ItemGroup>
 </Project>

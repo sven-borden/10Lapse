@@ -19,7 +19,7 @@ namespace TenLapse.Media.Export;
 /// throttles), which is the pipeline's backpressure. The container is MP4
 /// whatever the file extension, so a <c>.mp4.partial</c> path works (#22).
 /// </remarks>
-internal sealed unsafe class SinkWriterEncoder : IDisposable
+internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
 {
     private readonly MediaFoundationSession _session = new();
     private readonly IMFDXGIDeviceManager _manager;
@@ -85,7 +85,14 @@ internal sealed unsafe class SinkWriterEncoder : IDisposable
         }
         catch
         {
+            // Once the sink writer exists it has created (or truncated) the file; before that, the file is not ours.
+            var opened = _writer is not null;
             Dispose();
+            if (opened)
+            {
+                TryDelete(path);
+            }
+
             throw;
         }
     }
@@ -229,6 +236,18 @@ internal sealed unsafe class SinkWriterEncoder : IDisposable
         catch (COMException)
         {
             return null;
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // The setup failure is what the caller needs.
         }
     }
 
