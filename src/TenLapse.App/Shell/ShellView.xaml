@@ -14,7 +14,9 @@
                  InfoBarLayer floats over the top of the stage in both states and never moves the layout.
 
   The body grid is 2 x 2 so #36 can fold the inspector under the stage below 1,000 px with one visual state:
-  InspectorPane to Grid.Row 1, Grid.Column 0, Width Auto, Height NarrowPanelHeight, BorderThickness 0,1,0,0.
+  InspectorPane to Grid.Row 1, Grid.Column 0, Width Auto, Height NarrowPanelHeight, BorderThickness 0,1,0,0 and
+  Margin 0 (its 0,1,0,0 keeps it off the Layer's top divider when docked right; under the stage it would leave a
+  1 px gap above its own divider).
   The stage and the InfoBar layer stay in cell (0, 0) and need no change.
 
   Unbuilt actions are absent, not disabled (CLAUDE.md): the command bar holds only New project for now, with
@@ -182,6 +184,10 @@
         Spacing="{StaticResource SpacingXs}">
         <!-- Slot: Add photos (#12). A subtle button with the plus icon, always visible. -->
         <!-- Slot: Sort (#15). "Sort: Capture time" with a chevron, visible with a project. -->
+        <!--
+          Ctrl+N (#38) goes on ShellRoot as a KeyboardAccelerator bound to NewProjectCommand, not on this button:
+          an accelerator on a collapsed button does not fire, and this one is collapsed without a project.
+        -->
         <Button
           x:Name="NewProjectButton"
           Height="{StaticResource ControlHeight}"
@@ -286,7 +292,10 @@
           MinHeight="{StaticResource FilmstripMinHeight}" />
       </Grid>
 
-      <!-- Inspector (#17, #18, #23, Look; #24 swaps in the export panel): 320 px, one divider on its left. -->
+      <!--
+        Inspector (#17, #18, #23, Look; #24 swaps in the export panel): 320 px, one divider on its left. The 1 px
+        top margin clears the Layer's divider; #36's narrow state must set Margin to 0 along with the rest.
+      -->
       <Border
         x:Name="InspectorPane"
         Grid.Row="0"
