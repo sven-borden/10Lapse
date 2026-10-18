@@ -140,9 +140,11 @@ public sealed class ProjectThreadingTests
         Assert.Equal(frames, project.Frames);
     }
 
+    // The test goes on on the thread pool, never inline on the new thread: that thread exits right after, and a later
+    // thread can reuse its managed id, so a project created after the await would see a stranger as its owner.
     private static Task RunOnNewThread(Action action)
     {
-        var done = new TaskCompletionSource();
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var thread = new Thread(() =>
         {
             try
