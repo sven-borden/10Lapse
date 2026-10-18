@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.Graphics.Canvas;
+using TenLapse.Core.Projects;
 using TenLapse.Media.Export;
 
 namespace TenLapse.Tests.Media;
@@ -24,7 +25,7 @@ internal sealed class SlowFrames(int count, TimeSpan loadTime) : IFrameSource
 
     public int FrameCount => count;
 
-    public Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, CancellationToken cancellationToken)
+    public Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref _started);
         OnStart?.Invoke(index);

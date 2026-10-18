@@ -1,4 +1,5 @@
 using Microsoft.Graphics.Canvas;
+using TenLapse.Core.Projects;
 
 namespace TenLapse.Media.Export;
 
@@ -19,5 +20,10 @@ public interface IFrameSource
     /// A load still running when the export stops is awaited before the device
     /// is disposed, so honour <paramref name="cancellationToken"/> where you can.
     /// </summary>
-    Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, CancellationToken cancellationToken);
+    /// <param name="outputSize">
+    /// The size the frame is drawn to (<see cref="FrameFill.Draw"/>, a centred cover crop). A source may return
+    /// any size, but one no larger than the cover size of this box (<see cref="Decoding.PhotoDecodeOptions.Cover"/>)
+    /// keeps memory down: a 24 MP photo decoded for 4K is a quarter of its full size (#22).
+    /// </param>
+    Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken);
 }

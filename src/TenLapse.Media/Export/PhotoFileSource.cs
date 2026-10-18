@@ -1,15 +1,18 @@
 using Microsoft.Graphics.Canvas;
-using Windows.Graphics.Imaging;
-using Windows.Storage;
-using Windows.Storage.Streams;
+using TenLapse.Core.Projects;
+using TenLapse.Media.Decoding;
 
 namespace TenLapse.Media.Export;
 
 /// <summary>
-/// Frames from photo files on disk, decoded with <see cref="BitmapDecoder"/>
-/// (WIC) on the CPU, then uploaded to the GPU. EXIF orientation is applied.
+/// Frames from photo files on disk, decoded by <see cref="PhotoDecoder"/> (WIC) on the CPU at the cover size of the
+/// output, then uploaded to the GPU. EXIF orientation is applied, colour converted to sRGB.
 /// </summary>
 /// <param name="paths">Absolute paths, one per frame, in frame order.</param>
+/// <remarks>
+/// A photo that cannot be decoded fails the export with a <see cref="PhotoDecodeException"/> naming the frame and
+/// the <see cref="SkipReason"/>: an export cannot leave a frame out without changing the clip's timing.
+/// </remarks>
 public sealed class PhotoFileSource(IReadOnlyList<string> paths) : IFrameSource
 {
     private readonly IReadOnlyList<string> _paths = paths ?? throw new ArgumentNullException(nameof(paths));
@@ -18,22 +21,21 @@ public sealed class PhotoFileSource(IReadOnlyList<string> paths) : IFrameSource
     public int FrameCount => _paths.Count;
 
     /// <inheritdoc/>
-    public Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, CancellationToken cancellationToken) =>
+    public Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken) =>
         // Task.Run: the first awaits complete synchronously often enough that the caller would decode inline.
-        Task.Run(() => DecodeAsync(_paths[index], device, cancellationToken), cancellationToken);
+        Task.Run(() => DecodeAsync(index, device, outputSize, cancellationToken), cancellationToken);
 
-    private static async Task<CanvasBitmap> DecodeAsync(string path, CanvasDevice device, CancellationToken cancellationToken)
+    private async Task<CanvasBitmap> DecodeAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken)
     {
-        using var stream = await FileRandomAccessStream.OpenAsync(path, FileAccessMode.Read).AsTask(cancellationToken).ConfigureAwait(false);
-        var decoder = await BitmapDecoder.CreateAsync(stream).AsTask(cancellationToken).ConfigureAwait(false);
-        using var pixels = await decoder.GetSoftwareBitmapAsync(
-                BitmapPixelFormat.Bgra8,
-                BitmapAlphaMode.Premultiplied,
-                new BitmapTransform(),
-                ExifOrientationMode.RespectExifOrientation,
-                ColorManagementMode.DoNotColorManage)
-            .AsTask(cancellationToken)
-            .ConfigureAwait(false);
-        return CanvasBitmap.CreateFromSoftwareBitmap(device, pixels);
+        // The device's largest bitmap bounds a photo far narrower than the output's aspect (a 30,000 px panorama).
+        var options = PhotoDecodeOptions.Cover(outputSize) with { MaxSide = device.MaximumBitmapSizeInPixels };
+        var result = await PhotoDecoder.DecodeAsync(_paths[index], options, cancellationToken).ConfigureAwait(false);
+        if (!result.Succeeded)
+        {
+            throw new PhotoDecodeException(result.Failure, index);
+        }
+
+        using var photo = result.Value;
+        return CanvasBitmap.CreateFromSoftwareBitmap(device, photo.Pixels);
     }
 }
