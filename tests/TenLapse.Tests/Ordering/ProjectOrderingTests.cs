@@ -23,7 +23,7 @@ public static class ProjectOrderingTests
     private static string[] Names(Project project) => [.. project.Frames.Select(frame => frame.FileName)];
 
     [Fact]
-    public static void ApplySortReordersInOneCommitAndRecordsTheMode()
+    public static void ApplySortReordersAndRecordsTheModeInOneCommit()
     {
         var project = Filled(Photo("IMG_10.jpg", 1), Photo("IMG_9.jpg", 2), Photo("IMG_2.jpg", 3));
         var changes = new List<ProjectChanges>();
@@ -34,7 +34,33 @@ public static class ProjectOrderingTests
         Assert.True(reordered);
         Assert.Equal(["IMG_2.jpg", "IMG_9.jpg", "IMG_10.jpg"], Names(project));
         Assert.Equal(SortMode.Name, project.SortMode);
-        Assert.Equal([ProjectChanges.Frames, ProjectChanges.SortMode], changes);
+        Assert.Equal([ProjectChanges.Frames | ProjectChanges.SortMode], changes);
+    }
+
+    [Fact]
+    public static void TheNewOrderIsNeverVisibleUnderTheOldMode()
+    {
+        // A listener (the filmstrip's gap markers, #20) that sees the frames reordered must already see the mode that
+        // goes with that order, or it draws name-order markers for a moment on a capture-time project.
+        var project = Filled(Photo("IMG_10.jpg", 3), Photo("IMG_9.jpg", 2), Photo("IMG_2.jpg", 1));
+        var seen = new List<(ProjectChanges Changes, SortMode Mode, string[] Names)>();
+        project.Changed += (_, e) => seen.Add((e.Changes, e.Snapshot.SortMode, [.. e.Snapshot.Frames.Select(frame => frame.FileName)]));
+
+        project.ApplySort(SortMode.Name);
+
+        // One event, and it carries both the new order and the new mode.
+        var only = Assert.Single(seen);
+        Assert.Equal(ProjectChanges.Frames | ProjectChanges.SortMode, only.Changes);
+        Assert.Equal(SortMode.Name, only.Mode);
+        Assert.Equal(["IMG_2.jpg", "IMG_9.jpg", "IMG_10.jpg"], only.Names);
+
+        // A drag is one event too: the new order and Manual together.
+        seen.Clear();
+        project.ReorderManually([project.Frames[2].Id, project.Frames[0].Id, project.Frames[1].Id]);
+        var drag = Assert.Single(seen);
+        Assert.Equal(ProjectChanges.Frames | ProjectChanges.SortMode, drag.Changes);
+        Assert.Equal(SortMode.Manual, drag.Mode);
+        Assert.Equal(["IMG_10.jpg", "IMG_2.jpg", "IMG_9.jpg"], drag.Names);
     }
 
     [Fact]

@@ -11,29 +11,36 @@ namespace TenLapse.Core.Ordering;
 public static class ProjectOrdering
 {
     /// <summary>
-    /// Sorts the project's frames by <paramref name="mode"/> (one <see cref="Project.ReorderFrames"/> commit, none when the
-    /// order does not change) and records the mode in <see cref="Project.SortMode"/>. <see cref="SortMode.Manual"/> only
-    /// records the mode: the frames stay where they are.
+    /// Sorts the project's frames by <paramref name="mode"/> and records the mode in <see cref="Project.SortMode"/>.
+    /// <see cref="SortMode.Manual"/> only records the mode: the frames stay where they are.
+    /// <para>
+    /// <b>Events.</b> One <see cref="Project.Changed"/> event, with <see cref="ProjectChanges.Frames"/> and
+    /// <see cref="ProjectChanges.SortMode"/> set as far as each really changed, so a listener never sees the new order under
+    /// the old mode. No event at all when neither changes. A drag (<see cref="ReorderManually"/>) is one event the same way.
+    /// </para>
     /// </summary>
     /// <returns>True when the order of the frames changed.</returns>
     public static bool ApplySort(this Project project, SortMode mode)
     {
         ArgumentNullException.ThrowIfNull(project);
-        var before = project.Version;
-        if (mode != SortMode.Manual)
+        if (mode == SortMode.Manual)
         {
-            var sorted = FrameSorter.Sort(project.Frames, mode);
-            project.ReorderFrames([.. sorted.Select(frame => frame.Id)]);
+            project.SortMode = mode;
+            return false;
         }
 
-        var reordered = project.Version != before;
-        project.SortMode = mode;
-        return reordered;
+        var before = project.Frames.Select(frame => frame.Id).ToArray();
+        var sorted = FrameSorter.Sort(project.Frames, mode);
+        var order = sorted.Select(frame => frame.Id).ToArray();
+        project.ReorderAndSetMode(order, mode);
+        return !order.AsSpan().SequenceEqual(before);
     }
 
     /// <summary>
     /// Sorts by the mode the frames call for (<see cref="FrameSorter.DefaultMode"/>: capture time when every frame has one,
-    /// otherwise name). For a project that was just filled by an import; it overrides a mode chosen earlier.
+    /// otherwise name). For a project that was empty before the import: it overrides the mode chosen earlier, a manual
+    /// order included. When an import adds frames to a project that already had some, call <see cref="Resort"/> instead,
+    /// which keeps the project's own mode and leaves a manual order alone (new frames at the end).
     /// </summary>
     /// <returns>The mode that was applied.</returns>
     public static SortMode ApplyDefaultSort(this Project project)
@@ -64,7 +71,6 @@ public static class ProjectOrdering
     public static void ReorderManually(this Project project, IReadOnlyList<Guid> order)
     {
         ArgumentNullException.ThrowIfNull(project);
-        project.ReorderFrames(order);
-        project.SortMode = SortMode.Manual;
+        project.ReorderAndSetMode(order, SortMode.Manual);
     }
 }
