@@ -6,9 +6,9 @@ using TenLapse.Core.Diagnostics;
 namespace TenLapse.Presentation.Services;
 
 /// <summary>
-/// Adds a section to the text Copy diagnostics puts on the clipboard. The App registers one for the app and
-/// Windows, one for the graphics adapters; #9 and #23 add one for the encoder capabilities (which encoders load,
-/// hardware or not, HEVC or not) the same way, in <c>App.CreateMainWindow</c>.
+/// Adds a section to the text Copy diagnostics puts on the clipboard. The App registers them in
+/// <c>App.CreateMainWindow</c>: the app and Windows, the graphics adapters, and the encoder capabilities
+/// (<c>EncoderDiagnostics</c>, which reads #9's cache and never probes).
 /// </summary>
 public interface IDiagnosticsContributor
 {

@@ -172,7 +172,7 @@ public static class ProjectText
     public static string DiagnosticsCardTitle => "Diagnostics";
 
     /// <summary>The diagnostics card's caption.</summary>
-    public static string DiagnosticsCardCaption => "Copies the app and Windows versions, your graphics card and the last 200 log lines, to paste into a bug report. The log lines can name files and folders 10Lapse worked with, never the photos themselves. Nothing is sent from your PC.";
+    public static string DiagnosticsCardCaption => "Copies the app and Windows versions, your graphics card, the video encoders and the last 200 log lines, to paste into a bug report. The log lines can name files and folders 10Lapse worked with, never the photos themselves. Nothing is sent from your PC.";
 
     // Error contexts: what was being done, for the log only.
 

@@ -40,6 +40,12 @@ internal static class AppEnvironment
     }
 
     /// <summary>
+    /// The encoder capabilities cache (#9's <c>EncoderProbe.LoadOrProbeAsync</c> path): <c>encoder-capabilities.json</c>
+    /// in the package's LocalState, or in %LOCALAPPDATA%\10Lapse unpackaged. Never throws.
+    /// </summary>
+    public static string EncoderCacheFile() => Path.Combine(Path.GetDirectoryName(LogFolder())!, "encoder-capabilities.json");
+
+    /// <summary>
     /// The profile folder's 8.3 short form (<c>C:\Users\JANEDO~1</c>), which some paths in exception messages carry,
     /// so Copy diagnostics can redact it too. Null when Windows has none or cannot say. Never throws.
     /// </summary>

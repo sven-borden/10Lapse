@@ -96,10 +96,11 @@ public partial class App : Application
         var logOnly = new LogErrorSink(_log);
         var infoBars = new InfoBarQueue(logOnly);
 
-        // Copy diagnostics. #9 and #23 add an encoder capabilities contributor to this list.
+        // Copy diagnostics. The encoder section reads the cache #9's probe writes and never probes; #23, which starts
+        // the probe at launch, hands its result to EncoderDiagnostics as `loaded`.
         var diagnostics = new DiagnosticsCopier(
             new DiagnosticsCollector(
-                [new AppDiagnostics(), new GraphicsDiagnostics()],
+                [new AppDiagnostics(), new GraphicsDiagnostics(), new EncoderDiagnostics(AppEnvironment.EncoderCacheFile())],
                 _log,
                 redaction: DiagnosticsRedaction.ForCurrentUser(AppEnvironment.ShortProfileFolder())),
             new ClipboardService(),
