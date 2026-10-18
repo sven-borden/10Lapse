@@ -8,12 +8,14 @@ using TenLapse.Spike;
 
 // Spike harness for #8. Usage:
 //   TenLapse.Spike encoders
-//   TenLapse.Spike generate --dir D [--frames 1000] [--source-size 6000x4000]
-//   TenLapse.Spike encode [--source synthetic|jpeg] [--dir D] [--frames 1000] [--source-size 6000x4000]
+//   TenLapse.Spike generate --dir D [--frames 1000] [--source-size 6000x4000] [--noise 10]
+//   TenLapse.Spike encode [--source synthetic|jpeg] [--dir D] [--distinct N] [--frames 1000] [--source-size 6000x4000]
 //                         [--output-size 3840x2160] [--fps 30] [--out file.mp4] [--software]
 //                         [--targets 4] [--decode-ahead 4] [--verify] [--format h264|hevc]
 // --verify decodes the output and checks every frame's FrameCode. Results go to the console, the
 // last line is a Markdown table row. Large files belong in %TEMP%, never in the repository.
+// --noise adds grain so the JPEGs compress like real photos (#13); --distinct N cycles the export over the
+// first N files of --dir, so a few realistic JPEGs make a 1,000-frame run.
 //   TenLapse.Spike inspect FILE [--decode]
 //   TenLapse.Spike probe [--cache file.json] [--fresh] [--software]   (#9: what this PC can encode, as Markdown;
 //                         --software answers as a PC without a GPU encoder would, uncached)
@@ -59,8 +61,8 @@ static async Task<int> GenerateAsync(Options options)
     var frames = options.Int("frames", 1000);
     var (width, height) = options.Size("source-size", (6000, 4000));
     var clock = Stopwatch.StartNew();
-    await SyntheticJpegs.WriteAsync(directory, frames, width, height);
-    var bytes = Directory.EnumerateFiles(directory, "frame_*.jpg").Sum(path => new FileInfo(path).Length);
+    await SyntheticJpegs.WriteAsync(directory, frames, width, height, options.Int("noise", 0));
+    var bytes = Enumerable.Range(0, frames).Sum(i => new FileInfo(SyntheticJpegs.PathOf(directory, i)).Length);
     Console.WriteLine($"wrote {frames} JPEGs {width}x{height} to {directory} in {clock.Elapsed.TotalSeconds:0.0} s, {bytes / 1e9:0.00} GB");
     return 0;
 }
@@ -90,7 +92,7 @@ static async Task<int> EncodeAsync(Options options)
     IFrameSource source = mode switch
     {
         "synthetic" => new SyntheticFrameSource(frames, sourceWidth, sourceHeight),
-        "jpeg" => new PhotoFileSource([.. Enumerable.Range(0, frames).Select(i => SyntheticJpegs.PathOf(Path.GetFullPath(options.Require("dir")), i))]),
+        "jpeg" => new PhotoFileSource([.. Enumerable.Range(0, frames).Select(i => SyntheticJpegs.PathOf(Path.GetFullPath(options.Require("dir")), i % options.Int("distinct", frames)))]),
         _ => throw new ArgumentException($"--source must be synthetic or jpeg, not {mode}."),
     };
 

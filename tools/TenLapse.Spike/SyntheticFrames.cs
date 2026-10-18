@@ -78,7 +78,7 @@ internal static class SyntheticJpegs
     public static string PathOf(string directory, int index) =>
         Path.Combine(directory, $"frame_{index.ToString("00000", CultureInfo.InvariantCulture)}.jpg");
 
-    public static async Task WriteAsync(string directory, int count, int width, int height)
+    public static async Task WriteAsync(string directory, int count, int width, int height, int noise = 0)
     {
         Directory.CreateDirectory(directory);
         var device = TenLapse.Media.GraphicsDevice.Shared;
@@ -100,6 +100,11 @@ internal static class SyntheticJpegs
                     SyntheticImage.Draw(session, index, width, height);
                 }
 
+                if (noise > 0)
+                {
+                    AddNoise(target, index, noise);
+                }
+
                 await target.SaveAsync(path, CanvasBitmapFileFormat.Jpeg, 0.9f).AsTask().ConfigureAwait(false);
             }
             finally
@@ -108,5 +113,22 @@ internal static class SyntheticJpegs
             }
         });
         await Task.WhenAll(tasks).ConfigureAwait(false);
+    }
+
+    // Grain of +-amplitude levels per channel, so a JPEG compresses like a real 24 MP photo (8 to 12 MB at
+    // quality 0.9) instead of a smooth gradient (about 1 MB): #13 measures decode memory on these.
+    private static void AddNoise(CanvasRenderTarget target, int index, int amplitude)
+    {
+        var pixels = target.GetPixelBytes();
+        var random = new Random(index);
+        var span = (amplitude * 2) + 1;
+        for (var i = 0; i < pixels.Length; i += 4)
+        {
+            pixels[i] = (byte)Math.Clamp(pixels[i] + random.Next(span) - amplitude, 0, 255);
+            pixels[i + 1] = (byte)Math.Clamp(pixels[i + 1] + random.Next(span) - amplitude, 0, 255);
+            pixels[i + 2] = (byte)Math.Clamp(pixels[i + 2] + random.Next(span) - amplitude, 0, 255);
+        }
+
+        target.SetPixelBytes(pixels);
     }
 }
