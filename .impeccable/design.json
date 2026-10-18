@@ -1,0 +1,933 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-18T15:59:22Z",
+  "title": "Design System: 10Lapse",
+  "extensions": {
+    "colorMeta": {
+      "golden-hour-amber": {
+        "role": "primary",
+        "displayName": "Golden Hour Amber",
+        "canonical": "oklch(74.0% 0.148 67.1)",
+        "tonalRamp": [
+          "#150800",
+          "#381E00",
+          "#5F3800",
+          "#895300",
+          "#B77000",
+          "#DB9440",
+          "#FBBB76",
+          "#FFEBD6"
+        ]
+      },
+      "deep-amber-indicator": {
+        "role": "primary",
+        "displayName": "Deep Amber Indicator",
+        "canonical": "oklch(58.1% 0.136 57.3)",
+        "tonalRamp": [
+          "#170700",
+          "#3C1B00",
+          "#653300",
+          "#924C00",
+          "#BD6A1D",
+          "#DD9155",
+          "#FDB885",
+          "#FFEADB"
+        ]
+      },
+      "ember-link": {
+        "role": "primary",
+        "displayName": "Ember Link",
+        "canonical": "oklch(51.5% 0.121 57.1)",
+        "tonalRamp": [
+          "#170600",
+          "#3C1B00",
+          "#653300",
+          "#8E4F15",
+          "#B86E30",
+          "#D89360",
+          "#F8BA8D",
+          "#FFEADB"
+        ]
+      },
+      "night-ink-on-amber": {
+        "role": "primary",
+        "displayName": "Night Ink On Amber",
+        "canonical": "oklch(20.1% 0.034 76.3)",
+        "tonalRamp": [
+          "#100A04",
+          "#2B2419",
+          "#4A4032",
+          "#6B5F4E",
+          "#8E806C",
+          "#B0A391",
+          "#D3C7B7",
+          "#F7EDDF"
+        ]
+      },
+      "mica-light": {
+        "role": "neutral",
+        "displayName": "Mica Light",
+        "canonical": "oklch(96.1% 0.003 84.6)",
+        "tonalRamp": [
+          "#0B0B0A",
+          "#252524",
+          "#424241",
+          "#626160",
+          "#838280",
+          "#A6A5A3",
+          "#CAC9C7",
+          "#EFEEED"
+        ]
+      },
+      "layer-light": {
+        "role": "neutral",
+        "displayName": "Layer Light",
+        "canonical": "oklch(98.2% 0.003 84.6)",
+        "tonalRamp": [
+          "#0B0B0A",
+          "#252524",
+          "#424241",
+          "#626160",
+          "#838280",
+          "#A6A5A3",
+          "#CAC9C7",
+          "#EFEEED"
+        ]
+      },
+      "card-light": {
+        "role": "neutral",
+        "displayName": "Card Light",
+        "canonical": "oklch(99.5% 0.002 67.8)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252524",
+          "#424241",
+          "#626160",
+          "#838281",
+          "#A6A5A4",
+          "#CAC9C8",
+          "#EFEEEE"
+        ]
+      },
+      "control-stroke-light": {
+        "role": "neutral",
+        "displayName": "Control Stroke Light",
+        "canonical": "oklch(88.9% 0.007 88.6)",
+        "tonalRamp": [
+          "#0C0B09",
+          "#262522",
+          "#43423F",
+          "#63615D",
+          "#84827E",
+          "#A6A5A1",
+          "#CAC9C5",
+          "#F0EEEB"
+        ]
+      },
+      "divider-light": {
+        "role": "neutral",
+        "displayName": "Divider Light",
+        "canonical": "oklch(92.2% 0.006 84.6)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#262523",
+          "#43423F",
+          "#62615E",
+          "#84827E",
+          "#A6A5A1",
+          "#CAC9C6",
+          "#F0EEEC"
+        ]
+      },
+      "segment-track-light": {
+        "role": "neutral",
+        "displayName": "Segment Track Light",
+        "canonical": "oklch(95.0% 0.005 78.3)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#262523",
+          "#434240",
+          "#62615F",
+          "#84827F",
+          "#A6A5A2",
+          "#CAC9C7",
+          "#EFEEEC"
+        ]
+      },
+      "track-light": {
+        "role": "neutral",
+        "displayName": "Track Light",
+        "canonical": "oklch(91.3% 0.006 84.6)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#262523",
+          "#43423F",
+          "#62615E",
+          "#84827E",
+          "#A6A5A1",
+          "#CAC9C6",
+          "#F0EEEC"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(22.2% 0.004 84.6)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#262524",
+          "#434240",
+          "#62615F",
+          "#838280",
+          "#A6A5A2",
+          "#CAC9C7",
+          "#EFEEEC"
+        ]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Ink Secondary",
+        "canonical": "oklch(46.9% 0.009 80.7)",
+        "tonalRamp": [
+          "#0C0B09",
+          "#262522",
+          "#44423E",
+          "#63615C",
+          "#85827D",
+          "#A7A5A0",
+          "#CBC9C4",
+          "#F0EEEA"
+        ]
+      },
+      "golden-hour-amber-dark": {
+        "role": "primary",
+        "displayName": "Golden Hour Amber Dark",
+        "canonical": "oklch(77.9% 0.138 68.3)",
+        "tonalRamp": [
+          "#140800",
+          "#371F00",
+          "#5E3800",
+          "#885400",
+          "#B57100",
+          "#D69649",
+          "#F7BC7C",
+          "#FFEBD6"
+        ]
+      },
+      "ember-link-dark": {
+        "role": "primary",
+        "displayName": "Ember Link Dark",
+        "canonical": "oklch(80.4% 0.127 70.4)",
+        "tonalRamp": [
+          "#140800",
+          "#361F00",
+          "#5D3900",
+          "#875500",
+          "#B17311",
+          "#D19851",
+          "#F2BE82",
+          "#FFEBD4"
+        ]
+      },
+      "mica-dark": {
+        "role": "neutral",
+        "displayName": "Mica Dark",
+        "canonical": "oklch(23.6% 0.002 67.7)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#262524",
+          "#434241",
+          "#626160",
+          "#838281",
+          "#A6A5A3",
+          "#CAC9C8",
+          "#EFEEED"
+        ]
+      },
+      "layer-dark": {
+        "role": "neutral",
+        "displayName": "Layer Dark",
+        "canonical": "oklch(27.3% 0.002 67.7)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#262524",
+          "#434241",
+          "#626160",
+          "#838281",
+          "#A6A5A4",
+          "#CAC9C8",
+          "#EFEEED"
+        ]
+      },
+      "card-dark": {
+        "role": "neutral",
+        "displayName": "Card Dark",
+        "canonical": "oklch(30.5% 0.004 84.6)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#262524",
+          "#434240",
+          "#62615F",
+          "#838280",
+          "#A6A5A3",
+          "#CAC9C7",
+          "#EFEEED"
+        ]
+      },
+      "control-fill-dark": {
+        "role": "neutral",
+        "displayName": "Control Fill Dark",
+        "canonical": "oklch(32.6% 0.006 78.2)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#262523",
+          "#43423F",
+          "#63615E",
+          "#84827E",
+          "#A7A5A1",
+          "#CBC9C6",
+          "#F0EEEC"
+        ]
+      },
+      "control-stroke-dark": {
+        "role": "neutral",
+        "displayName": "Control Stroke Dark",
+        "canonical": "oklch(39.9% 0.008 75.3)",
+        "tonalRamp": [
+          "#0C0B09",
+          "#262522",
+          "#44423E",
+          "#64615D",
+          "#85827D",
+          "#A7A4A0",
+          "#CBC9C5",
+          "#F0EEEB"
+        ]
+      },
+      "divider-dark": {
+        "role": "neutral",
+        "displayName": "Divider Dark",
+        "canonical": "oklch(33.8% 0.004 67.7)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#262523",
+          "#434240",
+          "#63615F",
+          "#84827F",
+          "#A7A4A2",
+          "#CBC9C7",
+          "#F0EEEC"
+        ]
+      },
+      "segment-track-dark": {
+        "role": "neutral",
+        "displayName": "Segment Track Dark",
+        "canonical": "oklch(29.7% 0.004 84.6)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#262524",
+          "#434240",
+          "#62615F",
+          "#838280",
+          "#A6A5A3",
+          "#CAC9C7",
+          "#EFEEED"
+        ]
+      },
+      "track-dark": {
+        "role": "neutral",
+        "displayName": "Track Dark",
+        "canonical": "oklch(36.1% 0.006 78.3)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#262523",
+          "#43423F",
+          "#63615E",
+          "#84827F",
+          "#A7A5A1",
+          "#CBC9C6",
+          "#F0EEEC"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Ink Dark",
+        "canonical": "oklch(96.2% 0.006 84.6)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#262523",
+          "#43423F",
+          "#62615E",
+          "#84827E",
+          "#A6A5A1",
+          "#CAC9C6",
+          "#EFEEEC"
+        ]
+      },
+      "ink-secondary-dark": {
+        "role": "neutral",
+        "displayName": "Ink Secondary Dark",
+        "canonical": "oklch(80.6% 0.011 81.8)",
+        "tonalRamp": [
+          "#0C0B08",
+          "#272521",
+          "#44423D",
+          "#64615B",
+          "#85827B",
+          "#A8A59F",
+          "#CCC9C3",
+          "#F1EEE9"
+        ]
+      },
+      "success": {
+        "role": "status",
+        "displayName": "Success",
+        "canonical": "oklch(50.7% 0.165 142.7)",
+        "tonalRamp": [
+          "#001000",
+          "#002F00",
+          "#005201",
+          "#1E751C",
+          "#3A9A36",
+          "#6ABC65",
+          "#98DE92",
+          "#CBFFC6"
+        ]
+      },
+      "success-fill": {
+        "role": "status",
+        "displayName": "Success Fill",
+        "canonical": "oklch(95.0% 0.041 143.0)",
+        "tonalRamp": [
+          "#060E06",
+          "#1D291C",
+          "#384737",
+          "#556754",
+          "#748973",
+          "#98AB97",
+          "#BECFBC",
+          "#E5F3E3"
+        ]
+      },
+      "caution": {
+        "role": "status",
+        "displayName": "Caution",
+        "canonical": "oklch(53.9% 0.121 65.2)",
+        "tonalRamp": [
+          "#150800",
+          "#381E00",
+          "#603700",
+          "#8A5207",
+          "#B37126",
+          "#D3975A",
+          "#F3BD89",
+          "#FFEAD8"
+        ]
+      },
+      "caution-fill": {
+        "role": "status",
+        "displayName": "Caution Fill",
+        "canonical": "oklch(97.5% 0.038 93.8)",
+        "tonalRamp": [
+          "#0E0B03",
+          "#292517",
+          "#474230",
+          "#67614C",
+          "#8A8269",
+          "#ACA58E",
+          "#CFC9B5",
+          "#F4EFDD"
+        ]
+      },
+      "critical": {
+        "role": "status",
+        "displayName": "Critical",
+        "canonical": "oklch(53.6% 0.191 30.1)",
+        "tonalRamp": [
+          "#1F0000",
+          "#4D0100",
+          "#7F0902",
+          "#AD291B",
+          "#DD4635",
+          "#FC7663",
+          "#FFB3A6",
+          "#FFE9E5"
+        ]
+      },
+      "critical-fill": {
+        "role": "status",
+        "displayName": "Critical Fill",
+        "canonical": "oklch(94.6% 0.024 11.3)",
+        "tonalRamp": [
+          "#10090A",
+          "#2C2223",
+          "#4B3E3F",
+          "#6D5C5E",
+          "#907D7F",
+          "#B2A0A2",
+          "#D5C4C6",
+          "#F9EAEC"
+        ]
+      },
+      "success-dark": {
+        "role": "status",
+        "displayName": "Success Dark",
+        "canonical": "oklch(75.9% 0.172 141.3)",
+        "tonalRamp": [
+          "#001000",
+          "#032F00",
+          "#0A5100",
+          "#1F7511",
+          "#3B9A2E",
+          "#6BBC60",
+          "#98DF8D",
+          "#CCFFC4"
+        ]
+      },
+      "success-fill-dark": {
+        "role": "status",
+        "displayName": "Success Fill Dark",
+        "canonical": "oklch(31.7% 0.049 137.3)",
+        "tonalRamp": [
+          "#060E04",
+          "#1D2919",
+          "#384733",
+          "#56674F",
+          "#758A6D",
+          "#99AC92",
+          "#BECFB8",
+          "#E5F4DF"
+        ]
+      },
+      "caution-dark": {
+        "role": "status",
+        "displayName": "Caution Dark",
+        "canonical": "oklch(90.4% 0.188 100.5)",
+        "tonalRamp": [
+          "#0E0B00",
+          "#2B2500",
+          "#4C4200",
+          "#6F6200",
+          "#948300",
+          "#BBA600",
+          "#DECB4E",
+          "#FFF197"
+        ]
+      },
+      "caution-fill-dark": {
+        "role": "status",
+        "displayName": "Caution Fill Dark",
+        "canonical": "oklch(32.0% 0.040 89.5)",
+        "tonalRamp": [
+          "#0F0B02",
+          "#2A2516",
+          "#49412F",
+          "#69614A",
+          "#8C8267",
+          "#AEA48C",
+          "#D1C9B3",
+          "#F5EEDB"
+        ]
+      },
+      "critical-dark": {
+        "role": "status",
+        "displayName": "Critical Dark",
+        "canonical": "oklch(79.1% 0.123 13.3)",
+        "tonalRamp": [
+          "#1F0005",
+          "#440F19",
+          "#6B2933",
+          "#95444F",
+          "#BF616D",
+          "#E08891",
+          "#FFB1B8",
+          "#FFE8E9"
+        ]
+      },
+      "critical-fill-dark": {
+        "role": "status",
+        "displayName": "Critical Fill Dark",
+        "canonical": "oklch(31.0% 0.044 22.1)",
+        "tonalRamp": [
+          "#140707",
+          "#321F1F",
+          "#533B3A",
+          "#765957",
+          "#9B7876",
+          "#BC9C9A",
+          "#DFC1BF",
+          "#FFE8E7"
+        ]
+      },
+      "letterbox": {
+        "role": "neutral",
+        "displayName": "Letterbox",
+        "canonical": "oklch(15.5% 0.002 286.2)",
+        "tonalRamp": [
+          "#0B0B0C",
+          "#252526",
+          "#424243",
+          "#616162",
+          "#828283",
+          "#A5A5A6",
+          "#C9C9CA",
+          "#EEEEEF"
+        ]
+      },
+      "daylight": {
+        "role": "brand",
+        "displayName": "Daylight",
+        "canonical": "oklch(89.2% 0.040 237.6)",
+        "tonalRamp": [
+          "#030C13",
+          "#192730",
+          "#334551",
+          "#4F6573",
+          "#6D8697",
+          "#91A9B9",
+          "#B8CDDB",
+          "#DFF2FE"
+        ]
+      },
+      "golden": {
+        "role": "brand",
+        "displayName": "Golden",
+        "canonical": "oklch(87.2% 0.101 82.4)",
+        "tonalRamp": [
+          "#120900",
+          "#322200",
+          "#563D00",
+          "#7A5C19",
+          "#A07C33",
+          "#C1A062",
+          "#E2C58F",
+          "#FFECCA"
+        ]
+      },
+      "amber": {
+        "role": "brand",
+        "displayName": "Amber",
+        "canonical": "oklch(76.3% 0.135 56.9)",
+        "tonalRamp": [
+          "#170600",
+          "#3C1B00",
+          "#653300",
+          "#924C00",
+          "#BD6A1F",
+          "#DD9156",
+          "#FDB886",
+          "#FFEADB"
+        ]
+      },
+      "rose": {
+        "role": "brand",
+        "displayName": "Rose",
+        "canonical": "oklch(65.5% 0.144 11.5)",
+        "tonalRamp": [
+          "#1E0005",
+          "#480719",
+          "#712132",
+          "#9C3C4E",
+          "#C8596C",
+          "#E88291",
+          "#FFB0BA",
+          "#FFE8EA"
+        ]
+      },
+      "dusk": {
+        "role": "brand",
+        "displayName": "Dusk",
+        "canonical": "oklch(51.6% 0.106 295.3)",
+        "tonalRamp": [
+          "#0E0420",
+          "#281C43",
+          "#463869",
+          "#665591",
+          "#8775BB",
+          "#A999DA",
+          "#CDBFF9",
+          "#EFEBFF"
+        ]
+      },
+      "blue-hour": {
+        "role": "brand",
+        "displayName": "Blue Hour",
+        "canonical": "oklch(36.9% 0.097 271.8)",
+        "tonalRamp": [
+          "#050821",
+          "#1A2244",
+          "#343F6A",
+          "#505E92",
+          "#6E7EBC",
+          "#92A2DB",
+          "#B8C7FA",
+          "#E9EEFF"
+        ]
+      },
+      "night": {
+        "role": "brand",
+        "displayName": "Night",
+        "canonical": "oklch(20.9% 0.048 271.1)",
+        "tonalRamp": [
+          "#070A16",
+          "#1F2435",
+          "#3A4156",
+          "#58607A",
+          "#7781A0",
+          "#9BA4C0",
+          "#C0C8E2",
+          "#E8EEFF"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Labels, file details, time codes, hints."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text, buttons, menu items."
+      },
+      "body-strong": {
+        "displayName": "Body Strong",
+        "purpose": "Section headers, the selected segment, accent buttons."
+      },
+      "subtitle": {
+        "displayName": "Subtitle",
+        "purpose": "The speed readout and panel titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Screen titles on first launch and settings."
+      },
+      "title-large": {
+        "displayName": "Title Large",
+        "purpose": "The export percent."
+      },
+      "display": {
+        "displayName": "Display",
+        "purpose": "The wordmark on splash and Store art only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "flyout",
+        "value": "0 8px 28px rgba(28, 27, 25, 0.16), 0 2px 6px rgba(28, 27, 25, 0.06)",
+        "purpose": "InfoBars over the preview, select menus. Light theme."
+      },
+      {
+        "name": "flyout-dark",
+        "value": "0 8px 28px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3)",
+        "purpose": "Flyouts in dark theme."
+      },
+      {
+        "name": "pill",
+        "value": "0 1px 2px rgba(28, 27, 25, 0.14), 0 0 0 1px rgba(28, 27, 25, 0.04)",
+        "purpose": "Selected pill in a segmented control. Light theme."
+      },
+      {
+        "name": "pill-dark",
+        "value": "0 1px 2px rgba(0, 0, 0, 0.4)",
+        "purpose": "Selected pill in dark theme."
+      },
+      {
+        "name": "focus",
+        "value": "0 0 0 1px #FEFDFC, 0 0 0 3px #1C1B19",
+        "purpose": "Windows double focus ring on every control (light)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "duration-tap",
+        "value": "83ms",
+        "purpose": "Press and hover color."
+      },
+      {
+        "name": "duration-control",
+        "value": "167ms",
+        "purpose": "Toggles, exits, focus."
+      },
+      {
+        "name": "duration-reveal",
+        "value": "250ms",
+        "purpose": "InfoBars, readout, segment pill."
+      },
+      {
+        "name": "duration-scene",
+        "value": "400ms",
+        "purpose": "Screens, panels, thumbnails, gate clip-path."
+      },
+      {
+        "name": "duration-cinema",
+        "value": "700ms",
+        "purpose": "Preview develop on arrival."
+      },
+      {
+        "name": "ease-enter",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Things arriving."
+      },
+      {
+        "name": "ease-exit",
+        "value": "cubic-bezier(0.7, 0, 0.84, 0)",
+        "purpose": "Things leaving; always 167ms."
+      },
+      {
+        "name": "ease-move",
+        "value": "cubic-bezier(0.65, 0, 0.35, 1)",
+        "purpose": "Pills, knobs, gate, photo scale."
+      },
+      {
+        "name": "ease-linear",
+        "value": "linear",
+        "purpose": "Playback, progress, film gate."
+      },
+      {
+        "name": "stagger-thumb",
+        "value": "18ms",
+        "purpose": "Filmstrip cascade on import, from 220ms."
+      },
+      {
+        "name": "stagger-section",
+        "value": "60ms",
+        "purpose": "Inspector sections on arrival, from 160ms."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "inspector-fold",
+        "value": "1000px",
+        "purpose": "Below this width the inspector folds into a 260px tabbed panel under the preview."
+      },
+      {
+        "name": "min-window",
+        "value": "640px",
+        "purpose": "Smallest window is 640 x 480; the filmstrip drops to 12 thumbnails."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Accent Button",
+      "kind": "button",
+      "refersTo": "button-accent",
+      "description": "The one primary action per screen, such as Export video.",
+      "html": "<button class=\"ds-btn-accent\">Export video</button>",
+      "css": ".ds-btn-accent { font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 20px; font-weight: 600; height: 32px; padding: 0 14px; border-radius: 4px; border: 1px solid rgba(120, 70, 10, 0.22); background: #E8962E; color: #1F1404; cursor: pointer; transition: background-color 83ms linear; } .ds-btn-accent:hover { background: #EEA444; } .ds-btn-accent:active { background: #D78722; color: #3A2508; } .ds-btn-accent:focus-visible { outline: none; box-shadow: 0 0 0 1px #FEFDFC, 0 0 0 3px #1C1B19; }"
+    },
+    {
+      "name": "Standard Button",
+      "kind": "button",
+      "refersTo": "button-standard",
+      "description": "Secondary actions such as Choose photos or Cancel export.",
+      "html": "<button class=\"ds-btn-standard\">Choose photos</button>",
+      "css": ".ds-btn-standard { font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 20px; height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid #DCDAD5; background: #FEFDFC; color: #1C1B19; cursor: pointer; transition: background-color 83ms linear; } .ds-btn-standard:hover { background: #F6F5F3; } .ds-btn-standard:active { background: #F0EEEB; color: #5D5A55; } .ds-btn-standard:focus-visible { outline: none; box-shadow: 0 0 0 1px #FEFDFC, 0 0 0 3px #1C1B19; }"
+    },
+    {
+      "name": "Subtle Button",
+      "kind": "button",
+      "refersTo": "button-subtle",
+      "description": "Command bar actions with an icon.",
+      "html": "<button class=\"ds-btn-subtle\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M8 3v10M3 8h10\"/></svg>Add photos</button>",
+      "css": ".ds-btn-subtle { font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 20px; height: 32px; padding: 0 10px; border-radius: 4px; border: 1px solid transparent; background: transparent; color: #1C1B19; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: background-color 83ms linear; } .ds-btn-subtle:hover { background: rgba(28, 27, 25, 0.06); } .ds-btn-subtle:active { background: rgba(28, 27, 25, 0.10); color: #5D5A55; } .ds-btn-subtle:focus-visible { outline: none; box-shadow: 0 0 0 1px #FEFDFC, 0 0 0 3px #1C1B19; }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "chip",
+      "refersTo": "segmented-track",
+      "description": "Speed mode, speed value, shape and fit. The selected pill is neutral, never amber.",
+      "html": "<div class=\"ds-seg\" role=\"radiogroup\" aria-label=\"Frames per second\"><button role=\"radio\" aria-checked=\"false\">24</button><button role=\"radio\" aria-checked=\"false\">25</button><button role=\"radio\" aria-checked=\"true\">30</button><button role=\"radio\" aria-checked=\"false\">50</button><button role=\"radio\" aria-checked=\"false\">60</button></div>",
+      "css": ".ds-seg { font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 20px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: 280px; height: 32px; box-sizing: border-box; padding: 2px; border-radius: 5px; background: #F0EEEB; border: 1px solid #DCDAD5; } .ds-seg button { font: inherit; font-size: 13px; border: 0; border-radius: 3px; background: transparent; color: #5D5A55; cursor: pointer; font-variant-numeric: tabular-nums; transition: background-color 250ms cubic-bezier(0.65, 0, 0.35, 1); } .ds-seg button:hover { color: #1C1B19; } .ds-seg button[aria-checked=\"true\"] { background: #FEFDFC; color: #1C1B19; font-weight: 600; box-shadow: 0 1px 2px rgba(28, 27, 25, 0.14), 0 0 0 1px rgba(28, 27, 25, 0.04); } .ds-seg button:focus-visible { outline: none; box-shadow: 0 0 0 1px #FEFDFC, 0 0 0 3px #1C1B19; }"
+    },
+    {
+      "name": "Toggle",
+      "kind": "custom",
+      "refersTo": "toggle-on",
+      "description": "On and off settings such as Deflicker and Reduce motion.",
+      "html": "<button class=\"ds-toggle\" role=\"switch\" aria-checked=\"true\" aria-label=\"Reduce motion\"><span></span></button>",
+      "css": ".ds-toggle { position: relative; width: 40px; height: 20px; padding: 0; border-radius: 10px; border: 1px solid #5D5A55; background: transparent; cursor: pointer; transition: background-color 167ms linear, border-color 167ms linear; } .ds-toggle span { position: absolute; left: 3px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: #5D5A55; transition: transform 167ms cubic-bezier(0.65, 0, 0.35, 1); } .ds-toggle[aria-checked=\"true\"] { background: #B5620D; border-color: #B5620D; } .ds-toggle[aria-checked=\"true\"] span { background: #FEFDFC; transform: translateX(20px); } .ds-toggle:focus-visible { outline: none; box-shadow: 0 0 0 1px #FEFDFC, 0 0 0 3px #1C1B19; }"
+    },
+    {
+      "name": "Caution InfoBar",
+      "kind": "card",
+      "refersTo": "infobar-caution",
+      "description": "Floats over the preview: what happened, one action, dismiss.",
+      "html": "<div class=\"ds-infobar\" role=\"status\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"#9D5D00\" stroke-width=\"1.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M8 2.5l6 11H2z\"/><path d=\"M8 7v3\"/></svg><span>3 photos couldn't be read and were skipped.</span><button>View list</button></div>",
+      "css": ".ds-infobar { font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 20px; display: flex; align-items: center; gap: 12px; max-width: 560px; padding: 10px 8px 10px 14px; border-radius: 6px; border: 1px solid #DCDAD5; background: #FFF7DB; color: #1C1B19; box-shadow: 0 8px 28px rgba(28, 27, 25, 0.16), 0 2px 6px rgba(28, 27, 25, 0.06); } .ds-infobar span { flex: 1; } .ds-infobar button { font: inherit; font-size: 13px; height: 28px; padding: 0 10px; border-radius: 4px; border: 1px solid #DCDAD5; background: #FEFDFC; color: #1C1B19; cursor: pointer; } .ds-infobar button:hover { background: #F6F5F3; } .ds-infobar button:focus-visible { outline: none; box-shadow: 0 0 0 1px #FEFDFC, 0 0 0 3px #1C1B19; }"
+    },
+    {
+      "name": "Filmstrip",
+      "kind": "custom",
+      "refersTo": "filmstrip-thumb",
+      "description": "Signature: thumbnails are buttons; the amber ring marks where the video is now.",
+      "html": "<div class=\"ds-film\"><button aria-label=\"Go to frame 1\" style=\"background:linear-gradient(180deg,#86A6D1 0%,#F2C08A 62%,#2A3449 62%)\"></button><button aria-label=\"Go to frame 312\" aria-current=\"true\" style=\"background:linear-gradient(180deg,#8C83B5 0%,#F29A55 62%,#1E2638 62%)\"></button><button aria-label=\"Go to frame 520\" class=\"pending\" style=\"background:linear-gradient(180deg,#584C8C 0%,#D9677A 62%,#141A28 62%)\"></button><button aria-label=\"Go to frame 742\" class=\"pending\" style=\"background:linear-gradient(180deg,#2B3268 0%,#6D5A9E 62%,#0E1220 62%)\"></button></div>",
+      "css": ".ds-film { display: grid; grid-template-columns: repeat(4, 64px); gap: 4px; padding: 6px; background: #FAF9F7; } .ds-film button { aspect-ratio: 3 / 2; padding: 0; border: 0; border-radius: 3px; cursor: pointer; transition: box-shadow 167ms cubic-bezier(0.16, 1, 0.3, 1), opacity 167ms linear; } .ds-film button:hover { box-shadow: 0 0 0 2px #FAF9F7, 0 0 0 3px #5D5A55; } .ds-film button[aria-current=\"true\"] { box-shadow: 0 0 0 2px #FAF9F7, 0 0 0 4px #B5620D; } .ds-film button.pending { opacity: 0.35; } .ds-film button:focus-visible { outline: none; box-shadow: 0 0 0 2px #FAF9F7, 0 0 0 4px #1C1B19; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Film Gate",
+    "overview": "10Lapse is the gate a sequence passes through on its way to becoming a film. The gate itself is plain, exact and native to Windows 11; everything with color belongs to the photos moving through it. The chrome is Fluent through and through: Mica behind the title and command bars, a single content layer for the stage and inspector, stock WinUI controls, Segoe UI Variable. It should feel like part of Windows, the way Photos or Snipping Tool do, and then disappear into the job of turning 742 photos into 24.7 seconds of sunset.\n\nDensity is calm. One window, one stage, one inspector with four sections (Timing, Frame, Output, Look), one accent button. Numbers are always on screen and always right, set in tabular figures. Light and dark get equal care and follow the Windows setting; high contrast maps every token to a system color.\n\nMotion is cinematic when the user creates something and invisible the rest of the time. Choreography plays on import (the first frame develops like a print while thumbnails file into the strip), during export (frames pass an amber gate as they are encoded) and on finish (one quiet check, then the preview premieres the result). Nothing animates on launch, nothing blocks input, and every movement has a reduced-motion fallback that is a short fade.\n\nThis system rejects: the legacy 10Lapse 2.x UI (blurred background photo, three equal accent buttons, grey full-screen overlays, a \"Policy!\" wall of text on first run); generic SaaS dashboards (hero metrics, card grids, gradient washes); skeuomorphic camera apps (fake dials, film sprockets, leather textures); and pro editors' density.",
+    "keyCharacteristics": [
+      "Native Windows 11 Fluent, one typeface, stock controls.",
+      "Neutral chrome warmed by a hair; the photos carry the color.",
+      "Golden-hour amber marks only the primary action, progress, the playhead and the selected frame.",
+      "Always-visible math: \"742 photos → 24.7 s at 30 frames per second\".",
+      "4 px grid, 32 px controls, 20 px stage and inspector padding, 16 px section rhythm.",
+      "Inspector docks right at 320 px from 1000 px wide; below that it folds into a 260 px tabbed panel under the preview; smallest window 640 × 480.",
+      "Motion tokens: Tap 83 ms, Control 167 ms, Reveal 250 ms, Scene 400 ms, Cinema 700 ms; Enter `cubic-bezier(0.16, 1, 0.3, 1)`, Exit `cubic-bezier(0.7, 0, 0.84, 0)`, Move `cubic-bezier(0.65, 0, 0.35, 1)`, linear for playback and progress."
+    ],
+    "rules": [
+      {
+        "name": "The Photos Are The Color Rule",
+        "body": "Chrome stays neutral. Amber covers well under a tenth of any screen, and only on the primary action, progress, the playhead and the selected frame.",
+        "section": "colors"
+      },
+      {
+        "name": "The Indicator Rule",
+        "body": "In light theme, anything that conveys state without text uses Deep Amber Indicator, never Golden Hour Amber.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ramp Stays Outside Rule",
+        "body": "The day-to-night ramp never colors UI chrome or text. If a control is rose or dusk, it is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Every number that changes (frame counters, time codes, speed, percent, file size) uses tabular figures, and frame numbers are zero-padded to the width of the total (\"0312 of 0742\").",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "Labels and buttons are sentence case and name the action: \"Export video\", \"Cancel export\", never \"OK\" or \"Submit\". No exclamation marks, no \"Oops\".",
+        "section": "typography"
+      },
+      {
+        "name": "The Float Only Rule",
+        "body": "Only flyouts cast a shadow. Cards, panels and the inspector never do. If a settings row has a shadow, remove it.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** keep chrome neutral and let the photos carry the color (The Photos Are The Color Rule).",
+      "**Do** use Deep Amber Indicator (`#B5620D`) for every light-theme indicator; check 3:1 for indicators and 4.5:1 for text.",
+      "**Do** show photo count, speed and length together, in tabular figures, at all times.",
+      "**Do** use stock WinUI controls, Mica and the system title bar; familiar Windows patterns beat invented ones.",
+      "**Do** animate only transform, opacity, filter and clip-path, with the motion tokens, and give every animation a reduced-motion fade.",
+      "**Do** float InfoBars over the preview and say what happened and what to do next, with one action.",
+      "**Do** design light, dark and high contrast together; switching theme crossfades over 250 ms."
+    ],
+    "donts": [
+      "**Don't** bring back the legacy 10Lapse 2.x UI: blurred background photo, three equal accent buttons, grey full-screen overlays, a \"Policy!\" wall of text on first run.",
+      "**Don't** look like a generic SaaS dashboard: hero metrics, card grids, gradient washes.",
+      "**Don't** go skeuomorphic: fake dials, film sprockets, leather textures.",
+      "**Don't** reach for pro editors' density (DaVinci Resolve, Premiere); 10Lapse has one job and a handful of controls.",
+      "**Don't** put more than one accent button on a screen, or use amber for a selected segment.",
+      "**Don't** use a modal for export or settings; export runs in the inspector, settings is a page.",
+      "**Don't** animate on launch, block input during a transition, or use bounce, overshoot or springs.",
+      "**Don't** use the day-to-night ramp in chrome or text, or any text grey lighter than Ink Secondary.",
+      "**Don't** use emoji, gradient text, side-stripe borders or decorative glass."
+    ]
+  }
+}
