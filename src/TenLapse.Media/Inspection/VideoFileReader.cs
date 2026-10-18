@@ -88,6 +88,46 @@ public static class VideoFileReader
         }
     }
 
+    /// <summary>The presentation time of the first video sample in decode order, or null if there is none. Reads one sample.</summary>
+    /// <exception cref="FileNotFoundException">The file does not exist.</exception>
+    /// <exception cref="COMException">Media Foundation cannot open or parse the file.</exception>
+    public static long? FirstSampleTime(string path)
+    {
+        var fullPath = ExistingPath(path);
+        using var session = new MediaFoundationSession();
+        var reader = CreateReader(fullPath, null);
+        try
+        {
+            SelectFirstVideoStream(reader);
+            while (true)
+            {
+                reader.ReadSample(FirstVideoStream, 0, out _, out var flags, out _, out var sample);
+                if (sample is not null)
+                {
+                    try
+                    {
+                        sample.GetSampleTime(out var time);
+                        return time;
+                    }
+                    finally
+                    {
+                        Release(sample);
+                    }
+                }
+
+                ThrowOnStreamError(flags, fullPath);
+                if (Has(flags, MF_SOURCE_READER_FLAG.MF_SOURCE_READERF_ENDOFSTREAM))
+                {
+                    return null;
+                }
+            }
+        }
+        finally
+        {
+            Release(reader);
+        }
+    }
+
     /// <summary>
     /// Decodes the first video stream to BGRA and hands each frame, in
     /// presentation order, to <paramref name="handler"/>. Software decoding: about

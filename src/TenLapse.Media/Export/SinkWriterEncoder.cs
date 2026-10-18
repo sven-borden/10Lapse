@@ -25,12 +25,18 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
     private readonly IMFDXGIDeviceManager _manager;
     private readonly IMFSinkWriter _writer;
     private readonly uint _stream;
+    private readonly string _path;
     private readonly int _width;
     private readonly int _height;
     private bool _disposed;
 
-    public SinkWriterEncoder(string path, VideoExportSettings settings, VideoDevice device)
+    /// <param name="lowLatency">
+    /// Low latency and no B-frames: always true in the product. False only lets a test produce the composition
+    /// offset <see cref="CheckStartsAtZero"/> must catch.
+    /// </param>
+    public SinkWriterEncoder(string path, VideoExportSettings settings, VideoDevice device, bool lowLatency = true)
     {
+        _path = path;
         _width = settings.Width;
         _height = settings.Height;
         try
@@ -48,7 +54,7 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
                 // Without it the encoders hand out decode times behind the presentation times and the MP4 sink
                 // writes a one-frame composition offset (no edit list): the clip then starts one frame late,
                 // always with the Microsoft encoder, below 1 fps with NVENC (10 s late at 0.1 fps).
-                attributes.SetUINT32(PInvoke.MF_LOW_LATENCY, 1);
+                attributes.SetUINT32(PInvoke.MF_LOW_LATENCY, lowLatency ? 1u : 0u);
                 PInvoke.MFCreateSinkWriterFromURL(path, null, attributes, out _writer).ThrowOnFailure();
             }
             finally
@@ -78,6 +84,11 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
             finally
             {
                 Marshal.ReleaseComObject(input);
+            }
+
+            if (lowLatency)
+            {
+                DisableBFrames();
             }
 
             _writer.BeginWriting();
@@ -125,8 +136,35 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
         }
     }
 
-    /// <summary>Drains the encoder and writes the MP4 index. The file is complete only after this.</summary>
-    public void Finish() => _writer.Finalize();
+    /// <summary>
+    /// The B-frame count the encoder reports after the request for none: 0 from the Microsoft encoder, null when
+    /// the encoder does not say (NVENC refuses both setting and reading it with E_INVALIDARG; low latency keeps
+    /// its output free of B-frames, as ffprobe confirms).
+    /// </summary>
+    public uint? BFrameCount { get; private set; }
+
+    /// <summary>Drains the encoder and writes the MP4 index, then checks the video starts at 0. The file is complete only after this.</summary>
+    /// <exception cref="VideoExportException">The first frame is not at time 0 (<see cref="VideoExportFailure.EncoderFailed"/>).</exception>
+    public void Finish()
+    {
+        _writer.Finalize();
+        CheckStartsAtZero(_path);
+    }
+
+    /// <summary>
+    /// Fails loudly when the first sample is not at 0: the MP4 sink writes no edit list, so a composition offset
+    /// (B-frames, or an encoder that ignores low latency) makes the whole clip start late in every player.
+    /// </summary>
+    internal static void CheckStartsAtZero(string path)
+    {
+        var first = VideoFileReader.FirstSampleTime(path);
+        if (first is not 0)
+        {
+            throw new VideoExportException(
+                $"The H.264 encoder wrote a video whose first frame is at {(first is { } ticks ? $"{ticks} ticks" : "no time at all")} instead of 0.",
+                VideoExportFailure.EncoderFailed);
+        }
+    }
 
     public void Dispose()
     {
@@ -139,6 +177,51 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
         Release(_writer);
         Release(_manager);
         _session.Dispose();
+    }
+
+    // MF_LOW_LATENCY already keeps NVENC and the Microsoft encoder from using B-frames; this asks for it outright,
+    // for encoders that ignore low latency. One that refuses is tolerated: CheckStartsAtZero catches what matters.
+    private void DisableBFrames()
+    {
+        var api = typeof(CODECAPI_AVEncMPVDefaultBPictureCount).GUID;
+        ICodecAPI? codec = null;
+        try
+        {
+            _writer.GetServiceForStream(_stream, Guid.Empty, typeof(ICodecAPI).GUID, out var raw);
+            try
+            {
+                codec = (ICodecAPI)Marshal.GetObjectForIUnknown((nint)raw);
+            }
+            finally
+            {
+                Marshal.Release((nint)raw);
+            }
+
+            try
+            {
+                codec.SetValue(api, (object)0u);
+            }
+            catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
+            {
+                // Refused (E_INVALIDARG, E_NOTIMPL): the encoder decides; GetValue below says what it does.
+            }
+
+            codec.GetValue(api, out var value);
+            BFrameCount = value switch
+            {
+                uint count => count,
+                int count when count >= 0 => (uint)count,
+                _ => null,
+            };
+        }
+        catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
+        {
+            // No ICodecAPI on this encoder (MF_E_UNSUPPORTED_SERVICE), or it does not report the count.
+        }
+        finally
+        {
+            Release(codec);
+        }
     }
 
     private IMFMediaType VideoType(VideoExportSettings settings, Guid subtype)

@@ -64,3 +64,5 @@ IDXGIDevice
 IMFSinkWriterEx
 IMFTransform
 MF_LOW_LATENCY
+ICodecAPI
+CODECAPI_AVEncMPVDefaultBPictureCount

@@ -148,6 +148,48 @@ public sealed class ExportFailureTests : IDisposable
     }
 
     [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void TheEncoderRunsWithoutBFrames(bool hardware)
+    {
+        SkipWithoutH264Encoder();
+        using var device = VideoDevice.Create();
+        using var encoder = new SinkWriterEncoder(
+            Path.Combine(_directory, $"bframes-{hardware}.mp4"),
+            new VideoExportSettings(160, 90, _rate) { HardwareAcceleration = hardware },
+            device);
+
+        TestContext.Current.TestOutputHelper?.WriteLine($"{encoder.Encoder?.Name}: B-frame count {encoder.BFrameCount?.ToString() ?? "not reported"}");
+        Assert.True(encoder.BFrameCount is null or 0, $"{encoder.Encoder?.Name} reports {encoder.BFrameCount} B-frames.");
+    }
+
+    [Fact]
+    public void AVideoWhoseFirstFrameIsNotAtZeroFailsTheFinish()
+    {
+        // Low latency off: the Microsoft encoder reorders, and the MP4 sink (no edit list) writes a composition
+        // offset, so the clip would start one frame late in every player.
+        SkipWithoutH264Encoder();
+        var path = Path.Combine(_directory, "late.mp4");
+        using var device = VideoDevice.Create();
+        using var encoder = new SinkWriterEncoder(path, new VideoExportSettings(160, 90, _rate) { HardwareAcceleration = false }, device, lowLatency: false);
+        for (var i = 0; i < 10; i++)
+        {
+            using var target = new CanvasRenderTarget(device.Canvas, 160, 90, 96f);
+            using (var session = target.CreateDrawingSession())
+            {
+                session.Clear(Windows.UI.Color.FromArgb(255, (byte)(i * 20), 80, 120));
+            }
+
+            encoder.Write(target, FrameTiming.FrameStart(i, _rate), FrameTiming.FrameDuration(i, _rate));
+        }
+
+        var exception = Assert.Throws<VideoExportException>(encoder.Finish);
+
+        Assert.Equal(VideoExportFailure.EncoderFailed, exception.Failure);
+        Assert.Contains("instead of 0", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
     [InlineData(0x887A0004, VideoExportFailure.NoGraphicsDevice)] // DXGI_ERROR_UNSUPPORTED
     [InlineData(0x80070003, VideoExportFailure.OutputFolderMissing)] // ERROR_PATH_NOT_FOUND
     [InlineData(0x80070020, VideoExportFailure.OutputFileInUse)] // ERROR_SHARING_VIOLATION
