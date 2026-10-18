@@ -103,6 +103,28 @@ public sealed class PhotoImporterTests : IDisposable
     }
 
     [Fact]
+    public async Task AJunctionBackToItsOwnFolderIsNotFollowedSoEachPhotoIsListedOnceAndTheWalkEnds()
+    {
+        Touch("IMG_1.jpg", "a/IMG_2.jpg");
+        var loop = Path.Combine(_root, "a", "loop");
+        MakeJunction(loop, _root);
+        try
+        {
+            Assert.True(File.Exists(Path.Combine(loop, "IMG_1.jpg")));
+
+            var listing = ListAsync(Importer(), new ImportRequest([_root], IncludeSubfolders: true));
+            var listed = await listing.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+            Assert.Equal([Path.Combine(_root, "IMG_1.jpg"), Path.Combine(_root, "a", "IMG_2.jpg")], listed.Frames.Select(frame => frame.SourcePath));
+        }
+        finally
+        {
+            // Removes the link, never what it points at.
+            Directory.Delete(loop);
+        }
+    }
+
+    [Fact]
     public async Task FilesAreTakenAsGivenUnsupportedOnesAreLeftOutAndMissingOnesAreSkipped()
     {
         Touch("IMG_1.jpg", "IMG_2.jpg", "notes.txt");
@@ -185,6 +207,20 @@ public sealed class PhotoImporterTests : IDisposable
         }
 
         return (frames, skipped);
+    }
+
+    // A directory junction (no administrator rights needed, unlike a symbolic link).
+    private static void MakeJunction(string link, string target)
+    {
+        using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe", ["/c", "mklink", "/J", link, target])
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        })!;
+        process.WaitForExit();
+        Assert.True(process.ExitCode == 0, process.StandardError.ReadToEnd());
     }
 
     private void Touch(params string[] names)

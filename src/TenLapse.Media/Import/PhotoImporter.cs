@@ -21,7 +21,8 @@ public sealed class PhotoImporter : IPhotoImportSource
     /// <summary>How many files are read at once. The first open of a file costs milliseconds (the virus scanner), the parse microseconds (#15).</summary>
     public const int DefaultReaders = 8;
 
-    // A camera folder nests a few levels at most; the cap only stops a junction that points back up from looping.
+    // A camera folder nests a few levels at most. Links are not followed and walked folders are not walked again; the
+    // cap is the last stop against anything else that nests without end.
     private const int MaxFolderDepth = 32;
 
     // A read batch is handed out at this size, or sooner once this much time has passed since the last one.
@@ -273,9 +274,12 @@ public sealed class PhotoImporter : IPhotoImportSource
             yield return PairAndSort(looseFiles[folder], IsReadable);
         }
 
+        // Every folder walked, by its final path, across the whole request: a second guard after the links are left
+        // out, against two requested folders that overlap or a link that still slips through.
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var folder in folders)
         {
-            foreach (var group in Folder(folder, request.IncludeSubfolders, skipped, cancellationToken))
+            foreach (var group in Folder(folder, request.IncludeSubfolders, visited, skipped, cancellationToken))
             {
                 yield return group;
             }
@@ -283,25 +287,38 @@ public sealed class PhotoImporter : IPhotoImportSource
     }
 
     // The photos of one folder and, when asked, of its subfolders, depth first in name order. The folder the user
-    // chose must open (a refusal is listed as skipped); a subfolder that does not open is passed over.
-    private IEnumerable<List<ListedFile>> Folder(string root, bool includeSubfolders, List<SkippedFile> skipped, CancellationToken cancellationToken)
+    // chose must open (a refusal is listed as skipped); a subfolder that does not open is passed over. Junctions and
+    // symbolic links to folders are never followed: one pointing back up would list the same photos again and again.
+    private IEnumerable<List<ListedFile>> Folder(string root, bool includeSubfolders, HashSet<string> visited, List<SkippedFile> skipped, CancellationToken cancellationToken)
     {
-        var pending = new Stack<(string Path, int Depth)>();
-        pending.Push((root, 0));
+        var pending = new Stack<(string Path, string FinalPath, int Depth)>();
+        pending.Push((root, FinalPath(root), 0));
         while (pending.Count > 0)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var (folder, depth) = pending.Pop();
+            var (folder, finalPath, depth) = pending.Pop();
+            if (!visited.Add(finalPath))
+            {
+                continue;
+            }
+
             var isRoot = depth == 0;
+            var walkSubfolders = includeSubfolders && depth < MaxFolderDepth;
             List<ListedFile> files = [];
             List<string> subfolders = [];
             var refused = false;
             try
             {
-                files = [.. Files(folder, ignoreInaccessible: !isRoot)];
-                if (includeSubfolders && depth < MaxFolderDepth)
+                foreach (var entry in Entries(folder, ignoreInaccessible: !isRoot, walkSubfolders))
                 {
-                    subfolders = [.. Subfolders(folder)];
+                    if (!entry.IsDirectory)
+                    {
+                        files.Add(new ListedFile(entry.Path, entry.Length, entry.LastWriteTimeUtc));
+                    }
+                    else if (!IsLink(entry))
+                    {
+                        subfolders.Add(entry.Path);
+                    }
                 }
             }
             catch (Exception exception) when (isRoot && exception is IOException or UnauthorizedAccessException)
@@ -333,13 +350,14 @@ public sealed class PhotoImporter : IPhotoImportSource
             subfolders.Sort((a, b) => NaturalNameComparer.Instance.Compare(Path.GetFileName(b), Path.GetFileName(a)));
             foreach (var subfolder in subfolders)
             {
-                pending.Push((subfolder, depth + 1));
+                pending.Push((subfolder, Path.Join(finalPath, Path.GetFileName(subfolder)), depth + 1));
             }
         }
     }
 
-    // Hidden and system entries are left out (the enumeration's default, kept explicit).
-    private IEnumerable<ListedFile> Files(string folder, bool ignoreInaccessible)
+    // One pass over a folder: its photo files and, when asked, its subfolders. Hidden and system entries are left out
+    // (the enumeration's default, kept explicit).
+    private IEnumerable<ListedEntry> Entries(string folder, bool ignoreInaccessible, bool includeSubfolders)
     {
         var options = new EnumerationOptions
         {
@@ -347,27 +365,46 @@ public sealed class PhotoImporter : IPhotoImportSource
             AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
             RecurseSubdirectories = false,
         };
-        return new FileSystemEnumerable<ListedFile>(
+        return new FileSystemEnumerable<ListedEntry>(
             folder,
-            (ref FileSystemEntry entry) => new ListedFile(entry.ToFullPath(), entry.Length, entry.LastWriteTimeUtc.UtcDateTime),
+            (ref FileSystemEntry entry) => new ListedEntry(entry.ToFullPath(), entry.IsDirectory, entry.Length, entry.LastWriteTimeUtc.UtcDateTime, entry.Attributes),
             options)
         {
-            ShouldIncludePredicate = (ref FileSystemEntry entry) => !entry.IsDirectory && _isPhoto(entry.FileName.ToString()),
+            ShouldIncludePredicate = (ref FileSystemEntry entry) => entry.IsDirectory ? includeSubfolders : _isPhoto(entry.FileName.ToString()),
         };
     }
 
-    private static IEnumerable<string> Subfolders(string folder)
+    // A junction or a symbolic link to a folder. Other reparse points stay in the walk: a OneDrive folder can be one
+    // too (its cloud tag) and holds real photos; .NET reports a link target only for the name-surrogate kinds.
+    private static bool IsLink(ListedEntry entry)
     {
-        var options = new EnumerationOptions
+        if ((entry.Attributes & FileAttributes.ReparsePoint) == 0)
         {
-            IgnoreInaccessible = true,
-            AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
-            RecurseSubdirectories = false,
-        };
-        return new FileSystemEnumerable<string>(folder, (ref FileSystemEntry entry) => entry.ToFullPath(), options)
+            return false;
+        }
+
+        try
         {
-            ShouldIncludePredicate = (ref FileSystemEntry entry) => entry.IsDirectory,
-        };
+            return new DirectoryInfo(entry.Path).LinkTarget is not null;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // A reparse point that cannot be asked about is not walked.
+            return true;
+        }
+    }
+
+    // The folder's path with a link at the folder itself resolved, for the visited set.
+    private static string FinalPath(string folder)
+    {
+        try
+        {
+            return Path.TrimEndingDirectorySeparator(Directory.ResolveLinkTarget(folder, returnFinalTarget: true)?.FullName ?? folder);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return folder;
+        }
     }
 
     // A file picked or dropped by itself: its size and write time, or a skipped entry when it cannot be read.
@@ -390,4 +427,7 @@ public sealed class PhotoImporter : IPhotoImportSource
 
     /// <summary>A listed file's path and the facts the frame records.</summary>
     internal sealed record ListedFile(string Path, long Length, DateTime LastWriteTimeUtc);
+
+    /// <summary>One entry of a folder's listing: a photo file or a subfolder, with its attributes.</summary>
+    private readonly record struct ListedEntry(string Path, bool IsDirectory, long Length, DateTime LastWriteTimeUtc, FileAttributes Attributes);
 }
