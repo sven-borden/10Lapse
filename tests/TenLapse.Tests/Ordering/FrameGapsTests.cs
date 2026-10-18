@@ -77,6 +77,40 @@ public static class FrameGapsTests
     }
 
     [Fact]
+    public static void MarkersFollowTheSortMode()
+    {
+        // Both kinds at the same seam: IMG_0003 to IMG_0010 (6 missing) and 5 s steps with a 60 s hole.
+        Frame[] frames =
+        [
+            .. Enumerable.Range(1, 8).Select(i => Photo($"IMG_{i:0000}.jpg", _base.AddSeconds((i - 1) * 5))),
+            .. Enumerable.Range(0, 8).Select(i => Photo($"IMG_{i + 20:0000}.jpg", _base.AddSeconds((7 * 5) + 60 + (i * 5)))),
+        ];
+
+        var both = Assert.Single(FrameGaps.Detect(frames, SortMode.CaptureTime));
+        Assert.Equal(FrameGapKinds.Numbering | FrameGapKinds.CaptureInterval, both.Kinds);
+
+        // Name order: the numbers mean something, the times do not.
+        var byName = Assert.Single(FrameGaps.Detect(frames, SortMode.Name));
+        Assert.Equal(FrameGapKinds.Numbering, byName.Kinds);
+        Assert.Equal(11, byName.MissingFrames);
+        Assert.Null(byName.Interval);
+
+        // Date modified and manual order: nothing says the neighbours should be consecutive.
+        Assert.Empty(FrameGaps.Detect(frames, SortMode.DateModified));
+        Assert.Empty(FrameGaps.Detect(frames, SortMode.Manual));
+
+        // Without a mode the markers are those of the capture-time order, the default of a project.
+        Assert.Equal(both.Kinds, Assert.Single(FrameGaps.Detect(frames)).Kinds);
+    }
+
+    [Fact]
+    public static void NumberingIsNotComputedInManualOrderEvenForAJumpyFolder()
+    {
+        Assert.Empty(FrameGaps.Detect(Named("IMG_0001.jpg", "IMG_0009.jpg", "IMG_0002.jpg"), SortMode.Manual));
+        Assert.Single(FrameGaps.Detect(Named("IMG_0001.jpg", "IMG_0009.jpg"), SortMode.Name));
+    }
+
+    [Fact]
     public static void NumbersThatDoNotRiseAreNoGap()
     {
         // A shot repeated, a RAW and its JPEG, a second folder starting over, a manual order.

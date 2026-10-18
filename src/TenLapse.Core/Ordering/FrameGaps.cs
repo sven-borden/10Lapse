@@ -70,6 +70,11 @@ public sealed record FrameGap(
 /// than three intervals around it, or a pair out of time order, never flag. The one-second floor keeps a burst
 /// (a tenth of a second between shots, a pause of half a second) from flagging.
 /// </para>
+/// <para>
+/// <b>Modes.</b> A marker says "a shot is missing between these two", which only holds when neighbours are meant to be
+/// consecutive. <see cref="Detect"/> therefore takes the project's <see cref="SortMode"/>: numbering is looked for in name
+/// and capture-time order, intervals in capture-time order only, and a manual or date-modified order gets no markers.
+/// </para>
 /// </remarks>
 public static class FrameGaps
 {
@@ -84,17 +89,29 @@ public static class FrameGaps
     private const int MaxDigits = 18;
     private const int MinimumTimeDigits = 6;
 
-    /// <summary>The gaps in <paramref name="frames"/>, in playback order, at most one per place.</summary>
-    public static ImmutableArray<FrameGap> Detect(IReadOnlyList<Frame> frames)
+    /// <summary>
+    /// The gaps in <paramref name="frames"/>, in playback order, at most one per place. Which kinds are looked for depends
+    /// on the order the frames are in (<paramref name="mode"/>, the project's <see cref="Project.SortMode"/>): numbering
+    /// jumps only in <see cref="SortMode.Name"/> and <see cref="SortMode.CaptureTime"/>, where neighbours are meant to be
+    /// consecutive shots; interval outliers only in <see cref="SortMode.CaptureTime"/>. In <see cref="SortMode.Manual"/> and
+    /// <see cref="SortMode.DateModified"/> there are no markers. #20 passes the project's mode and draws what comes back.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined mode.</exception>
+    public static ImmutableArray<FrameGap> Detect(IReadOnlyList<Frame> frames, SortMode mode = SortMode.CaptureTime)
     {
         ArgumentNullException.ThrowIfNull(frames);
-        if (frames.Count < 2)
+        if (!Enum.IsDefined(mode))
+        {
+            throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown sort mode.");
+        }
+
+        if (frames.Count < 2 || mode is SortMode.Manual or SortMode.DateModified)
         {
             return [];
         }
 
         var numbering = DetectNumbering(frames);
-        var intervals = DetectIntervals(frames);
+        var intervals = mode == SortMode.CaptureTime ? DetectIntervals(frames) : [];
 
         var gaps = ImmutableArray.CreateBuilder<FrameGap>();
         for (var after = 0; after < frames.Count - 1; after++)
