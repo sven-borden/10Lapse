@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Color</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; box-sizing: border-box; padding: 64px 72px; background: #ECEBE8; color: #1C1B19; font-family: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 20px; display: flex; flex-direction: column; gap: 36px">
+
+  <header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 48px">
+    <div style="display: flex; flex-direction: column; gap: 10px; max-width: 760px">
+      <span style="font-size: 12px; line-height: 16px; color: #5D5A55">10Lapse 3.0 · Foundations</span>
+      <h1 style="margin: 0; font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 40px; line-height: 52px; font-weight: 600">Color</h1>
+      <p style="margin: 0; color: #5D5A55; max-width: 68ch">Neutral chrome, warm by a hair, so photos look true. Golden-hour amber marks only the primary action, progress, the playhead and the selected frame. Strategy: restrained, one accent under a tenth of any screen.</p>
+    </div>
+    <div style="display: flex; gap: 6px; flex: none" aria-hidden="true">
+      <div style="width: 28px; height: 56px; border-radius: 4px; background: #F3F2F0; border: 1px solid #DCDAD5"></div>
+      <div style="width: 28px; height: 56px; border-radius: 4px; background: #FAF9F7; border: 1px solid #DCDAD5"></div>
+      <div style="width: 28px; height: 56px; border-radius: 4px; background: #1C1B19"></div>
+      <div style="width: 28px; height: 56px; border-radius: 4px; background: #E8962E"></div>
+      <div style="width: 28px; height: 56px; border-radius: 4px; background: #B5620D"></div>
+    </div>
+  </header>
+
+  <!-- Theme panels -->
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px">
+
+    <section aria-label="Light theme tokens" style="background: #FAF9F7; color: #1C1B19; border-radius: 10px; border: 1px solid #DCDAD5; padding: 28px 28px 20px; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600">Light</h2>
+        <span style="font-size: 12px; line-height: 16px; color: #5D5A55">Follows Windows light mode</span>
+      </div>
+      <sc-for list="{{light}}" as="k" hint-placeholder-count="12">
+        <div style="display: grid; grid-template-columns: 44px minmax(0, 1fr) 84px; gap: 16px; align-items: center; padding: 6px 0; border-top: 1px solid #E7E5E1">
+          <div style="width: 44px; height: 30px; border-radius: 4px; background: {{k.hex}}; box-shadow: inset 0 0 0 1px rgba(28, 27, 25, 0.12)"></div>
+          <div style="display: flex; flex-direction: column; min-width: 0">
+            <span style="font-weight: 600; font-size: 13px">{{k.name}}</span>
+            <span style="font-size: 12px; line-height: 16px; color: #5D5A55">{{k.use}}</span>
+          </div>
+          <span style="font-family: 'Cascadia Mono', Consolas, ui-monospace, monospace; font-size: 12px; color: #5D5A55; text-align: right">{{k.hex}}</span>
+        </div>
+      </sc-for>
+    </section>
+
+    <section aria-label="Dark theme tokens" style="background: #282726; color: #F4F2EE; border-radius: 10px; border: 1px solid #393735; padding: 28px 28px 20px; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600">Dark</h2>
+        <span style="font-size: 12px; line-height: 16px; color: #C3BFB8">Follows Windows dark mode</span>
+      </div>
+      <sc-for list="{{dark}}" as="k" hint-placeholder-count="12">
+        <div style="display: grid; grid-template-columns: 44px minmax(0, 1fr) 84px; gap: 16px; align-items: center; padding: 6px 0; border-top: 1px solid #393735">
+          <div style="width: 44px; height: 30px; border-radius: 4px; background: {{k.hex}}; box-shadow: inset 0 0 0 1px rgba(244, 242, 238, 0.14)"></div>
+          <div style="display: flex; flex-direction: column; min-width: 0">
+            <span style="font-weight: 600; font-size: 13px">{{k.name}}</span>
+            <span style="font-size: 12px; line-height: 16px; color: #C3BFB8">{{k.use}}</span>
+          </div>
+          <span style="font-family: 'Cascadia Mono', Consolas, ui-monospace, monospace; font-size: 12px; color: #C3BFB8; text-align: right">{{k.hex}}</span>
+        </div>
+      </sc-for>
+    </section>
+  </div>
+
+  <!-- Semantic, brand ramp, high contrast -->
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr); gap: 32px; align-items: start">
+
+    <section aria-label="Status colors" style="display: flex; flex-direction: column; gap: 12px">
+      <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Status</h2>
+      <sc-for list="{{status}}" as="st" hint-placeholder-count="3">
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+          <div style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; background: {{st.lbg}}; color: {{st.lfg}}; font-weight: 600; font-size: 13px">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: {{st.lfg}}"></span>{{st.name}}
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; background: {{st.dbg}}; color: {{st.dfg}}; font-weight: 600; font-size: 13px">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: {{st.dfg}}"></span>{{st.name}}
+          </div>
+        </div>
+      </sc-for>
+      <p style="margin: 0; font-size: 12px; line-height: 16px; color: #5D5A55">Fluent's status set, used only in InfoBars and the finished state. Every status also has an icon, never color alone.</p>
+    </section>
+
+    <section aria-label="Day to night brand ramp" style="display: flex; flex-direction: column; gap: 12px">
+      <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Day to night</h2>
+      <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px">
+        <sc-for list="{{ramp}}" as="rp" hint-placeholder-count="7">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="aspect-ratio: 3 / 4; border-radius: 4px; background: {{rp.hex}}"></div>
+            <span style="font-size: 12px; line-height: 16px; font-weight: 600">{{rp.name}}</span>
+            <span style="font-family: 'Cascadia Mono', Consolas, ui-monospace, monospace; font-size: 11px; line-height: 14px; color: #5D5A55">{{rp.hex}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin: 0; font-size: 12px; line-height: 16px; color: #5D5A55">The brand's own color story: a sunset sequence. For the icon, splash screen, Store art and sample visuals. Never for UI chrome or text.</p>
+    </section>
+
+    <section aria-label="High contrast mapping" style="display: flex; flex-direction: column; gap: 12px">
+      <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">High contrast</h2>
+      <div style="display: flex; flex-direction: column; border-radius: 6px; overflow: hidden; border: 1px solid #DCDAD5; background: #FAF9F7">
+        <sc-for list="{{hc}}" as="m" hint-placeholder-count="6">
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 7px 12px; border-top: 1px solid #E7E5E1; font-size: 12px; line-height: 16px">
+            <span>{{m.token}}</span>
+            <span style="font-family: 'Cascadia Mono', Consolas, ui-monospace, monospace; color: #5D5A55">{{m.sys}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin: 0; font-size: 12px; line-height: 16px; color: #5D5A55">In a contrast theme every token maps to a Windows system color. Photos and thumbnails keep their real colors.</p>
+    </section>
+  </div>
+
+  <!-- Contrast -->
+  <section aria-label="Contrast checks" style="display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; align-items: baseline; gap: 16px">
+      <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Contrast, measured</h2>
+      <span style="font-size: 12px; line-height: 16px; color: #5D5A55">WCAG 2.2: 4.5:1 for text, 3:1 for indicators. Light first, then dark.</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px">
+      <sc-for list="{{contrast}}" as="c" hint-placeholder-count="6">
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 6px; background: #FAF9F7; border: 1px solid #DCDAD5">
+          <span style="font-size: 12px; line-height: 16px; color: #5D5A55">{{c.pair}}</span>
+          <span style="font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 20px; line-height: 28px; font-weight: 600; font-variant-numeric: tabular-nums">{{c.l}} · {{c.d}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+const TOKENS = [
+  ['Mica', '#F3F2F0', '#1F1E1D', 'Window ground: title bar and command bar'],
+  ['Layer', '#FAF9F7', '#282726', 'Content: stage, inspector, settings'],
+  ['Card', '#FEFDFC', '#302F2D', 'Settings cards, flyouts, InfoBars'],
+  ['Control fill', '#FEFDFC', '#363431', 'Standard buttons, selects, play'],
+  ['Control stroke', '#DCDAD5', '#4A4743', 'Borders of controls and segments'],
+  ['Divider', '#E7E5E1', '#393735', 'Rules between inspector sections'],
+  ['Text', '#1C1B19', '#F4F2EE', 'Everything you read'],
+  ['Text secondary', '#5D5A55', '#C3BFB8', 'Labels, captions, readout detail'],
+  ['Accent fill', '#E8962E', '#F0A54A', 'Export and other primary buttons'],
+  ['On accent', '#1F1404', '#1F1404', 'Text and icons on accent fill'],
+  ['Indicator', '#B5620D', '#F0A54A', 'Playhead, selected frame, progress, toggles'],
+  ['Accent text', '#9A5208', '#F3B05C', 'Links and text actions']
+];
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      light: TOKENS.map(k => ({ name: k[0], hex: k[1], use: k[3] })),
+      dark: TOKENS.map(k => ({ name: k[0], hex: k[2], use: k[3] })),
+      status: [
+        { name: 'Success', lfg: '#0F7B0F', lbg: '#DFF6DD', dfg: '#6CCB5F', dbg: '#26381F' },
+        { name: 'Caution', lfg: '#9D5D00', lbg: '#FFF7DB', dfg: '#FCE100', dbg: '#3B321A' },
+        { name: 'Critical', lfg: '#C42B1C', lbg: '#FDE7E9', dfg: '#FF99A4', dbg: '#442726' }
+      ],
+      ramp: [
+        { name: 'Daylight', hex: '#C4E0F3' }, { name: 'Golden', hex: '#F6CF86' }, { name: 'Amber', hex: '#F29A55' },
+        { name: 'Rose', hex: '#D9677A' }, { name: 'Dusk', hex: '#6D5A9E' }, { name: 'Blue hour', hex: '#2E3A72' }, { name: 'Night', hex: '#10162E' }
+      ],
+      hc: [
+        { token: 'Mica, layer, card', sys: 'Window' }, { token: 'Text', sys: 'WindowText' },
+        { token: 'Control fill', sys: 'ButtonFace' }, { token: 'Control text', sys: 'ButtonText' },
+        { token: 'Accent fill, indicator', sys: 'Highlight' }, { token: 'On accent', sys: 'HighlightText' },
+        { token: 'Text secondary, disabled', sys: 'GrayText' }, { token: 'Links', sys: 'Hotlight' }
+      ],
+      contrast: [
+        { pair: 'Text on layer', l: '16.4', d: '13.3' },
+        { pair: 'Secondary on layer', l: '6.5', d: '8.1' },
+        { pair: 'Accent text on layer', l: '5.6', d: '7.9' },
+        { pair: 'On accent on accent', l: '7.6', d: '8.8' },
+        { pair: 'Indicator on layer', l: '4.3', d: '7.2' },
+        { pair: 'Caution on its fill', l: '4.9', d: '9.6' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-18T16:30:00Z" },
+  "title": "10Lapse 3.0 Design",
+  "launch": { "view": "canvas", "page": "prototype" },
+  "pages": [
+    { "id": "prototype", "name": "Prototype" },
+    { "id": "screens", "name": "Screens" },
+    { "id": "foundations", "name": "Foundations" },
+    { "id": "motion", "name": "Motion" },
+    { "id": "components", "name": "Components" }
+  ],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1280, "h": 800, "title": "Interactive prototype", "page": "prototype", "is_interactive": true, "radius": 8 },
+    "Screen-FirstLaunch-Light.dc.html": { "x": 0, "y": 0, "w": 1280, "h": 800, "title": "First launch", "page": "screens", "is_interactive": true, "radius": 8 },
+    "Screen-DragOver-Light.dc.html": { "x": 1360, "y": 0, "w": 1280, "h": 800, "title": "Drag over", "page": "screens", "is_interactive": true, "radius": 8 },
+    "Screen-Editing-Light.dc.html": { "x": 2720, "y": 0, "w": 1280, "h": 800, "title": "Editing", "page": "screens", "is_interactive": true, "radius": 8 },
+    "Screen-Finished-Light.dc.html": { "x": 4080, "y": 0, "w": 1280, "h": 800, "title": "Finished", "page": "screens", "is_interactive": true, "radius": 8 },
+    "Screen-Editing-Dark.dc.html": { "x": 0, "y": 1200, "w": 1280, "h": 800, "title": "Editing at dusk", "page": "screens", "is_interactive": true, "radius": 8 },
+    "Screen-Exporting-Dark.dc.html": { "x": 1360, "y": 1200, "w": 1280, "h": 800, "title": "Exporting", "page": "screens", "is_interactive": true, "radius": 8 },
+    "Screen-Narrow-Dark.dc.html": { "x": 2720, "y": 1200, "w": 760, "h": 800, "title": "Narrow window", "page": "screens", "is_interactive": true, "radius": 8 },
+    "Screen-Settings-Dark.dc.html": { "x": 3560, "y": 1200, "w": 1280, "h": 800, "title": "Settings", "page": "screens", "is_interactive": true, "radius": 8 },
+    "foundations/Color.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 1180, "title": "Color", "page": "foundations" },
+    "foundations/Type.dc.html": { "x": 1520, "y": 0, "w": 1440, "h": 1180, "title": "Type", "page": "foundations" },
+    "foundations/Layout.dc.html": { "x": 0, "y": 1300, "w": 1440, "h": 1100, "title": "Space, shape and elevation", "page": "foundations" },
+    "foundations/Icon.dc.html": { "x": 1520, "y": 1300, "w": 1440, "h": 1100, "title": "App icon", "page": "foundations" },
+    "motion/Motion.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 1760, "title": "Motion system", "page": "motion", "is_interactive": true },
+    "components/Controls.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 1440, "title": "Components", "page": "components" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Screen-FirstLaunch-Light.dc.html",
+    "Screen-DragOver-Light.dc.html",
+    "Screen-Editing-Light.dc.html",
+    "Screen-Finished-Light.dc.html",
+    "Screen-Editing-Dark.dc.html",
+    "Screen-Exporting-Dark.dc.html",
+    "Screen-Narrow-Dark.dc.html",
+    "Screen-Settings-Dark.dc.html",
+    "foundations/Color.dc.html",
+    "foundations/Type.dc.html",
+    "foundations/Layout.dc.html",
+    "foundations/Icon.dc.html",
+    "motion/Motion.dc.html",
+    "components/Controls.dc.html"
+  ],
+  "notes": {
+    "protoHelp": { "x": 1360, "y": 0, "w": 380, "text": "Try it end to end. Choose folder (or drag real files from Explorer onto the window), play and scrub, change speed and shape, then Export video. New project starts over; the sliders icon opens Settings. Theme, start screen and reduced motion are in Tweaks.", "page": "prototype", "fill": "orange" },
+    "lightTitle": { "x": 0, "y": -300, "text": "Light theme", "kind": "title1", "maxW": 5360, "page": "screens" },
+    "darkTitle": { "x": 0, "y": 900, "text": "Dark theme", "kind": "title1", "maxW": 4840, "page": "screens" },
+    "foundTitle": { "x": 0, "y": -300, "text": "Foundations", "kind": "title1", "maxW": 2960, "page": "foundations" }
+  },
+  "designSystems": []
+}

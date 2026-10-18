@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Components</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1440px; box-sizing: border-box; padding: 64px 72px; background: #ECEBE8; color: #1C1B19; font-family: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 20px; display: flex; flex-direction: column; gap: 32px">
+
+  <header style="display: flex; flex-direction: column; gap: 10px; max-width: 760px">
+    <span style="font-size: 12px; line-height: 16px; color: #5D5A55">10Lapse 3.0 · Components</span>
+    <h1 style="margin: 0; font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 40px; line-height: 52px; font-weight: 600">Components</h1>
+    <p style="margin: 0; color: #5D5A55; max-width: 68ch">Stock WinUI 3 controls with 10Lapse tokens. Nothing custom where Windows already has an answer; the filmstrip, scrubber and export gate are the only bespoke pieces. Shown in light; dark uses the same shapes with the dark tokens.</p>
+  </header>
+
+  <!-- Buttons -->
+  <section aria-label="Buttons" style="background: #FAF9F7; border: 1px solid #DCDAD5; border-radius: 10px; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px">
+    <h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600">Buttons</h2>
+    <div style="display: grid; grid-template-columns: 120px repeat(5, minmax(0, 1fr)); gap: 14px 20px; align-items: center">
+      <span></span>
+      <span style="font-size: 12px; line-height: 16px; color: #5D5A55">Rest</span>
+      <span style="font-size: 12px; line-height: 16px; color: #5D5A55">Hover</span>
+      <span style="font-size: 12px; line-height: 16px; color: #5D5A55">Pressed</span>
+      <span style="font-size: 12px; line-height: 16px; color: #5D5A55">Keyboard focus</span>
+      <span style="font-size: 12px; line-height: 16px; color: #5D5A55">Disabled</span>
+
+      <span style="font-weight: 600; font-size: 13px">Accent</span>
+      <sc-for list="{{accent}}" as="b" hint-placeholder-count="5">
+        <div><button style="height: 32px; padding: 0 14px; border-radius: 4px; border: 1px solid rgba(120, 70, 10, 0.22); background: {{b.bg}}; color: {{b.fg}}; font: inherit; font-weight: 600; box-shadow: {{b.ring}}; opacity: {{b.o}}; display: inline-flex; align-items: center; gap: 8px">Export video</button></div>
+      </sc-for>
+
+      <span style="font-weight: 600; font-size: 13px">Standard</span>
+      <sc-for list="{{standard}}" as="b" hint-placeholder-count="5">
+        <div><button style="height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid #DCDAD5; background: {{b.bg}}; color: {{b.fg}}; font: inherit; box-shadow: {{b.ring}}; opacity: {{b.o}}">Choose photos</button></div>
+      </sc-for>
+
+      <span style="font-weight: 600; font-size: 13px">Subtle</span>
+      <sc-for list="{{subtle}}" as="b" hint-placeholder-count="5">
+        <div><button style="height: 32px; padding: 0 10px; border-radius: 4px; border: 1px solid transparent; background: {{b.bg}}; color: {{b.fg}}; font: inherit; box-shadow: {{b.ring}}; opacity: {{b.o}}; display: inline-flex; align-items: center; gap: 8px">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"></path></svg>Add photos</button></div>
+      </sc-for>
+    </div>
+    <p style="margin: 0; font-size: 12px; line-height: 16px; color: #5D5A55">One accent button per screen. Focus is the Windows double ring: 2 px text color outside, 1 px ground inside.</p>
+  </section>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start">
+
+    <!-- Segmented -->
+    <section aria-label="Segmented control" style="background: #FAF9F7; border: 1px solid #DCDAD5; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 16px; line-height: 22px; font-weight: 600">Segmented</h2>
+      <div role="radiogroup" aria-label="Speed mode" style="position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); height: 32px; border-radius: 5px; background: #F0EEEB; border: 1px solid #DCDAD5; padding: 2px; box-sizing: border-box">
+        <div aria-hidden="true" style="position: absolute; top: 2px; bottom: 2px; left: 2px; width: calc((100% - 4px) / 3); border-radius: 3px; background: #FEFDFC; box-shadow: 0 1px 2px rgba(28, 27, 25, 0.14), 0 0 0 1px rgba(28, 27, 25, 0.04)"></div>
+        <button role="radio" aria-checked="true" style="position: relative; border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 600; color: #1C1B19">Per second</button>
+        <button role="radio" aria-checked="false" style="position: relative; border: 0; background: transparent; font: inherit; font-size: 13px; color: #5D5A55">Length</button>
+        <button role="radio" aria-checked="false" style="position: relative; border: 0; background: transparent; font: inherit; font-size: 13px; color: #5D5A55">Per photo</button>
+      </div>
+      <div role="radiogroup" aria-label="Frames per second" style="position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); height: 32px; border-radius: 5px; background: #F0EEEB; border: 1px solid #DCDAD5; padding: 2px; box-sizing: border-box">
+        <div aria-hidden="true" style="position: absolute; top: 2px; bottom: 2px; left: calc(2px + (100% - 4px) * 2 / 5); width: calc((100% - 4px) / 5); border-radius: 3px; background: #FEFDFC; box-shadow: 0 1px 2px rgba(28, 27, 25, 0.14), 0 0 0 1px rgba(28, 27, 25, 0.04)"></div>
+        <button role="radio" aria-checked="false" style="position: relative; border: 0; background: transparent; font: inherit; font-size: 13px; color: #5D5A55">24</button>
+        <button role="radio" aria-checked="false" style="position: relative; border: 0; background: transparent; font: inherit; font-size: 13px; color: #5D5A55">25</button>
+        <button role="radio" aria-checked="true" style="position: relative; border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 600; color: #1C1B19">30</button>
+        <button role="radio" aria-checked="false" style="position: relative; border: 0; background: transparent; font: inherit; font-size: 13px; color: #5D5A55">50</button>
+        <button role="radio" aria-checked="false" style="position: relative; border: 0; background: transparent; font: inherit; font-size: 13px; color: #5D5A55">60</button>
+      </div>
+      <p style="margin: 0; font-size: 12px; line-height: 16px; color: #5D5A55">The selected pill is neutral, not amber: it marks a setting, not an action. Arrow keys move the selection; the pill slides 250 ms.</p>
+    </section>
+
+    <!-- Toggle and select -->
+    <section aria-label="Toggle and select" style="background: #FAF9F7; border: 1px solid #DCDAD5; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 16px; line-height: 22px; font-weight: 600">Toggle and select</h2>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; font-size: 12px; line-height: 16px; color: #5D5A55">
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+          <span role="switch" aria-checked="false" aria-label="Off" style="position: relative; width: 40px; height: 20px; border-radius: 10px; border: 1px solid #5D5A55; box-sizing: border-box; display: block"><span style="position: absolute; left: 3px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: #5D5A55"></span></span>Off
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+          <span role="switch" aria-checked="true" aria-label="On" style="position: relative; width: 40px; height: 20px; border-radius: 10px; background: #B5620D; box-sizing: border-box; display: block"><span style="position: absolute; left: 23px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: #FEFDFC"></span></span>On
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+          <span role="switch" aria-checked="true" aria-label="Focused" style="position: relative; width: 40px; height: 20px; border-radius: 10px; background: #B5620D; box-sizing: border-box; display: block; box-shadow: 0 0 0 1px #FEFDFC, 0 0 0 3px #1C1B19"><span style="position: absolute; left: 23px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: #FEFDFC"></span></span>Focus
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+          <span role="switch" aria-checked="false" aria-label="Disabled" style="position: relative; width: 40px; height: 20px; border-radius: 10px; border: 1px solid #5D5A55; box-sizing: border-box; display: block; opacity: 0.4"><span style="position: absolute; left: 3px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: #5D5A55"></span></span>Disabled
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 16px; color: #5D5A55">
+        <span>Resolution</span>
+        <div style="height: 32px; border-radius: 4px; border: 1px solid #DCDAD5; background: #FEFDFC; color: #1C1B19; font-size: 14px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px">
+          <span>4K · 3840 × 2160</span>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"></path></svg>
+        </div>
+        <div style="border-radius: 8px; background: #FEFDFC; box-shadow: 0 8px 28px rgba(28, 27, 25, 0.16), 0 2px 6px rgba(28, 27, 25, 0.06); padding: 4px; display: flex; flex-direction: column; color: #1C1B19; font-size: 14px">
+          <span style="height: 32px; display: flex; align-items: center; padding: 0 10px; border-radius: 4px">720p · 1280 × 720</span>
+          <span style="height: 32px; display: flex; align-items: center; padding: 0 10px; border-radius: 4px">1080p · 1920 × 1080</span>
+          <span style="height: 32px; display: flex; align-items: center; padding: 0 10px; border-radius: 4px">1440p · 2560 × 1440</span>
+          <span style="height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 4px; background: #F0EEEB"><span style="width: 3px; height: 16px; border-radius: 2px; background: #B5620D"></span>4K · 3840 × 2160</span>
+        </div>
+        <span>Sizes this PC can't encode are left out of the list, with one line under it saying why.</span>
+      </div>
+    </section>
+
+    <!-- Transport -->
+    <section aria-label="Transport and filmstrip" style="background: #FAF9F7; border: 1px solid #DCDAD5; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 16px; line-height: 22px; font-weight: 600">Transport and filmstrip</h2>
+      <div style="display: flex; align-items: center; gap: 12px">
+        <span style="width: 36px; height: 36px; flex: none; border-radius: 50%; border: 1px solid #DCDAD5; background: #FEFDFC; display: grid; place-items: center">
+          <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6a.6.6 0 0 0 .9.5l7.4-4.8a.6.6 0 0 0 0-1L5.9 2.7a.6.6 0 0 0-.9.5z" fill="#1C1B19"></path></svg>
+        </span>
+        <div style="position: relative; flex: 1; height: 4px; border-radius: 2px; background: #E4E2DE">
+          <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 42%; border-radius: 2px; background: #B5620D"></div>
+          <div style="position: absolute; left: 42%; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: #FEFDFC; box-shadow: 0 0 0 1px #DCDAD5, 0 1px 3px rgba(28, 27, 25, 0.2); display: grid; place-items: center"><span style="width: 8px; height: 8px; border-radius: 50%; background: #B5620D"></span></div>
+        </div>
+        <span style="font-size: 12px; line-height: 16px; color: #5D5A55; font-variant-numeric: tabular-nums">00:10.40</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; font-size: 12px; line-height: 16px; color: #5D5A55">
+        <div style="display: flex; flex-direction: column; gap: 6px"><span style="aspect-ratio: 3 / 2; border-radius: 3px; background: linear-gradient(180deg, #86A6D1 0%, #F2C08A 62%, #2A3449 62%)"></span>Rest</div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><span style="aspect-ratio: 3 / 2; border-radius: 3px; background: linear-gradient(180deg, #8C83B5 0%, #F29A55 62%, #1E2638 62%); box-shadow: 0 0 0 2px #FAF9F7, 0 0 0 4px #B5620D"></span>Playhead</div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><span style="aspect-ratio: 3 / 2; border-radius: 3px; background: linear-gradient(180deg, #584C8C 0%, #D9677A 62%, #141A28 62%); opacity: 0.35"></span>Not yet exported</div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><span style="aspect-ratio: 3 / 2; border-radius: 3px; background: linear-gradient(180deg, #2B3268 0%, #6D5A9E 62%, #0E1220 62%); box-shadow: 0 0 0 2px #FAF9F7, 0 0 0 3px #1C1B19"></span>Selected for removal</div>
+      </div>
+      <p style="margin: 0; font-size: 12px; line-height: 16px; color: #5D5A55">Thumbnails are buttons: click to seek, Shift or Ctrl to select, Delete to remove from the project. The amber ring always means "where the video is now".</p>
+    </section>
+  </div>
+
+  <!-- InfoBars -->
+  <section aria-label="InfoBars" style="background: #FAF9F7; border: 1px solid #DCDAD5; border-radius: 10px; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600">InfoBars</h2>
+      <span style="font-size: 12px; line-height: 16px; color: #5D5A55">Every message says what happened and what to do next, with at most one action.</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+      <sc-for list="{{infobars}}" as="ib" hint-placeholder-count="4">
+        <div role="status" style="display: flex; align-items: center; gap: 12px; padding: 10px 8px 10px 14px; border-radius: 6px; border: 1px solid #DCDAD5; background: {{ib.bg}}">
+          <span style="width: 18px; height: 18px; flex: none; border-radius: 50%; background: {{ib.fg}}; color: {{ib.bg}}; display: grid; place-items: center; font-size: 12px; line-height: 12px; font-weight: 700">{{ib.glyph}}</span>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+            <span style="font-weight: 600">{{ib.title}}</span>
+            <span style="font-size: 12px; line-height: 16px; color: #5D5A55">{{ib.body}}</span>
+          </div>
+          <button style="height: 28px; padding: 0 10px; border-radius: 4px; border: 1px solid #DCDAD5; background: #FEFDFC; color: #1C1B19; font: inherit; font-size: 13px; white-space: nowrap">{{ib.action}}</button>
+          <button aria-label="Dismiss" style="width: 28px; height: 28px; border-radius: 4px; border: 0; background: transparent; color: #5D5A55; display: grid; place-items: center; padding: 0">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg>
+          </button>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- Shortcuts -->
+  <section aria-label="Keyboard shortcuts" style="background: #FAF9F7; border: 1px solid #DCDAD5; border-radius: 10px; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600">Keyboard</h2>
+      <span style="font-size: 12px; line-height: 16px; color: #5D5A55">A whole timelapse can be made without a mouse. Shortcuts show in tooltips.</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px 24px">
+      <sc-for list="{{keys}}" as="k" hint-placeholder-count="10">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #E7E5E1">
+          <span style="font-size: 13px">{{k.what}}</span>
+          <kbd style="font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; font-size: 12px; line-height: 16px; padding: 2px 7px; border-radius: 4px; background: #FEFDFC; border: 1px solid #DCDAD5; box-shadow: 0 1px 0 #DCDAD5; white-space: nowrap">{{k.key}}</kbd>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1440}}'>
+const FOCUS = '0 0 0 1px #FEFDFC, 0 0 0 3px #1C1B19';
+class Component extends DCLogic {
+  renderVals() {
+    const st = (bg, fg, ring, o) => ({ bg, fg, ring: ring || 'none', o: o || 1 });
+    return {
+      accent: [st('#E8962E', '#1F1404'), st('#EEA444', '#1F1404'), st('#D78722', '#3A2508'), st('#E8962E', '#1F1404', FOCUS), st('#E8962E', '#1F1404', null, 0.4)],
+      standard: [st('#FEFDFC', '#1C1B19'), st('#F6F5F3', '#1C1B19'), st('#F0EEEB', '#5D5A55'), st('#FEFDFC', '#1C1B19', FOCUS), st('#FEFDFC', '#1C1B19', null, 0.4)],
+      subtle: [st('transparent', '#1C1B19'), st('rgba(28, 27, 25, 0.06)', '#1C1B19'), st('rgba(28, 27, 25, 0.10)', '#5D5A55'), st('transparent', '#1C1B19', FOCUS), st('transparent', '#1C1B19', null, 0.4)],
+      infobars: [
+        { bg: '#FFF7DB', fg: '#9D5D00', glyph: '!', title: "3 photos couldn't be read and were skipped", body: 'The other 742 are in the project.', action: 'View list' },
+        { bg: '#FDE7E9', fg: '#C42B1C', glyph: '×', title: "This PC can't export 4K", body: 'Its graphics hardware stops at 1440p.', action: 'Use 1440p' },
+        { bg: '#FEFDFC', fg: '#5D5A55', glyph: 'i', title: 'These photos need HEIF Image Extensions', body: 'A free download from Microsoft. 10Lapse picks them up right away.', action: 'Get it' },
+        { bg: '#DFF6DD', fg: '#0F7B0F', glyph: '✓', title: 'Harbor sunset.mp4 is ready', body: '24.7 s · 4K · H.264 · 173 MB', action: 'Play' }
+      ],
+      keys: [
+        { what: 'Play or pause', key: 'Space' }, { what: 'One frame', key: '← →' }, { what: 'Ten frames', key: 'Shift ← →' },
+        { what: 'First or last', key: 'Home End' }, { what: 'Remove frame', key: 'Delete' },
+        { what: 'Choose folder', key: 'Ctrl O' }, { what: 'Choose photos', key: 'Ctrl Shift O' }, { what: 'Export video', key: 'Ctrl E' },
+        { what: 'New project', key: 'Ctrl N' }, { what: 'Undo', key: 'Ctrl Z' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

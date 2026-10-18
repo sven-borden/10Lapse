@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>10Lapse 3.0 prototype</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; position: relative; background: {{t.mica}}; color: {{t.text}}; font-family: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 20px; transition: background-color 250ms linear, color 250ms linear" onDragEnter="{{onDragEnter}}" onDragOver="{{onDragOver}}" onDragLeave="{{onDragLeave}}" onDrop="{{onDrop}}">
+
+  <!-- Title bar -->
+  <div style="height: 40px; flex: none; display: flex; align-items: center; gap: 12px; padding-left: 16px">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <rect x="1" y="2" width="2.4" height="12" rx="0.8" fill="#8EC0EA"></rect>
+      <rect x="4" y="2" width="2.4" height="12" rx="0.8" fill="#F3C46B"></rect>
+      <rect x="7" y="2" width="2.4" height="12" rx="0.8" fill="#EE8F4F"></rect>
+      <rect x="10" y="2" width="2.4" height="12" rx="0.8" fill="#B4567A"></rect>
+      <rect x="13" y="2" width="2.4" height="12" rx="0.8" fill="#2B3A75"></rect>
+    </svg>
+    <span style="font-size: 12px; line-height: 16px">10Lapse</span>
+    <sc-if value="{{hasProject}}" hint-placeholder-val="{{ true }}">
+      <span style="font-size: 12px; line-height: 16px; color: {{t.text2}}">Harbor sunset</span>
+    </sc-if>
+    <div style="flex: 1"></div>
+    <div style="display: flex; height: 40px">
+      <button aria-label="Minimize" style="width: 46px; height: 40px; border: 0; background: transparent; color: {{t.text}}; display: grid; place-items: center; padding: 0">
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5h10" stroke="currentColor" stroke-width="1"></path></svg>
+      </button>
+      <button aria-label="Maximize" style="width: 46px; height: 40px; border: 0; background: transparent; color: {{t.text}}; display: grid; place-items: center; padding: 0">
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><rect x="0.5" y="0.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1"></rect></svg>
+      </button>
+      <button aria-label="Close" style="width: 46px; height: 40px; border: 0; background: transparent; color: {{t.text}}; display: grid; place-items: center; padding: 0">
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0.5 0.5l9 9M9.5 0.5l-9 9" stroke="currentColor" stroke-width="1"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Command bar -->
+  <div style="height: 48px; flex: none; display: flex; align-items: center; gap: 4px; padding: 0 12px">
+    <sc-if value="{{isSettings}}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{back}}" style="height: 32px; padding: 0 10px; border-radius: 4px; border: 1px solid transparent; background: transparent; color: {{t.text}}; font: inherit; display: inline-flex; align-items: center; gap: 8px; cursor: pointer">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8H3M7 4L3 8l4 4"></path></svg>
+        Back
+      </button>
+    </sc-if>
+    <sc-if value="{{notSettings}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; align-items: center; gap: 4px">
+        <button onClick="{{choose}}" style="height: 32px; padding: 0 10px; border-radius: 4px; border: 1px solid transparent; background: transparent; color: {{t.text}}; font: inherit; display: inline-flex; align-items: center; gap: 8px; cursor: pointer">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"></path></svg>
+          Add photos
+        </button>
+        <sc-if value="{{hasProject}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; align-items: center; gap: 4px">
+            <button style="height: 32px; padding: 0 10px; border-radius: 4px; border: 1px solid transparent; background: transparent; color: {{t.text}}; font: inherit; display: inline-flex; align-items: center; gap: 8px; cursor: pointer">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3v10M2.5 10.5L5 13l2.5-2.5M11 13V3M8.5 5.5L11 3l2.5 2.5"></path></svg>
+              Sort: Capture time
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"></path></svg>
+            </button>
+            <button onClick="{{newProject}}" style="height: 32px; padding: 0 10px; border-radius: 4px; border: 1px solid transparent; background: transparent; color: {{t.text}}; font: inherit; display: inline-flex; align-items: center; gap: 8px; cursor: pointer">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2H4.5A1.5 1.5 0 0 0 3 3.5v9A1.5 1.5 0 0 0 4.5 14h7a1.5 1.5 0 0 0 1.5-1.5V6zM9 2v4h4M8 8.5v3M6.5 10h3"></path></svg>
+              New project
+            </button>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+    <div style="flex: 1"></div>
+    <sc-if value="{{notSettings}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; align-items: center; gap: 8px">
+        <button aria-label="Settings" onClick="{{openSettings}}" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid transparent; background: transparent; color: {{t.text}}; display: grid; place-items: center; padding: 0; cursor: pointer">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2.5 5h6M12.5 5h1M2.5 11h1M7.5 11h6"></path><circle cx="10.5" cy="5" r="1.75"></circle><circle cx="5.5" cy="11" r="1.75"></circle></svg>
+        </button>
+        <button onClick="{{startExport}}" disabled="{{exportDisabled}}" style="height: 32px; padding: 0 14px; border-radius: 4px; border: 1px solid {{t.accentStroke}}; background: {{t.accent}}; color: {{t.onAccent}}; font: inherit; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; opacity: {{exportOpacity}}; transition: opacity 167ms linear">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 10V2.5M5 5.5L8 2.5l3 3M3 9v3.5A1.5 1.5 0 0 0 4.5 14h7a1.5 1.5 0 0 0 1.5-1.5V9"></path></svg>
+          {{exportLabel}}
+        </button>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- Body -->
+  <div style="flex: 1; min-height: 0; position: relative; display: flex">
+
+    <!-- First launch / drag over -->
+    <sc-if value="{{isEmpty}}" hint-placeholder-val="{{ true }}">
+      <div style="flex: 1; display: flex; padding: 0 16px 16px 16px; opacity: {{scene.o}}; transform: {{scene.tf}}; transition: {{scene.tr}}">
+        <div style="flex: 1; box-sizing: border-box; border-radius: 8px; border: 1.5px dashed {{dropStroke}}; background-color: {{dropBg}}; transition: border-color 167ms cubic-bezier(0.16, 1, 0.3, 1), background-color 167ms cubic-bezier(0.16, 1, 0.3, 1); display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 64px; align-items: center; padding: 0 72px">
+          <div style="display: flex; flex-direction: column; gap: 20px; max-width: 440px">
+            <h1 style="margin: 0; font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 28px; line-height: 36px; font-weight: 600; text-wrap: balance">{{dropTitle}}</h1>
+            <p style="margin: 0; color: {{t.text2}}; max-width: 46ch">10Lapse plays your photos back as a video. Shoot one photo every few seconds, and 300 of them become a 10-second clip at 30 frames per second.</p>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; padding-top: 4px">
+              <button onClick="{{choose}}" style="height: 32px; padding: 0 14px; border-radius: 4px; border: 1px solid {{t.accentStroke}}; background: {{t.accent}}; color: {{t.onAccent}}; font: inherit; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; cursor: pointer">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h3l1.5 1.5h4.5A1.5 1.5 0 0 1 14 6v5.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 11.5z"></path></svg>
+                Choose folder
+              </button>
+              <button onClick="{{choose}}" style="height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; font: inherit; display: inline-flex; align-items: center; gap: 8px; cursor: pointer">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1.5"></rect><path d="M2 11l3.5-3.5 3 3 2-2L14 12"></path></svg>
+                Choose photos
+              </button>
+            </div>
+            <button onClick="{{choose}}" style="align-self: flex-start; height: 28px; padding: 0; border: 0; background: transparent; color: {{t.accentText}}; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px">Try it with a sample sequence</button>
+            <div style="display: flex; gap: 8px; align-items: center; color: {{t.text2}}; font-size: 12px; line-height: 16px">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="7" width="9" height="7" rx="1.5"></rect><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"></path></svg>
+              <span>Your photos never leave this PC.</span>
+            </div>
+          </div>
+
+          <!-- Daybreak: a tiny timelapse that explains the app -->
+          <div aria-hidden="true" style="display: flex; flex-direction: column; gap: 10px; transform: {{dropLift}}; transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1)">
+            <div style="position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; box-shadow: {{t.shadowFlyout}}">
+              <div style="position: absolute; inset: 0; background: linear-gradient(180deg, {{amb.top}} 0%, {{amb.mid}} 46%, {{amb.hor}} 68%)"></div>
+              <div style="position: absolute; left: 63%; top: {{amb.sunY}}%; width: 7%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle, {{amb.sun}} 0 36%, {{amb.sunGlow}} 58%, rgba(255, 170, 100, 0) 72%); opacity: {{amb.sunO}}"></div>
+              <div style="position: absolute; left: 0; right: 0; top: 0; height: 58%; opacity: {{amb.stars}}; background-image: radial-gradient(1.4px 1.4px at 8% 14%, #FFFBEF 60%, transparent 61%), radial-gradient(1.2px 1.2px at 17% 40%, #FFFBEF 60%, transparent 61%), radial-gradient(1px 1px at 26% 9%, #FFFBEF 60%, transparent 61%), radial-gradient(1.6px 1.6px at 34% 28%, #FFFBEF 60%, transparent 61%), radial-gradient(1px 1px at 42% 52%, #FFFBEF 60%, transparent 61%), radial-gradient(1.2px 1.2px at 51% 16%, #FFFBEF 60%, transparent 61%), radial-gradient(1px 1px at 58% 38%, #FFFBEF 60%, transparent 61%), radial-gradient(1.4px 1.4px at 66% 8%, #FFFBEF 60%, transparent 61%), radial-gradient(1px 1px at 73% 30%, #FFFBEF 60%, transparent 61%), radial-gradient(1.2px 1.2px at 81% 18%, #FFFBEF 60%, transparent 61%), radial-gradient(1px 1px at 88% 44%, #FFFBEF 60%, transparent 61%), radial-gradient(1.5px 1.5px at 94% 12%, #FFFBEF 60%, transparent 61%)"></div>
+              <div style="position: absolute; left: 0; right: 0; bottom: 17%; height: 17%; background: {{amb.land}}; clip-path: polygon(0 70%, 4% 70%, 4% 45%, 7% 45%, 7% 62%, 11% 62%, 11% 30%, 13% 30%, 13% 22%, 14% 22%, 14% 30%, 16% 30%, 16% 58%, 22% 58%, 22% 48%, 27% 48%, 27% 66%, 33% 66%, 33% 38%, 36% 38%, 36% 52%, 41% 52%, 41% 72%, 47% 72%, 47% 55%, 52% 55%, 52% 26%, 54% 26%, 54% 10%, 55% 10%, 55% 26%, 57% 26%, 57% 50%, 63% 50%, 63% 68%, 70% 68%, 70% 40%, 74% 40%, 74% 60%, 80% 60%, 80% 34%, 83% 34%, 83% 56%, 89% 56%, 89% 74%, 94% 74%, 94% 52%, 100% 52%, 100% 100%, 0 100%)"></div>
+              <div style="position: absolute; left: 0; right: 0; bottom: 17%; height: 17%; opacity: {{amb.lights}}; clip-path: polygon(0 70%, 4% 70%, 4% 45%, 7% 45%, 7% 62%, 11% 62%, 11% 30%, 13% 30%, 13% 22%, 14% 22%, 14% 30%, 16% 30%, 16% 58%, 22% 58%, 22% 48%, 27% 48%, 27% 66%, 33% 66%, 33% 38%, 36% 38%, 36% 52%, 41% 52%, 41% 72%, 47% 72%, 47% 55%, 52% 55%, 52% 26%, 54% 26%, 54% 10%, 55% 10%, 55% 26%, 57% 26%, 57% 50%, 63% 50%, 63% 68%, 70% 68%, 70% 40%, 74% 40%, 74% 60%, 80% 60%, 80% 34%, 83% 34%, 83% 56%, 89% 56%, 89% 74%, 94% 74%, 94% 52%, 100% 52%, 100% 100%, 0 100%); background-image: radial-gradient(1.6px 2px at 5.5% 60%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 12% 45%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 12.5% 70%, #FFE3A3 60%, transparent 61%), radial-gradient(1.6px 2px at 19% 75%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 24% 62%, #FFE3A3 60%, transparent 61%), radial-gradient(1.6px 2px at 34.5% 50%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 34.5% 80%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 44% 85%, #FFE3A3 60%, transparent 61%), radial-gradient(1.6px 2px at 53% 38%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 53% 62%, #FFE3A3 60%, transparent 61%), radial-gradient(1.6px 2px at 60% 70%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 72% 55%, #FFE3A3 60%, transparent 61%), radial-gradient(1.6px 2px at 77% 75%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 81.5% 45%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 86% 70%, #FFE3A3 60%, transparent 61%), radial-gradient(1.6px 2px at 97% 66%, #FFD27A 60%, transparent 61%)"></div>
+              <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 17%; background: linear-gradient(180deg, {{amb.waterTop}} 0%, {{amb.waterBot}} 100%)"></div>
+              <div style="position: absolute; left: 62.4%; bottom: 3%; width: 1.4%; height: 13%; border-radius: 2px; background: linear-gradient(180deg, {{amb.sunGlow}}, rgba(255, 170, 100, 0)); opacity: {{amb.glint}}"></div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px">
+              <sc-for list="{{ambThumbs}}" as="th" hint-placeholder-count="12">
+                <div style="aspect-ratio: 3 / 2; border-radius: 3px; background: {{th.bg}}; box-shadow: {{th.ring}}"></div>
+              </sc-for>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; line-height: 16px; color: {{t.text2}}; font-variant-numeric: tabular-nums">
+              <span>{{ambFrame}}</span><span>{{ambTime}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- Editor -->
+    <sc-if value="{{isEditor}}" hint-placeholder-val="{{ false }}">
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: {{edDir}}; background: {{t.layer}}; border-top: 1px solid {{t.divider}}">
+
+        <!-- Stage -->
+        <div style="flex: 1; min-width: 0; min-height: 0; position: relative; display: flex; flex-direction: column; gap: 12px; padding: 20px">
+          <div style="position: relative; width: {{g.W}}px; height: {{g.H}}px; flex: none">
+            <div style="position: absolute; inset: 0; background: #0C0C0D; clip-path: {{g.clip}}; opacity: {{dev.o}}; filter: {{dev.filter}}; transform: {{dev.tf}}; transition: {{dev.tr}}">
+              <div style="position: absolute; left: 50%; top: 50%; width: {{g.pw}}px; height: {{g.ph}}px; margin-left: {{g.ml}}px; margin-top: {{g.mt}}px; overflow: hidden; transform: scale({{g.sc}}); transition: {{scaleTr}}">
+                <div style="position: absolute; inset: 0; background: linear-gradient(180deg, {{cur.top}} 0%, {{cur.mid}} 46%, {{cur.hor}} 68%)"></div>
+                <div style="position: absolute; left: 63%; top: {{cur.sunY}}%; width: 7%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle, {{cur.sun}} 0 36%, {{cur.sunGlow}} 58%, rgba(255, 170, 100, 0) 72%); opacity: {{cur.sunO}}"></div>
+                <div style="position: absolute; left: 0; right: 0; top: 0; height: 58%; opacity: {{cur.stars}}; background-image: radial-gradient(1.4px 1.4px at 8% 14%, #FFFBEF 60%, transparent 61%), radial-gradient(1.2px 1.2px at 17% 40%, #FFFBEF 60%, transparent 61%), radial-gradient(1px 1px at 26% 9%, #FFFBEF 60%, transparent 61%), radial-gradient(1.6px 1.6px at 34% 28%, #FFFBEF 60%, transparent 61%), radial-gradient(1px 1px at 42% 52%, #FFFBEF 60%, transparent 61%), radial-gradient(1.2px 1.2px at 51% 16%, #FFFBEF 60%, transparent 61%), radial-gradient(1px 1px at 58% 38%, #FFFBEF 60%, transparent 61%), radial-gradient(1.4px 1.4px at 66% 8%, #FFFBEF 60%, transparent 61%), radial-gradient(1px 1px at 73% 30%, #FFFBEF 60%, transparent 61%), radial-gradient(1.2px 1.2px at 81% 18%, #FFFBEF 60%, transparent 61%), radial-gradient(1px 1px at 88% 44%, #FFFBEF 60%, transparent 61%), radial-gradient(1.5px 1.5px at 94% 12%, #FFFBEF 60%, transparent 61%)"></div>
+                <div style="position: absolute; left: 0; right: 0; bottom: 17%; height: 17%; background: {{cur.land}}; clip-path: polygon(0 70%, 4% 70%, 4% 45%, 7% 45%, 7% 62%, 11% 62%, 11% 30%, 13% 30%, 13% 22%, 14% 22%, 14% 30%, 16% 30%, 16% 58%, 22% 58%, 22% 48%, 27% 48%, 27% 66%, 33% 66%, 33% 38%, 36% 38%, 36% 52%, 41% 52%, 41% 72%, 47% 72%, 47% 55%, 52% 55%, 52% 26%, 54% 26%, 54% 10%, 55% 10%, 55% 26%, 57% 26%, 57% 50%, 63% 50%, 63% 68%, 70% 68%, 70% 40%, 74% 40%, 74% 60%, 80% 60%, 80% 34%, 83% 34%, 83% 56%, 89% 56%, 89% 74%, 94% 74%, 94% 52%, 100% 52%, 100% 100%, 0 100%)"></div>
+                <div style="position: absolute; left: 0; right: 0; bottom: 17%; height: 17%; opacity: {{cur.lights}}; clip-path: polygon(0 70%, 4% 70%, 4% 45%, 7% 45%, 7% 62%, 11% 62%, 11% 30%, 13% 30%, 13% 22%, 14% 22%, 14% 30%, 16% 30%, 16% 58%, 22% 58%, 22% 48%, 27% 48%, 27% 66%, 33% 66%, 33% 38%, 36% 38%, 36% 52%, 41% 52%, 41% 72%, 47% 72%, 47% 55%, 52% 55%, 52% 26%, 54% 26%, 54% 10%, 55% 10%, 55% 26%, 57% 26%, 57% 50%, 63% 50%, 63% 68%, 70% 68%, 70% 40%, 74% 40%, 74% 60%, 80% 60%, 80% 34%, 83% 34%, 83% 56%, 89% 56%, 89% 74%, 94% 74%, 94% 52%, 100% 52%, 100% 100%, 0 100%); background-image: radial-gradient(1.6px 2px at 5.5% 60%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 12% 45%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 12.5% 70%, #FFE3A3 60%, transparent 61%), radial-gradient(1.6px 2px at 19% 75%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 24% 62%, #FFE3A3 60%, transparent 61%), radial-gradient(1.6px 2px at 34.5% 50%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 34.5% 80%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 44% 85%, #FFE3A3 60%, transparent 61%), radial-gradient(1.6px 2px at 53% 38%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 53% 62%, #FFE3A3 60%, transparent 61%), radial-gradient(1.6px 2px at 60% 70%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 72% 55%, #FFE3A3 60%, transparent 61%), radial-gradient(1.6px 2px at 77% 75%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 81.5% 45%, #FFD27A 60%, transparent 61%), radial-gradient(1.6px 2px at 86% 70%, #FFE3A3 60%, transparent 61%), radial-gradient(1.6px 2px at 97% 66%, #FFD27A 60%, transparent 61%)"></div>
+                <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 17%; background: linear-gradient(180deg, {{cur.waterTop}} 0%, {{cur.waterBot}} 100%)"></div>
+                <div style="position: absolute; left: 62.4%; bottom: 3%; width: 1.4%; height: 13%; border-radius: 2px; background: linear-gradient(180deg, {{cur.sunGlow}}, rgba(255, 170, 100, 0)); opacity: {{cur.glint}}"></div>
+              </div>
+            </div>
+          </div>
+
+          <sc-if value="{{isExport}}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; left: {{g.pillX}}px; top: {{g.pillY}}px; display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 10px; border-radius: 14px; background: rgba(12, 12, 13, 0.62); color: #F4F2EE; font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: {{t.accent}}"></span>
+              <span>{{renderLabel}}</span>
+            </div>
+          </sc-if>
+
+          <!-- Transport -->
+          <div style="height: 36px; display: flex; align-items: center; gap: 14px; flex: none">
+            <button aria-label="{{playLabel}}" onClick="{{togglePlay}}" style="width: 36px; height: 36px; flex: none; border-radius: 50%; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; display: grid; place-items: center; cursor: pointer; padding: 0">
+              <sc-if value="{{playing}}" hint-placeholder-val="{{ false }}">
+                <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="4" y="3" width="2.5" height="10" rx="0.8" fill="currentColor"></rect><rect x="9.5" y="3" width="2.5" height="10" rx="0.8" fill="currentColor"></rect></svg>
+              </sc-if>
+              <sc-if value="{{notPlaying}}" hint-placeholder-val="{{ true }}">
+                <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6a.6.6 0 0 0 .9.5l7.4-4.8a.6.6 0 0 0 0-1L5.9 2.7a.6.6 0 0 0-.9.5z" fill="currentColor"></path></svg>
+              </sc-if>
+            </button>
+            <input type="range" aria-label="Frame" min="0" max="741" value="{{frame}}" onChange="{{onScrub}}" style="flex: 1; min-width: 0; margin: 0; height: 20px; accent-color: {{t.indicator}}; cursor: pointer">
+            <span style="font-size: 12px; line-height: 16px; color: {{t.text2}}; font-variant-numeric: tabular-nums; white-space: nowrap">{{tc}}</span>
+          </div>
+
+          <!-- Filmstrip -->
+          <div style="display: flex; flex-direction: column; gap: 8px; flex: none">
+            <div style="display: grid; grid-template-columns: repeat({{nThumbs}}, minmax(0, 1fr)); gap: 4px">
+              <sc-for list="{{thumbs}}" as="th" hint-placeholder-count="18">
+                <button aria-label="{{th.label}}" onClick="{{th.pick}}" style="aspect-ratio: 3 / 2; padding: 0; border: 0; border-radius: 3px; cursor: pointer; background: {{th.bg}}; box-shadow: {{th.ring}}; opacity: {{th.o}}; transform: {{th.tf}}; transition: {{th.tr}}"></button>
+              </sc-for>
+            </div>
+            <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 12px; line-height: 16px; color: {{t.text2}}; font-variant-numeric: tabular-nums">
+              <span>{{frameLabel}}</span><span>{{fileLabel}}</span>
+            </div>
+          </div>
+
+          <!-- InfoBar -->
+          <sc-if value="{{hasInfo}}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="position: absolute; top: 32px; left: 50%; width: {{infoW}}px; margin-left: {{infoML}}px; box-sizing: border-box; border-radius: 6px; border: 1px solid {{t.ctrlStroke}}; background: {{infoBg}}; color: {{t.text}}; box-shadow: {{t.shadowFlyout}}; opacity: {{info.o}}; transform: {{info.tf}}; transition: {{info.tr}}">
+              <div style="display: flex; align-items: center; gap: 12px; padding: 10px 8px 10px 14px">
+                <sc-if value="{{infoSkipped}}" hint-placeholder-val="{{ true }}">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="{{t.caution}}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M8 2.5l6 11H2z"></path><path d="M8 7v3"></path><circle cx="8" cy="12" r="0.6" fill="{{t.caution}}"></circle></svg>
+                </sc-if>
+                <sc-if value="{{infoCancel}}" hint-placeholder-val="{{ false }}">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="{{t.text2}}" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 7.5V11"></path><circle cx="8" cy="5.2" r="0.6" fill="{{t.text2}}"></circle></svg>
+                </sc-if>
+                <span style="flex: 1; min-width: 0">{{infoText}}</span>
+                <sc-if value="{{infoSkipped}}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{toggleList}}" style="height: 28px; padding: 0 10px; border-radius: 4px; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; font: inherit; font-size: 13px; cursor: pointer">{{listLabel}}</button>
+                </sc-if>
+                <button aria-label="Dismiss" onClick="{{dismissInfo}}" style="width: 28px; height: 28px; border-radius: 4px; border: 0; background: transparent; color: {{t.text2}}; display: grid; place-items: center; padding: 0; cursor: pointer">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg>
+                </button>
+              </div>
+              <sc-if value="{{showList}}" hint-placeholder-val="{{ false }}">
+                <div style="border-top: 1px solid {{t.divider}}; padding: 8px 14px 12px 42px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 16px; opacity: {{list.o}}; transform: {{list.tf}}; transition: {{list.tr}}">
+                  <div style="display: flex; justify-content: space-between; gap: 12px"><span style="font-variant-numeric: tabular-nums">IMG_4402.HEIC</span><span style="color: {{t.text2}}">Damaged file: it ends early</span></div>
+                  <div style="display: flex; justify-content: space-between; gap: 12px"><span style="font-variant-numeric: tabular-nums">IMG_4417.HEIC</span><span style="color: {{t.text2}}">Empty file (0 bytes)</span></div>
+                  <div style="display: flex; justify-content: space-between; gap: 12px"><span style="font-variant-numeric: tabular-nums">IMG_4630.HEIC</span><span style="color: {{t.text2}}">HEIF image sequence, not a photo</span></div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+
+        <!-- Inspector -->
+        <div style="width: {{ins.w}}; height: {{ins.h}}; flex: none; position: relative; overflow: hidden; border-left: {{ins.bl}}; border-top: {{ins.bt}}">
+          <sc-if value="{{narrow}}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; left: 20px; right: 20px; top: 10px">
+              <div role="radiogroup" aria-label="Panel" style="position: relative; display: grid; grid-template-columns: repeat({{segTab.n}}, minmax(0, 1fr)); height: 32px; border-radius: 5px; background: {{t.segTrack}}; border: 1px solid {{t.ctrlStroke}}; padding: 2px; box-sizing: border-box">
+                <div aria-hidden="true" style="position: absolute; top: 2px; bottom: 2px; left: 2px; width: {{segTab.pw}}px; border-radius: 3px; background: {{t.pill}}; box-shadow: {{t.pillShadow}}; transform: translateX({{segTab.x}}px); transition: {{pillTr}}"></div>
+                <sc-for list="{{segTab.items}}" as="o" hint-placeholder-count="3">
+                  <button role="radio" aria-checked="{{o.checked}}" onClick="{{o.pick}}" style="position: relative; border: 0; background: transparent; font: inherit; font-size: 13px; color: {{o.color}}; font-weight: {{o.weight}}; cursor: pointer; padding: 0">{{o.label}}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="position: absolute; left: 0; right: 0; bottom: 0; top: {{ins.top}}; overflow-y: auto; padding: 0 20px 20px; box-sizing: border-box; opacity: {{panel.o}}; transform: {{panel.tf}}; transition: {{panel.tr}}">
+
+            <sc-if value="{{isInspect}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column">
+
+                <sc-if value="{{showTiming}}" hint-placeholder-val="{{ true }}">
+                  <section aria-label="Timing" style="padding: 16px 0; border-bottom: 1px solid {{t.divider}}; display: flex; flex-direction: column; gap: 12px; opacity: {{sec0.o}}; transform: {{sec0.tf}}; transition: {{sec0.tr}}">
+                    <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Timing</h2>
+                    <div role="radiogroup" aria-label="Speed mode" style="position: relative; display: grid; grid-template-columns: repeat({{segMode.n}}, minmax(0, 1fr)); height: 32px; border-radius: 5px; background: {{t.segTrack}}; border: 1px solid {{t.ctrlStroke}}; padding: 2px; box-sizing: border-box">
+                      <div aria-hidden="true" style="position: absolute; top: 2px; bottom: 2px; left: 2px; width: {{segMode.pw}}px; border-radius: 3px; background: {{t.pill}}; box-shadow: {{t.pillShadow}}; transform: translateX({{segMode.x}}px); transition: {{pillTr}}"></div>
+                      <sc-for list="{{segMode.items}}" as="o" hint-placeholder-count="3">
+                        <button role="radio" aria-checked="{{o.checked}}" onClick="{{o.pick}}" style="position: relative; border: 0; background: transparent; font: inherit; font-size: 13px; color: {{o.color}}; font-weight: {{o.weight}}; cursor: pointer; padding: 0; white-space: nowrap">{{o.label}}</button>
+                      </sc-for>
+                    </div>
+                    <div role="radiogroup" aria-label="{{segValLabel}}" style="position: relative; display: grid; grid-template-columns: repeat({{segVal.n}}, minmax(0, 1fr)); height: 32px; border-radius: 5px; background: {{t.segTrack}}; border: 1px solid {{t.ctrlStroke}}; padding: 2px; box-sizing: border-box">
+                      <div aria-hidden="true" style="position: absolute; top: 2px; bottom: 2px; left: 2px; width: {{segVal.pw}}px; border-radius: 3px; background: {{t.pill}}; box-shadow: {{t.pillShadow}}; transform: translateX({{segVal.x}}px); transition: {{pillTr}}"></div>
+                      <sc-for list="{{segVal.items}}" as="o" hint-placeholder-count="5">
+                        <button role="radio" aria-checked="{{o.checked}}" onClick="{{o.pick}}" style="position: relative; border: 0; background: transparent; font: inherit; font-size: 13px; color: {{o.color}}; font-weight: {{o.weight}}; cursor: pointer; padding: 0; font-variant-numeric: tabular-nums">{{o.label}}</button>
+                      </sc-for>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 2px; padding-top: 4px">
+                      <div style="font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 20px; line-height: 28px; font-weight: 600; font-variant-numeric: tabular-nums; opacity: {{roll.o}}; transform: {{roll.tf}}; transition: {{roll.tr}}">{{readout}}</div>
+                      <div style="font-size: 12px; line-height: 16px; color: {{t.text2}}">{{readoutSub}}</div>
+                    </div>
+                    <div aria-hidden="true" style="display: flex; flex-direction: column; gap: 4px">
+                      <div style="height: 4px; border-radius: 2px; background: {{t.track}}; overflow: hidden">
+                        <div style="height: 4px; width: 100%; background: {{t.text2}}; transform-origin: left center; transform: scaleX({{durScale}}); transition: {{barTr}}"></div>
+                      </div>
+                      <div style="display: flex; justify-content: space-between; font-size: 12px; line-height: 16px; color: {{t.text2}}; font-variant-numeric: tabular-nums"><span>0 s</span><span>30 s</span><span>60 s</span></div>
+                    </div>
+                  </section>
+                </sc-if>
+
+                <sc-if value="{{showFrame}}" hint-placeholder-val="{{ true }}">
+                  <section aria-label="Frame" style="padding: 16px 0; border-bottom: 1px solid {{t.divider}}; display: flex; flex-direction: column; gap: 12px; opacity: {{sec1.o}}; transform: {{sec1.tf}}; transition: {{sec1.tr}}">
+                    <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Frame</h2>
+                    <div role="radiogroup" aria-label="Shape" style="position: relative; display: grid; grid-template-columns: repeat({{segAspect.n}}, minmax(0, 1fr)); height: 32px; border-radius: 5px; background: {{t.segTrack}}; border: 1px solid {{t.ctrlStroke}}; padding: 2px; box-sizing: border-box">
+                      <div aria-hidden="true" style="position: absolute; top: 2px; bottom: 2px; left: 2px; width: {{segAspect.pw}}px; border-radius: 3px; background: {{t.pill}}; box-shadow: {{t.pillShadow}}; transform: translateX({{segAspect.x}}px); transition: {{pillTr}}"></div>
+                      <sc-for list="{{segAspect.items}}" as="o" hint-placeholder-count="4">
+                        <button role="radio" aria-checked="{{o.checked}}" onClick="{{o.pick}}" style="position: relative; border: 0; background: transparent; font: inherit; font-size: 13px; color: {{o.color}}; font-weight: {{o.weight}}; cursor: pointer; padding: 0; font-variant-numeric: tabular-nums">{{o.label}}</button>
+                      </sc-for>
+                    </div>
+                    <div role="radiogroup" aria-label="Fit" style="position: relative; display: grid; grid-template-columns: repeat({{segFit.n}}, minmax(0, 1fr)); height: 32px; border-radius: 5px; background: {{t.segTrack}}; border: 1px solid {{t.ctrlStroke}}; padding: 2px; box-sizing: border-box">
+                      <div aria-hidden="true" style="position: absolute; top: 2px; bottom: 2px; left: 2px; width: {{segFit.pw}}px; border-radius: 3px; background: {{t.pill}}; box-shadow: {{t.pillShadow}}; transform: translateX({{segFit.x}}px); transition: {{pillTr}}"></div>
+                      <sc-for list="{{segFit.items}}" as="o" hint-placeholder-count="2">
+                        <button role="radio" aria-checked="{{o.checked}}" onClick="{{o.pick}}" style="position: relative; border: 0; background: transparent; font: inherit; font-size: 13px; color: {{o.color}}; font-weight: {{o.weight}}; cursor: pointer; padding: 0">{{o.label}}</button>
+                      </sc-for>
+                    </div>
+                    <div style="font-size: 12px; line-height: 16px; color: {{t.text2}}">{{frameHint}}</div>
+                  </section>
+                </sc-if>
+
+                <sc-if value="{{showOutput}}" hint-placeholder-val="{{ true }}">
+                  <section aria-label="Output" style="padding: 16px 0; border-bottom: {{outBorder}}; display: flex; flex-direction: column; gap: 12px; opacity: {{sec2.o}}; transform: {{sec2.tf}}; transition: {{sec2.tr}}">
+                    <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Output</h2>
+                    <div style="display: grid; grid-template-columns: {{outCols}}; gap: 12px">
+                      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 16px; color: {{t.text2}}">Resolution
+                        <select value="{{res}}" onChange="{{onRes}}" style="height: 32px; border-radius: 4px; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; font: inherit; font-size: 14px; padding: 0 8px">
+                          <option value="720p">720p · 1280 × 720</option>
+                          <option value="1080p">1080p · 1920 × 1080</option>
+                          <option value="1440p">1440p · 2560 × 1440</option>
+                          <option value="4K">4K · 3840 × 2160</option>
+                        </select>
+                      </label>
+                      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 16px; color: {{t.text2}}">Format
+                        <select value="{{fmt}}" onChange="{{onFmt}}" style="height: 32px; border-radius: 4px; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; font: inherit; font-size: 14px; padding: 0 8px">
+                          <option value="H.264">MP4 · H.264</option>
+                          <option value="HEVC">MP4 · HEVC</option>
+                        </select>
+                      </label>
+                      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 16px; color: {{t.text2}}">Quality
+                        <select value="{{quality}}" onChange="{{onQuality}}" style="height: 32px; border-radius: 4px; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; font: inherit; font-size: 14px; padding: 0 8px">
+                          <option value="Standard">Standard</option>
+                          <option value="High">High</option>
+                          <option value="Maximum">Maximum</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div style="font-size: 12px; line-height: 16px; color: {{t.text2}}; font-variant-numeric: tabular-nums">{{sizeLabel}}</div>
+                  </section>
+                </sc-if>
+
+                <sc-if value="{{showLook}}" hint-placeholder-val="{{ true }}">
+                  <section aria-label="Look" style="padding: 16px 0; display: flex; flex-direction: column; gap: 12px; opacity: {{sec3.o}}; transform: {{sec3.tf}}; transition: {{sec3.tr}}">
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Look</h2>
+                      <span style="font-size: 11px; line-height: 16px; font-weight: 600; padding: 0 6px; border-radius: 4px; background: {{t.segTrack}}; border: 1px solid {{t.ctrlStroke}}; color: {{t.text2}}">Coming in 3.1</span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+                      <div style="display: flex; flex-direction: column">
+                        <span>Deflicker</span>
+                        <span style="font-size: 12px; line-height: 16px; color: {{t.text2}}">Smooths exposure jumps between photos</span>
+                      </div>
+                      <button role="switch" aria-checked="{{tgDef.checked}}" aria-label="Deflicker" onClick="{{toggleDeflicker}}" style="position: relative; width: 40px; height: 20px; flex: none; border-radius: 10px; border: 1px solid {{tgDef.border}}; background: {{tgDef.track}}; padding: 0; cursor: pointer; transition: background-color 167ms linear, border-color 167ms linear">
+                        <span style="position: absolute; left: 3px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: {{tgDef.knob}}; transform: translateX({{tgDef.x}}px); transition: {{knobTr}}"></span>
+                      </button>
+                    </div>
+                  </section>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <!-- Export running -->
+            <sc-if value="{{isExport}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 20px; padding-top: 18px">
+                <div style="display: flex; flex-direction: column; gap: 2px">
+                  <span style="font-size: 12px; line-height: 16px; color: {{t.text2}}">Exporting</span>
+                  <h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600">Harbor sunset.mp4</h2>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px">
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+                    <span role="status" aria-live="polite" style="font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 40px; line-height: 52px; font-weight: 600; font-variant-numeric: tabular-nums">{{pct}}</span>
+                    <span style="font-size: 12px; line-height: 16px; color: {{t.text2}}; font-variant-numeric: tabular-nums">{{timeLeft}}</span>
+                  </div>
+                  <div style="height: 4px; border-radius: 2px; background: {{t.track}}; overflow: hidden">
+                    <div style="height: 4px; width: 100%; background: {{t.indicator}}; transform-origin: left center; transform: scaleX({{progress}}); transition: transform 60ms linear"></div>
+                  </div>
+                </div>
+                <div aria-hidden="true" style="position: relative; height: 40px; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%)">
+                  <div style="position: absolute; top: 4px; left: 0; display: flex; gap: 3px; transform: translateX({{gateX}}px); transition: transform 60ms linear">
+                    <sc-for list="{{gateThumbs}}" as="gt" hint-placeholder-count="30">
+                      <div style="width: 48px; height: 32px; flex: none; border-radius: 3px; background: {{gt.bg}}; opacity: {{gt.o}}; transition: opacity 167ms linear"></div>
+                    </sc-for>
+                  </div>
+                  <div style="position: absolute; left: 50%; top: 0; width: 54px; height: 40px; margin-left: -27px; box-sizing: border-box; border: 2px solid {{t.indicator}}; border-radius: 5px"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; font-size: 13px; line-height: 20px; font-variant-numeric: tabular-nums">
+                  <span style="color: {{t.text2}}">Frame</span><span>{{framesDone}}</span>
+                  <span style="color: {{t.text2}}">Speed</span><span>4.3 photos per second</span>
+                  <span style="color: {{t.text2}}">Output</span><span>{{outSummary}}</span>
+                </div>
+                <p style="margin: 0; font-size: 12px; line-height: 16px; color: {{t.text2}}">You can minimize 10Lapse. The export keeps going and Windows tells you when it's done.</p>
+                <button onClick="{{cancelExport}}" style="align-self: flex-start; height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; font: inherit; cursor: pointer">Cancel export</button>
+              </div>
+            </sc-if>
+
+            <!-- Finished -->
+            <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 20px; padding-top: 18px">
+                <svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true">
+                  <circle cx="24" cy="24" r="22" fill="{{t.successBg}}"></circle>
+                  <path d="M15 24.5l6 6 12-13" fill="none" stroke="{{t.success}}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="28" stroke-dashoffset="{{checkOff}}" style="transition: {{checkTr}}"></path>
+                </svg>
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600">Harbor sunset.mp4 is ready</h2>
+                  <span style="color: {{t.text2}}; font-variant-numeric: tabular-nums">{{doneSummary}}</span>
+                </div>
+                <div style="display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; font-size: 13px; line-height: 20px; font-variant-numeric: tabular-nums">
+                  <span style="color: {{t.text2}}">Exported in</span><span>2 min 51 s</span>
+                  <span style="color: {{t.text2}}">Saved to</span><span>Videos › 10Lapse</span>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap">
+                  <button onClick="{{premiere}}" style="height: 32px; padding: 0 14px; border-radius: 4px; border: 1px solid {{t.accentStroke}}; background: {{t.accent}}; color: {{t.onAccent}}; font: inherit; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; cursor: pointer">
+                    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6a.6.6 0 0 0 .9.5l7.4-4.8a.6.6 0 0 0 0-1L5.9 2.7a.6.6 0 0 0-.9.5z" fill="currentColor"></path></svg>
+                    Play
+                  </button>
+                  <button style="height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; font: inherit; cursor: pointer">Show in folder</button>
+                </div>
+                <button onClick="{{backToEdit}}" style="align-self: flex-start; height: 28px; padding: 0; border: 0; background: transparent; color: {{t.accentText}}; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px">Back to editing</button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- Settings -->
+    <sc-if value="{{isSettings}}" hint-placeholder-val="{{ false }}">
+      <div style="flex: 1; min-width: 0; overflow-y: auto; background: {{t.layer}}; border-top: 1px solid {{t.divider}}; opacity: {{scene.o}}; transition: {{scene.tr}}">
+        <div style="max-width: 760px; margin: 0 auto; padding: 28px 40px 48px; display: flex; flex-direction: column; gap: 6px">
+          <h1 style="margin: 0 0 14px 0; font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 28px; line-height: 36px; font-weight: 600">Settings</h1>
+
+          <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; opacity: {{c0.o}}; transform: {{c0.tf}}; transition: {{c0.tr}}">Appearance</h2>
+          <div style="display: flex; align-items: center; gap: 16px; min-height: 68px; padding: 12px 16px; box-sizing: border-box; border-radius: 6px; border: 1px solid {{t.divider}}; background: {{t.card}}; opacity: {{c0.o}}; transform: {{c0.tf}}; transition: {{c0.tr}}">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="{{t.text2}}" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="3.5"></circle><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.4 1.4M14.3 14.3l1.4 1.4M4.3 15.7l1.4-1.4M14.3 5.7l1.4-1.4"></path></svg>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+              <span>App theme</span>
+              <span style="font-size: 12px; line-height: 16px; color: {{t.text2}}">Follows Windows unless you choose one here.</span>
+            </div>
+            <select aria-label="App theme" value="{{themePref}}" onChange="{{onThemePref}}" style="height: 32px; min-width: 200px; border-radius: 4px; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; font: inherit; padding: 0 8px">
+              <option value="system">Use Windows setting</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+
+          <h2 style="margin: 20px 0 0 0; font-size: 14px; line-height: 20px; font-weight: 600; opacity: {{c1.o}}; transform: {{c1.tf}}; transition: {{c1.tr}}">Motion</h2>
+          <div style="display: flex; align-items: center; gap: 16px; min-height: 68px; padding: 12px 16px; box-sizing: border-box; border-radius: 6px; border: 1px solid {{t.divider}}; background: {{t.card}}; opacity: {{c1.o}}; transform: {{c1.tf}}; transition: {{c1.tr}}">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="{{t.text2}}" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2 10c2-4 4-4 6 0s4 4 6 0 3-3 4-1"></path></svg>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+              <span>Reduce motion</span>
+              <span style="font-size: 12px; line-height: 16px; color: {{t.text2}}">10Lapse already follows Windows' animation effects setting. Turn this on to calm 10Lapse only.</span>
+            </div>
+            <button role="switch" aria-checked="{{tgRed.checked}}" aria-label="Reduce motion" onClick="{{toggleReduce}}" style="position: relative; width: 40px; height: 20px; flex: none; border-radius: 10px; border: 1px solid {{tgRed.border}}; background: {{tgRed.track}}; padding: 0; cursor: pointer; transition: background-color 167ms linear, border-color 167ms linear">
+              <span style="position: absolute; left: 3px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: {{tgRed.knob}}; transform: translateX({{tgRed.x}}px); transition: {{knobTr}}"></span>
+            </button>
+          </div>
+
+          <h2 style="margin: 20px 0 0 0; font-size: 14px; line-height: 20px; font-weight: 600; opacity: {{c2.o}}; transform: {{c2.tf}}; transition: {{c2.tr}}">Export</h2>
+          <div style="display: flex; align-items: center; gap: 16px; min-height: 68px; padding: 12px 16px; box-sizing: border-box; border-radius: 6px; border: 1px solid {{t.divider}}; background: {{t.card}}; opacity: {{c2.o}}; transform: {{c2.tf}}; transition: {{c2.tr}}">
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="{{t.text2}}" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true"><path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h3l1.5 1.5h4.5A1.5 1.5 0 0 1 14 6v5.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 11.5z"></path></svg>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+              <span>Save videos to</span>
+              <span style="font-size: 12px; line-height: 16px; color: {{t.text2}}">Videos › 10Lapse</span>
+            </div>
+            <button style="height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; font: inherit; cursor: pointer">Change folder</button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px; min-height: 68px; padding: 12px 16px; box-sizing: border-box; border-radius: 6px; border: 1px solid {{t.divider}}; background: {{t.card}}; opacity: {{c2.o}}; transform: {{c2.tf}}; transition: {{c2.tr}}">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="{{t.text2}}" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4.5" width="15" height="11" rx="1.5"></rect><path d="M8.5 8v4l3.5-2z"></path></svg>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+              <span>Default format</span>
+              <span style="font-size: 12px; line-height: 16px; color: {{t.text2}}">HEVC makes smaller files and needs HEVC Video Extensions.</span>
+            </div>
+            <select aria-label="Default format" style="height: 32px; min-width: 200px; border-radius: 4px; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; font: inherit; padding: 0 8px">
+              <option>MP4 · H.264</option>
+              <option>MP4 · HEVC</option>
+            </select>
+          </div>
+
+          <h2 style="margin: 20px 0 0 0; font-size: 14px; line-height: 20px; font-weight: 600; opacity: {{c3.o}}; transform: {{c3.tf}}; transition: {{c3.tr}}">Privacy</h2>
+          <div style="display: flex; align-items: center; gap: 16px; min-height: 68px; padding: 12px 16px; box-sizing: border-box; border-radius: 6px; border: 1px solid {{t.divider}}; background: {{t.card}}; opacity: {{c3.o}}; transform: {{c3.tf}}; transition: {{c3.tr}}">
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="{{t.text2}}" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="7" width="9" height="7" rx="1.5"></rect><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"></path></svg>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+              <span>Your photos never leave this PC</span>
+              <span style="font-size: 12px; line-height: 16px; color: {{t.text2}}">No network access, no account, no analytics. Crash reports go only through Windows error reporting and never include photos.</span>
+            </div>
+            <a href="https://github.com/sven-borden/10Lapse" style="color: {{t.accentText}}; white-space: nowrap; text-underline-offset: 3px">Privacy statement</a>
+          </div>
+
+          <h2 style="margin: 20px 0 0 0; font-size: 14px; line-height: 20px; font-weight: 600; opacity: {{c4.o}}; transform: {{c4.tf}}; transition: {{c4.tr}}">About</h2>
+          <div style="display: flex; align-items: center; gap: 16px; min-height: 68px; padding: 12px 16px; box-sizing: border-box; border-radius: 6px; border: 1px solid {{t.divider}}; background: {{t.card}}; opacity: {{c4.o}}; transform: {{c4.tf}}; transition: {{c4.tr}}; flex-wrap: wrap">
+            <svg width="20" height="20" viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="1" y="2" width="2.4" height="12" rx="0.8" fill="#8EC0EA"></rect>
+              <rect x="4" y="2" width="2.4" height="12" rx="0.8" fill="#F3C46B"></rect>
+              <rect x="7" y="2" width="2.4" height="12" rx="0.8" fill="#EE8F4F"></rect>
+              <rect x="10" y="2" width="2.4" height="12" rx="0.8" fill="#B4567A"></rect>
+              <rect x="13" y="2" width="2.4" height="12" rx="0.8" fill="#2B3A75"></rect>
+            </svg>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+              <span>10Lapse 3.0.0</span>
+              <span style="font-size: 12px; line-height: 16px; color: {{t.text2}}">Made by glaglasven</span>
+            </div>
+            <div style="display: flex; gap: 8px">
+              <button style="height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; font: inherit; cursor: pointer">Copy diagnostics</button>
+              <button style="height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; font: inherit; cursor: pointer">Send feedback</button>
+              <button style="height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid {{t.ctrlStroke}}; background: {{t.ctrl}}; color: {{t.text}}; font: inherit; cursor: pointer">Rate 10Lapse</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light","section":"Prototype"},"start":{"editor":"enum","options":["empty","drag","edit","export","done","settings"],"default":"empty","section":"Prototype"},"reducedMotion":{"editor":"boolean","default":false,"section":"Prototype"},"frame":{"editor":"int","default":312,"min":0,"max":741,"section":"Freeze frame"},"progress":{"editor":"range","default":0.46,"min":0,"max":1,"step":0.01,"section":"Freeze frame"},"width":{"editor":null,"default":1280,"tsType":"number"},"height":{"editor":null,"default":800,"tsType":"number"},"$preview":{"width":1280,"height":800}}'>
+const N = 742;
+const FPS = [24, 25, 30, 50, 60];
+const LENS = [10, 15, 30, 60];
+const PHOTO = [0.25, 0.5, 1, 2];
+const PHOTO_L = ['¼ s', '½ s', '1 s', '2 s'];
+const ASPECTS = ['3:2', '16:9', '9:16', '1:1'];
+const ASPECT_R = { '3:2': 1.5, '16:9': 16 / 9, '9:16': 9 / 16, '1:1': 1 };
+const BIT = { '720p': 8, '1080p': 16, '1440p': 28, '4K': 56 };
+const QUAL = { Standard: 0.6, High: 1, Maximum: 1.6 };
+const EASE = { out: 'cubic-bezier(0.16, 1, 0.3, 1)', in: 'cubic-bezier(0.7, 0, 0.84, 0)', move: 'cubic-bezier(0.65, 0, 0.35, 1)' };
+const LIGHT = {
+  mica: '#F3F2F0', layer: '#FAF9F7', card: '#FEFDFC', ctrl: '#FEFDFC', ctrlStroke: '#DCDAD5', divider: '#E7E5E1',
+  text: '#1C1B19', text2: '#5D5A55', accent: '#E8962E', accentStroke: 'rgba(120, 70, 10, 0.22)', onAccent: '#1F1404',
+  accentText: '#9A5208', accentTint: 'rgba(232, 150, 46, 0.08)', segTrack: '#F0EEEB', pill: '#FEFDFC',
+  pillShadow: '0 1px 2px rgba(28, 27, 25, 0.14), 0 0 0 1px rgba(28, 27, 25, 0.04)', track: '#E4E2DE',
+  success: '#0F7B0F', successBg: '#DFF6DD', caution: '#9D5D00', cautionBg: '#FFF7DB',
+  shadowFlyout: '0 8px 28px rgba(28, 27, 25, 0.16), 0 2px 6px rgba(28, 27, 25, 0.06)', dropStroke: '#CFCCC6', knobOff: '#5D5A55', indicator: '#B5620D', onIndicator: '#FEFDFC'
+};
+const DARK = {
+  mica: '#1F1E1D', layer: '#282726', card: '#302F2D', ctrl: '#363431', ctrlStroke: '#4A4743', divider: '#393735',
+  text: '#F4F2EE', text2: '#C3BFB8', accent: '#F0A54A', accentStroke: 'rgba(255, 230, 190, 0.18)', onAccent: '#1F1404',
+  accentText: '#F3B05C', accentTint: 'rgba(240, 165, 74, 0.10)', segTrack: '#2E2D2B', pill: '#4A4743',
+  pillShadow: '0 1px 2px rgba(0, 0, 0, 0.4)', track: '#3F3D3A',
+  success: '#6CCB5F', successBg: '#26381F', caution: '#FCE100', cautionBg: '#3B321A',
+  shadowFlyout: '0 8px 28px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3)', dropStroke: '#5A5651', knobOff: '#C3BFB8', indicator: '#F0A54A', onIndicator: '#1F1404'
+};
+const TOP = [[0, '#5E9BD6'], [0.35, '#86A6D1'], [0.5, '#8C83B5'], [0.62, '#584C8C'], [0.75, '#2B3268'], [0.88, '#141B3F'], [1, '#070B1C']];
+const HOR = [[0, '#C4E0F3'], [0.33, '#F6CF86'], [0.48, '#F29A55'], [0.6, '#D9677A'], [0.73, '#6D5A9E'], [0.86, '#2E3A72'], [1, '#10162E']];
+
+function hx(c) { return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]; }
+function mix(a, b, u) {
+  const x = hx(a), y = hx(b);
+  return '#' + [0, 1, 2].map(i => Math.round(x[i] + (y[i] - x[i]) * u).toString(16).padStart(2, '0')).join('');
+}
+function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+function ramp(stops, t) {
+  t = clamp(t, 0, 1);
+  for (let i = 0; i < stops.length - 1; i++) {
+    const a = stops[i][0], b = stops[i + 1][0];
+    if (t <= b) return mix(stops[i][1], stops[i + 1][1], (t - a) / (b - a));
+  }
+  return stops[stops.length - 1][1];
+}
+function sky(t) {
+  const top = ramp(TOP, t), hor = ramp(HOR, t);
+  const land = mix('#33405A', '#090D18', clamp(t * 1.25, 0, 1));
+  const sunO = clamp(1 - (t - 0.4) / 0.13, 0, 1);
+  return {
+    top, hor, mid: mix(top, hor, 0.55), land,
+    waterTop: mix(hor, land, 0.45), waterBot: mix(land, '#05070D', 0.5),
+    sun: mix('#FFF6DC', '#FF9C58', clamp(t * 1.9, 0, 1)),
+    sunGlow: mix('#FFE6A8', '#FF7A45', clamp(t * 1.9, 0, 1)),
+    sunY: (22 + t * 100).toFixed(2), sunO: sunO.toFixed(3), glint: (sunO * 0.7).toFixed(3),
+    stars: clamp((t - 0.66) / 0.22, 0, 1).toFixed(3),
+    lights: clamp((t - 0.46) / 0.2, 0, 1).toFixed(3)
+  };
+}
+function thumbBg(t) {
+  const k = sky(t);
+  return 'linear-gradient(180deg, ' + k.top + ' 0%, ' + k.hor + ' 62%, ' + k.land + ' 62%, ' + k.land + ' 100%)';
+}
+function pad4(n) { return String(n).padStart(4, '0'); }
+function fmtTc(sec) {
+  const m = Math.floor(sec / 60), s = sec - m * 60;
+  return String(m).padStart(2, '0') + ':' + s.toFixed(2).padStart(5, '0');
+}
+function fmtDur(sec) {
+  if (sec < 59.95) return sec.toFixed(1) + ' s';
+  const total = Math.round(sec);
+  if (total < 3600) return Math.floor(total / 60) + ' min ' + (total % 60) + ' s';
+  return Math.floor(total / 3600) + ' h ' + String(Math.round((total % 3600) / 60)).padStart(2, '0') + ' min';
+}
+function fmtLeft(sec) {
+  const total = Math.max(0, Math.round(sec));
+  if (total < 60) return 'About ' + total + ' s left';
+  return 'About ' + Math.floor(total / 60) + ' min' + (total % 60 >= 30 ? ' 30 s' : '') + ' left';
+}
+function clock(frame) {
+  const s = 17 * 3600 + 56 * 60 + 10 + frame * 4;
+  const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60;
+  return [hh, mm, ss].map(v => String(v).padStart(2, '0')).join(':');
+}
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.timers = {};
+    this.state = this.initial(props);
+  }
+
+  num(v, d) { const n = parseFloat(v); return isNaN(n) ? d : n; }
+
+  initial(p) {
+    const start = p.start || 'empty';
+    const editorish = start === 'edit' || start === 'export' || start === 'done';
+    return {
+      screen: editorish ? 'edit' : (start === 'drag' ? 'empty' : start),
+      drag: start === 'drag',
+      hasProject: editorish || start === 'settings',
+      panel: start === 'export' ? 'export' : (start === 'done' ? 'done' : 'inspect'),
+      scene: 'in', panelPh: 'in', rollPh: 'in', infoPh: 'in', listPh: 'in',
+      cascade: false,
+      frame: start === 'done' ? 741 : Math.round(this.num(p.frame, 312)),
+      playing: false,
+      mode: 'fps', fpsI: 2, lenI: 1, photoI: 2,
+      aspect: '16:9', fit: 'fill',
+      res: '4K', fmt: 'H.264', quality: 'High',
+      deflicker: false,
+      info: start === 'edit' ? 'skipped' : null, showList: false,
+      progress: start === 'export' ? this.num(p.progress, 0.46) : (start === 'done' ? 1 : 0),
+      phase: 0.18, tab: 'timing',
+      themePref: 'system', reducePref: false
+    };
+  }
+
+  componentDidMount() {
+    this.timers.amb = setInterval(() => {
+      if (this.state.screen === 'empty' && !this.reduced()) this.setState({ phase: (this.state.phase + 0.0022) % 1 });
+    }, 50);
+  }
+
+  componentWillUnmount() {
+    Object.keys(this.timers).forEach(k => { clearInterval(this.timers[k]); clearTimeout(this.timers[k]); });
+  }
+
+  componentDidUpdate(prev) {
+    const p = this.props;
+    if (prev.start !== p.start || prev.frame !== p.frame || prev.progress !== p.progress) {
+      clearInterval(this.timers.play); clearInterval(this.timers.exp);
+      this.setState(this.initial(p));
+    }
+  }
+
+  reduced() {
+    if (this.state && this.state.reducePref) return true;
+    const pr = this.props.reducedMotion;
+    if (pr === true || pr === 'true') return true;
+    try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; }
+  }
+
+  theme() {
+    const pref = this.state.themePref;
+    if (pref === 'light' || pref === 'dark') return pref;
+    return this.props.theme === 'dark' ? 'dark' : 'light';
+  }
+
+  later(fn, ms, key) { clearTimeout(this.timers[key]); this.timers[key] = setTimeout(fn, ms); }
+  raf2(fn) { requestAnimationFrame(() => requestAnimationFrame(fn)); }
+
+  go(screen, extra) {
+    this.setState({ scene: 'out' });
+    this.later(() => {
+      this.setState(Object.assign({ screen, scene: 'pre' }, extra || {}));
+      this.raf2(() => this.setState({ scene: 'in' }));
+    }, this.reduced() ? 90 : 170, 'scene');
+  }
+
+  choose() {
+    if (this.state.screen !== 'empty') return;
+    this.go('edit', { hasProject: true, drag: false, panel: 'inspect', panelPh: 'in', frame: 0, info: null, progress: 0, cascade: true });
+    this.later(() => this.setState({ cascade: false }), 1600, 'cascade');
+    this.later(() => this.showInfo('skipped'), 1500, 'info');
+  }
+
+  showInfo(kind) {
+    this.setState({ info: kind, infoPh: 'pre', showList: false });
+    this.raf2(() => this.setState({ infoPh: 'in' }));
+  }
+
+  dismissInfo() {
+    this.setState({ infoPh: 'out' });
+    this.later(() => this.setState({ info: null, showList: false }), 170, 'infoOut');
+  }
+
+  toggleList() {
+    if (this.state.showList) { this.setState({ showList: false }); return; }
+    this.setState({ showList: true, listPh: 'pre' });
+    this.raf2(() => this.setState({ listPh: 'in' }));
+  }
+
+  newProject() {
+    this.stopPlay(); this.stopExport();
+    this.go('empty', { hasProject: false, info: null, drag: false, panel: 'inspect', progress: 0 });
+  }
+
+  openSettings() { this.stopPlay(); this.go('settings'); }
+  back() { this.go(this.state.hasProject ? 'edit' : 'empty'); }
+
+  swapPanel(panel, extra) {
+    this.setState({ panelPh: 'out' });
+    this.later(() => {
+      this.setState(Object.assign({ panel, panelPh: 'pre' }, extra || {}));
+      this.raf2(() => this.setState({ panelPh: 'in' }));
+    }, this.reduced() ? 90 : 170, 'panel');
+  }
+
+  startExport() {
+    if (!this.state.hasProject || this.state.panel !== 'inspect' || this.state.screen !== 'edit') return;
+    this.stopPlay();
+    if (this.state.info) this.dismissInfo();
+    this.swapPanel('export', { progress: 0, frame: 0 });
+    this.later(() => this.runExport(), 200, 'expStart');
+  }
+
+  runExport() {
+    this.stopExport();
+    this.timers.exp = setInterval(() => {
+      const p = Math.min(1, this.state.progress + 1 / 150);
+      this.setState({ progress: p, frame: Math.round(p * (N - 1)) });
+      if (p >= 1) { this.stopExport(); this.later(() => this.finish(), 350, 'fin'); }
+    }, 40);
+  }
+
+  stopExport() { clearInterval(this.timers.exp); this.timers.exp = null; }
+
+  finish() {
+    this.swapPanel('done');
+    this.later(() => this.premiere(), 1100, 'premiere');
+  }
+
+  premiere() { this.setState({ frame: 0 }); this.startPlay(); }
+
+  cancelExport() {
+    this.stopExport();
+    this.swapPanel('inspect', { progress: 0 });
+    this.later(() => this.showInfo('cancel'), 450, 'info');
+  }
+
+  backToEdit() { this.stopPlay(); this.swapPanel('inspect'); }
+
+  fpsEff() {
+    const s = this.state;
+    if (s.mode === 'fps') return FPS[s.fpsI];
+    if (s.mode === 'length') return N / LENS[s.lenI];
+    return 1 / PHOTO[s.photoI];
+  }
+
+  startPlay() {
+    clearInterval(this.timers.play);
+    const f = Math.min(60, this.fpsEff());
+    this.timers.play = setInterval(() => this.setState({ frame: (this.state.frame + 1) % N }), 1000 / f);
+    this.setState({ playing: true });
+  }
+
+  stopPlay() {
+    clearInterval(this.timers.play); this.timers.play = null;
+    if (this.state.playing) this.setState({ playing: false });
+  }
+
+  togglePlay() { if (this.state.playing) this.stopPlay(); else this.startPlay(); }
+
+  setTiming(patch) {
+    this.setState(Object.assign({ rollPh: 'pre' }, patch));
+    this.raf2(() => {
+      this.setState({ rollPh: 'in' });
+      if (this.state.playing) this.startPlay();
+    });
+  }
+
+  renderVals() {
+    const s = this.state, p = this.props;
+    const th = this.theme();
+    const t = th === 'dark' ? DARK : LIGHT;
+    const r = this.reduced();
+    const w = this.num(p.width, 1280), h = this.num(p.height, 800);
+    const narrow = w < 1000;
+
+    const ent = (phase, o) => {
+      o = o || {};
+      const dur = o.dur || 400, delay = o.delay || 0;
+      if (phase === 'pre') return { o: 0, tf: r ? 'none' : 'translate(' + (o.dx || 0) + 'px, ' + (o.dy || 0) + 'px) scale(' + (o.scale || 1) + ')', tr: 'none' };
+      if (phase === 'out') return { o: 0, tf: r ? 'none' : 'translate(' + (o.ox || 0) + 'px, ' + (o.oy || 0) + 'px) scale(' + (o.outScale || 1) + ')', tr: r ? 'opacity 90ms linear' : 'opacity 167ms ' + EASE.in + ', transform 167ms ' + EASE.in };
+      return { o: 1, tf: 'none', tr: r ? 'opacity 150ms linear' : 'opacity ' + dur + 'ms ' + EASE.out + ' ' + delay + 'ms, transform ' + dur + 'ms ' + EASE.out + ' ' + delay + 'ms' };
+    };
+
+    const scene = ent(s.scene, { dy: 8, outScale: 0.985 });
+    const dev = s.scene === 'pre'
+      ? { o: 0, filter: r ? 'none' : 'blur(14px)', tf: r ? 'none' : 'scale(1.03)', tr: 'none' }
+      : s.scene === 'out'
+        ? { o: 0, filter: r ? 'none' : 'blur(0px)', tf: r ? 'none' : 'scale(0.985)', tr: r ? 'opacity 90ms linear' : 'opacity 167ms ' + EASE.in + ', transform 167ms ' + EASE.in }
+        : { o: 1, filter: r ? 'none' : 'blur(0px)', tf: 'none', tr: r ? 'opacity 150ms linear' : 'opacity 700ms ' + EASE.out + ', filter 700ms ' + EASE.out + ', transform 700ms ' + EASE.out + ', clip-path 400ms ' + EASE.move };
+
+    // Geometry
+    const insW = narrow ? w : 320;
+    const bodyH = h - 88;
+    const stageW = narrow ? w : w - insW - 1;
+    const stageH = narrow ? bodyH - 1 - 260 : bodyH - 1;
+    const W = stageW - 40, H = stageH - 40 - 48 - 68;
+    const A = ASPECT_R[s.aspect];
+    let gw, gh;
+    if (W / H > A) { gh = H; gw = H * A; } else { gw = W; gh = W / A; }
+    const top = (H - gh) / 2, left = (W - gw) / 2;
+    const pw = W, ph = W / 1.5;
+    const sc = s.fit === 'fill' ? Math.max(gw / pw, gh / ph) : Math.min(gw / pw, gh / ph);
+    const g = {
+      W: W.toFixed(0), H: H.toFixed(0),
+      clip: 'inset(' + top.toFixed(1) + 'px ' + left.toFixed(1) + 'px ' + top.toFixed(1) + 'px ' + left.toFixed(1) + 'px round 6px)',
+      pw: pw.toFixed(1), ph: ph.toFixed(1), ml: (-pw / 2).toFixed(1), mt: (-ph / 2).toFixed(1), sc: sc.toFixed(4),
+      pillX: (20 + left + 12).toFixed(0), pillY: (20 + top + 12).toFixed(0)
+    };
+
+    // Timing
+    const f = this.fpsEff();
+    const dur = N / f;
+    const segInner = (narrow ? w - 40 : 280) - 6;
+    const seg = (labels, idx, onPick) => {
+      const n = labels.length, sw = segInner / n;
+      return {
+        n, pw: sw.toFixed(2), x: (idx * sw).toFixed(2),
+        items: labels.map((label, i) => ({
+          label, checked: i === idx ? 'true' : 'false', color: i === idx ? t.text : t.text2, weight: i === idx ? 600 : 400,
+          pick: () => onPick(i)
+        }))
+      };
+    };
+    const modes = ['fps', 'length', 'photo'];
+    const segMode = seg(['Per second', 'Length', 'Per photo'], modes.indexOf(s.mode), i => this.setTiming({ mode: modes[i] }));
+    let segVal, segValLabel, readoutSub;
+    if (s.mode === 'fps') {
+      segVal = seg(FPS.map(String), s.fpsI, i => this.setTiming({ fpsI: i }));
+      segValLabel = 'Frames per second';
+      readoutSub = 'at ' + FPS[s.fpsI] + ' frames per second';
+    } else if (s.mode === 'length') {
+      segVal = seg(LENS.map(v => v + ' s'), s.lenI, i => this.setTiming({ lenI: i }));
+      segValLabel = 'Video length';
+      readoutSub = 'at ' + (N / LENS[s.lenI]).toFixed(2) + ' frames per second';
+    } else {
+      segVal = seg(PHOTO_L, s.photoI, i => this.setTiming({ photoI: i }));
+      segValLabel = 'Seconds per photo';
+      readoutSub = PHOTO_L[s.photoI] + ' per photo, like a slideshow';
+    }
+    const segAspect = seg(ASPECTS, ASPECTS.indexOf(s.aspect), i => this.setState({ aspect: ASPECTS[i] }));
+    const segFit = seg(['Fit', 'Fill'], s.fit === 'fit' ? 0 : 1, i => this.setState({ fit: i === 0 ? 'fit' : 'fill' }));
+    const tabs = ['timing', 'frame', 'output'];
+    const segTab = seg(['Timing', 'Frame', 'Output'], tabs.indexOf(s.tab), i => this.setState({ tab: tabs[i] }));
+
+    // Thumbs
+    const nT = narrow ? 12 : 18;
+    const selI = Math.round(s.frame / (N - 1) * (nT - 1));
+    const exporting = s.panel === 'export';
+    const thumbs = [];
+    for (let i = 0; i < nT; i++) {
+      const tt = i / (nT - 1), fa = Math.round(tt * (N - 1));
+      const pending = exporting && tt > s.progress + 0.0001;
+      let o = pending ? 0.35 : 1, tf = 'none', trs;
+      if (s.scene === 'pre') { o = 0; tf = r ? 'none' : 'translateY(8px)'; trs = 'none'; }
+      else if (s.scene === 'out') { o = 0; trs = 'opacity 120ms linear'; }
+      else if (r) trs = 'opacity 150ms linear';
+      else if (s.cascade) { const d = 220 + i * 18; trs = 'opacity 400ms ' + EASE.out + ' ' + d + 'ms, transform 400ms ' + EASE.out + ' ' + d + 'ms, box-shadow 167ms ' + EASE.out; }
+      else trs = 'opacity 167ms linear, box-shadow 167ms ' + EASE.out;
+      thumbs.push({
+        bg: thumbBg(tt), o, tf, tr: trs, label: 'Go to frame ' + (fa + 1), pick: () => this.setState({ frame: fa }),
+        ring: i === selI ? '0 0 0 2px ' + t.layer + ', 0 0 0 4px ' + t.indicator : '0 0 0 0 ' + t.layer
+      });
+    }
+
+    // Ambient first-launch timelapse
+    const ambThumbs = [];
+    const ambSel = Math.round(s.phase * 11);
+    for (let i = 0; i < 12; i++) ambThumbs.push({ bg: thumbBg(i / 11), ring: i === ambSel ? '0 0 0 2px ' + t.indicator : 'none' });
+    const ambF = Math.round(s.phase * (N - 1));
+
+    // Export
+    const gateThumbs = [];
+    for (let i = 0; i < 30; i++) gateThumbs.push({ bg: thumbBg(i / 29), o: i / 29 <= s.progress + 0.0001 ? 1 : 0.3 });
+    const gateInner = narrow ? w - 40 : 280;
+    const gateX = (gateInner / 2 - (24 + s.progress * 29 * 51)).toFixed(1);
+    const done = Math.round(s.progress * N);
+    const sizeMb = Math.round(BIT[s.res] * QUAL[s.quality] * (s.fmt === 'HEVC' ? 0.6 : 1) * dur / 8);
+    const outSummary = s.res + ' · ' + s.fmt + ' · ' + s.quality;
+
+    const panel = ent(s.panelPh, { dx: 16, ox: -12 });
+    const sec = i => ent(s.scene, { dx: 16, delay: 160 + i * 60 });
+    const card = i => ent(s.scene, { dy: 8, delay: 40 + i * 50 });
+    const tog = on => ({
+      checked: on ? 'true' : 'false', x: on ? 20 : 0,
+      track: on ? t.indicator : 'transparent', border: on ? t.indicator : t.knobOff, knob: on ? t.onIndicator : t.knobOff
+    });
+    const isDone = s.panel === 'done';
+
+    return {
+      t, w, h, narrow,
+      scene, dev, g,
+      isEmpty: s.screen === 'empty', isEditor: s.screen === 'edit', isSettings: s.screen === 'settings', notSettings: s.screen !== 'settings',
+      hasProject: s.hasProject,
+      edDir: narrow ? 'column' : 'row',
+      ins: narrow
+        ? { w: 'auto', h: '260px', bl: '0', bt: '1px solid ' + t.divider, top: '50px' }
+        : { w: '320px', h: 'auto', bl: '1px solid ' + t.divider, bt: '0', top: '0' },
+      outCols: narrow ? 'repeat(3, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+      outBorder: narrow ? '0' : '1px solid ' + t.divider,
+      showTiming: !narrow || s.tab === 'timing', showFrame: !narrow || s.tab === 'frame',
+      showOutput: !narrow || s.tab === 'output', showLook: !narrow,
+      isInspect: s.panel === 'inspect', isExport: exporting, isDone,
+
+      // first launch
+      dropTitle: s.drag ? 'Drop to start your timelapse' : 'Drop a folder of photos to make a timelapse',
+      dropStroke: s.drag ? t.indicator : t.dropStroke, dropBg: s.drag ? t.accentTint : 'transparent',
+      dropLift: s.drag && !r ? 'translateY(-6px)' : 'none',
+      amb: sky(s.phase), ambThumbs,
+      ambFrame: 'Frame ' + pad4(ambF + 1) + ' of 0742', ambTime: fmtTc(ambF / 30) + ' / 00:24.73',
+
+      // command bar
+      exportDisabled: !s.hasProject || s.panel !== 'inspect' || s.screen !== 'edit',
+      exportOpacity: (!s.hasProject || s.screen !== 'edit') ? 0.4 : (s.panel === 'inspect' ? 1 : 0.6),
+      exportLabel: exporting ? 'Exporting…' : 'Export video',
+
+      // preview
+      cur: sky(s.frame / (N - 1)),
+      scaleTr: r ? 'none' : 'transform 400ms ' + EASE.move,
+      renderLabel: 'Rendering frame ' + pad4(Math.min(N, done + 1)),
+      playing: s.playing, notPlaying: !s.playing, playLabel: s.playing ? 'Pause' : 'Play',
+      frame: s.frame, tc: fmtTc(s.frame / f) + ' / ' + fmtTc(dur),
+      nThumbs: nT, thumbs,
+      frameLabel: 'Frame ' + pad4(s.frame + 1) + ' of 0742',
+      fileLabel: 'IMG_' + (4280 + s.frame) + '.HEIC · ' + clock(s.frame),
+
+      // info bar
+      hasInfo: !!s.info, infoSkipped: s.info === 'skipped', infoCancel: s.info === 'cancel',
+      infoText: s.info === 'cancel' ? 'Export cancelled. The unfinished file was removed.' : "3 photos couldn't be read and were skipped.",
+      infoBg: s.info === 'cancel' ? t.card : t.cautionBg,
+      info: ent(s.infoPh, { dy: -8, oy: -8, dur: 250 }),
+      list: ent(s.listPh, { dy: -4, dur: 250 }),
+      showList: s.showList, listLabel: s.showList ? 'Hide list' : 'View list',
+      infoW: Math.min(560, W - 40), infoML: -Math.min(560, W - 40) / 2,
+
+      // inspector
+      panel, sec0: sec(0), sec1: sec(1), sec2: sec(2), sec3: sec(3),
+      pillTr: r ? 'none' : 'transform 250ms ' + EASE.move,
+      knobTr: r ? 'none' : 'transform 167ms ' + EASE.move,
+      segMode, segVal, segValLabel, segAspect, segFit, segTab,
+      roll: ent(s.rollPh, { dy: 6, dur: 250 }),
+      readout: '742 photos → ' + fmtDur(dur), readoutSub,
+      durScale: Math.min(1, dur / 60).toFixed(4),
+      barTr: r ? 'none' : 'transform 400ms ' + EASE.out,
+      frameHint: s.fit === 'fill' ? 'Fill crops the edges so the frame has no bars.' : 'Fit shows the whole photo with bars where shapes differ.',
+      res: s.res, fmt: s.fmt, quality: s.quality,
+      sizeLabel: 'About ' + sizeMb + ' MB',
+      tgDef: tog(s.deflicker), tgRed: tog(s.reducePref),
+
+      // export
+      progress: s.progress.toFixed(4), pct: Math.round(s.progress * 100) + '%',
+      timeLeft: fmtLeft((N - done) / 4.3), framesDone: done + ' of 742', outSummary, gateThumbs, gateX,
+      doneSummary: fmtDur(dur) + ' · ' + s.res + ' · ' + s.fmt + ' · ' + sizeMb + ' MB',
+      checkOff: isDone && s.panelPh === 'in' ? 0 : 28,
+      checkTr: r ? 'none' : 'stroke-dashoffset 500ms ' + EASE.out + ' 200ms',
+
+      // settings
+      c0: card(0), c1: card(1), c2: card(2), c3: card(3), c4: card(4),
+      themePref: s.themePref,
+
+      // handlers
+      choose: () => this.choose(), newProject: () => this.newProject(), openSettings: () => this.openSettings(), back: () => this.back(),
+      startExport: () => this.startExport(), cancelExport: () => this.cancelExport(), backToEdit: () => this.backToEdit(), premiere: () => this.premiere(),
+      togglePlay: () => this.togglePlay(), onScrub: e => this.setState({ frame: parseInt(e.target.value, 10) || 0 }),
+      dismissInfo: () => this.dismissInfo(), toggleList: () => this.toggleList(),
+      onRes: e => this.setState({ res: e.target.value }), onFmt: e => this.setState({ fmt: e.target.value }), onQuality: e => this.setState({ quality: e.target.value }),
+      toggleDeflicker: () => this.setState({ deflicker: !s.deflicker }),
+      toggleReduce: () => this.setState({ reducePref: !s.reducePref }),
+      onThemePref: e => this.setState({ themePref: e.target.value }),
+      onDragEnter: e => { if (this.state.screen === 'empty') { e.preventDefault(); if (!this.state.drag) this.setState({ drag: true }); } },
+      onDragOver: e => { if (this.state.screen === 'empty') e.preventDefault(); },
+      onDragLeave: e => { if (this.state.screen === 'empty' && !(e.currentTarget && e.relatedTarget && e.currentTarget.contains(e.relatedTarget))) this.setState({ drag: false }); },
+      onDrop: e => { if (this.state.screen === 'empty') { e.preventDefault(); this.choose(); } }
+    };
+  }
+}
+</script>
+</body>
+</html>

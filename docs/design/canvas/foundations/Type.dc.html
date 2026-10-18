@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Type</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; box-sizing: border-box; padding: 64px 72px; background: #ECEBE8; color: #1C1B19; font-family: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 20px; display: flex; flex-direction: column; gap: 36px">
+
+  <header style="display: flex; flex-direction: column; gap: 10px; max-width: 760px">
+    <span style="font-size: 12px; line-height: 16px; color: #5D5A55">10Lapse 3.0 · Foundations</span>
+    <h1 style="margin: 0; font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 40px; line-height: 52px; font-weight: 600">Type</h1>
+    <p style="margin: 0; color: #5D5A55; max-width: 68ch">One family: Segoe UI Variable, the Windows 11 system face. Its Text optical size runs up to 14 px and Display takes over above. Every number uses tabular figures, so counters and time codes never shift while they change.</p>
+  </header>
+
+  <section aria-label="Type ramp" style="background: #FAF9F7; border: 1px solid #DCDAD5; border-radius: 10px; overflow: hidden">
+    <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 150px 260px; gap: 24px; padding: 12px 28px; background: #F3F2F0; border-bottom: 1px solid #DCDAD5; font-size: 12px; line-height: 16px; color: #5D5A55">
+      <span>Style</span><span>Specimen</span><span>Size · line · weight</span><span>Used for</span>
+    </div>
+    <sc-for list="{{ramp}}" as="r" hint-placeholder-count="7">
+      <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 150px 260px; gap: 24px; padding: 18px 28px; border-top: 1px solid #E7E5E1; align-items: center">
+        <span style="font-weight: 600; font-size: 13px">{{r.name}}</span>
+        <span style="font-family: {{r.family}}; font-size: {{r.size}}px; line-height: {{r.line}}px; font-weight: {{r.weight}}; font-variant-numeric: tabular-nums; letter-spacing: {{r.track}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.sample}}</span>
+        <span style="font-family: 'Cascadia Mono', Consolas, ui-monospace, monospace; font-size: 12px; color: #5D5A55">{{r.spec}}</span>
+        <span style="font-size: 12px; line-height: 16px; color: #5D5A55">{{r.use}}</span>
+      </div>
+    </sc-for>
+  </section>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 32px; align-items: start">
+
+    <section aria-label="Figures" style="display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Tabular figures</h2>
+      <div style="background: #FAF9F7; border: 1px solid #DCDAD5; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 12px; line-height: 16px; color: #5D5A55">Proportional: the counter wobbles as digits change</span>
+          <span style="font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 28px; line-height: 36px; font-weight: 600; font-variant-numeric: proportional-nums">0111 / 0742</span>
+          <span style="font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 28px; line-height: 36px; font-weight: 600; font-variant-numeric: proportional-nums">0888 / 0742</span>
+        </div>
+        <div style="height: 1px; background: #E7E5E1"></div>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 12px; line-height: 16px; color: #5D5A55">Tabular: every digit is the same width</span>
+          <span style="font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 28px; line-height: 36px; font-weight: 600; font-variant-numeric: tabular-nums">0111 / 0742</span>
+          <span style="font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 28px; line-height: 36px; font-weight: 600; font-variant-numeric: tabular-nums">0888 / 0742</span>
+        </div>
+        <p style="margin: 0; font-size: 12px; line-height: 16px; color: #5D5A55">Applies to frame counters, time codes, the speed readout, export percent, file sizes. Frame numbers are zero-padded to the width of the total.</p>
+      </div>
+    </section>
+
+    <section aria-label="Writing rules" style="display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Words</h2>
+      <div style="background: #FAF9F7; border: 1px solid #DCDAD5; border-radius: 10px; overflow: hidden">
+        <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr); gap: 20px; padding: 12px 24px; background: #F3F2F0; border-bottom: 1px solid #DCDAD5; font-size: 12px; line-height: 16px; color: #5D5A55">
+          <span>Rule</span><span>Write</span><span>Not</span>
+        </div>
+        <sc-for list="{{rules}}" as="w" hint-placeholder-count="5">
+          <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr); gap: 20px; padding: 14px 24px; border-top: 1px solid #E7E5E1; align-items: start">
+            <span style="font-weight: 600; font-size: 13px">{{w.rule}}</span>
+            <span style="display: flex; gap: 8px; align-items: flex-start">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#0F7B0F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 3px" aria-hidden="true"><path d="M3 8.5l3.5 3.5L13 4.5"></path></svg>
+              <span>{{w.yes}}</span>
+            </span>
+            <span style="display: flex; gap: 8px; align-items: flex-start; color: #5D5A55">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#C42B1C" stroke-width="2" stroke-linecap="round" style="flex: none; margin-top: 3px" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg>
+              <span style="text-decoration: line-through; text-decoration-color: rgba(196, 43, 28, 0.5)">{{w.no}}</span>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+
+  <section aria-label="Wordmark" style="display: flex; align-items: center; gap: 28px; padding: 28px 32px; border-radius: 10px; background: #1F1E1D; color: #F4F2EE">
+    <svg width="72" height="72" viewBox="0 0 16 16" aria-hidden="true">
+      <rect x="1" y="2" width="2.4" height="12" rx="0.8" fill="#8EC0EA"></rect>
+      <rect x="4" y="2" width="2.4" height="12" rx="0.8" fill="#F3C46B"></rect>
+      <rect x="7" y="2" width="2.4" height="12" rx="0.8" fill="#EE8F4F"></rect>
+      <rect x="10" y="2" width="2.4" height="12" rx="0.8" fill="#B4567A"></rect>
+      <rect x="13" y="2" width="2.4" height="12" rx="0.8" fill="#2B3A75"></rect>
+    </svg>
+    <span style="font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 68px; line-height: 92px; font-weight: 600; letter-spacing: -0.02em">10Lapse</span>
+    <span style="margin-left: auto; max-width: 380px; font-size: 12px; line-height: 16px; color: #C3BFB8">Wordmark: Display 68, semibold, tracked -2%. Splash screen and Store art only. In the app the name appears once, in the title bar, at Caption size.</span>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+const TEXT = "'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif";
+const DISPLAY = "'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif";
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      ramp: [
+        { name: 'Caption', family: TEXT, size: 12, line: 16, weight: 400, track: '0', sample: 'Frame 0312 of 0742 · IMG_4592.HEIC · 18:16:58', spec: '12 / 16 · 400', use: 'Labels, file details, time codes, hints' },
+        { name: 'Body', family: TEXT, size: 14, line: 20, weight: 400, track: '0', sample: '10Lapse plays your photos back as a video.', spec: '14 / 20 · 400', use: 'Running text, buttons, menu items' },
+        { name: 'Body strong', family: TEXT, size: 14, line: 20, weight: 600, track: '0', sample: 'Timing · Frame · Output', spec: '14 / 20 · 600', use: 'Section headers, selected segment' },
+        { name: 'Subtitle', family: DISPLAY, size: 20, line: 28, weight: 600, track: '0', sample: '742 photos → 24.7 s', spec: '20 / 28 · 600', use: 'Speed readout, panel titles' },
+        { name: 'Title', family: DISPLAY, size: 28, line: 36, weight: 600, track: '0', sample: 'Drop a folder of photos to make a timelapse', spec: '28 / 36 · 600', use: 'Screen titles: first launch, settings' },
+        { name: 'Title large', family: DISPLAY, size: 40, line: 52, weight: 600, track: '0', sample: '46%', spec: '40 / 52 · 600', use: 'Export progress' },
+        { name: 'Display', family: DISPLAY, size: 68, line: 92, weight: 600, track: '-0.02em', sample: '10Lapse', spec: '68 / 92 · 600', use: 'Wordmark on splash and Store art only' }
+      ],
+      rules: [
+        { rule: 'Show the number', yes: '742 photos → 24.7 s at 30 fps', no: 'Your timelapse is ready to go!' },
+        { rule: 'Say what happened, then what to do', yes: "3 photos couldn't be read and were skipped. View list", no: 'Error 0x88982F50' },
+        { rule: 'Name the action', yes: 'Export video · Cancel export', no: 'OK · Submit · Proceed' },
+        { rule: 'Sentence case', yes: 'Choose folder', no: 'Choose Folder' },
+        { rule: 'Calm punctuation', yes: 'Export cancelled. The unfinished file was removed.', no: 'Oops! Something went wrong!!' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

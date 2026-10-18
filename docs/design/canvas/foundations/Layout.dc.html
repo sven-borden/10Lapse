@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Space, shape and elevation</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1100px; box-sizing: border-box; padding: 64px 72px; background: #ECEBE8; color: #1C1B19; font-family: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 20px; display: flex; flex-direction: column; gap: 36px">
+
+  <header style="display: flex; flex-direction: column; gap: 10px; max-width: 760px">
+    <span style="font-size: 12px; line-height: 16px; color: #5D5A55">10Lapse 3.0 · Foundations</span>
+    <h1 style="margin: 0; font-family: 'Segoe UI Variable Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; font-size: 40px; line-height: 52px; font-weight: 600">Space, shape and elevation</h1>
+    <p style="margin: 0; color: #5D5A55; max-width: 68ch">A 4 px grid and Fluent's control sizes. Controls are 32 px tall. The window keeps one rhythm: 12 px around the command bar, 20 px around the stage and inside the inspector, 16 px between inspector sections.</p>
+  </header>
+
+  <div style="display: grid; grid-template-columns: 780px minmax(0, 1fr); gap: 40px; align-items: start">
+
+    <!-- Window anatomy at 60% -->
+    <section aria-label="Window anatomy" style="display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Window anatomy</h2>
+        <span style="font-size: 12px; line-height: 16px; color: #5D5A55">1280 × 800, drawn at 60%</span>
+      </div>
+      <div style="position: relative; width: 768px; height: 480px; border-radius: 6px; overflow: hidden; background: #F3F2F0; box-shadow: 0 8px 28px rgba(28, 27, 25, 0.16), 0 0 0 1px rgba(28, 27, 25, 0.08)">
+        <!-- title bar -->
+        <div style="position: absolute; left: 0; top: 0; width: 768px; height: 24px; background: rgba(46, 58, 114, 0.08); border-bottom: 1px dashed rgba(46, 58, 114, 0.35)"></div>
+        <!-- command bar -->
+        <div style="position: absolute; left: 0; top: 24px; width: 768px; height: 29px; background: rgba(46, 58, 114, 0.04); border-bottom: 1px dashed rgba(46, 58, 114, 0.35)"></div>
+        <div style="position: absolute; right: 8px; top: 29px; width: 66px; height: 19px; border-radius: 3px; background: #E8962E"></div>
+        <!-- layer -->
+        <div style="position: absolute; left: 0; top: 53px; width: 768px; height: 427px; background: #FAF9F7"></div>
+        <!-- stage padding -->
+        <div style="position: absolute; left: 12px; top: 65px; width: 551px; height: 334px; border-radius: 4px; background: linear-gradient(180deg, #86A6D1 0%, #F2C08A 52%, #F29A55 70%, #33405A 70%, #1B2333 100%)"></div>
+        <!-- transport -->
+        <div style="position: absolute; left: 12px; top: 406px; width: 551px; height: 22px; display: flex; align-items: center; gap: 8px">
+          <div style="width: 22px; height: 22px; border-radius: 50%; border: 1px solid #DCDAD5; background: #FEFDFC; box-sizing: border-box"></div>
+          <div style="flex: 1; height: 3px; border-radius: 2px; background: #E4E2DE"></div>
+        </div>
+        <!-- filmstrip -->
+        <div style="position: absolute; left: 12px; top: 435px; width: 551px; height: 19px; display: grid; grid-template-columns: repeat(18, minmax(0, 1fr)); gap: 2px">
+          <div style="border-radius: 2px; background: #8BB3DD"></div><div style="border-radius: 2px; background: #9BB8D8"></div><div style="border-radius: 2px; background: #B9C3D2"></div><div style="border-radius: 2px; background: #D7C9AE"></div><div style="border-radius: 2px; background: #EFC88E"></div><div style="border-radius: 2px; background: #F4BE7A"></div><div style="border-radius: 2px; background: #F3A964"></div><div style="border-radius: 2px; background: #EE9558; box-shadow: 0 0 0 1px #FAF9F7, 0 0 0 2.5px #B5620D"></div><div style="border-radius: 2px; background: #E58066"></div><div style="border-radius: 2px; background: #D06B78"></div><div style="border-radius: 2px; background: #A9658B"></div><div style="border-radius: 2px; background: #7B5D99"></div><div style="border-radius: 2px; background: #574F8D"></div><div style="border-radius: 2px; background: #3E447F"></div><div style="border-radius: 2px; background: #2E3A72"></div><div style="border-radius: 2px; background: #222C5A"></div><div style="border-radius: 2px; background: #182042"></div><div style="border-radius: 2px; background: #10162E"></div>
+        </div>
+        <!-- inspector -->
+        <div style="position: absolute; left: 575px; top: 53px; width: 193px; height: 427px; border-left: 1px solid #E7E5E1; box-sizing: border-box; padding: 12px; display: flex; flex-direction: column; gap: 10px">
+          <div style="height: 8px; width: 48px; border-radius: 2px; background: #C9C6C0"></div>
+          <div style="height: 19px; border-radius: 3px; background: #F0EEEB; border: 1px solid #DCDAD5"></div>
+          <div style="height: 19px; border-radius: 3px; background: #F0EEEB; border: 1px solid #DCDAD5"></div>
+          <div style="height: 12px; width: 110px; border-radius: 2px; background: #1C1B19; opacity: 0.8"></div>
+          <div style="height: 1px; background: #E7E5E1; margin-top: 4px"></div>
+          <div style="height: 8px; width: 48px; border-radius: 2px; background: #C9C6C0"></div>
+          <div style="height: 19px; border-radius: 3px; background: #F0EEEB; border: 1px solid #DCDAD5"></div>
+          <div style="height: 19px; border-radius: 3px; background: #F0EEEB; border: 1px solid #DCDAD5"></div>
+          <div style="height: 1px; background: #E7E5E1; margin-top: 4px"></div>
+          <div style="height: 8px; width: 48px; border-radius: 2px; background: #C9C6C0"></div>
+          <div style="height: 19px; border-radius: 3px; background: #FEFDFC; border: 1px solid #DCDAD5"></div>
+          <div style="height: 19px; border-radius: 3px; background: #FEFDFC; border: 1px solid #DCDAD5"></div>
+          <div style="height: 19px; border-radius: 3px; background: #FEFDFC; border: 1px solid #DCDAD5"></div>
+        </div>
+        <!-- markers -->
+        <span style="position: absolute; left: 6px; top: 4px; width: 16px; height: 16px; border-radius: 50%; background: #2E3A72; color: #F4F2EE; font-size: 10px; line-height: 16px; text-align: center; font-weight: 600">A</span>
+        <span style="position: absolute; left: 6px; top: 30px; width: 16px; height: 16px; border-radius: 50%; background: #2E3A72; color: #F4F2EE; font-size: 10px; line-height: 16px; text-align: center; font-weight: 600">B</span>
+        <span style="position: absolute; left: 22px; top: 75px; width: 16px; height: 16px; border-radius: 50%; background: #2E3A72; color: #F4F2EE; font-size: 10px; line-height: 16px; text-align: center; font-weight: 600">C</span>
+        <span style="position: absolute; left: 540px; top: 409px; width: 16px; height: 16px; border-radius: 50%; background: #2E3A72; color: #F4F2EE; font-size: 10px; line-height: 16px; text-align: center; font-weight: 600">D</span>
+        <span style="position: absolute; left: 540px; top: 458px; width: 16px; height: 16px; border-radius: 50%; background: #2E3A72; color: #F4F2EE; font-size: 10px; line-height: 16px; text-align: center; font-weight: 600">E</span>
+        <span style="position: absolute; left: 745px; top: 62px; width: 16px; height: 16px; border-radius: 50%; background: #2E3A72; color: #F4F2EE; font-size: 10px; line-height: 16px; text-align: center; font-weight: 600">F</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 32px; font-size: 12px; line-height: 16px">
+        <span><b>A · Title bar</b> 40 px. Mica, app name, project name, caption buttons.</span>
+        <span><b>B · Command bar</b> 48 px. Subtle buttons left, Export right.</span>
+        <span><b>C · Preview</b> fills the stage; 20 px padding; gate radius 6.</span>
+        <span><b>D · Transport</b> 36 px: play, scrubber, time code.</span>
+        <span><b>E · Filmstrip</b> 18 thumbs at 3:2, 4 px gaps, label row below.</span>
+        <span><b>F · Inspector</b> 320 px; sections Timing, Frame, Output, Look.</span>
+      </div>
+    </section>
+
+    <div style="display: flex; flex-direction: column; gap: 32px">
+      <!-- Spacing -->
+      <section aria-label="Spacing scale" style="display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Spacing</h2>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <sc-for list="{{space}}" as="sp" hint-placeholder-count="9">
+            <div style="display: grid; grid-template-columns: 40px 72px minmax(0, 1fr); gap: 12px; align-items: center; font-size: 12px; line-height: 16px">
+              <span style="font-family: 'Cascadia Mono', Consolas, ui-monospace, monospace; color: #5D5A55">{{sp.v}}</span>
+              <div style="height: 10px; width: {{sp.v}}px; border-radius: 2px; background: #2E3A72"></div>
+              <span style="color: #5D5A55">{{sp.use}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <!-- Radius -->
+      <section aria-label="Corner radius" style="display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Corners</h2>
+        <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px">
+          <sc-for list="{{radius}}" as="rd" hint-placeholder-count="5">
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 16px">
+              <div style="height: 56px; border-radius: {{rd.css}}; background: #FEFDFC; border: 1px solid #DCDAD5"></div>
+              <span style="font-weight: 600">{{rd.v}}</span>
+              <span style="color: #5D5A55">{{rd.use}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <!-- Elevation -->
+      <section aria-label="Elevation" style="display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Elevation</h2>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 20px; border-radius: 8px; background: #F3F2F0">
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; line-height: 16px">
+            <div style="height: 64px; border-radius: 6px; background: #FAF9F7; border-top: 1px solid #E7E5E1"></div>
+            <span style="font-weight: 600">Layer</span><span style="color: #5D5A55">Content on Mica, separated by one divider.</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; line-height: 16px">
+            <div style="height: 64px; border-radius: 6px; background: #FEFDFC; border: 1px solid #E7E5E1"></div>
+            <span style="font-weight: 600">Card</span><span style="color: #5D5A55">Border only. Settings rows.</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; line-height: 16px">
+            <div style="height: 64px; border-radius: 8px; background: #FEFDFC; box-shadow: 0 8px 28px rgba(28, 27, 25, 0.16), 0 2px 6px rgba(28, 27, 25, 0.06)"></div>
+            <span style="font-weight: 600">Flyout</span><span style="color: #5D5A55">InfoBar over the preview, menus.</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Breakpoints -->
+  <section aria-label="Window sizes" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
+    <div style="display: flex; gap: 16px; align-items: center; padding: 18px 20px; border-radius: 8px; background: #FAF9F7; border: 1px solid #DCDAD5">
+      <div style="width: 96px; height: 60px; flex: none; border-radius: 4px; border: 1px solid #C9C6C0; display: flex; overflow: hidden"><div style="flex: 1; background: #E7E5E1"></div><div style="width: 24px; border-left: 1px solid #C9C6C0"></div></div>
+      <div style="display: flex; flex-direction: column; font-size: 12px; line-height: 16px"><span style="font-size: 14px; line-height: 20px; font-weight: 600">1000 px and wider</span><span style="color: #5D5A55">Inspector docked right at 320 px.</span></div>
+    </div>
+    <div style="display: flex; gap: 16px; align-items: center; padding: 18px 20px; border-radius: 8px; background: #FAF9F7; border: 1px solid #DCDAD5">
+      <div style="width: 60px; height: 60px; flex: none; border-radius: 4px; border: 1px solid #C9C6C0; display: flex; flex-direction: column; overflow: hidden"><div style="flex: 1; background: #E7E5E1"></div><div style="height: 22px; border-top: 1px solid #C9C6C0"></div></div>
+      <div style="display: flex; flex-direction: column; font-size: 12px; line-height: 16px"><span style="font-size: 14px; line-height: 20px; font-weight: 600">Narrower than 1000 px</span><span style="color: #5D5A55">Inspector folds into a 260 px tabbed panel under the preview.</span></div>
+    </div>
+    <div style="display: flex; gap: 16px; align-items: center; padding: 18px 20px; border-radius: 8px; background: #FAF9F7; border: 1px solid #DCDAD5">
+      <div style="width: 48px; height: 36px; flex: none; border-radius: 4px; border: 1px dashed #9A968F"></div>
+      <div style="display: flex; flex-direction: column; font-size: 12px; line-height: 16px"><span style="font-size: 14px; line-height: 20px; font-weight: 600">Smallest window 640 × 480</span><span style="color: #5D5A55">Filmstrip drops to 12 thumbs. Correct at 100, 150 and 200% scaling.</span></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      space: [
+        { v: 2, use: 'Inside segmented controls' },
+        { v: 4, use: 'Filmstrip gaps, icon to badge' },
+        { v: 8, use: 'Button groups, label to control' },
+        { v: 12, use: 'Command bar padding, stage gaps' },
+        { v: 16, use: 'Inspector section rhythm' },
+        { v: 20, use: 'Stage and inspector padding' },
+        { v: 28, use: 'Settings page top' },
+        { v: 40, use: 'Settings page sides' },
+        { v: 64, use: 'First-launch column gap' }
+      ],
+      radius: [
+        { v: '3 px', css: '3px', use: 'Thumbnails' },
+        { v: '4 px', css: '4px', use: 'Buttons, selects' },
+        { v: '6 px', css: '6px', use: 'Preview gate, cards, InfoBar' },
+        { v: '8 px', css: '8px', use: 'Window, flyouts, drop zone' },
+        { v: 'Round', css: '28px', use: 'Play button, toggles' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
