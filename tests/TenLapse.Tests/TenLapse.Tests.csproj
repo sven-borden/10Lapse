@@ -38,6 +38,12 @@
     <Compile Include="..\..\src\TenLapse.App\Services\EncoderDiagnostics.cs" Link="Linked\EncoderDiagnostics.cs" />
   </ItemGroup>
 
+  <!-- The photo fixtures (docs in Fixtures/README.md) are read from the test host's folder. -->
+  <ItemGroup>
+    <None Update="Fixtures\Photos\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\README.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\TenLapse.Core\TenLapse.Core.csproj" />
     <ProjectReference Include="..\..\src\TenLapse.Media\TenLapse.Media.csproj" />
