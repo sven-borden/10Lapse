@@ -26,7 +26,7 @@ public sealed class RollingFileLogTests : IDisposable
 
         log.Error("Export failed.", new InvalidOperationException("encoder\nstopped"));
 
-        var lines = ReadLines(Path.Combine(_folder, "10Lapse-2026-10-18.log"));
+        var lines = ReadLines(Path.Combine(_folder, Today()));
         Assert.Equal("2026-10-18T09:30:00.000+02:00 ERROR Export failed.", lines[0]);
         Assert.Equal("    System.InvalidOperationException: encoder", lines[1]);
         Assert.Equal("    stopped", lines[2]);
@@ -52,9 +52,9 @@ public sealed class RollingFileLogTests : IDisposable
             log.Info("Saturday");
             _clock.Now = _clock.Now.AddDays(1);
             log.Info("Sunday");
-            Assert.Contains("10Lapse-2026-10-19.log", Files());
-            Assert.Contains("Saturday", ReadText(Path.Combine(_folder, "10Lapse-2026-10-18.log")), StringComparison.Ordinal);
-            Assert.Contains("Sunday", ReadText(Path.Combine(_folder, "10Lapse-2026-10-19.log")), StringComparison.Ordinal);
+            Assert.Contains(Name(19), Files());
+            Assert.Contains("Saturday", ReadText(Path.Combine(_folder, Name(18))), StringComparison.Ordinal);
+            Assert.Contains("Sunday", ReadText(Path.Combine(_folder, Name(19))), StringComparison.Ordinal);
 
             // The day turning prunes too: the 12th is now 7 days old.
             Assert.DoesNotContain("10Lapse-2026-10-12.log", Files());
@@ -79,9 +79,9 @@ public sealed class RollingFileLogTests : IDisposable
             log.Info($"{i:00} {line}");
         }
 
-        Assert.Equal(["10Lapse-2026-10-18.1.log", "10Lapse-2026-10-18.log"], Files());
+        Assert.Equal([Name(18, 1), Name(18)], Files());
         Assert.All(Files(), file => Assert.True(new FileInfo(Path.Combine(_folder, file)).Length < 2048 + 512));
-        Assert.Contains("size limit", ReadText(Path.Combine(_folder, "10Lapse-2026-10-18.1.log")), StringComparison.Ordinal);
+        Assert.Contains("size limit", ReadText(Path.Combine(_folder, Name(18, 1))), StringComparison.Ordinal);
         Assert.True(log.LinesLost);
 
         // What the files could not take is still in memory for the diagnostics.
@@ -182,7 +182,7 @@ public sealed class RollingFileLogTests : IDisposable
             }
         })));
 
-        Assert.Equal(400, ReadLines(Path.Combine(_folder, "10Lapse-2026-10-18.log")).Length);
+        Assert.Equal(400, ReadLines(Path.Combine(_folder, Today())).Length);
     }
 
     [Fact]
@@ -191,9 +191,60 @@ public sealed class RollingFileLogTests : IDisposable
         using var log = new RollingFileLog(_folder, _clock);
         log.Info("open");
 
-        using var reader = new FileStream(Path.Combine(_folder, "10Lapse-2026-10-18.log"), FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var reader = new FileStream(Path.Combine(_folder, Today()), FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         Assert.True(reader.Length > 0);
     }
+
+    [Fact]
+    public void TwoProcessesWriteFilesOfTheirOwnAndTheDiagnosticsMergeThemByTime()
+    {
+        // Two instances of the app on one folder: with one shared file each stream's own position made them write
+        // over each other's lines.
+        var clock = new FakeClock(_clock.Now);
+        using var first = new RollingFileLog(_folder, clock, new RollingFileLogOptions { ProcessId = 101 });
+        using var second = new RollingFileLog(_folder, clock, new RollingFileLogOptions { ProcessId = 202 });
+        for (var i = 1; i <= 60; i++)
+        {
+            clock.Now = clock.Now.AddMilliseconds(10);
+            (i % 2 == 1 ? first : second).Info($"line {i}");
+            if (i == 31)
+            {
+                second.Error("with an exception", new InvalidOperationException("two\nlines"));
+            }
+        }
+
+        var day = new DateOnly(2026, 10, 18);
+        Assert.Equal([RollingFileLog.FileName(day, 101), RollingFileLog.FileName(day, 202)], Files());
+        Assert.Equal(30, ReadLines(Path.Combine(_folder, RollingFileLog.FileName(day, 101))).Length);
+        Assert.Equal(30 + 3, ReadLines(Path.Combine(_folder, RollingFileLog.FileName(day, 202))).Length);
+
+        // Either process's diagnostics read both, in time order, the exception's lines under their entry.
+        var lines = first.RecentLines(200);
+        Assert.Equal(63, lines.Count);
+        Assert.Equal(
+            [.. Enumerable.Range(1, 31).Select(i => $"line {i}"), "with an exception", "    System.InvalidOperationException: two", "    lines", .. Enumerable.Range(32, 29).Select(i => $"line {i}")],
+            lines.Select(line => line.StartsWith(' ') ? line : line[36..]));
+        Assert.Equal(lines, second.RecentLines(200));
+        Assert.EndsWith("line 60", first.RecentLines(1)[0], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheDiagnosticsReadOnlyTodayAndYesterday()
+    {
+        using (var old = new RollingFileLog(_folder, new FakeClock(_clock.Now.AddDays(-2)), new RollingFileLogOptions { ProcessId = 7 }))
+        {
+            old.Info("two days ago");
+        }
+
+        using var log = new RollingFileLog(_folder, _clock, new RollingFileLogOptions { ProcessId = 8 });
+        log.Info("today");
+
+        Assert.EndsWith("today", Assert.Single(log.RecentLines(200)), StringComparison.Ordinal);
+    }
+
+    private static string Name(int day, int part = 0) => RollingFileLog.FileName(new DateOnly(2026, 10, day), Environment.ProcessId, part);
+
+    private static string Today() => Name(18);
 
     // The log keeps its file open for writing; readers share it, as Notepad and the diagnostics do.
     private static string ReadText(string path)

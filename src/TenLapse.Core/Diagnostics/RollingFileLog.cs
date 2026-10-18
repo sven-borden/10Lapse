@@ -10,30 +10,45 @@ public sealed record RollingFileLogOptions
     /// <summary>How many days of files are kept, today included: at 7, a file from 7 days ago is deleted at startup.</summary>
     public int RetentionDays { get; init; } = 7;
 
-    /// <summary>The size one file grows to before the day goes on in the next part (<c>10Lapse-2026-10-18.1.log</c>).</summary>
+    /// <summary>The size one file grows to before the day goes on in the next part (<c>10Lapse-2026-10-18.p12345.1.log</c>).</summary>
     public long MaxFileBytes { get; init; } = 1024 * 1024;
 
     /// <summary>
-    /// How many parts one day may have. Past the last one the day's later lines stay out of the files (they are
-    /// still kept in memory for <see cref="RollingFileLog.RecentLines"/>), so a loop that logs cannot fill the disk.
+    /// How many parts one day may have in one process. Past the last one the day's later lines stay out of the files
+    /// (they are still kept in memory for <see cref="RollingFileLog.RecentLines"/>), so a loop that logs cannot fill
+    /// the disk.
     /// </summary>
     public int MaxPartsPerDay { get; init; } = 4;
 
     /// <summary>How many of this session's lines are kept in memory, for diagnostics when the files cannot be read.</summary>
     public int RecentLineCapacity { get; init; } = 200;
+
+    /// <summary>
+    /// The id in this process's file names (<c>.p12345</c>); this process's id by default. Each process writes files
+    /// of its own, so two instances of the app never write over each other's lines.
+    /// </summary>
+    public int ProcessId { get; init; } = Environment.ProcessId;
 }
 
 /// <summary>
-/// The app's log: plain UTF-8 text files in one folder, one per local day (<c>10Lapse-2026-10-18.log</c>), each
-/// line stamped with the local time and its offset. Files older than <see cref="RollingFileLogOptions.RetentionDays"/>
-/// are deleted when the log opens and when the day turns, and each file is bounded in size. Every write goes to the
-/// file at once (flushed), so a line written just before the process dies is on disk.
+/// The app's log: plain UTF-8 text files in one folder, one per local day and process
+/// (<c>10Lapse-2026-10-18.p12345.log</c>), each line stamped with the local time and its offset. Files older than
+/// <see cref="RollingFileLogOptions.RetentionDays"/> are deleted when the log opens and when the day turns, whichever
+/// process wrote them, and each file is bounded in size. Every write goes to the file at once (flushed), so a line
+/// written just before the process dies is on disk.
 /// </summary>
 /// <remarks>
-/// Hand-written rather than a logging package: one sink, one format and a few limits need about two hundred lines,
-/// and the app has no other use for a logging framework (#26). Thread-safe. Nothing here ever throws into the
-/// caller: a folder that cannot be created or written makes the log keep its lines in memory only, and it tries the
-/// file again a little later.
+/// <para>
+/// Hand-written rather than a logging package: one sink, one format and a few limits need a few hundred lines, and
+/// the app has no other use for a logging framework (#26). Thread-safe. Nothing here ever throws into the caller: a
+/// folder that cannot be created or written makes the log keep its lines in memory only, and it tries the file again
+/// a little later.
+/// </para>
+/// <para>
+/// One file per process: two instances of the app each append through a <see cref="FileStream"/> of their own, and
+/// each stream keeps its own position, so with one shared file they wrote over each other's lines.
+/// <see cref="RecentLines"/> reads the files of today and yesterday, every process's, and merges them by time.
+/// </para>
 /// </remarks>
 public sealed partial class RollingFileLog : ILog, IDisposable
 {
@@ -42,6 +57,10 @@ public sealed partial class RollingFileLog : ILog, IDisposable
 
     /// <summary>Every log file name ends with this.</summary>
     public const string FileExtension = ".log";
+
+    // Every entry's first line starts with its local time and offset: 2026-10-18T14:03:12.345+02:00.
+    private const string StampFormat = "yyyy-MM-dd'T'HH:mm:ss.fffzzz";
+    private const int StampLength = 29;
 
     // After a failed write the file is left alone this long, so a broken folder is not hit on every line.
     private static readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(30);
@@ -80,6 +99,7 @@ public sealed partial class RollingFileLog : ILog, IDisposable
         ArgumentOutOfRangeException.ThrowIfLessThan(_options.MaxFileBytes, 1024);
         ArgumentOutOfRangeException.ThrowIfLessThan(_options.MaxPartsPerDay, 1);
         ArgumentOutOfRangeException.ThrowIfNegative(_options.RecentLineCapacity);
+        ArgumentOutOfRangeException.ThrowIfNegative(_options.ProcessId);
 
         _day = Today(_clock.GetLocalNow());
         Prune(_day);
@@ -100,9 +120,15 @@ public sealed partial class RollingFileLog : ILog, IDisposable
         }
     }
 
-    /// <summary>The file name for a day and part: <c>10Lapse-2026-10-18.log</c>, then <c>10Lapse-2026-10-18.1.log</c>.</summary>
-    public static string FileName(DateOnly day, int part = 0) =>
-        FilePrefix + day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + (part == 0 ? string.Empty : "." + part.ToString(CultureInfo.InvariantCulture)) + FileExtension;
+    /// <summary>
+    /// The file name for a day, process and part: <c>10Lapse-2026-10-18.p12345.log</c>, then
+    /// <c>10Lapse-2026-10-18.p12345.1.log</c>.
+    /// </summary>
+    public static string FileName(DateOnly day, int processId, int part = 0) =>
+        FilePrefix + day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        + ".p" + processId.ToString(CultureInfo.InvariantCulture)
+        + (part == 0 ? string.Empty : "." + part.ToString(CultureInfo.InvariantCulture))
+        + FileExtension;
 
     /// <inheritdoc />
     public void Write(LogLevel level, string message, Exception? exception = null)
@@ -142,8 +168,9 @@ public sealed partial class RollingFileLog : ILog, IDisposable
     }
 
     /// <summary>
-    /// The last <paramref name="count"/> lines, oldest first: from the files, so a session that crashed shows in the
-    /// next one's diagnostics; from memory when the files cannot be read or a line of this session did not reach them.
+    /// The last <paramref name="count"/> lines, oldest first: from the files of today and yesterday, every process's,
+    /// merged by time (an entry's continuation lines stay with it), so a session that crashed shows in the next one's
+    /// diagnostics; from memory when the files cannot be read or a line of this session did not reach them.
     /// </summary>
     public IReadOnlyList<string> RecentLines(int count)
     {
@@ -163,7 +190,7 @@ public sealed partial class RollingFileLog : ILog, IDisposable
 
             if (!useMemory)
             {
-                var fromFiles = ReadTail(count);
+                var fromFiles = ReadTail(count, Today(_clock.GetLocalNow()));
                 if (fromFiles.Count > 0)
                 {
                     return fromFiles;
@@ -196,7 +223,7 @@ public sealed partial class RollingFileLog : ILog, IDisposable
     // "2026-10-18T14:03:12.345+02:00 ERROR Message", then the exception, each line indented four spaces.
     private static List<string> Format(DateTimeOffset now, LogLevel level, string message, Exception? exception)
     {
-        var stamp = now.ToString("yyyy-MM-dd'T'HH:mm:ss.fffzzz", CultureInfo.InvariantCulture);
+        var stamp = now.ToString(StampFormat, CultureInfo.InvariantCulture);
         var name = level switch
         {
             LogLevel.Info => "INFO ",
@@ -232,11 +259,13 @@ public sealed partial class RollingFileLog : ILog, IDisposable
     private static string[] SplitLines(string text) =>
         text.ReplaceLineEndings("\n").TrimEnd('\n').Split('\n');
 
-    [GeneratedRegex(@"^10Lapse-(\d{4}-\d{2}-\d{2})(?:\.(\d{1,3}))?\.log$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
+    // 10Lapse-2026-10-18.p12345.1.log; a file from before the process id was in the name has none (process 0).
+    [GeneratedRegex(@"^10Lapse-(\d{4}-\d{2}-\d{2})(?:\.p(\d{1,10}))?(?:\.(\d{1,3}))?\.log$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
     private static partial Regex FileNamePattern();
 
-    private static bool TryParse(string path, out DateOnly day, out int part)
+    private static bool TryParse(string path, out DateOnly day, out long processId, out int part)
     {
+        processId = 0;
         part = 0;
         var match = FileNamePattern().Match(Path.GetFileName(path));
         if (!match.Success || !DateOnly.TryParseExact(match.Groups[1].Value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out day))
@@ -245,7 +274,40 @@ public sealed partial class RollingFileLog : ILog, IDisposable
             return false;
         }
 
-        return !match.Groups[2].Success || int.TryParse(match.Groups[2].Value, NumberStyles.None, CultureInfo.InvariantCulture, out part);
+        return (!match.Groups[2].Success || long.TryParse(match.Groups[2].Value, NumberStyles.None, CultureInfo.InvariantCulture, out processId))
+            && (!match.Groups[3].Success || int.TryParse(match.Groups[3].Value, NumberStyles.None, CultureInfo.InvariantCulture, out part));
+    }
+
+    // The time stamp an entry's first line starts with; null for a continuation line (indented) or anything else.
+    private static DateTimeOffset? StampOf(string line) =>
+        line.Length >= StampLength
+        && char.IsAsciiDigit(line[0])
+        && DateTimeOffset.TryParseExact(line.AsSpan(0, StampLength), StampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var stamp)
+            ? stamp
+            : null;
+
+    // The last count lines of these files, newest file first. Each file is at most MaxFileBytes.
+    private static List<string> Tail(IEnumerable<string> newestFirst, int count)
+    {
+        var tail = new List<string>();
+        foreach (var file in newestFirst)
+        {
+            using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(stream, _utf8);
+            var lines = new List<string>();
+            while (reader.ReadLine() is { } line)
+            {
+                lines.Add(line);
+            }
+
+            tail.InsertRange(0, lines.Skip(Math.Max(0, lines.Count - (count - tail.Count))));
+            if (tail.Count >= count)
+            {
+                break;
+            }
+        }
+
+        return tail;
     }
 
     private void Remember(string line)
@@ -322,17 +384,16 @@ public sealed partial class RollingFileLog : ILog, IDisposable
         }
     }
 
-    // Opens today's current part for appending, moving past parts already full from an earlier session.
+    private string PartPath(int part) => Path.Combine(Folder, FileName(_day, _options.ProcessId, part));
+
+    // Opens this process's current part of today for appending, moving past parts already full from an earlier
+    // session with the same process id.
     private bool OpenFile()
     {
         Directory.CreateDirectory(Folder);
         while (_part < _options.MaxPartsPerDay)
         {
-            var stream = new FileStream(
-                Path.Combine(Folder, FileName(_day, _part)),
-                FileMode.Append,
-                FileAccess.Write,
-                FileShare.ReadWrite | FileShare.Delete);
+            var stream = new FileStream(PartPath(_part), FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
             if (stream.Length < _options.MaxFileBytes)
             {
                 _stream = stream;
@@ -343,6 +404,7 @@ public sealed partial class RollingFileLog : ILog, IDisposable
             _part++;
         }
 
+        _part = _options.MaxPartsPerDay - 1;
         _dayFull = true;
         return false;
     }
@@ -350,7 +412,7 @@ public sealed partial class RollingFileLog : ILog, IDisposable
     private void AppendToLastPart(DateTimeOffset now)
     {
         var notice = Format(now, LogLevel.Warning, "The log reached its size limit for today; later lines today are not written to disk.", null);
-        File.AppendAllText(Path.Combine(Folder, FileName(_day, _part)), notice[0] + Environment.NewLine, _utf8);
+        File.AppendAllText(PartPath(_part), notice[0] + Environment.NewLine, _utf8);
     }
 
     private void CloseFile()
@@ -367,7 +429,8 @@ public sealed partial class RollingFileLog : ILog, IDisposable
         _stream = null;
     }
 
-    // Deletes the log files from RetentionDays ago and earlier. Files that are not the log's are left alone.
+    // Deletes the log files from RetentionDays ago and earlier, whichever process wrote them. Files that are not
+    // the log's are left alone.
     private void Prune(DateOnly today)
     {
         try
@@ -380,7 +443,7 @@ public sealed partial class RollingFileLog : ILog, IDisposable
             var oldest = today.AddDays(1 - _options.RetentionDays);
             foreach (var file in Directory.EnumerateFiles(Folder, FilePrefix + "*" + FileExtension))
             {
-                if (TryParse(file, out var day, out _) && day < oldest)
+                if (TryParse(file, out var day, out _, out _) && day < oldest)
                 {
                     try
                     {
@@ -399,39 +462,44 @@ public sealed partial class RollingFileLog : ILog, IDisposable
         }
     }
 
-    // The newest files first, until count lines are found. Each file is at most MaxFileBytes.
-    private List<string> ReadTail(int count)
+    // The last count lines of today's and yesterday's files, every process's: each process's newest files first
+    // until it has count lines, then all of them merged by time. A line takes the time of the entry it belongs to,
+    // so an exception's lines stay under their entry; equal times keep each process's own order.
+    private List<string> ReadTail(int count, DateOnly today)
     {
         if (!Directory.Exists(Folder))
         {
             return [];
         }
 
-        var files = Directory.EnumerateFiles(Folder, FilePrefix + "*" + FileExtension)
-            .Select(file => (File: file, Ok: TryParse(file, out var day, out var part), Day: day, Part: part))
-            .Where(entry => entry.Ok)
-            .OrderByDescending(entry => entry.Day)
-            .ThenByDescending(entry => entry.Part)
-            .Select(entry => entry.File);
+        var yesterday = today.AddDays(-1);
+        var writers = Directory.EnumerateFiles(Folder, FilePrefix + "*" + FileExtension)
+            .Select(file => (File: file, Ok: TryParse(file, out var day, out var processId, out var part), Day: day, ProcessId: processId, Part: part))
+            .Where(entry => entry.Ok && (entry.Day == today || entry.Day == yesterday))
+            .GroupBy(entry => entry.ProcessId)
+            .OrderBy(group => group.Key);
 
-        var tail = new List<string>();
-        foreach (var file in files)
+        var merged = new List<(long Ticks, int Writer, int Index, string Line)>();
+        var writer = 0;
+        foreach (var files in writers)
         {
-            using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            using var reader = new StreamReader(stream, _utf8);
-            var lines = new List<string>();
-            while (reader.ReadLine() is { } line)
+            var tail = Tail(files.OrderByDescending(entry => entry.Day).ThenByDescending(entry => entry.Part).Select(entry => entry.File), count);
+            var stamp = tail.Select(StampOf).FirstOrDefault(found => found is not null) ?? DateTimeOffset.MinValue;
+            for (var index = 0; index < tail.Count; index++)
             {
-                lines.Add(line);
+                stamp = StampOf(tail[index]) ?? stamp;
+                merged.Add((stamp.UtcTicks, writer, index, tail[index]));
             }
 
-            tail.InsertRange(0, lines.Skip(Math.Max(0, lines.Count - (count - tail.Count))));
-            if (tail.Count >= count)
-            {
-                break;
-            }
+            writer++;
         }
 
-        return tail;
+        return merged
+            .OrderBy(line => line.Ticks)
+            .ThenBy(line => line.Writer)
+            .ThenBy(line => line.Index)
+            .Select(line => line.Line)
+            .TakeLast(count)
+            .ToList();
     }
 }
