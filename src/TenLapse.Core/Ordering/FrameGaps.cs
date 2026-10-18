@@ -56,7 +56,9 @@ public sealed record FrameGap(
 /// above the previous number of its sequence has a gap in front of it, of the numbers in between. A number that is
 /// not higher is no gap (duplicates, a RAW and a JPEG of one shot, a second folder). A counter that wraps, 9999 to
 /// 0001, is no gap either; 9999 to 0005 is a gap of 4 (0001 to 0004). The marker goes in front of the frame whose
-/// number jumped, also when frames of other sequences sit between it and the previous frame of its own.
+/// number jumped, also when frames of other sequences sit between it and the previous frame of its own. A name made from
+/// the time the photo was taken (<c>IMG_20240101_123456</c>, <c>PXL_20240101_123456789</c>, <c>20240101_123456(1)</c>) has no
+/// frame counter, so it is not numbered: see <c>LooksLikeTimestamp</c> for the rule.
 /// </para>
 /// <para>
 /// <b>Interval.</b> For each pair of neighbours that both have a capture time, in order, the interval is an outlier when
@@ -76,6 +78,7 @@ public static class FrameGaps
     private const int NeighboursEachSide = 5;
     private const int MinimumNeighbours = 3;
     private const int MaxDigits = 18;
+    private const int MinimumTimeDigits = 6;
 
     /// <summary>The gaps in <paramref name="frames"/>, in playback order, at most one per place.</summary>
     public static ImmutableArray<FrameGap> Detect(IReadOnlyList<Frame> frames)
@@ -231,6 +234,64 @@ public static class FrameGaps
         }
     }
 
+    // A name made from the time the photo was taken has no frame counter in it: IMG_20240101_123456, Pixel's
+    // PXL_20240101_123456789, 20240101_123456 and Samsung's 20240101_123456(1) would all give a "jump" at nearly every
+    // seam. Numbering is skipped for such a name when
+    //  - it holds a date run (8 digits starting 19 or 20) followed by _ or - and a time run of 6 or more digits, or
+    //  - it holds a run of exactly 14 digits starting 19 or 20 (yyyyMMddHHmmss), or
+    //  - the counter run (the last one) has 6 or more digits and the text before it already has a digit.
+    // A short counter after a date (IMG_20240101_0041) is still a counter.
+    private static bool LooksLikeTimestamp(ReadOnlySpan<char> stem, int counterStart, int counterEnd)
+    {
+        if (counterEnd - counterStart >= MinimumTimeDigits && stem[..counterStart].IndexOfAnyInRange('0', '9') >= 0)
+        {
+            return true;
+        }
+
+        var i = 0;
+        while (i < stem.Length)
+        {
+            if (!char.IsAsciiDigit(stem[i]))
+            {
+                i++;
+                continue;
+            }
+
+            var runStart = i;
+            while (i < stem.Length && char.IsAsciiDigit(stem[i]))
+            {
+                i++;
+            }
+
+            var run = stem[runStart..i];
+            if (run.Length < 8 || !(run.StartsWith("19", StringComparison.Ordinal) || run.StartsWith("20", StringComparison.Ordinal)))
+            {
+                continue;
+            }
+
+            if (run.Length == 14)
+            {
+                return true;
+            }
+
+            if (run.Length == 8 && i < stem.Length && stem[i] is '_' or '-')
+            {
+                var timeEnd = i + 1;
+                while (timeEnd < stem.Length && char.IsAsciiDigit(stem[timeEnd]))
+                {
+                    timeEnd++;
+                }
+
+                if (timeEnd - (i + 1) >= MinimumTimeDigits)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     // "IMG_0041 (2).jpg" -> prefix "IMG_0041 (", number 2, suffix ")". The extension is not part of the key.
     private static bool TryParse(string fileName, out (string Prefix, string Suffix) key, out long number)
     {
@@ -247,7 +308,7 @@ public static class FrameGaps
             start--;
         }
 
-        if (end == 0 || end - start > MaxDigits)
+        if (end == 0 || end - start > MaxDigits || LooksLikeTimestamp(stem, start, end))
         {
             key = default;
             number = default;

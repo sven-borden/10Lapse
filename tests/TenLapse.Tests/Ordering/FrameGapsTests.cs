@@ -95,6 +95,35 @@ public static class FrameGapsTests
         Assert.Equal(2, gap.MissingFrames);
     }
 
+    [Theory]
+    [InlineData("IMG_20240101_123456.jpg", "IMG_20240101_123512.jpg", "IMG_20240101_123530.jpg")]
+    [InlineData("PXL_20240101_123456789.jpg", "PXL_20240101_123512345.jpg", "PXL_20240101_123530001.jpg")]
+    [InlineData("20240101_123456.jpg", "20240101_123512.jpg", "20240101_123530.jpg")]
+    [InlineData("VID_20240101_123456.mp4", "VID_20240101_123512.mp4", "VID_20240101_123530.mp4")]
+    [InlineData("20240101_123456(1).jpg", "20240101_123512(2).jpg", "20240101_123530(7).jpg")]
+    [InlineData("20240101123456.jpg", "20240101123512.jpg", "20240101123530.jpg")]
+    [InlineData("Screenshot 2024-01-01 123456.png", "Screenshot 2024-01-01 123512.png", "Screenshot 2024-01-01 123530.png")]
+    [InlineData("IMG-20240101-123456.jpg", "IMG-20240101-123512.jpg", "IMG-20240101-123530.jpg")]
+    public static void TimestampNamesAreNotNumbered(string first, string second, string third)
+    {
+        // The last run of digits is a time of day (or a seconds counter), not a frame counter: no gap at any seam.
+        Assert.Empty(FrameGaps.Detect(Named(first, second, third)));
+    }
+
+    [Fact]
+    public static void ACounterNextToADateIsStillNumbered()
+    {
+        // Only a time-like run turns numbering off: a short counter after a date is a counter.
+        var gap = Assert.Single(FrameGaps.Detect(Named("IMG_20240101_0041.jpg", "IMG_20240101_0045.jpg")));
+        Assert.Equal(3, gap.MissingFrames);
+
+        // And a plain 4 to 5 digit camera counter is flagged as before.
+        gap = Assert.Single(FrameGaps.Detect(Named("IMG_0041.jpg", "IMG_0045.jpg")));
+        Assert.Equal(3, gap.MissingFrames);
+        gap = Assert.Single(FrameGaps.Detect(Named("DSC12341.jpg", "DSC12345.jpg")));
+        Assert.Equal(3, gap.MissingFrames);
+    }
+
     [Fact]
     public static void AnOutlierIntervalIsAGapWithTheTypicalInterval()
     {
