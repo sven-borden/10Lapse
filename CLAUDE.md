@@ -89,6 +89,9 @@ conventions live next to the code; do not duplicate them here.
   check needs real input, skip it and say so.
 - Stop every process you started before you hand back, and never stop one
   you did not start.
+- Two agents may run at once: write logs, screenshots and test data only
+  under your own worktree or a folder named after your branch in
+  `%LOCALAPPDATA%\Temp\claude\`, never to a shared file name.
 
 ## Product invariants
 
