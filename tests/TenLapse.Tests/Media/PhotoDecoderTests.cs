@@ -244,6 +244,58 @@ public sealed class PhotoDecoderTests : IDisposable
         Assert.True(blue.B > 100 && blue.R < 100, $"cyan+magenta decoded as {blue}");
     }
 
+    public static TheoryData<string> SrgbProfiles => ["hand-built", "Windows"];
+
+    [Theory]
+    [MemberData(nameof(SrgbProfiles))]
+    public async Task AJpegWithAnSrgbProfileIsNotConverted(string which)
+    {
+        // WinRT converts any embedded profile at the stored size, before scaling: 2.8 times the decode time for
+        // nothing when the profile is sRGB, as most cameras' and phones' are.
+        Assert.SkipWhen(which == "Windows" && !File.Exists(IccProfiles.WindowsSrgbPath), "This PC has no sRGB Color Space Profile.icm.");
+        var profile = which == "Windows" ? await File.ReadAllBytesAsync(IccProfiles.WindowsSrgbPath, Token) : IccProfiles.Srgb();
+        var path = await WriteJpegWithProfileAsync("srgb.jpg", profile);
+
+        var result = await PhotoDecoder.DecodeAsync(path, PhotoDecodeOptions.Cover(new PixelSize(192, 108)), Token);
+
+        Assert.True(result.Succeeded, result.Failure?.Detail);
+        using var photo = result.Value;
+        Assert.Equal(ColourConversion.None, photo.Colour);
+        Assert.Equal(new PixelSize(192, 128), photo.Size);
+        Assert.True(IsRed(Quadrant(photo, 0)), $"top-left is {Quadrant(photo, 0)}");
+        var blue = Quadrant(photo, 3);
+        Assert.True(blue.B > 240 && blue.R < 20, $"bottom-right is {blue}");
+    }
+
+    [Fact]
+    public async Task AJpegWithAnotherProfileIsConvertedAfterScaling()
+    {
+        // Red and blue primaries swapped: what the file stores as red is blue on screen, and the other way round.
+        var path = await WriteJpegWithProfileAsync("swapped.jpg", IccProfiles.SwappedRedAndBlue());
+
+        var result = await PhotoDecoder.DecodeAsync(path, PhotoDecodeOptions.Cover(new PixelSize(192, 108)), Token);
+
+        Assert.True(result.Succeeded, result.Failure?.Detail);
+        using var photo = result.Value;
+        Assert.Equal(ColourConversion.AfterScaling, photo.Colour);
+        Assert.Equal(new PixelSize(192, 128), photo.Size);
+        var (topLeft, bottomRight) = (Quadrant(photo, 0), Quadrant(photo, 3));
+        Assert.True(topLeft.B > 200 && topLeft.R < 60 && topLeft.G < 60, $"stored red shows as {topLeft}, not blue");
+        Assert.True(IsRed(bottomRight), $"stored blue shows as {bottomRight}, not red");
+    }
+
+    [Fact]
+    public async Task APhotoWithoutAProfileIsNotConverted()
+    {
+        var path = await _files.WriteAsync("plain.jpg", BitmapEncoder.JpegEncoderId);
+
+        var result = await PhotoDecoder.DecodeAsync(path, cancellationToken: Token);
+
+        Assert.True(result.Succeeded, result.Failure?.Detail);
+        using var photo = result.Value;
+        Assert.Equal(ColourConversion.None, photo.Colour);
+    }
+
     // Stored 64x32 with red top-left. Orientation 3 turns it upside down; 6 is stored turned a quarter
     // anticlockwise, so it is shown turned clockwise (stored top-left to the top-right); 8 the other way.
     [Theory]
@@ -555,6 +607,15 @@ public sealed class PhotoDecoderTests : IDisposable
     }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    // A 600x400 JPEG, red top-left and blue elsewhere, with the profile embedded.
+    private async Task<string> WriteJpegWithProfileAsync(string name, byte[] profile)
+    {
+        var plain = await _files.WriteAsync("plain-" + name, BitmapEncoder.JpegEncoderId, width: 600, height: 400);
+        var path = _files.PathOf(name);
+        await File.WriteAllBytesAsync(path, IccProfiles.Embed(await File.ReadAllBytesAsync(plain, Token), profile), Token);
+        return path;
+    }
 
     private static Guid EncoderFor(string format) => format switch
     {

@@ -45,10 +45,11 @@ public sealed record PhotoDecodeOptions
 /// </summary>
 public sealed class DecodedPhoto : IDisposable
 {
-    internal DecodedPhoto(SoftwareBitmap pixels, PhotoInfo info)
+    internal DecodedPhoto(SoftwareBitmap pixels, PhotoInfo info, ColourConversion colour = ColourConversion.None)
     {
         Pixels = pixels;
         Info = info;
+        Colour = colour;
     }
 
     /// <summary>The pixels, <see cref="BitmapPixelFormat.Bgra8"/> with <see cref="BitmapAlphaMode.Premultiplied"/>.</summary>
@@ -59,6 +60,9 @@ public sealed class DecodedPhoto : IDisposable
 
     /// <summary>What the header said, <see cref="PhotoInfo.Size"/> being the full size before any scaling.</summary>
     public PhotoInfo Info { get; }
+
+    /// <summary>How the colour came to sRGB (for tests and the log).</summary>
+    internal ColourConversion Colour { get; }
 
     /// <inheritdoc/>
     public void Dispose() => Pixels.Dispose();
@@ -159,7 +163,8 @@ public static class PhotoDecoder
             }
 
             IRandomAccessStream stream;
-            if (length <= MaxInMemoryFileBytes)
+            var inMemory = length <= MaxInMemoryFileBytes;
+            if (inMemory)
             {
                 var (copy, failure) = await CopyToMemoryAsync(path, file, (int)length, cancellationToken).ConfigureAwait(false);
                 file.Dispose();
@@ -185,7 +190,7 @@ public static class PhotoDecoder
             {
                 var decoder = await BitmapDecoder.CreateAsync(stream).AsTask(cancellationToken).ConfigureAwait(false);
                 stage = PhotoFailures.Stage.Decode;
-                return await DecodeAsync(path, decoder, options, cancellationToken).ConfigureAwait(false);
+                return await DecodeAsync(path, decoder, inMemory ? stream : null, options, cancellationToken).ConfigureAwait(false);
             }
         }
         catch (Exception exception) when (!IsCancellation(exception, cancellationToken))
@@ -220,8 +225,9 @@ public static class PhotoDecoder
     public static int Scaled(int side, double scale) =>
         scale >= 1 ? side : Math.Max(1, (int)Math.Ceiling((side * scale) - 1e-6));
 
+    // colourSource: the photo's bytes, for reading its embedded colour; null converts as WinRT does, at the source.
     private static async Task<PhotoResult<DecodedPhoto>> DecodeAsync(
-        string path, BitmapDecoder decoder, PhotoDecodeOptions options, CancellationToken cancellationToken)
+        string path, BitmapDecoder decoder, IRandomAccessStream? colourSource, PhotoDecodeOptions options, CancellationToken cancellationToken)
     {
         var read = await ReadInfoAsync(path, decoder, cancellationToken).ConfigureAwait(false);
         if (!read.Succeeded)
@@ -251,15 +257,31 @@ public static class PhotoDecoder
             transform.ScaledHeight = (uint)height;
         }
 
+        // Colour: WinRT would convert any embedded profile at the stored size, before scaling. An sRGB profile
+        // needs nothing; another RGB one is converted after scaling, on a fraction of the pixels.
+        var colour = colourSource is null ? ColourPlan.AtSource : PhotoColour.Plan(colourSource);
         var pixels = await decoder.GetSoftwareBitmapAsync(
                 BitmapPixelFormat.Bgra8,
                 BitmapAlphaMode.Premultiplied,
                 transform,
                 ExifOrientationMode.RespectExifOrientation,
-                ColorManagementMode.ColorManageToSRgb)
+                colour.Conversion == ColourConversion.AtSource ? ColorManagementMode.ColorManageToSRgb : ColorManagementMode.DoNotColorManage)
             .AsTask(cancellationToken)
             .ConfigureAwait(false);
-        return PhotoResult<DecodedPhoto>.Success(new DecodedPhoto(pixels, info));
+        try
+        {
+            if (colour.Conversion == ColourConversion.AfterScaling)
+            {
+                PhotoColour.ConvertToSrgb(pixels, colour);
+            }
+
+            return PhotoResult<DecodedPhoto>.Success(new DecodedPhoto(pixels, info, colour.Conversion));
+        }
+        catch
+        {
+            pixels.Dispose();
+            throw;
+        }
     }
 
     private static async Task<PhotoResult<PhotoInfo>> ReadInfoAsync(string path, BitmapDecoder decoder, CancellationToken cancellationToken)
