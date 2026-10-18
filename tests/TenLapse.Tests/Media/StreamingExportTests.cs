@@ -165,6 +165,66 @@ public sealed class StreamingExportTests : IDisposable
     }
 
     [Fact]
+    public async Task CancellingJustAsTheExportCompletesNeverThrowsInTheCaller()
+    {
+        // Best effort: the caller's Cancel() lands at a different moment of the finish and clean-up in each round.
+        // The window the fix closed (between disposing _stop and the registration) is a few instructions wide,
+        // so this cannot reliably catch that regression; it checks a late cancel is harmless wherever it lands.
+        SkipWithoutH264Encoder();
+        const int Count = 4;
+        for (var round = 0; round < 6; round++)
+        {
+            using var cancellation = new CancellationTokenSource();
+            Exception? cancelFailure = null;
+            Thread? canceller = null;
+            var delay = TimeSpan.FromMilliseconds(round * 2);
+            var progress = new SynchronousProgress(taken =>
+            {
+                if (taken != Count)
+                {
+                    return;
+                }
+
+                canceller = new Thread(() =>
+                {
+                    var clock = System.Diagnostics.Stopwatch.StartNew();
+                    while (clock.Elapsed < delay)
+                    {
+                        Thread.SpinWait(20);
+                    }
+
+                    try
+                    {
+                        cancellation.Cancel();
+                    }
+                    catch (Exception exception)
+                    {
+                        cancelFailure = exception;
+                    }
+                });
+                canceller.Start();
+            });
+
+            try
+            {
+                await VideoExporter.ExportAsync(
+                    new NumberedFrames(Count, 160, 90),
+                    Path.Combine(_directory, $"race{round}.mp4"),
+                    new VideoExportSettings(160, 90, new Fraction(30, 1)),
+                    progress,
+                    cancellation.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                // The cancel won the race: fine.
+            }
+
+            canceller?.Join();
+            Assert.Null(cancelFailure);
+        }
+    }
+
+    [Fact]
     public void ReadingAMissingFileThrowsFileNotFound()
     {
         Assert.Throws<FileNotFoundException>(() => VideoFileReader.Read(Path.Combine(_directory, "missing.mp4")));
@@ -216,5 +276,11 @@ public sealed class StreamingExportTests : IDisposable
         Assert.Null(failure);
         Assert.Equal(10, result!.FrameCount);
         Assert.Equal(10, VideoFileReader.Read(path).FrameCount);
+    }
+
+    /// <summary>Reports on the thread that reports, unlike <see cref="Progress{T}"/>, which posts.</summary>
+    private sealed class SynchronousProgress(Action<int> report) : IProgress<int>
+    {
+        public void Report(int value) => report(value);
     }
 }

@@ -128,7 +128,9 @@ public static class VideoExporter
 
         public async Task<VideoExportResult> RunAsync(string outputPath, CancellationToken cancellationToken)
         {
-            using var registration = cancellationToken.Register(_stop.Cancel);
+            // Disposed in the finally before _stop: a Cancel() from the caller landing as the export completes
+            // must not reach a disposed _stop (ObjectDisposedException thrown in the caller's Cancel()).
+            var registration = cancellationToken.Register(_stop.Cancel);
             var producing = Task.CompletedTask;
             var processing = Task.CompletedTask;
             VideoEncoderInfo? encoder;
@@ -180,6 +182,9 @@ public static class VideoExporter
                 }
 
                 _device?.Dispose();
+
+                // Waits for a callback already running, so nothing calls _stop.Cancel() after this.
+                registration.Dispose();
                 _stop.Dispose();
                 _slots.Dispose();
             }
