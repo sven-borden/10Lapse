@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.UI;
 using Microsoft.UI.Composition.SystemBackdrops;
+using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
@@ -10,17 +11,31 @@ using TenLapse.Presentation.Services;
 using TenLapse.Shell;
 using TenLapse.Themes;
 using Windows.Graphics;
+using Windows.UI.ViewManagement;
 
 namespace TenLapse;
 
 /// <summary>
-/// The single application window: it hosts the <see cref="ShellView"/>, draws the shell's title bar into the
-/// window frame on Mica, colors the system caption buttons from the tokens, and keeps the window's size within
-/// the spec. The window title (taskbar, Alt+Tab) follows <see cref="ShellViewModel.Title"/>.
+/// The single application window: it hosts the <see cref="ShellView"/>, draws the shell's title bar and command
+/// bar into the window frame on Mica (both drag the window, the command bar's buttons excepted), colors the
+/// system caption buttons from the tokens, and keeps the window's size within the spec. The window title
+/// (taskbar, Alt+Tab) follows <see cref="ShellViewModel.Title"/>.
 /// </summary>
 public sealed partial class MainWindow : Window
 {
     private readonly ShellView _shell;
+
+
+    // Kept as a field: its events stop when nothing holds it.
+    private readonly UISettings _uiSettings = new();
+
+    // The scale the minimum size was last computed for, and whether it waits for the window to be restored
+    // (the invisible borders cannot be measured while maximized).
+    private double _minimumScale;
+    private bool _minimumPending;
+
+    // The command bar's controls, carved out of the drag region (physical pixels), as last set.
+    private RectInt32[] _passthrough = [];
 
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="infoBars">The InfoBars to float over the stage; the composition root hands the same queue to whoever raises them.</param>
@@ -51,9 +66,20 @@ public sealed partial class MainWindow : Window
         _shell.Loaded += OnLoaded;
         _shell.ActualThemeChanged += (_, _) => ColorCaptionButtons();
         _shell.SizeChanged += (_, _) => FitTitleBarInsets();
+        _shell.CommandBar.LayoutUpdated += (_, _) => UpdatePassthrough();
+        AppWindow.Changed += OnAppWindowChanged;
+        Activated += OnActivated;
+
+        // High contrast on or off, and the system's light / dark switch, change the system colors, and may come
+        // without a theme change the shell sees. (AccessibilitySettings.HighContrastChanged would say it more
+        // directly, but subscribing to it throws CLASS_E_CLASSNOTAVAILABLE in a desktop app.)
+        _uiSettings.ColorValuesChanged += OnColorValuesChanged;
+
         Closed += (_, _) =>
         {
             ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            AppWindow.Changed -= OnAppWindowChanged;
+            _uiSettings.ColorValuesChanged -= OnColorValuesChanged;
             _shell.Detach();
         };
     }
@@ -74,25 +100,78 @@ public sealed partial class MainWindow : Window
         _shell.Loaded -= OnLoaded;
         ColorCaptionButtons();
         FitTitleBarInsets();
+        UpdatePassthrough();
 
-        // Moving to a screen with another scale changes the insets and the minimum size in pixels.
+        // XamlRoot.Changed fires on every resize too; only a new scale changes the minimum size in pixels.
         _shell.XamlRoot.Changed += (_, _) =>
         {
             FitTitleBarInsets();
-            ApplyMinimumSize(Scale);
-            ColorCaptionButtons();
-            _shell.RefreshTheme();
+            if (Scale != _minimumScale)
+            {
+                ApplyMinimumSize(Scale);
+            }
         };
+    }
+
+    // Inactive windows dim their title (Windows 11): the title texts go to Ink Secondary.
+    private void OnActivated(object sender, WindowActivatedEventArgs args) =>
+        _shell.SetWindowActive(args.WindowActivationState != WindowActivationState.Deactivated);
+
+    // A minimum size measured while maximized waits for the window to be restored.
+    private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
+    {
+        if (_minimumPending && (args.DidPresenterChange || args.DidSizeChange) && IsRestored)
+        {
+            ApplyMinimumSize(Scale);
+        }
+    }
+
+    // Raised on a background thread.
+    private void OnColorValuesChanged(UISettings sender, object args) => DispatcherQueue.TryEnqueue(RefreshSystemColors);
+
+    // What follows the theme by hand: the caption buttons and the shell's shadows.
+    private void RefreshSystemColors()
+    {
+        ColorCaptionButtons();
+        _shell.RefreshTheme();
     }
 
     // Before the content is loaded there is no XamlRoot yet; the window's DPI says the same.
     private double Scale => _shell.XamlRoot?.RasterizationScale ?? GetDpiForWindow(Win32Interop.GetWindowFromWindowId(AppWindow.Id)) / 96.0;
+
+    private bool IsRestored => AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Restored };
 
     // The system caption buttons sit on top of the title bar; keep the content out from under them.
     private void FitTitleBarInsets()
     {
         var scale = Scale;
         _shell.SetTitleBarInsets(AppWindow.TitleBar.LeftInset / scale, AppWindow.TitleBar.RightInset / scale);
+    }
+
+    // The title bar and the command bar are one drag region (SetTitleBar); the command bar's controls take
+    // their own input. Their rectangles follow every layout pass, and are only sent when they moved.
+    private void UpdatePassthrough()
+    {
+        if (_shell.XamlRoot is null)
+        {
+            return;
+        }
+
+        var scale = Scale;
+        var rects = _shell.CommandBarControlBounds()
+            .Select(bounds => new RectInt32(
+                (int)Math.Round(bounds.X * scale),
+                (int)Math.Round(bounds.Y * scale),
+                (int)Math.Round(bounds.Width * scale),
+                (int)Math.Round(bounds.Height * scale)))
+            .ToArray();
+        if (rects.SequenceEqual(_passthrough))
+        {
+            return;
+        }
+
+        _passthrough = rects;
+        InputNonClientPointerSource.GetForWindowId(AppWindow.Id).SetRegionRects(NonClientRegionKind.Passthrough, rects);
     }
 
     // The caption buttons are drawn by the system; give them the token colors for the theme the shell shows.
@@ -146,19 +225,31 @@ public sealed partial class MainWindow : Window
         ApplyMinimumSize(scale);
     }
 
-    // PreferredMinimumWidth and Height are outer sizes in physical pixels, so they follow the scale.
+    // PreferredMinimumWidth and Height are outer sizes in physical pixels, so they follow the scale. The
+    // invisible borders are only measurable while the window is restored (maximized, the frame bounds say
+    // 16 x 16), so otherwise this waits for OnAppWindowChanged.
     private void ApplyMinimumSize(double scale)
     {
-        if (AppWindow.Presenter is OverlappedPresenter presenter)
+        if (AppWindow.Presenter is not OverlappedPresenter presenter)
         {
-            var borders = InvisibleBorders();
-            presenter.PreferredMinimumWidth = (int)Math.Ceiling(ThemeTokens.Number("MinWindowWidth") * scale) + borders.Width;
-            presenter.PreferredMinimumHeight = (int)Math.Ceiling(ThemeTokens.Number("MinWindowHeight") * scale) + borders.Height;
+            return;
         }
+
+        if (presenter.State != OverlappedPresenterState.Restored)
+        {
+            _minimumPending = true;
+            return;
+        }
+
+        var borders = InvisibleBorders();
+        presenter.PreferredMinimumWidth = (int)Math.Ceiling(ThemeTokens.Number("MinWindowWidth") * scale) + borders.Width;
+        presenter.PreferredMinimumHeight = (int)Math.Ceiling(ThemeTokens.Number("MinWindowHeight") * scale) + borders.Height;
+        _minimumScale = scale;
+        _minimumPending = false;
     }
 
     // How much wider and taller the window is than what shows of it: the resize borders Windows 11 keeps
-    // invisible (7 px left, right and bottom at 100%). Zero when DWM cannot say.
+    // invisible (7 px left, right and bottom at 100%). Zero when DWM cannot say. Restored windows only.
     private SizeInt32 InvisibleBorders()
     {
         var hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);

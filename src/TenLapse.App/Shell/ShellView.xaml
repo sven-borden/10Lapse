@@ -55,14 +55,30 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
+      <!-- An inactive window dims its title: the app name joins the project name in Ink Secondary. -->
+      <VisualStateGroup x:Name="WindowStates">
+        <VisualState x:Name="WindowActive" />
+        <VisualState x:Name="WindowInactive">
+          <VisualState.Setters>
+            <Setter Target="AppNameText.Foreground" Value="{ThemeResource InkSecondaryBrush}" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
     </VisualStateManager.VisualStateGroups>
 
     <!-- Where Mica is not available (Windows 10), the Mica token instead. -->
     <Border x:Name="MicaFallback" Grid.RowSpan="3" Visibility="Collapsed" Background="{ThemeResource MicaBrush}" />
 
     <!--
-      Title bar: the whole strip is the drag region (Window.SetTitleBar), so it holds nothing interactive. The
-      inset columns keep clear of the system caption buttons; MainWindow sizes them from AppWindow.TitleBar.
+      The drag region (Window.SetTitleBar): the title bar and the command bar, the one Mica band at the top.
+      MainWindow carves the command bar's controls out of it as passthrough rectangles and keeps them in step
+      with the layout, so empty bar space moves the window and the buttons still click.
+    -->
+    <Border x:Name="DragRegion" Grid.Row="0" Grid.RowSpan="2" />
+
+    <!--
+      Title bar: nothing interactive (it is all drag region). The inset columns keep clear of the system caption
+      buttons; MainWindow sizes them from AppWindow.TitleBar.
     -->
     <Grid x:Name="AppTitleBar" Grid.Row="0" Height="{StaticResource TitleBarHeight}">
       <Grid.ColumnDefinitions>
@@ -87,7 +103,11 @@
           Height="16"
           VerticalAlignment="Center"
           Source="ms-appx:///Assets/Square44x44Logo.targetsize-24_altform-unplated.png" />
-        <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionTextStyle}" Text="{x:Bind core:Product.Name}" />
+        <TextBlock
+          x:Name="AppNameText"
+          VerticalAlignment="Center"
+          Style="{StaticResource CaptionTextStyle}"
+          Text="{x:Bind core:Product.Name}" />
         <StackPanel
           VerticalAlignment="Center"
           Orientation="Horizontal"
