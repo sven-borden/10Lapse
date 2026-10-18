@@ -106,6 +106,50 @@ public sealed class ErrorPathTests
         Assert.True(command.CanExecute(null));
     }
 
+    [Theory]
+    [InlineData("operation")]
+    [InlineData("task")]
+    [InlineData("timeout")]
+    public async Task ACancellationTheCommandsOwnTokenDidNotAskForIsAnError(string kind)
+    {
+        // A timeout or another component's token: the user did not cancel, so it shows.
+        using var other = new CancellationTokenSource();
+        other.Cancel();
+        var command = Presenter().AsyncCommand(
+            async _ =>
+            {
+                await Task.Yield();
+                switch (kind)
+                {
+                    case "operation":
+                        other.Token.ThrowIfCancellationRequested();
+                        break;
+                    case "task":
+                        await Task.Delay(Timeout.Infinite, other.Token);
+                        break;
+                    default:
+                        using (var timeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(5)))
+                        {
+                            await Task.Delay(Timeout.Infinite, timeout.Token);
+                        }
+
+                        break;
+                }
+            },
+            "Exporting.");
+
+        await command.ExecuteAsync(null);
+
+        var bar = Assert.Single(_infoBars.Shown);
+        Assert.Equal(ProjectText.ErrorUnexpected, bar.Message);
+        Assert.Equal(ProjectText.CopyDiagnostics, bar.ActionLabel);
+        var entry = Assert.Single(_log.Entries);
+        Assert.Equal(LogLevel.Error, entry.Level);
+        Assert.IsType<UnexpectedCancellationException>(entry.Exception);
+        Assert.IsAssignableFrom<OperationCanceledException>(entry.Exception!.InnerException);
+        Assert.True(command.CanExecute(null));
+    }
+
     [Fact]
     public async Task TheGenericInfoBarsActionCopiesTheDiagnostics()
     {

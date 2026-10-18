@@ -96,14 +96,39 @@ public static class ErrorPath
     }
 
     /// <summary>
-    /// A cancellable async command (#22's export): <c>Cancel()</c> on it cancels the token, and the cancellation
-    /// shows nothing.
+    /// Like <see cref="GuardAsync(IErrorPresenter, Func{Task}, string)"/> for work that <paramref name="cancellation"/>
+    /// can stop: a cancellation counts as one (logged, nothing shown) only when that token was cancelled. An
+    /// <see cref="OperationCanceledException"/> from anything else (a timeout, another component's token) is a
+    /// failure the user did not ask for, and shows as an unexpected problem (<see cref="UnexpectedCancellationException"/>).
+    /// Never throws.
+    /// </summary>
+    public static async Task GuardCancellableAsync(this IErrorPresenter errors, Func<Task> action, string context, CancellationToken cancellation)
+    {
+        ArgumentNullException.ThrowIfNull(errors);
+        ArgumentNullException.ThrowIfNull(action);
+        try
+        {
+            await action();
+        }
+        catch (Exception exception)
+        {
+            errors.Show(
+                ErrorMessages.IsCancellation(exception) && !cancellation.IsCancellationRequested
+                    ? new UnexpectedCancellationException(exception)
+                    : exception,
+                context);
+        }
+    }
+
+    /// <summary>
+    /// A cancellable async command (#22's export): <c>Cancel()</c> on it cancels the token, and that cancellation
+    /// shows nothing. A cancellation the command's own token did not ask for is an error and shows.
     /// </summary>
     public static IAsyncRelayCommand AsyncCommand(this IErrorPresenter errors, Func<CancellationToken, Task> execute, string context, Func<bool>? canExecute = null)
     {
         ArgumentNullException.ThrowIfNull(errors);
         ArgumentNullException.ThrowIfNull(execute);
-        return new AsyncRelayCommand(token => errors.GuardAsync(() => execute(token), context), canExecute ?? Always);
+        return new AsyncRelayCommand(token => errors.GuardCancellableAsync(() => execute(token), context, token), canExecute ?? Always);
     }
 
     /// <summary>An async command with a parameter whose failures go to the error path.</summary>
@@ -123,4 +148,36 @@ public static class ErrorPath
     }
 
     private static bool Always() => true;
+}
+
+/// <summary>
+/// Work stopped with an <see cref="OperationCanceledException"/> that its own token did not ask for (a timeout,
+/// another component's token): not a cancellation by the user, so the error path shows it as an unexpected problem
+/// and logs the original exception inside it.
+/// </summary>
+public sealed class UnexpectedCancellationException : Exception
+{
+    /// <summary>Wraps the cancellation that nobody asked for.</summary>
+    public UnexpectedCancellationException(Exception cancellation)
+        : base("The work was cancelled, but its own cancellation token was not: a timeout or another component stopped it.", cancellation)
+    {
+    }
+
+    /// <summary>Creates one with no inner exception.</summary>
+    public UnexpectedCancellationException()
+        : base("The work was cancelled, but its own cancellation token was not.")
+    {
+    }
+
+    /// <summary>Creates one with a message.</summary>
+    public UnexpectedCancellationException(string message)
+        : base(message)
+    {
+    }
+
+    /// <summary>Creates one with a message and the cancellation inside it.</summary>
+    public UnexpectedCancellationException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
 }
