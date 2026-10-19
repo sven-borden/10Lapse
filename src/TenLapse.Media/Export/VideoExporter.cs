@@ -24,7 +24,8 @@ public sealed record VideoExportResult(int FrameCount, long Duration, VideoEncod
 /// <remarks>
 /// <para>
 /// At most <see cref="VideoExportSettings.DecodeThreads"/> loads run at once and at most
-/// <see cref="VideoExportSettings.DecodeAhead"/> frames are loading or loaded and not yet drawn. Each frame is drawn
+/// <see cref="VideoExportSettings.DecodeAhead"/> frames are loading or loaded and not yet drawn (by default
+/// fewer on an integrated GPU or a PC with 8 GB of RAM or less, <see cref="VideoExportSettings.DecodeFor"/>). Each frame is drawn
 /// into a new output-sized <c>CanvasRenderTarget</c>, and at most <see cref="VideoExportSettings.RenderTargets"/>
 /// of them wait for the encoder at once. A target is never drawn twice: Media Foundation may still read a surface
 /// after it has taken the sample, so the pipeline drops its own reference once the encoder has the frame and Media
@@ -115,15 +116,16 @@ public static class VideoExporter
         private readonly IProgress<int>? _progress;
         private readonly VideoEncoderFactory _createEncoder;
         private readonly PixelSize _output;
-        private readonly Channel<PendingFrame> _decoded;
+        // Sized once the device says how much memory there is (DecodeFor): set in RunAsync before the stages start.
+        private Channel<PendingFrame> _decoded = null!;
 
         // Loads started and not yet owned by the drawing stage: awaited and disposed before the export returns.
         private readonly ConcurrentDictionary<Task<CanvasBitmap>, byte> _loads = new();
 
         // Never disposed: a load's continuation may release _decoding after the run (SemaphoreSlim needs no disposal
         // unless its wait handle was used).
-        private readonly SemaphoreSlim _ahead;
-        private readonly SemaphoreSlim _decoding;
+        private SemaphoreSlim _ahead = null!;
+        private SemaphoreSlim _decoding = null!;
         private readonly SemaphoreSlim _slots;
         private readonly ConcurrentDictionary<CanvasRenderTarget, byte> _live = new();
         private readonly Channel<RenderedFrame> _rendered;
@@ -146,15 +148,6 @@ public static class VideoExporter
             _progress = progress;
             _createEncoder = createEncoder;
             _output = new PixelSize(settings.Width, settings.Height);
-            var ahead = Math.Max(1, settings.DecodeAhead);
-            _ahead = new SemaphoreSlim(ahead, ahead);
-            var threads = Math.Clamp(settings.DecodeThreads, 1, ahead);
-            _decoding = new SemaphoreSlim(threads, threads);
-            _decoded = Channel.CreateBounded<PendingFrame>(new BoundedChannelOptions(ahead)
-            {
-                SingleReader = true,
-                SingleWriter = true,
-            });
             var slots = Math.Max(1, settings.RenderTargets);
             _slots = new SemaphoreSlim(slots, slots);
             _rendered = Channel.CreateBounded<RenderedFrame>(new BoundedChannelOptions(slots)
@@ -178,6 +171,7 @@ public static class VideoExporter
             try
             {
                 _device = VideoDevice.Create();
+                SizeDecoding(VideoExportSettings.IsTightMemory(_device.HasUnifiedMemory, GC.GetGCMemoryInfo().TotalAvailableMemoryBytes));
                 void StartPipeline()
                 {
                     producing = Task.Run(ProduceAsync);
@@ -235,6 +229,19 @@ public static class VideoExporter
 
             var taken = Volatile.Read(ref _framesTaken);
             return new VideoExportResult(taken, FrameTiming.Duration(taken, Rate), encoder);
+        }
+
+        // How many frames may be decoding and decoded at once: fewer where the decoded textures share system memory.
+        private void SizeDecoding(bool tightMemory)
+        {
+            var (ahead, threads) = _settings.DecodeFor(tightMemory);
+            _ahead = new SemaphoreSlim(ahead, ahead);
+            _decoding = new SemaphoreSlim(threads, threads);
+            _decoded = Channel.CreateBounded<PendingFrame>(new BoundedChannelOptions(ahead)
+            {
+                SingleReader = true,
+                SingleWriter = true,
+            });
         }
 
         // Runs on the thread pool (see ExportAsync); every encoder call runs on its own pool thread, timed (GuardAsync).

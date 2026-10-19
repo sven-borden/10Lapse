@@ -95,8 +95,8 @@ static async Task<int> EncodeAsync(Options options)
             var other => throw new ArgumentException($"--format must be h264 or hevc, not {other}."),
         },
         RenderTargets = options.Int("targets", 4),
-        DecodeAhead = options.Int("decode-ahead", new VideoExportSettings(2, 2, rate).DecodeAhead),
-        DecodeThreads = options.Int("decode-threads", new VideoExportSettings(2, 2, rate).DecodeThreads),
+        DecodeAhead = options.Flag("decode-ahead") ? options.Int("decode-ahead", 0) : null,
+        DecodeThreads = options.Flag("decode-threads") ? options.Int("decode-threads", 0) : null,
         Fit = Fit(options),
     };
     const string stage = "IMFSinkWriter";
@@ -109,8 +109,8 @@ static async Task<int> EncodeAsync(Options options)
     };
 
     Console.WriteLine($"encode: {stage}, {settings.Format}, {mode}, {frames} frames, {sourceWidth}x{sourceHeight} -> {width}x{height} at {rate} fps, " +
-        $"hardware {(settings.HardwareAcceleration ? "allowed" : "off")}, {settings.Fit}, {settings.RenderTargets} targets, decode ahead {settings.DecodeAhead}, " +
-        $"{settings.DecodeThreads} decode threads, " +
+        $"hardware {(settings.HardwareAcceleration ? "allowed" : "off")}, {settings.Fit}, {settings.RenderTargets} targets, decode ahead {settings.DecodeAhead?.ToString(CultureInfo.InvariantCulture) ?? "auto"}, " +
+        $"{settings.DecodeThreads?.ToString(CultureInfo.InvariantCulture) ?? "auto"} decode threads, " +
         $"{settings.EffectiveBitrate / 1e6:0.0} Mbit/s");
     var encoders = H264Encoders.Find();
     Console.WriteLine($"encoders: {string.Join("; ", encoders.Select(e => $"{e.Name} ({(e.IsHardware ? "hw" : "sw")})"))}");

@@ -23,11 +23,18 @@ namespace TenLapse.Media.Export;
 /// </remarks>
 internal sealed class VideoDevice : IDisposable
 {
-    private VideoDevice(ID3D11Device device, CanvasDevice canvas)
+    private VideoDevice(ID3D11Device device, CanvasDevice canvas, bool unifiedMemory)
     {
         Direct3D = device;
         Canvas = canvas;
+        HasUnifiedMemory = unifiedMemory;
     }
+
+    /// <summary>
+    /// True when the adapter's memory is system memory (an integrated GPU: D3D11's UnifiedMemoryArchitecture), so
+    /// every texture of the export counts against the PC's RAM. False when it cannot tell.
+    /// </summary>
+    public bool HasUnifiedMemory { get; }
 
     /// <summary>The Direct3D 11 device, for <c>IMFDXGIDeviceManager.ResetDevice</c>.</summary>
     public ID3D11Device Direct3D { get; }
@@ -84,7 +91,7 @@ internal sealed class VideoDevice : IDisposable
                 // Win2D keeps its own reference. Disposed here, or the wrapper holds the whole device (about 90 MB
                 // private and 160 handles for a 640x360 export, 300 MB and 230 MB of video memory at 4K) until a GC.
                 using var direct3DDevice = WinRT.MarshalInterface<IDirect3DDevice>.FromAbi(pointer);
-                return new VideoDevice(device, CanvasDevice.CreateFromDirect3D11Device(direct3DDevice));
+                return new VideoDevice(device, CanvasDevice.CreateFromDirect3D11Device(direct3DDevice), UnifiedMemory(device));
             }
             finally
             {
@@ -96,6 +103,21 @@ internal sealed class VideoDevice : IDisposable
         {
             Marshal.ReleaseComObject(device);
             throw;
+        }
+    }
+
+    private static unsafe bool UnifiedMemory(ID3D11Device device)
+    {
+        try
+        {
+            D3D11_FEATURE_DATA_D3D11_OPTIONS2 options = default;
+            device.CheckFeatureSupport(D3D11_FEATURE.D3D11_FEATURE_D3D11_OPTIONS2, &options, (uint)sizeof(D3D11_FEATURE_DATA_D3D11_OPTIONS2));
+            return options.UnifiedMemoryArchitecture;
+        }
+        catch (Exception exception) when (exception is COMException or ArgumentException)
+        {
+            // A runtime without the query (E_INVALIDARG): assume a dedicated GPU, as before the query existed.
+            return false;
         }
     }
 
