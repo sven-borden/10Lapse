@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using TenLapse.Core.Preview;
@@ -28,7 +29,8 @@ public sealed class FrameImageCacheTests
         var large = proxy.Succeed();
 
         Eventually(() => Quality(cache, frames[50]) == FrameImageQuality.Proxy);
-        Assert.True(small!.IsDisposed);
+        // The replaced small image is freed after the cache's lock is released, so it can trail the new quality.
+        Eventually(() => small!.IsDisposed);
         Assert.False(large!.IsDisposed);
 
         // Then the neighbours, small first.
@@ -189,22 +191,22 @@ public sealed class FrameImageCacheTests
     {
         var source = new FakeFrameImageSource();
         using var cache = new FrameImageCache<FakeImage>(source, _one with { RetryFailedAfter = TimeSpan.Zero });
-        var told = new List<FrameLoadFailedEventArgs>();
-        cache.FrameFailed += (_, e) => told.Add(e);
+        var told = new ConcurrentQueue<FrameLoadFailedEventArgs>();
+        cache.FrameFailed += (_, e) => told.Enqueue(e);
         var frames = Frames("a", 3);
         cache.SetFrames(frames);
 
         source.Next().Fail(SkipReason.FileNotFound);
         Eventually(() => told.Count == 1);
-        Assert.Equal(SkipReason.FileNotFound, told[0].Failure.File.Reason);
+        Assert.Equal(SkipReason.FileNotFound, told.First().Failure.File.Reason);
 
         // Tried again (the photo may be back); failing again tells nothing new.
         source.Next().Fail(SkipReason.FileNotFound);
         var retry = source.Next();
         Assert.Equal(frames[0].Id, retry.Frame.Id);
-        Assert.Single(told);
         retry.Succeed();
         Eventually(() => Quality(cache, frames[0]) != FrameImageQuality.None);
+        Assert.Single(told);
         Assert.Null(cache.FailureOf(frames[0].Id));
     }
 
@@ -218,6 +220,8 @@ public sealed class FrameImageCacheTests
 
         source.Next().Fail(SkipReason.DecodeFailed);
 
+        // The cache records the failure on its own continuation: wait for it, then check nothing retries inside the window.
+        Eventually(() => cache.FailureOf(frames[0].Id) is not null);
         Assert.True(source.Quiet());
         Assert.Equal(SkipReason.DecodeFailed, cache.FailureOf(frames[0].Id)!.File.Reason);
     }
@@ -227,8 +231,8 @@ public sealed class FrameImageCacheTests
     {
         var source = new FakeFrameImageSource();
         using var cache = new FrameImageCache<FakeImage>(source, _one with { BuildProxiesInBackground = true });
-        var failures = new List<Exception>();
-        cache.CacheFailed += (_, e) => failures.Add(e.Exception);
+        var failures = new ConcurrentQueue<Exception>();
+        cache.CacheFailed += (_, e) => failures.Enqueue(e.Exception);
         var frames = Frames("a", 3);
         cache.SetFrames(frames);
         var first = source.Next();
@@ -252,6 +256,9 @@ public sealed class FrameImageCacheTests
         }
 
         Eventually(() => cache.ProxyProgress == (3, 3));
+
+        // The event is raised after the cache's lock is released, so it can trail the progress.
+        Eventually(() => !failures.IsEmpty);
         Assert.True(source.Quiet());
         Assert.Single(failures);
         Assert.Single(builds, call => call.Frame.Id == frames[1].Id);
@@ -262,17 +269,20 @@ public sealed class FrameImageCacheTests
     {
         var source = new FakeFrameImageSource();
         using var cache = new FrameImageCache<FakeImage>(source, _one);
-        var unexpected = new List<Exception>();
+        var unexpected = new ConcurrentQueue<Exception>();
         var unreadable = 0;
-        cache.UnexpectedFailure += (_, e) => unexpected.Add(e.Exception);
-        cache.FrameFailed += (_, _) => unreadable++;
+        cache.UnexpectedFailure += (_, e) => unexpected.Enqueue(e.Exception);
+        cache.FrameFailed += (_, _) => Interlocked.Increment(ref unreadable);
         var frames = Frames("a", 2);
         cache.SetFrames(frames);
 
         source.Next().Throw(new InvalidOperationException("The device is gone."));
 
+        // The event is raised before the cache records the attempt, so wait for the cache to go quiet (it has no
+        // signal of its own for that) and only then check that nothing was recorded as unreadable.
         Eventually(() => unexpected.Count == 1);
-        Assert.Equal(0, unreadable);
+        Assert.True(source.Quiet());
+        Assert.Equal(0, Volatile.Read(ref unreadable));
 
         // No placeholder: the photo may be fine. The render thread keeps the picture it had.
         Assert.Null(cache.FailureOf(frames[0].Id));
@@ -339,6 +349,7 @@ public sealed class FrameImageCacheTests
 
         Eventually(() => Quality(cache, frames[10]) == FrameImageQuality.Proxy);
         Eventually(() => cache.IsPassStopped);
+        Eventually(() => Volatile.Read(ref told) >= 1);
         Assert.True(source.Quiet(300));
 
         var builds = source.All.Count(call => call.Build);

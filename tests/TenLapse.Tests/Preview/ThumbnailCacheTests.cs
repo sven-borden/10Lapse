@@ -138,7 +138,9 @@ public sealed class ThumbnailCacheTests
         }
 
         Assert.True(cache.Count <= 5);
-        Assert.True(source.Disposed >= 95, $"{source.Disposed} disposed");
+
+        // Evicted images are freed after the cache's lock is released, so the last ones can trail the last load.
+        await WaitAsync(() => source.Disposed >= 95);
     }
 
     [Fact]
@@ -170,6 +172,9 @@ public sealed class ThumbnailCacheTests
 
         cache.Want([frame], _small);
         await WaitAsync(() => cache.FailureOf(frame.Id) is not null);
+
+        // The event is raised after the cache's lock is released, so it can trail the recorded failure.
+        await WaitAsync(() => !failures.IsEmpty);
         cache.Want([frame], _small);
         cache.Want([frame], ThumbnailSize.For(64, 1));
         await Task.Delay(100, TestContext.Current.CancellationToken);
@@ -261,6 +266,12 @@ public sealed class ThumbnailCacheTests
         await WaitAsync(() => OriginOf(cache, frames[1]) == ThumbnailOrigin.Proxy);
         Assert.Equal(ThumbnailOrigin.Embedded, OriginOf(cache, frames[0]));
         Assert.Equal(3, source.Started.Count);
+
+        // The replaced picture is freed after the cache's lock is released, so it can trail the new one.
+        await WaitAsync(() => source.Disposed >= 1);
+
+        // A trailing second disposal would be a bug: give it a short window to show before "exactly one" is claimed.
+        await Task.Delay(100, TestContext.Current.CancellationToken);
         Assert.Equal(1, source.Disposed);
     }
 
