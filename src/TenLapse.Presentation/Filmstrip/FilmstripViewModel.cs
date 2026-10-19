@@ -551,6 +551,9 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
         ApplyPending(0);
     }
 
+    /// <summary>True while an export runs (<see cref="SetPending"/> until <see cref="ClearPending"/>): the strip keeps the playhead in view.</summary>
+    public bool IsExporting => _exporting is not null;
+
     /// <summary>The export ended (done, failed or cancelled): no thumbnail is dimmed.</summary>
     public void ClearPending()
     {

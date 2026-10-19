@@ -159,6 +159,11 @@ public sealed class ExportViewModelTests
         Assert.Equal(["started"], app.Lifecycle);
         Assert.Equal(["Exporting Harbor sunset.mp4."], app.Announced);
         Assert.All(app.On(() => app.Strip.Items.ToList()), item => Assert.True(item.IsPending));
+        Assert.True(app.On(() => app.Strip.IsExporting));
+
+        app.Exporter.Finish(app.Video());
+        app.Settle();
+        Assert.False(app.On(() => app.Strip.IsExporting));
     }
 
     [Fact]
