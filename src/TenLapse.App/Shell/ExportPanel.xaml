@@ -108,10 +108,12 @@
                 Margin="0,0,0,8"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
+                MaxLines="2"
                 Style="{StaticResource CaptionSecondaryTextStyle}"
                 Text="{x:Bind ViewModel.TimeLeftText, Mode=OneWay}"
                 TextAlignment="Right"
-                TextTrimming="CharacterEllipsis" />
+                TextTrimming="CharacterEllipsis"
+                TextWrapping="WrapWholeWords" />
             </Grid>
             <!-- A tab stop, so focus lands here as the export starts and Narrator reads "Export progress, 46". -->
             <ProgressBar

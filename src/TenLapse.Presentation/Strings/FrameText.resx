@@ -32,7 +32,7 @@
   </data>
   <data name="ShapeMatch" xml:space="preserve">
     <value>Match</value>
-    <comment>The first shape, as the segment shows it: the shape of the photos themselves.</comment>
+    <comment>The first shape, as the segment shows it: the shape of the photos themselves. Keep it to about six letters: six equal segments share the 280 px row, and a longer word ends in an ellipsis (its screen reader name is ShapeMatchName).</comment>
   </data>
   <data name="ShapeMatchName" xml:space="preserve">
     <value>Match photos</value>
