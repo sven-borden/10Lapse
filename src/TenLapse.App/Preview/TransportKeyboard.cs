@@ -12,7 +12,8 @@ namespace TenLapse.Preview;
 /// <summary>
 /// The transport's keys on the window (#19): the shell hands it every key no control handled, and it asks
 /// <see cref="TransportKeys"/> what to do, so a key typed into a text box, or an arrow a list or a slider uses, stays
-/// where it was. The rules are tested in Presentation; this only reads WinUI's key and focus.
+/// where it was. The rules (which control keeps which keys, Space not repeating) are tested in Presentation; this only
+/// reads WinUI's key, its repeat flag and the focused control's type.
 /// </summary>
 internal static class TransportKeyboard
 {
@@ -40,21 +41,35 @@ internal static class TransportKeyboard
 
         var shift = IsDown(VirtualKey.Shift);
         var other = IsDown(VirtualKey.Control) || IsDown(VirtualKey.Menu) || IsDown(VirtualKey.LeftWindows) || IsDown(VirtualKey.RightWindows);
-        var focus = root is null ? KeyFocus.Free : Classify(FocusManager.GetFocusedElement(root));
-        var action = TransportKeys.Resolve(key, shift, other, focus);
+        var focus = root is null ? KeyFocus.Free : TransportKeys.Classify(Describe(FocusManager.GetFocusedElement(root)));
+        var action = TransportKeys.Resolve(key, shift, other, focus, repeat: e.KeyStatus.WasKeyDown);
         if (action != TransportAction.None && player.Handle(action))
         {
             e.Handled = true;
         }
     }
 
-    /// <summary>What kind of control has the focus.</summary>
-    internal static KeyFocus Classify(object? focused) => focused switch
+    // What kind of control has the focus; the order matters (an editable ComboBox before ComboBox, ComboBox, ListBox
+    // and the lists before Selector, their base).
+    private static FocusedControl Describe(object? focused) => focused switch
     {
-        TextBox or PasswordBox or RichEditBox or AutoSuggestBox or NumberBox => KeyFocus.TextInput,
-        ComboBox { IsEditable: true } => KeyFocus.TextInput,
-        RangeBase or ListViewBase or ListBox or Selector or RadioButton or RadioButtons or ToggleSwitch or ScrollViewer or MenuFlyoutItemBase => KeyFocus.ArrowControl,
-        _ => KeyFocus.Free,
+        TextBox => FocusedControl.TextBox,
+        PasswordBox => FocusedControl.PasswordBox,
+        RichEditBox => FocusedControl.RichEditBox,
+        AutoSuggestBox => FocusedControl.AutoSuggestBox,
+        NumberBox => FocusedControl.NumberBox,
+        ComboBox { IsEditable: true } => FocusedControl.EditableComboBox,
+        ComboBox => FocusedControl.ComboBox,
+        RangeBase => FocusedControl.RangeBase,
+        ListViewBase => FocusedControl.ListViewBase,
+        ListBox => FocusedControl.ListBox,
+        Selector => FocusedControl.Selector,
+        RadioButton => FocusedControl.RadioButton,
+        RadioButtons => FocusedControl.RadioButtons,
+        ToggleSwitch => FocusedControl.ToggleSwitch,
+        ScrollViewer => FocusedControl.ScrollViewer,
+        MenuFlyoutItemBase => FocusedControl.MenuItem,
+        _ => FocusedControl.Other,
     };
 
     private static bool IsDown(VirtualKey key) =>

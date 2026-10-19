@@ -37,6 +37,80 @@ public sealed class TransportTextTests
     }
 
     [Theory]
+    [InlineData(TransportKey.Space, KeyFocus.Free, TransportAction.None)]
+    [InlineData(TransportKey.Space, KeyFocus.ArrowControl, TransportAction.None)]
+    [InlineData(TransportKey.Left, KeyFocus.Free, TransportAction.StepBack)]
+    [InlineData(TransportKey.Right, KeyFocus.Free, TransportAction.StepForward)]
+    [InlineData(TransportKey.End, KeyFocus.Free, TransportAction.Last)]
+    public void AHeldSpaceDoesNotRepeatButTheArrowsDo(TransportKey key, KeyFocus focus, TransportAction expected)
+    {
+        Assert.Equal(expected, TransportKeys.Resolve(key, shift: false, otherModifier: false, focus, repeat: true));
+    }
+
+    [Theory]
+    [InlineData(FocusedControl.Other, KeyFocus.Free)]
+    [InlineData(FocusedControl.TextBox, KeyFocus.TextInput)]
+    [InlineData(FocusedControl.PasswordBox, KeyFocus.TextInput)]
+    [InlineData(FocusedControl.RichEditBox, KeyFocus.TextInput)]
+    [InlineData(FocusedControl.AutoSuggestBox, KeyFocus.TextInput)]
+    [InlineData(FocusedControl.NumberBox, KeyFocus.TextInput)]
+    [InlineData(FocusedControl.EditableComboBox, KeyFocus.TextInput)]
+    [InlineData(FocusedControl.ComboBox, KeyFocus.ArrowControl)]
+    [InlineData(FocusedControl.RangeBase, KeyFocus.ArrowControl)]
+    [InlineData(FocusedControl.ListViewBase, KeyFocus.ArrowControl)]
+    [InlineData(FocusedControl.ListBox, KeyFocus.ArrowControl)]
+    [InlineData(FocusedControl.Selector, KeyFocus.ArrowControl)]
+    [InlineData(FocusedControl.RadioButton, KeyFocus.ArrowControl)]
+    [InlineData(FocusedControl.RadioButtons, KeyFocus.ArrowControl)]
+    [InlineData(FocusedControl.ToggleSwitch, KeyFocus.ArrowControl)]
+    [InlineData(FocusedControl.ScrollViewer, KeyFocus.ArrowControl)]
+    [InlineData(FocusedControl.MenuItem, KeyFocus.ArrowControl)]
+    public void EachFocusedControlKeepsTheKeysItUses(FocusedControl control, KeyFocus expected)
+    {
+        Assert.Equal(expected, TransportKeys.Classify(control));
+    }
+
+    [Fact]
+    public void EveryKindOfFocusedControlIsClassified()
+    {
+        // A new kind added without a rule would fall to Free and lose its arrows to the transport.
+        var free = Enum.GetValues<FocusedControl>().Where(control => TransportKeys.Classify(control) == KeyFocus.Free);
+        Assert.Equal([FocusedControl.Other], free);
+    }
+
+    [Theory]
+    // A 16:9 video in a wider stage: full height, centred.
+    [InlineData(1000, 400, 1920, 1080, 144, 0, 711, 400)]
+    // In a taller stage: full width, centred.
+    [InlineData(800, 900, 1920, 1080, 0, 225, 800, 450)]
+    // A portrait video.
+    [InlineData(900, 600, 1080, 1920, 281, 0, 338, 600)]
+    // Odd sizes land on whole DIPs.
+    [InlineData(1001, 333, 1280, 720, 204, 0, 592, 333)]
+    public void TheGateIsAsLargeAsFitsAtTheVideosShapeCentredOnWholeDips(double width, double height, int videoWidth, int videoHeight, double x, double y, double gateWidth, double gateHeight)
+    {
+        var gate = PreviewLayout.Gate(width, height, new PixelSize(videoWidth, videoHeight));
+
+        Assert.Equal(new StageRect(x, y, gateWidth, gateHeight), gate);
+        Assert.False(gate.IsEmpty);
+    }
+
+    [Theory]
+    [InlineData(0, 400, 1920, 1080)]
+    [InlineData(600, -1, 1920, 1080)]
+    [InlineData(double.NaN, 400, 1920, 1080)]
+    public void WithoutRoomThereIsNoGate(double width, double height, int videoWidth, int videoHeight)
+    {
+        Assert.True(PreviewLayout.Gate(width, height, new PixelSize(videoWidth, videoHeight)).IsEmpty);
+    }
+
+    [Fact]
+    public void WithoutAVideoSizeThereIsNoGate()
+    {
+        Assert.True(PreviewLayout.Gate(600, 400, default).IsEmpty);
+    }
+
+    [Theory]
     [InlineData(312, 742, "0312 / 0742", "Frame 312 of 742")]
     [InlineData(1, 1, "0001 / 0001", "Frame 1 of 1")]
     [InlineData(7, 12_345, "00007 / 12345", "Frame 7 of 12345")]
