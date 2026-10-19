@@ -80,6 +80,13 @@ internal readonly record struct ExifTimeTags(
             return null;
         }
 
+        // An IFD0 offset past the end is a damaged header; IFD0 almost always follows it directly, so try there, as
+        // MetadataExtractor did.
+        if (ifd0 >= tiff.Length - 1)
+        {
+            ifd0 = 8;
+        }
+
         long exifIfd = ifd0;
         if (!firstIfdIsExif)
         {

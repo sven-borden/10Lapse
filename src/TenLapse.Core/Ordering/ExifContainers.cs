@@ -389,8 +389,13 @@ internal static class ExifContainers
                 return null;
             }
 
+            // Every extent must be there before anything is copied, so a damaged length never sizes an allocation.
             extents[i] = (baseOffset + offset, length);
             total += length;
+            if (!source.Contains((long)extents[i].Offset, (long)length))
+            {
+                return null;
+            }
         }
 
         ByteWindow? item;
