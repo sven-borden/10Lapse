@@ -38,7 +38,7 @@ internal static class DebugExport
         timer.Tick += (sender, _) => log.RunLogged(
             () =>
             {
-                if (!export.ShowsExportButton || shell.CurrentProject.FrameCount < wanted)
+                if (!export.CanStartExport || shell.CurrentProject.FrameCount < wanted)
                 {
                     return;
                 }

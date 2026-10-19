@@ -16,6 +16,9 @@ public static class ExportText
     /// <summary>The amber button in the command bar (Ctrl+E).</summary>
     public static string ExportVideo => "Export video";
 
+    /// <summary>The same button, dimmed, while an export runs.</summary>
+    public static string ExportingButton => "Exporting…";
+
     // ---- The export panel ----
 
     /// <summary>The caption over the file name while the export runs.</summary>
@@ -120,6 +123,12 @@ public static class ExportText
 
     /// <summary>Export tried while photos are still being added.</summary>
     public static string ImportStillRunning => "Photos are still being added. Export once they're all in.";
+
+    /// <summary>The Save dialog was answered, but the project, its output or the screen changed while it was open.</summary>
+    public static string ChangedDuringDialog => "The export didn't start because the project or its output changed while the Save dialog was open. Choose Export video again.";
+
+    /// <summary>The finished video saved, but the preview can't play it (a codec Windows lacks, say).</summary>
+    public static string PremiereCantPlay => "The video was saved, but 10Lapse couldn't play it here. Open it with Show in folder to check it.";
 
     /// <summary>The question when the window closes during an export.</summary>
     public static string CloseTitle => "Stop the export and close?";

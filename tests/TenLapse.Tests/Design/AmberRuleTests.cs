@@ -23,7 +23,7 @@ public sealed partial class AmberRuleTests
         // The Export video slot in the command bar (#24).
         ["src/TenLapse.App/Shell/ShellView.xaml"] = 1,
 
-        // #24: Play on the finished state; the Export button is absent while it shows.
+        // #24: Play on the finished state; the Export button stays beside it, disabled and dimmed (the canvas).
         ["src/TenLapse.App/Shell/ExportPanel.xaml"] = 1,
 
         // #29: Choose folder on the first-launch drop zone, which has no Export button.

@@ -147,7 +147,9 @@ public sealed class ExportViewModelTests
         app.StartExport();
 
         Assert.Equal(ExportPanelState.Exporting, app.On(() => app.Export.State));
-        Assert.False(app.On(() => app.Export.ShowsExportButton));
+        Assert.True(app.On(() => app.Export.ShowsExportButton));
+        Assert.False(app.On(() => app.Export.CanStartExport));
+        Assert.Equal("Exporting…", app.On(() => app.Export.ExportButtonText));
         Assert.False(app.On(() => app.Shell.Edits.IsOpen));
         Assert.Equal("Harbor sunset.mp4", app.On(() => app.Export.FileName));
         Assert.Equal("0%", app.On(() => app.Export.PercentText));
@@ -214,7 +216,42 @@ public sealed class ExportViewModelTests
         Assert.Equal([app.Picker.Answer!], app.Reveal.Shown);
         app.On(() => app.Export.BackToEditingCommand.Execute(null));
         Assert.Equal(ExportPanelState.Editing, app.On(() => app.Export.State));
+        Assert.True(app.On(() => app.Export.CanStartExport));
+    }
+
+    [Fact]
+    public void TheFinishedStateKeepsExportDimmedAndCtrlEDoesNothingThere()
+    {
+        using var app = new ExportHarness(capabilities: _everything);
+        app.StartExport();
+        app.Exporter.Finish(app.Video());
+        app.Settle();
+
         Assert.True(app.On(() => app.Export.ShowsExportButton));
+        Assert.False(app.On(() => app.Export.CanStartExport));
+        Assert.Equal(ExportText.ExportVideo, app.On(() => app.Export.ExportButtonText));
+
+        // Ctrl+E runs the same command: nothing happens, no dialog, the finished state stays.
+        app.StartExport();
+
+        Assert.Single(app.Picker.Asked);
+        Assert.Single(app.Exporter.Calls);
+        Assert.Equal(ExportPanelState.Finished, app.On(() => app.Export.State));
+    }
+
+    [Fact]
+    public void AnOutputLostWhileTheSaveDialogIsOpenStartsNothingAndSaysSo()
+    {
+        using var app = new ExportHarness(capabilities: _everything);
+
+        // The probe's answer arrives while the dialog is open: this PC can export nothing.
+        app.Picker.WhileOpen = () => app.Output.SetCapabilities(new FakeOutputCapabilities { Max = null });
+        app.StartExport();
+
+        Assert.Empty(app.Exporter.Calls);
+        Assert.Equal(ExportPanelState.Editing, app.On(() => app.Export.State));
+        var bar = Assert.Single(app.InfoBars.Shown);
+        Assert.Equal((InfoBarSeverity.Caution, ExportText.ChangedDuringDialog), (bar.Severity, bar.Message));
     }
 
     [Fact]

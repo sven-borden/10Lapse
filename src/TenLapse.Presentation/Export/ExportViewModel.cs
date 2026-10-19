@@ -32,7 +32,8 @@ public enum ExportPanelState
 /// <b>What is exported.</b> The project's snapshot when the export starts, with the Output panel's
 /// <see cref="OutputPanelViewModel.EffectiveOutput"/> in place of the stored preference
 /// (<see cref="ProjectSnapshot.WithOutput"/>), so the video has the resolution, codec, quality and size the panel shows.
-/// Export is offered only with frames and <see cref="OutputPanelViewModel.CanExport"/> (absent otherwise, never disabled).
+/// The Export button shows only with frames and <see cref="OutputPanelViewModel.CanExport"/> (absent otherwise); while the
+/// export panel or the finished state shows it stays, dimmed and disabled, as the canvas has it.
 /// </para>
 /// <para>
 /// <b>While it runs</b> the project holds still (<see cref="ShellViewModel.Edits"/> is closed): a removal, a move, an
@@ -162,7 +163,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
 
     /// <summary>What the inspector column shows.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEditing), nameof(IsExporting), nameof(IsFinished), nameof(ShowsExportButton))]
+    [NotifyPropertyChangedFor(nameof(IsEditing), nameof(IsExporting), nameof(IsFinished), nameof(CanStartExport), nameof(ExportButtonText))]
     public partial ExportPanelState State { get; private set; }
 
     /// <summary>True while the inspector's sections show.</summary>
@@ -175,11 +176,17 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     public bool IsFinished => State == ExportPanelState.Finished;
 
     /// <summary>
-    /// True when the Export button shows: the inspector is up, the project has frames and the Output panel has an output this
-    /// PC can export. Otherwise the button is absent, not disabled (the finished state's Play is then the screen's one
-    /// accent button).
+    /// True when the Export button shows: the project has frames and the Output panel has an output this PC can export.
+    /// Without frames (the first-launch screen, #29) it is absent. While the export panel or the finished state shows it
+    /// stays, dimmed and disabled (<see cref="CanStartExport"/>), as the canvas has it.
     /// </summary>
-    public bool ShowsExportButton => IsEditing && _shell.CurrentProject.HasFrames && _output.CanExport;
+    public bool ShowsExportButton => _shell.CurrentProject.HasFrames && _output.CanExport;
+
+    /// <summary>True when Export video (and Ctrl+E) can start an export: the button shows and the inspector is up.</summary>
+    public bool CanStartExport => IsEditing && ShowsExportButton;
+
+    /// <summary>The Export button's label: "Exporting…" while an export runs, "Export video" otherwise (the canvas's <c>exportLabel</c>).</summary>
+    public string ExportButtonText => IsExporting ? ExportText.ExportingButton : ExportText.ExportVideo;
 
     /// <summary>The video's file name ("Harbor sunset.mp4") while it is written.</summary>
     [ObservableProperty]
@@ -334,7 +341,8 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
 
     private async Task ExportAsync(CancellationToken cancellationToken)
     {
-        if (_disposed || IsExporting || _shell.IsSettingsOpen)
+        // Only from the inspector: Ctrl+E on the export panel or the finished state does nothing, as the dimmed button.
+        if (_disposed || !CanStartExport || _shell.IsSettingsOpen)
         {
             return;
         }
@@ -345,17 +353,6 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
             return;
         }
 
-        // Ctrl+E on the finished state starts the next export: the finished video is let go of first, so it can be replaced.
-        if (IsFinished)
-        {
-            BackToEditing();
-        }
-
-        if (!ShowsExportButton)
-        {
-            return;
-        }
-
         var project = _shell.CurrentProject;
         var path = await _services.Picker.PickVideoAsync(ExportText.SuggestedFileName(project.Name), _services.Folders.ExportFolder);
         if (string.IsNullOrEmpty(path))
@@ -363,9 +360,16 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
             return;
         }
 
-        // The dialog took a while: the project, the output or an import may have changed meanwhile.
-        if (_disposed || !IsEditing || !ReferenceEquals(project, _shell.CurrentProject) || !ShowsExportButton || _output.EffectiveOutput is not { } output)
+        // The dialog took a while: the project, the output or an import may have changed meanwhile. The user picked a file,
+        // so say why nothing happens.
+        if (_disposed)
         {
+            return;
+        }
+
+        if (!CanStartExport || !ReferenceEquals(project, _shell.CurrentProject) || _output.EffectiveOutput is not { } output)
+        {
+            _services.InfoBars.Show(InfoBarSeverity.Caution, ExportText.ChangedDuringDialog);
             return;
         }
 
@@ -605,6 +609,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         if (e.PropertyName is nameof(ShellViewModel.ShowsEditing) or nameof(ShellViewModel.CurrentProject))
         {
             OnPropertyChanged(nameof(ShowsExportButton));
+            OnPropertyChanged(nameof(CanStartExport));
         }
     }
 
@@ -613,6 +618,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         if (e.PropertyName is nameof(OutputPanelViewModel.CanExport) or null or "")
         {
             OnPropertyChanged(nameof(ShowsExportButton));
+            OnPropertyChanged(nameof(CanStartExport));
         }
     }
 }

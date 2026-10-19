@@ -108,9 +108,13 @@ internal sealed class FakeSavePicker : ISaveVideoPicker
 
     public List<(string Name, string? Folder)> Asked { get; } = [];
 
+    /// <summary>Runs while the dialog is open, before it answers (the user doing something else meanwhile).</summary>
+    public Action? WhileOpen { get; set; }
+
     public Task<string?> PickVideoAsync(string suggestedName, string? startFolder)
     {
         Asked.Add((suggestedName, startFolder));
+        WhileOpen?.Invoke();
         return Task.FromResult(Answer);
     }
 }

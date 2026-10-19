@@ -263,6 +263,11 @@ public sealed partial class ShellView : UserControl
             return;
         }
 
+        // The canvas's exportOpacity: the Export button stays in the command bar, disabled and at 0.6, outside the
+        // inspector; the change fades over 167 ms (at once with animations off).
+        ExportButton.OpacityTransition = MotionTokens.AnimationsEnabled && !ExportPanel.ReduceMotionSwitch ? new ScalarTransition { Duration = MotionTokens.Control } : null;
+        ExportButton.Opacity = Export.IsEditing ? 1 : DimmedExportOpacity;
+
         switch (Export.State)
         {
             case ExportPanelState.Exporting:
@@ -278,6 +283,9 @@ public sealed partial class ShellView : UserControl
         }
     }
 
+    // The Export button's opacity while the export panel or the finished state shows (the canvas's exportOpacity).
+    private const double DimmedExportOpacity = 0.6;
+
     private void FocusExportButton()
     {
         if (ExportButton.Visibility == Visibility.Visible)
@@ -286,7 +294,8 @@ public sealed partial class ShellView : UserControl
         }
     }
 
-    // Ctrl+E: the Export button's command, also when the button is absent (the command checks what it may do).
+    // Ctrl+E: the Export button's command, also when the button is absent or disabled (the command checks what it may do,
+    // and does nothing outside the inspector).
     private void OnExportAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
