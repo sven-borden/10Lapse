@@ -78,4 +78,37 @@ public sealed class ProjectTextTests
     {
         Assert.Equal(expected, ProjectText.WindowTitle(name, hasFrames, unsaved));
     }
+
+    [Theory]
+    [InlineData(742, 30, 1, SpeedMode.PerSecond, "742 photos → 24.7 s", "at 30 fps")]
+    [InlineData(1, 30, 1, SpeedMode.PerSecond, "1 photo → 0.0 s", "at 30 fps")]
+    [InlineData(5000, 30000, 1001, SpeedMode.PerSecond, "5,000 photos → 2 min 47 s", "at 29.97 fps")]
+    [InlineData(742, 30, 1, SpeedMode.Length, "742 photos → 30.0 s", "at 24.73 fps")]
+    [InlineData(40, 1, 2, SpeedMode.PerPhoto, "40 photos → 20.0 s", "at 0.5 s per photo")]
+    public void TheTimingReadoutComesInTwoPartsThatJoinToTheWholeReadout(int count, int numerator, int denominator, SpeedMode mode, string headline, string detail)
+    {
+        var input = new Fraction(numerator, denominator);
+        var timing = mode switch
+        {
+            SpeedMode.PerSecond => TimingSettings.PerSecond(input),
+            SpeedMode.Length => TimingSettings.Length(input),
+            _ => TimingSettings.PerPhoto(input),
+        };
+
+        var parts = ProjectText.TimingReadoutParts(count, timing);
+
+        Assert.Equal((headline, detail), parts);
+        Assert.Equal(ProjectText.TimingReadout(count, timing), $"{parts.Headline} {parts.Detail}");
+    }
+
+    [Fact]
+    public void TheReadoutPartsTakeACultureAndStayInvariantWithoutOne()
+    {
+        var timing = TimingSettings.PerSecond(new Fraction(30000, 1001));
+        var german = System.Globalization.CultureInfo.GetCultureInfo("de-DE");
+
+        Assert.Equal(("1.234 photos → 41,2 s", "at 29,97 fps"), ProjectText.TimingReadoutParts(1234, timing, german));
+        Assert.Equal(("1,234 photos → 41.2 s", "at 29.97 fps"), ProjectText.TimingReadoutParts(1234, timing));
+        Assert.Equal(("1 photo → 0,5 s", "at 0,5 s per photo"), ProjectText.TimingReadoutParts(1, TimingSettings.PerPhoto(new Fraction(1, 2)), german));
+    }
 }

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Timing section of the inspector (#17), after the prototype's Timing section in docs/design/canvas/Main.dc.html:
+  a Body strong heading, the mode (Per second, Length, Per photo) and the current mode's presets as segmented
+  controls, the speed readout in Subtitle with "at 30 fps" in Caption Secondary under it, and a neutral bar that
+  compares the video's length to a minute. Between 16 px of padding above and below and a divider at the bottom.
+  Inspector sections stack in a column inside ShellView's InspectorRegion.
+
+  Beyond the prototype: the box for a custom value of the current mode (the issue asks for any frame rate from 1 to
+  120, 29.97 and 59.94 included, a target length, and 0.1 to 10 s per photo). It takes a dot or a comma, never
+  changes a value silently (the sentence under the box says what became of an entry that was refused, held to the
+  range or rounded), and shows the stored value after every entry. In Length mode a line under the readout says
+  when the photos cannot reach the target at 1 to 120 fps. No amber here: the selected segment is a neutral pill and
+  the bar is Ink Secondary on Track; amber is for Export and progress.
+-->
+<UserControl
+  x:Class="TenLapse.Shell.TimingPanel"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:presentation="using:TenLapse.Presentation"
+  xmlns:shell="using:TenLapse.Shell">
+
+  <Border
+    Padding="0,16,0,16"
+    BorderBrush="{ThemeResource DividerBrush}"
+    BorderThickness="0,0,0,1">
+    <StackPanel Spacing="{StaticResource SpacingMd}">
+      <TextBlock
+        AutomationProperties.HeadingLevel="Level2"
+        Style="{StaticResource BodyStrongTextStyle}"
+        Text="{x:Bind presentation:TimingText.Heading}" />
+
+      <shell:SegmentedControl
+        x:Name="ModeControl"
+        AutomationProperties.Name="{x:Bind presentation:TimingText.ModesName}"
+        Items="{x:Bind ViewModel.ModeLabels}"
+        SelectedIndex="{x:Bind ViewModel.SelectedModeIndex, Mode=TwoWay}" />
+
+      <shell:SegmentedControl
+        x:Name="PresetControl"
+        AutomationProperties.Name="{x:Bind ViewModel.PresetsName, Mode=OneWay}"
+        Items="{x:Bind ViewModel.PresetLabels, Mode=OneWay}"
+        SelectedIndex="{x:Bind ViewModel.SelectedPresetIndex, Mode=TwoWay}" />
+
+      <!-- The custom value: the caption names the box for a screen reader too. Enter or leaving the box takes the entry, Escape drops it. -->
+      <StackPanel Spacing="6">
+        <TextBlock
+          x:Name="ValueCaption"
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource CaptionTextStyle}"
+          Text="{x:Bind ViewModel.ValueLabel, Mode=OneWay}" />
+        <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+          <TextBox
+            x:Name="ValueBox"
+            Width="96"
+            MaxLength="12"
+            AutomationProperties.Name="{x:Bind ViewModel.ValueLabel, Mode=OneWay}"
+            CornerRadius="{StaticResource RadiusControl}"
+            GotFocus="OnValueGotFocus"
+            KeyDown="OnValueKeyDown"
+            LostFocus="OnValueLostFocus"
+            Text="{x:Bind ViewModel.ValueText, Mode=OneWay}" />
+          <TextBlock
+            VerticalAlignment="Center"
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTextStyle}"
+            Text="{x:Bind ViewModel.ValueUnit, Mode=OneWay}" />
+        </StackPanel>
+
+        <!-- What became of the last entry ("Frame rates run from 1 to 120 fps, so 200 is now 120 fps."). Raised as a notification too. -->
+        <TextBlock
+          x:Name="MessageText"
+          Foreground="{ThemeResource InkBrush}"
+          Style="{StaticResource CaptionTextStyle}"
+          Text="{x:Bind ViewModel.Message, Mode=OneWay}"
+          TextWrapping="Wrap"
+          Visibility="{x:Bind ViewModel.HasMessage, Mode=OneWay}" />
+      </StackPanel>
+
+      <!-- The readout, always visible: "742 photos → 24.7 s" and under it "at 30 fps". The screen reader reads both lines in order. -->
+      <StackPanel Padding="0,4,0,0" Spacing="2">
+        <TextBlock
+          x:Name="HeadlineText"
+          Style="{StaticResource SubtitleTabularTextStyle}"
+          Text="{x:Bind ViewModel.Headline, Mode=OneWay}"
+          TextWrapping="Wrap" />
+        <TextBlock
+          x:Name="DetailText"
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource CaptionTabularTextStyle}"
+          Text="{x:Bind ViewModel.Detail, Mode=OneWay}" />
+      </StackPanel>
+
+      <!-- Length mode: the target cannot be reached, so the video is as long as the nearest limit makes it. -->
+      <TextBlock
+        x:Name="NoticeText"
+        Foreground="{ThemeResource InkBrush}"
+        Style="{StaticResource CaptionTextStyle}"
+        Text="{x:Bind ViewModel.Notice, Mode=OneWay}"
+        TextWrapping="Wrap"
+        Visibility="{x:Bind ViewModel.HasNotice, Mode=OneWay}" />
+
+      <!-- The video's length against a minute. Decoration: the readout says the same in words. -->
+      <StackPanel AutomationProperties.AccessibilityView="Raw" Spacing="{StaticResource SpacingXs}">
+        <Grid
+          x:Name="LengthTrack"
+          Height="4"
+          Background="{ThemeResource TrackBrush}"
+          CornerRadius="2">
+          <Border
+            x:Name="LengthFill"
+            HorizontalAlignment="Left"
+            Background="{ThemeResource InkSecondaryBrush}"
+            CornerRadius="2" />
+        </Grid>
+        <Grid>
+          <TextBlock
+            HorizontalAlignment="Left"
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTabularTextStyle}"
+            Text="{x:Bind presentation:TimingText.BarStart}" />
+          <TextBlock
+            HorizontalAlignment="Center"
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTabularTextStyle}"
+            Text="{x:Bind presentation:TimingText.BarMiddle}" />
+          <TextBlock
+            HorizontalAlignment="Right"
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTabularTextStyle}"
+            Text="{x:Bind presentation:TimingText.BarEnd}" />
+        </Grid>
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</UserControl>
