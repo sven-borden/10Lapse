@@ -486,33 +486,12 @@
         <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
-      <!-- Empty: the first-launch drop zone (#29, FirstLaunchView.xaml), on Mica, 16 px in from the window edges. -->
-      <shell:Region
-        x:Name="EmptyRegion"
-        Grid.RowSpan="2"
-        Grid.ColumnSpan="2"
-        Padding="16,0,16,16"
-        AutomationProperties.LandmarkType="Main"
-        AutomationProperties.Name="{x:Bind presentation:ProjectText.StartRegionName}">
-        <shell:FirstLaunchView x:Name="FirstLaunch" />
-      </shell:Region>
-
-      <!-- Editing: the Layer surface for the stage and the inspector, separated from Mica by one divider. -->
-      <Border
-        x:Name="EditingSurface"
-        Grid.RowSpan="2"
-        Grid.ColumnSpan="2"
-        Background="{ThemeResource LayerBrush}"
-        BorderBrush="{ThemeResource DividerBrush}"
-        BorderThickness="0,1,0,0"
-        Visibility="Collapsed" />
-
       <!--
         InfoBars float over the top of the stage (DESIGN.md, Cards and InfoBars): 32 px down, at most 560 px wide,
         with the Flyout shadow. InfoBarPresenter fills, shows and animates it; FlyoutShadow casts the shadow from
-        the rectangle behind the bar, which always has its size. It comes before the stage in the document, so Tab
-        reaches a bar's buttons where the bar shows, between the command bar and the stage (#38); its ZIndex draws it
-        over the stage, the inspector and the Settings page.
+        the rectangle behind the bar, which always has its size. It is the body's first child, so Tab reaches a bar's
+        buttons where the bar shows, right after the command bar and before the drop zone, the stage or the Settings page
+        under it (#38); its ZIndex draws it over them.
       -->
       <Grid
         x:Name="InfoBarLayer"
@@ -566,6 +545,27 @@
           </Border>
         </InfoBar>
       </Grid>
+
+      <!-- Empty: the first-launch drop zone (#29, FirstLaunchView.xaml), on Mica, 16 px in from the window edges. -->
+      <shell:Region
+        x:Name="EmptyRegion"
+        Grid.RowSpan="2"
+        Grid.ColumnSpan="2"
+        Padding="16,0,16,16"
+        AutomationProperties.LandmarkType="Main"
+        AutomationProperties.Name="{x:Bind presentation:ProjectText.StartRegionName}">
+        <shell:FirstLaunchView x:Name="FirstLaunch" />
+      </shell:Region>
+
+      <!-- Editing: the Layer surface for the stage and the inspector, separated from Mica by one divider. -->
+      <Border
+        x:Name="EditingSurface"
+        Grid.RowSpan="2"
+        Grid.ColumnSpan="2"
+        Background="{ThemeResource LayerBrush}"
+        BorderBrush="{ThemeResource DividerBrush}"
+        BorderThickness="0,1,0,0"
+        Visibility="Collapsed" />
 
       <!-- Stage: 20 px padding, 12 px between the preview, the transport and the filmstrip. -->
       <shell:Region

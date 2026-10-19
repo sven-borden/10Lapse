@@ -87,6 +87,7 @@ function Stop-App($app) {
 }
 
 # -Only empty,editing,export,keys runs just those runs.
+$Only = @($Only | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 function Want([string]$name) { $Only.Count -eq 0 -or $Only -contains $name }
 
 $skipped = [System.Collections.Generic.List[string]]::new()
@@ -184,8 +185,9 @@ if (Want 'editing') {
         else { Skip 'editing-infobar' 'no InfoBar appeared' }
         Scan $app 'editing-wide'
         Resize $app 900 760
-        $tabs = Find-Id $app 'InspectorTabsControl' 3
-        $radios = if ($tabs) { @($tabs.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::RadioButton)))) } else { @() }
+        $tabs = Find-Id $app 'InspectorTabsControl' 8
+        $radios = @(if ($tabs) { $tabs.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::RadioButton))) })
+        if ($radios.Count -eq 0) { Skip 'narrow tabs' 'the narrow layout did not show its tab row' }
         $names = 'narrow-timing', 'narrow-frame', 'narrow-output'
         for ($i = 0; $i -lt [Math]::Min($radios.Count, 3); $i++) {
             $radios[$i].GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
