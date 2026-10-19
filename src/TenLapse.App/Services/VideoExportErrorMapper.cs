@@ -32,6 +32,7 @@ public sealed class VideoExportErrorMapper : IErrorMessageMapper
         VideoExportFailure.EncoderUnavailable => Critical(ProjectText.ExportFailedEncoderUnavailable, diagnostics: true),
         VideoExportFailure.SettingsRejected => Critical(ProjectText.ExportFailedSettingsRejected),
         VideoExportFailure.EncoderStalled => Critical(ProjectText.ExportFailedEncoderStalled, diagnostics: true),
+        VideoExportFailure.EncoderStuck => Critical(ProjectText.ExportFailedEncoderStuck, diagnostics: true),
         VideoExportFailure.OutputFolderNotWritable => Critical(ProjectText.ExportFailedFolderNotWritable),
         VideoExportFailure.OutputFileInUse => Critical(ProjectText.ExportFailedFileInUse),
         VideoExportFailure.OutputFolderMissing => Critical(ProjectText.ExportFailedFolderMissing),

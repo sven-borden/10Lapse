@@ -51,6 +51,13 @@ public enum VideoExportFailure
 
     /// <summary>Drawing a frame failed on the graphics device for a reason none of the other categories names.</summary>
     DrawingFailed,
+
+    /// <summary>
+    /// The encoder could not open while an encoder call of an earlier export is still stuck in the driver (it
+    /// stalled and never returned): that call holds an encoder session, the device and a thread until the process
+    /// ends, and consumer GPUs allow only a few sessions. Restarting the app frees them.
+    /// </summary>
+    EncoderStuck,
 }
 
 /// <summary>An export failed for a reason the app can explain; <see cref="Failure"/> says which.</summary>
@@ -168,6 +175,7 @@ internal static class ExportFailures
         VideoExportFailure.OutOfMemory => "There is not enough memory for the export",
         VideoExportFailure.FrameUnreadable => "A frame's photo could not be loaded",
         VideoExportFailure.DrawingFailed => "Drawing a frame failed",
+        VideoExportFailure.EncoderStuck => $"The {EncoderText.CodecName(format)} encoder could not open while an earlier export's encoder is still stuck",
         _ => $"The {EncoderText.CodecName(format)} encoder failed",
     };
 

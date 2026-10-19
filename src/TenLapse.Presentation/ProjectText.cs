@@ -118,6 +118,9 @@ public static class ProjectText
     /// <summary>Export: the encoder stopped taking frames.</summary>
     public static string ExportFailedEncoderStalled => "The video encoder stopped responding. Export again, and update your graphics driver if it keeps happening.";
 
+    /// <summary>Export: the encoder could not open while an earlier export's encoder call is still stuck.</summary>
+    public static string ExportFailedEncoderStuck => "An earlier export left the video encoder stuck. Restart 10Lapse, then export again.";
+
     /// <summary>Export: the output folder cannot be written to.</summary>
     public static string ExportFailedFolderNotWritable => "10Lapse can't save videos in that folder. Choose another folder, then export again.";
 

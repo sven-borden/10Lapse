@@ -6,6 +6,8 @@ using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 using TenLapse.Media.Export;
 using TenLapse.Media.Inspection;
+using TenLapse.Presentation;
+using TenLapse.Services;
 using static TenLapse.Tests.Media.MediaSkips;
 
 namespace TenLapse.Tests.Media;
@@ -41,6 +43,47 @@ public sealed class ExportFailureTests : IDisposable
         Assert.Equal(20, encoder!.Written);
         Assert.True(encoder.Disposed);
         Assert.False(File.Exists(path), "The incomplete file is still there.");
+    }
+
+    [Fact]
+    public async Task AnEncoderThatCannotOpenWhileAnotherIsStuckSaysToRestart()
+    {
+        SkipWithoutGraphicsDevice();
+        using var release = new ManualResetEventSlim();
+        var stalled = Path.Combine(_directory, "stalled.mp4");
+        var openFailure = new COMException("No encoder session left.", unchecked((int)0x80004005)); // E_FAIL
+        var settings = new VideoExportSettings(320, 180, _rate) { StallTimeout = TimeSpan.FromMilliseconds(300) };
+        try
+        {
+            // An export whose encoder stalls in its first write and does not return: one call stuck.
+            var stall = await Assert.ThrowsAsync<VideoExportException>(() => VideoExporter.ExportAsync(
+                new NumberedFrames(10, 320, 180),
+                stalled,
+                settings,
+                progress: null,
+                TestContext.Current.CancellationToken,
+                (output, _, _) => new FakeEncoder(output) { OnWrite = () => release.Wait() }));
+            Assert.Equal(VideoExportFailure.EncoderStalled, stall.Failure);
+            Assert.Equal(1, VideoExporter.StuckEncoderCalls);
+
+            // Another export whose encoder cannot open: restarting the app is what frees the stuck one.
+            var stuck = await Assert.ThrowsAsync<VideoExportException>(
+                () => ExportWithAsync(Path.Combine(_directory, "next.mp4"), _ => throw openFailure));
+            Assert.Equal(VideoExportFailure.EncoderStuck, stuck.Failure);
+            Assert.Same(openFailure, stuck.InnerException);
+            Assert.Equal(ProjectText.ExportFailedEncoderStuck, new VideoExportErrorMapper().Map(stuck)!.Text);
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        // Once the stuck call returns, an encoder that cannot open is an encoder failure again.
+        await ExportCleanup.WhenDone(stalled).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        Assert.Equal(0, VideoExporter.StuckEncoderCalls);
+        var failed = await Assert.ThrowsAsync<VideoExportException>(
+            () => ExportWithAsync(Path.Combine(_directory, "after.mp4"), _ => throw openFailure));
+        Assert.Equal(VideoExportFailure.EncoderFailed, failed.Failure);
     }
 
     [Theory]

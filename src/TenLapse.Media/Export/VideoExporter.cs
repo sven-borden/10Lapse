@@ -62,6 +62,16 @@ public static class VideoExporter
     /// <summary>How long the background clean-up waits for an abandoned encoder call before it gives the encoder and the device up.</summary>
     internal static readonly TimeSpan AbandonAfter = TimeSpan.FromMinutes(5);
 
+    // Encoder calls, in this process, that stalled (GuardAsync) and have not returned yet.
+    private static int _stuckCalls;
+
+    /// <summary>
+    /// Encoder calls in this process that stalled and have not returned yet. Each holds a thread, its encoder (an
+    /// NVENC session among the few a consumer GPU allows) and its device; while any is outstanding, an encoder that
+    /// fails to open fails as <see cref="VideoExportFailure.EncoderStuck"/>, whose sentence says to restart the app.
+    /// </summary>
+    internal static int StuckEncoderCalls => Volatile.Read(ref _stuckCalls);
+
     /// <summary>Writes every frame of <paramref name="source"/> to an MP4 at <paramref name="outputPath"/>, replacing it.</summary>
     /// <param name="progress">Receives the number of frames the encoder has taken, from worker threads.</param>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
@@ -254,6 +264,13 @@ public static class VideoExporter
             {
                 encoder = await GuardAsync(opening, "opening the encoder", frame: null).ConfigureAwait(false);
             }
+            catch (Exception exception) when (exception is not OperationCanceledException && !ExportFailures.IsBug(exception) && StuckElsewhere(exception))
+            {
+                throw new VideoExportException(
+                    $"{ExportFailures.Summary(VideoExportFailure.EncoderStuck, _settings.Format)} ({StuckEncoderCalls} call(s)): {exception.Message}",
+                    VideoExportFailure.EncoderStuck,
+                    exception);
+            }
             catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
             {
                 throw Classify(exception, VideoExportFailure.EncoderFailed, frame: null, setup: true);
@@ -305,6 +322,10 @@ public static class VideoExporter
             return encoder.Encoder;
         }
 
+        // True when an encoder call of another export is stuck: this opening's own stall does not count.
+        private static bool StuckElsewhere(Exception exception) =>
+            StuckEncoderCalls - (exception is VideoExportException { Failure: VideoExportFailure.EncoderStalled } ? 1 : 0) > 0;
+
         // Waits for one encoder call, but no longer than the stall limit and not past a cancellation: a call that
         // does not return is abandoned (the clean-up waits for it before releasing the encoder).
         private async Task<T> GuardAsync<T>(Task<T> call, string what, int? frame)
@@ -321,6 +342,13 @@ public static class VideoExporter
             }
             catch (TimeoutException) when (!call.IsCompleted)
             {
+                // Counted until it returns, if it ever does.
+                Interlocked.Increment(ref _stuckCalls);
+                _ = call.ContinueWith(
+                    static _ => Interlocked.Decrement(ref _stuckCalls),
+                    CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
                 throw new VideoExportException(
                     $"{ExportFailures.Summary(VideoExportFailure.EncoderStalled, _settings.Format)}: {what} did not return within {_settings.StallTimeout.TotalSeconds:0.#} s.",
                     VideoExportFailure.EncoderStalled)

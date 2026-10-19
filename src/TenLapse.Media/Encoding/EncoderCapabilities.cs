@@ -74,6 +74,7 @@ public sealed class EncoderCapabilities
         VideoExportFailure.OutputFolderMissing,
         VideoExportFailure.OutputFileInUse,
         VideoExportFailure.EncoderStalled,
+        VideoExportFailure.EncoderStuck,
     ];
 
     /// <summary>Creates a capability set from the encoders listed and the test encodes run.</summary>
