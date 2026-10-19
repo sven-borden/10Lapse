@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #22, #29, #23, #17, #14 merged. PR #77 (#19) at the orchestrator gate; #18 frame panel building. Next: #20 filmstrip and #24 export panel after #77.
+2026-10-19: #22, #29, #23, #17, #14, #19 merged. Building: #18 frame panel (Sonnet), #20 filmstrip (Opus). Next: #24 export panel.
 
 ## Waves
 
@@ -31,9 +31,9 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | merged #72 |
 | 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | merged #74 |
 | 8 | #29 First launch drop zone | O | App empty state view | merged #75 |
-| 9 | #19 Preview with proxy cache | O | preview view and cache | PR #77, fix round |
+| 9 | #19 Preview with proxy cache | O | preview view and cache | merged #77 |
 | 9 | #23 Output panel | S | output inspector section | merged #76 |
-| 10 | #20 Filmstrip | O | filmstrip view | |
+| 10 | #20 Filmstrip | O | filmstrip view | building |
 | 10 | #17 Timing panel | S | timing inspector section | merged #78 |
 | 11 | #24 Export panel and finished state | O | export panel | |
 | 11 | #18 Frame panel | S | frame inspector section | building |
@@ -199,87 +199,47 @@ Nothing blocks the build loop. Everything below waits until release is near
   `EncoderCapabilities`, JSON cache). This PC: H.264 4K at 30/60, HEVC 4K.
 - #26 PR #69: `RollingFileLog`, `ErrorPath`, `ErrorPresenter`, global
   handlers, `TryEnqueueGuarded`, Settings with *Copy diagnostics*.
-- #13 PR #70: `TenLapse.Media.Decoding` (`PhotoDecoder.ReadInfoAsync` header
-  plus end check, `DecodeAsync` to cover size with EXIF orientation, files read
-  through a shared handle and closed before decoding so nothing stays mapped;
-  sRGB profiles skip colour conversion, others convert after scaling;
-  truncated JPEG/PNG/GIF are `Truncated` at import; `PhotoCodecs` lists
-  installed ∩ known photo extensions; `KnownPhotoFormats` with container and
-  codec Store IDs for #14). `PhotoFileSource` decodes at the output's cover
-  size: 4K export from 24 MP JPEGs about 25–28 fps, 540–640 MB peak.
-  Presentation `SkippedFileText` and `SkippedFilesInfoBar` for #12. A JPEG
-  missing only its EOI marker is rejected as truncated (documented).
-- #33 PR #72: `tests/TenLapse.Tests/Fixtures/Photos/` (20 generated files,
-  288 KB; `make_fixtures.py`, run with `python -P`; README with expected
-  outcomes), `PhotoFixtureCatalogue`, `RuntimeFixtures` (100 MP, locked,
-  deleted, long Unicode path, read-only). #12's import test must skip exactly
-  `empty.jpg`, `truncated.jpg`, `no-eoi.jpg`, `text.heic` and import the other
-  16.
-- #15 PR #71: `TenLapse.Core.Ordering` (`NaturalNameComparer` exact against
-  `StrCmpLogicalW` for ASCII, Latin-1 and Latin Extended-A, names normalised to
-  Form C; `CaptureTimeReader` with sub-seconds and offsets, never throws;
-  `FrameSorter` sorting by UTC only when every timed frame has an offset;
-  `FrameGaps.Detect(frames, mode)` with timestamp names excluded from
-  numbering; `Project` extensions `ApplySort`, `ApplyDefaultSort` (empty
-  project only), `Resort` (keeps Manual order), `ReorderManually`). New
-  `Frame.CaptureUtcOffset`. RAW and CR3 capture times are unverified until #30.
-- #12 PR #73: import from *Add photos* (*Choose folder…*, *Choose photos…*,
-  *Include subfolders*), and drops on the window (asks to add or start new on
-  a non-empty project). 5,000 photos: first frames about 0.1 s, done about
-  1.9 s, UI steps under 30 ms. `Project.RemoveFramesAndSkip` (one commit),
-  `ProjectViewModel.RemoveResource`, `IDialogService.ChooseAsync`,
-  `IUiDispatcher`, `IPhotoPicker`, `IImportFolderMemory` (session only; #21
-  persists it). The import progress sits in the command bar with Cancel.
-- #22 PR #74: `ProjectExporter.ExportAsync(snapshot, path, progress, ct)`
-  through `FrameRenderer.Draw` (the call preview must use). Each export writes
-  its own hidden `<name>.<8 hex>.partial`, journaled in
-  `unfinished-exports.txt` and deleted at next launch if left. A target held
-  by another app past 5 s: the video is saved as `Name (2).mp4` and
-  `ProjectExportResult.TargetInUse` says so. H.264 and HEVC below 1 fps use a
-  whole-fps nominal rate with scaled bitrate. Decode defaults 4 ahead and 3
-  threads on an iGPU or 8 GB RAM or less, else 8 and 6. New failures
-  `FrameUnreadable`, `DrawingFailed`, `EncoderStuck` (restart 10Lapse).
-  Real-encoder tests run in one serial collection. #23 uses `ExportBitrate`;
-  #25 takes the power request and awaits `ExportCleanup.WhenAllDone()` on close.
-- #29 PR #75: `Shell/FirstLaunchView` in the shell's `EmptyRegion`: the
-  canvas copy (length from `FrameTiming`), *Choose folder* (amber accent) and
-  *Choose photos* on #12's commands, the privacy line, no sample button (#30
-  deferred). Daybreak, a Win2D 20 s loop (600 frames at 30 fps) driven by
-  `DaybreakPlayback` (Run, Still, Hidden: stops when hidden, inactive,
-  minimized, narrow, animations off; hidden in high contrast); colours from
-  `Daybreak*` tokens via `DaybreakPalette`. `DragVerdict` shows the drag look
-  only once the count is known. `TimingFormat.Timecode` and `TextBalance` in
-  Core/Presentation. Launch focus on *Choose folder* uses `FocusState.Pointer`
-  so no ring shows until the keyboard is used (#38 to confirm). Debug
-  switches `--drag-over`, `--reduce-motion`.
-- #23 PR #76: `Shell/OutputPanel` with `Presentation/Output/OutputPanelViewModel`
-  in `InspectorRegion` (#17 and #18 stack above it). Sizes this PC cannot
-  encode are hidden with one note; HEVC only when available. The startup
-  probe runs at launch (`EncoderStartup`, cancelled on close). A provisional
-  answer (15 s timeout or failed probe: H.264 up to 1080p) never writes the
-  project; the real answer restores the stored choice or writes a correction
-  once. `CanExport` means the settings are supported; #24 must also require
-  frames, and must let Export use the displayed values when a provisional
-  replacement is showing (today Export hides until the user picks another
-  entry). `ExportBitrate` moved to `Core.Projects`. The select pip is Deep
-  Amber Indicator for every ComboBox. Debug `--max-resolution`, `--no-hevc`,
-  `--probe-delay`, `--probe-failed`, `--output`.
-- #17 PR #78: `Shell/TimingPanel` above Output; `InspectorRegion` is now a
-  `StackPanel` in `InspectorScroll` (#18 adds Frame). Reusable
-  `Shell/SegmentedControl` (neutral pill, Move easing, one tab stop).
-  `ShellView` owns `TimingPanelViewModel` and disposes it in `Detach()`.
-  Length stores the target, Per photo the seconds; the rate is derived.
-  Input: a dot or comma is the decimal point; one separator plus exactly three
-  digits is refused unless it is a fraction below 1 or an NTSC rate; NTSC snaps
-  say so; clamps and rounding always say so. The panel formats in the user's
-  culture (`TimingFormat`/`TimingReadoutParts` take an optional culture; Core
-  stays invariant by default). Debug `--timing=`, `--timing-value=`.
-- #14 PR #79: skipped photos that lack a Windows extension become one InfoBar
-  per extension with *Get it from the Store* (`ms-windows-store://pdp/`):
-  HEIF `9PMMSR1CGPWG`, Raw `9NCTDW2W1BH8`, HEVC paid `9NMZLZ57R3T7` (the free
-  OEM one is not reliably installable). `CodecExtensionPrompts.Plan` decides
-  coverage once; a codec the PC has (software decoders only) never prompts, and
-  a HEIF/AVIF whose header is not HEIF/AVIF is just unreadable. Both missing:
-  one bar, its button chains a follow-up shown first (`InfoBarRequest.ShowsNext`).
-  Wording says restart 10Lapse after installing (live pickup unproven). Launch
-  failure is Caution. Debug `--missing-codec=heif,hevc,raw`.
+- #13 PR #70: `Media.Decoding` (`PhotoDecoder`, EXIF orientation, files closed
+  before decode, sRGB skips colour conversion, truncation detected; JPEG
+  missing only EOI is rejected). 4K from 24 MP JPEGs about 25–28 fps.
+- #33 PR #72: `tests/.../Fixtures/Photos/` (20 files, `make_fixtures.py`,
+  README), `PhotoFixtureCatalogue`, `RuntimeFixtures`.
+- #15 PR #71: `Core.Ordering` (`NaturalNameComparer` = `StrCmpLogicalW`,
+  `CaptureTimeReader`, UTC sort only when every frame has an offset,
+  `FrameGaps.Detect`, `ReorderManually`). RAW/CR3 capture times unverified.
+- #12 PR #73: import (folder, photos, drop); 5,000 photos done in about 1.9 s,
+  UI steps under 30 ms. `IUiDispatcher`, `IPhotoPicker`, `IImportFolderMemory`
+  (session only; #21 persists it).
+- #22 PR #74: `ProjectExporter.ExportAsync` through `FrameRenderer.Draw`.
+  Hidden per-export `.partial` journaled and cleaned at next launch; a held
+  target saves `Name (2).mp4`. Below 1 fps: whole-fps nominal rate. Real-encoder
+  tests run serially. #25 takes the power request, awaits
+  `ExportCleanup.WhenAllDone()` on close.
+- #29 PR #75: `Shell/FirstLaunchView` (canvas copy, *Choose folder* amber,
+  Daybreak loop via `DaybreakPlayback`, `DragVerdict`). Launch focus uses
+  `FocusState.Pointer` (#38 to confirm). Debug `--drag-over`, `--reduce-motion`.
+- #23 PR #76: `Shell/OutputPanel` + `OutputPanelViewModel`. Unsupported sizes
+  hidden; HEVC only when available; probe at launch. A provisional answer
+  never writes the project. `CanExport` = settings supported: #24 must also
+  require frames and let Export use the displayed values under a provisional
+  replacement. `ExportBitrate` is in `Core.Projects`.
+- #17 PR #78: `Shell/TimingPanel`, `Shell/SegmentedControl`; inspector is a
+  scrolling stack; `ShellView` owns and disposes the panel view models.
+  Separator rules: dot or comma is decimal; one separator + three digits is
+  refused (except below 1 or NTSC); every snap, clamp and rounding says so.
+  Panel text in the user's culture; Core invariant by default.
+- #14 PR #79: one InfoBar per missing extension with a Store button (HEIF
+  `9PMMSR1CGPWG`, Raw `9NCTDW2W1BH8`, HEVC paid `9NMZLZ57R3T7`).
+  `CodecExtensionPrompts.Plan`; installed codecs (software decoders) never
+  prompt. Wording says restart after installing. Debug `--missing-codec=`.
+- #19 PR #77: preview on a render thread through `FrameRenderer.Draw` into a
+  swap chain; `FrameTiming.FrameAt`, `PlaybackClock` (drops, never drifts).
+  `ProxyCache` (1280 px JPEG, no metadata, 2 GB or a tenth of free space, LRU,
+  30-day sweep, `LocalCache\Proxies` or `%LOCALAPPDATA%Lapse\Proxies`),
+  `FrameImageCache` (192 MB, device generations). 5,000 photos: 0 dropped at
+  30 fps, seek to picture about 10 ms, pass peak about 0.7 GB. Playhead
+  follows the frame id; paused frame re-checked on disk. Pauses when
+  minimized. Keys: Space (no repeat), arrows, Shift+arrows, Home/End.
+  PRIVACY.md describes the copies. Debug `--sample-frames` writes real photos
+  (pass `--sample-folder` under your branch folder, `--sample-clean`),
+  `--cache-folder`, `--preview-bench`.
