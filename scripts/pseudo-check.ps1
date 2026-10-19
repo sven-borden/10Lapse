@@ -16,6 +16,8 @@
         07-09 narrow (900 px): the Timing, Frame and Output tabs; 10 the smallest window (640 x 480)
         11 the export panel; 12 the close-during-export question; 13 the finished state; 14 finished, narrow
 
+    -Plain captures the same screens in English (no --pseudo-loc) into ...\plain, to compare with them.
+
     Build the app Debug x64 first. It prints the logs' warnings and errors at the end; "The preview could not read"
     for the broken test photos is expected. -Clean deletes the branch folder afterwards (screenshots included).
 
@@ -25,6 +27,7 @@
 param(
     [string]$Branch = 'feat-39-strings',
     [int]$ExportPhotos = 400,
+    [switch]$Plain,
     [switch]$Clean
 )
 
@@ -36,7 +39,7 @@ $exe = Join-Path $root 'src/TenLapse.App/bin/x64/Debug/net10.0-windows10.0.26100
 if (-not (Test-Path $exe)) { throw "Build the app Debug x64 first: $exe" }
 
 $base = Join-Path $env:LOCALAPPDATA "Temp\claude\$Branch"
-$shots = Join-Path $base 'pseudo'
+$shots = Join-Path $base $(if ($Plain) { 'plain' } else { 'pseudo' })
 $samples = Join-Path $base 'samples'
 $broken = Join-Path $base 'broken-photos'
 New-Item -ItemType Directory -Force $base, $shots, $samples, $broken | Out-Null
@@ -85,8 +88,7 @@ $AE = [System.Windows.Automation.AutomationElement]
 $Tree = [System.Windows.Automation.TreeScope]
 
 function Common([string]$name) {
-    @(
-        '--pseudo-loc',
+    @(if (-not $Plain) { '--pseudo-loc' }) + @(
         "--settings-folder=$(Join-Path $base "settings-$name")",
         "--cache-folder=$(Join-Path $base "cache-$name")",
         "--log-folder=$(Join-Path $base "logs-$name")",
