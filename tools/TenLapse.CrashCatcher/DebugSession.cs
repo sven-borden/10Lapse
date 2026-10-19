@@ -8,11 +8,13 @@ namespace TenLapse.CrashCatcher;
 
 /// <summary>
 /// One debugged run of the app. Every exception goes back to the app as if no debugger were attached (first chance:
-/// not handled), so the app behaves as it does alone, only a little slower. Kept on the way:
+/// not handled), so the app behaves as it does alone, only a little slower. The child gets the normal heap
+/// (<c>_NO_DEBUG_HEAP=1</c>), and stacks are walked only for a crash or a hang, so start-up timing stays close to a
+/// plain launch (#90). Kept on the way:
 /// <list type="bullet">
 /// <item>the last WinRT error notifications (RoOriginateError and its transform raise them while a debugger is
-/// attached: the HRESULT, the message XAML or Composition gave, and a stack walk), so the error behind a
-/// fail-fast is in the report;</item>
+/// attached: the HRESULT, the message XAML or Composition gave, and the thread), so the error behind a fail-fast is
+/// in the report;</item>
 /// <item>a STATUS_STOWED_EXCEPTION: each stowed exception's HRESULT and the stack captured when it was stowed, as
 /// module+offset (symbols can be looked up later);</item>
 /// <item>second-chance exceptions, and access violations and stack-buffer overruns at first chance.</item>
@@ -32,16 +34,25 @@ internal static unsafe class DebugSession
 
     public static uint Run(string reportPath, string pidFile, string exe, string[] arguments)
     {
-        var commandLine = new StringBuilder($"\"{exe}\"");
+        var commandLine = new StringBuilder(Quote(exe));
         foreach (var argument in arguments)
         {
-            commandLine.Append(" \"").Append(argument).Append('"');
+            commandLine.Append(' ').Append(Quote(argument));
         }
 
         var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>() };
-        if (!CreateProcessW(exe, commandLine, 0, 0, false, DebugOnlyThisProcess, 0, Path.GetDirectoryName(exe), ref startup, out var process))
+        var environment = Marshal.StringToHGlobalUni(ChildEnvironment());
+        ProcessInformation process;
+        try
         {
-            throw new Win32Exception();
+            if (!CreateProcessW(exe, commandLine, 0, 0, false, DebugOnlyThisProcess | CreateUnicodeEnvironment, environment, Path.GetDirectoryName(exe), ref startup, out process))
+            {
+                throw new Win32Exception();
+            }
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(environment);
         }
 
         File.WriteAllText(pidFile, process.ProcessId.ToString(CultureInfo.InvariantCulture));
@@ -53,6 +64,52 @@ internal static unsafe class DebugSession
         }
 
         return exitCode;
+    }
+
+    // One argument as CommandLineToArgvW reads it back: quoted, with each quote escaped and the backslashes before a
+    // quote (or before the closing quote) doubled.
+    internal static string Quote(string argument)
+    {
+        if (argument.Length > 0 && argument.IndexOfAny([' ', '\t', '\n', '\v', '"']) < 0)
+        {
+            return argument;
+        }
+
+        var text = new StringBuilder("\"");
+        var backslashes = 0;
+        foreach (var c in argument)
+        {
+            if (c == '\\')
+            {
+                backslashes++;
+                continue;
+            }
+
+            text.Append('\\', c == '"' ? (backslashes * 2) + 1 : backslashes).Append(c);
+            backslashes = 0;
+        }
+
+        return text.Append('\\', backslashes * 2).Append('"').ToString();
+    }
+
+    // This process's environment plus _NO_DEBUG_HEAP=1: a process started under a debugger otherwise gets the NT debug
+    // heap, which is slower and lays memory out differently. Sorted, as CreateProcess expects, and double-NUL ended.
+    private static string ChildEnvironment()
+    {
+        var variables = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (System.Collections.DictionaryEntry entry in Environment.GetEnvironmentVariables())
+        {
+            variables[(string)entry.Key] = (string?)entry.Value ?? string.Empty;
+        }
+
+        variables["_NO_DEBUG_HEAP"] = "1";
+        var block = new StringBuilder();
+        foreach (var (name, value) in variables)
+        {
+            block.Append(name).Append('=').Append(value).Append('\0');
+        }
+
+        return block.Append('\0').ToString();
     }
 
     private sealed class Session(nint process, string exeName)
@@ -170,7 +227,9 @@ internal static unsafe class DebugSession
                 var length = record.ParameterCount > 1 && record.Information[1] < 4096 ? (int)record.Information[1] + 1 : 512;
                 var message = record.ParameterCount > 2 ? ReadString(record.Information[2], length) : string.Empty;
                 var kind = record.Code == OriginateError ? "originate" : "transform";
-                _notifications.Enqueue($"[{Elapsed} ms] {kind} 0x{hr:X8} thread {threadId} \"{message.Trim()}\"\n    {Walk(threadId)}");
+                // No stack walk here: it would freeze the app on every notification and change start-up timing. The
+                // stowed exception of a crash carries its own stack.
+                _notifications.Enqueue($"[{Elapsed} ms] {kind} 0x{hr:X8} thread {threadId} \"{message.Trim()}\"");
                 if (_notifications.Count > KeptNotifications)
                 {
                     _notifications.Dequeue();

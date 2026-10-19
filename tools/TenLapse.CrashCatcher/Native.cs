@@ -7,6 +7,7 @@ namespace TenLapse.CrashCatcher;
 internal static unsafe partial class Native
 {
     public const uint DebugOnlyThisProcess = 0x2;
+    public const uint CreateUnicodeEnvironment = 0x400;
     public const uint DbgContinue = 0x00010002;
     public const uint DbgExceptionNotHandled = 0x80010001;
     public const uint ExceptionDebugEvent = 1;

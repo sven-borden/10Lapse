@@ -20,7 +20,7 @@ public partial class App : Application
 {
     // The first thing that exists, so a failure anywhere after it (InitializeComponent included) reaches the log.
     // Opening it never throws: an unwritable folder makes it keep its lines in memory.
-    private static readonly RollingFileLog _log = new(AppEnvironment.LogFolder());
+    private static readonly RollingFileLog _log = new(LogFolder());
 
     // The start-up phases in the log (#90), timed from the process start: the last line of a log that stops at
     // start-up names the phase.
@@ -237,6 +237,18 @@ public partial class App : Application
         }
 #endif
         return window;
+    }
+
+    // Debug can point the log elsewhere (--log-folder=PATH), so a launch test leaves the user's log folder alone (#90).
+    private static string LogFolder()
+    {
+#if DEBUG
+        if (Debugging.DebugLaunch.LogFolder is { } folder)
+        {
+            return folder;
+        }
+#endif
+        return AppEnvironment.LogFolder();
     }
 
     // Debug can point the remembered settings elsewhere (--settings-folder=PATH), so a test run leaves the user's alone.

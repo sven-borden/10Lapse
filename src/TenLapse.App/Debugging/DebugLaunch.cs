@@ -45,6 +45,12 @@ internal static partial class DebugLaunch
     /// </summary>
     public static string? EncoderCacheFile => Value("--encoder-cache=");
 
+    /// <summary>
+    /// The log folder (<c>--log-folder=PATH</c>), or null for the app's own, so a launch test never writes to or deletes
+    /// from the user's log folder (#90).
+    /// </summary>
+    public static string? LogFolder => Value("--log-folder=");
+
     /// <summary>Applies the switches to a freshly built shell, on the UI thread.</summary>
     public static void Apply(ShellViewModel shell, IInfoBarService infoBars)
     {

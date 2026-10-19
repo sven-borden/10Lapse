@@ -2,11 +2,11 @@
   <!--
     Crash catcher for #90: runs the app as a debuggee (its own child process: no admin, no registry change) and
     writes the stowed exception and the WinRT errors behind a crash the app's log cannot see. Driven by
-    scripts/launch-test.ps1. Not shipped. x64 only: the stack walk reads the AMD64 thread context.
+    scripts/launch-test.ps1 (see its README). Not shipped. x64 only: the stack walk reads the AMD64 thread context.
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>$(TenLapseWindowsTargetFramework)</TargetFramework>
     <Platforms>x64</Platforms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>false</IsPackable>
