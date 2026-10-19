@@ -508,7 +508,7 @@ public static class ProjectText
     /// <summary>The drop zone's standard button, the same command as <see cref="ChoosePhotos"/>.</summary>
     public static string FirstLaunchChoosePhotos => "Choose photos";
 
-    /// <summary>A frame's place in a sequence. {0} the frame number, {1} the total, both zero-padded to the total's width ("0312", "0742").</summary>
+    /// <summary>A frame's place in a sequence. {0} the frame number, {1} the total, both zero-padded to four digits ("0312", "0742").</summary>
     public static string FrameOfTotal => "Frame {0} of {1}";
 
     /// <summary>A time code and the clip length. {0} the time code ("00:10.40"), {1} the length as a time code ("00:24.73").</summary>
@@ -548,14 +548,17 @@ public static class ProjectText
         return Format(FirstLaunchExplanationFormat, Product.Name, Count(photos), rate.Numerator, ticks / FrameTiming.TicksPerSecond);
     }
 
-    /// <summary>"Frame 0312 of 0742": <paramref name="number"/> (from 1) of <paramref name="total"/>, zero-padded to the total's width (DESIGN.md, The Tabular Rule).</summary>
+    /// <summary>
+    /// "Frame 0312 of 0742": <paramref name="number"/> (from 1) of <paramref name="total"/>, both zero-padded to four
+    /// digits or the total's width if wider, so the caption keeps its width (DESIGN.md, The Tabular Rule and its example).
+    /// </summary>
     public static string FrameCaption(int number, int total)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(total);
         ArgumentOutOfRangeException.ThrowIfLessThan(number, 1);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(number, total);
-        var width = total.ToString(CultureInfo.InvariantCulture).Length;
-        return Format(FrameOfTotal, number.ToString("D" + width, CultureInfo.InvariantCulture), total.ToString(CultureInfo.InvariantCulture));
+        var digits = "D" + Math.Max(4, total.ToString(CultureInfo.InvariantCulture).Length).ToString(CultureInfo.InvariantCulture);
+        return Format(FrameOfTotal, number.ToString(digits, CultureInfo.InvariantCulture), total.ToString(digits, CultureInfo.InvariantCulture));
     }
 
     /// <summary>"00:10.40 / 00:24.73": the time at <paramref name="ticks"/> and the clip's <paramref name="lengthTicks"/>, as time codes.</summary>
