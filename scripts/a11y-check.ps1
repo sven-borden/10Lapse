@@ -31,6 +31,7 @@ param(
     [string]$Branch = 'feat-38-accessibility',
     [string]$Label = 'scan',
     [int]$ExportPhotos = 400,
+    [string[]]$Only = @(),
     [switch]$Clean
 )
 
@@ -84,6 +85,9 @@ function Start-App([string[]]$appArgs) {
 function Stop-App($app) {
     if (-not $app.Process.HasExited) { Stop-Process -Id $app.Process.Id -Force; $app.Process.WaitForExit() }
 }
+
+# -Only empty,editing,export,keys runs just those runs.
+function Want([string]$name) { $Only.Count -eq 0 -or $Only -contains $name }
 
 $skipped = [System.Collections.Generic.List[string]]::new()
 $summary = [System.Collections.Generic.List[string]]::new()
@@ -148,128 +152,136 @@ function Keep-FocusLog([string]$name) {
 }
 
 # 1: first launch with an InfoBar that has an action, then without it, then Settings.
-Write-Host 'Run: first launch'
-$app = Start-App ((Common 'empty') + '--missing-codec=heif')
-try {
-    Find-Id $app 'ShellInfoBar' 15 | Out-Null
-    Scan $app 'first-launch-infobar'
-    Close-InfoBar $app
-    Scan $app 'first-launch'
-    Invoke-Element (Find-Id $app 'SettingsButton')
-    Scan $app 'settings'
-    Invoke-Element (Find-Id $app 'BackButton')
-    Start-Sleep -Seconds 2
+if (Want 'empty') {
+    Write-Host 'Run: first launch'
+    $app = Start-App ((Common 'empty') + '--missing-codec=heif')
+    try {
+        Find-Id $app 'ShellInfoBar' 15 | Out-Null
+        Scan $app 'first-launch-infobar'
+        Close-InfoBar $app
+        Scan $app 'first-launch'
+        Invoke-Element (Find-Id $app 'SettingsButton')
+        Scan $app 'settings'
+        Invoke-Element (Find-Id $app 'BackButton')
+        Start-Sleep -Seconds 2
+    }
+    finally { Stop-App $app; Keep-FocusLog 'empty' }
 }
-finally { Stop-App $app; Keep-FocusLog 'empty' }
 
 # 2: an import of the broken test photos (the skipped-photos InfoBar), editing wide and each narrow tab.
-Write-Host 'Run: import and editing'
-$app = Start-App ((Common 'editing') + "--motion-import=$broken" + '--motion-import-delay=1')
-try {
-    Resize $app 1280 800
-    $bar = Find-Id $app 'ShellInfoBar' 30
-    if ($bar) {
-        $buttons = $bar.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
-        Invoke-Element (@($buttons) | Where-Object { $_.Current.AutomationId -ne 'CloseButton' } | Select-Object -First 1)
-        Scan $app 'editing-infobar'
-        Close-InfoBar $app
+if (Want 'editing') {
+    Write-Host 'Run: import and editing'
+    $app = Start-App ((Common 'editing') + "--motion-import=$broken" + '--motion-import-delay=1')
+    try {
+        Resize $app 1280 800
+        $bar = Find-Id $app 'ShellInfoBar' 30
+        if ($bar) {
+            $buttons = $bar.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)))
+            Invoke-Element (@($buttons) | Where-Object { $_.Current.AutomationId -ne 'CloseButton' } | Select-Object -First 1)
+            Scan $app 'editing-infobar'
+            Close-InfoBar $app
+        }
+        else { Skip 'editing-infobar' 'no InfoBar appeared' }
+        Scan $app 'editing-wide'
+        Resize $app 900 760
+        $tabs = Find-Id $app 'InspectorTabsControl' 3
+        $radios = if ($tabs) { @($tabs.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::RadioButton)))) } else { @() }
+        $names = 'narrow-timing', 'narrow-frame', 'narrow-output'
+        for ($i = 0; $i -lt [Math]::Min($radios.Count, 3); $i++) {
+            $radios[$i].GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
+            Scan $app $names[$i]
+        }
+        Resize $app 1280 800
+        Start-Sleep -Seconds 2
     }
-    else { Skip 'editing-infobar' 'no InfoBar appeared' }
-    Scan $app 'editing-wide'
-    Resize $app 900 760
-    $tabs = Find-Id $app 'InspectorTabsControl' 3
-    $radios = if ($tabs) { @($tabs.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::RadioButton)))) } else { @() }
-    $names = 'narrow-timing', 'narrow-frame', 'narrow-output'
-    for ($i = 0; $i -lt [Math]::Min($radios.Count, 3); $i++) {
-        $radios[$i].GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
-        Scan $app $names[$i]
-    }
-    Resize $app 1280 800
-    Start-Sleep -Seconds 2
+    finally { Stop-App $app; Keep-FocusLog 'editing' }
 }
-finally { Stop-App $app; Keep-FocusLog 'editing' }
 
 # 3: the export panel, the close question, the finished state wide and narrow.
-Write-Host 'Run: export'
-$export = Join-Path $base 'a11y-export.mp4'
-Remove-Item $export -ErrorAction SilentlyContinue
-$app = Start-App ((Common 'export') + "--sample-frames=$ExportPhotos" + '--output=2160' + "--export-to=$export")
-try {
-    Resize $app 1280 800
-    # The close question first (it only comes while the export runs; a finished export just closes the app), then the
-    # panel: a fast GPU encoder can finish 400 frames in seconds.
-    if (Find-Id $app 'CancelButton' 240) {
-        $windowPattern = $null
-        if ($app.Window.TryGetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern, [ref]$windowPattern)) { $windowPattern.Close() }
-        $keep = Find-Id $app 'CloseButton' 5
-        if ($keep) {
-            $line = & $scanner $app.Process.Id $results 'close-question' 2>&1 | Select-Object -Last 1
-            $summary.Add("$line"); Write-Host "  $line"
-            Invoke-Element $keep
+if (Want 'export') {
+    Write-Host 'Run: export'
+    $export = Join-Path $base 'a11y-export.mp4'
+    Remove-Item $export -ErrorAction SilentlyContinue
+    $app = Start-App ((Common 'export') + "--sample-frames=$ExportPhotos" + '--output=2160' + "--export-to=$export")
+    try {
+        Resize $app 1280 800
+        # The close question first (it only comes while the export runs; a finished export just closes the app), then the
+        # panel: a fast GPU encoder can finish 400 frames in seconds.
+        if (Find-Id $app 'CancelButton' 240) {
+            $windowPattern = $null
+            if ($app.Window.TryGetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern, [ref]$windowPattern)) { $windowPattern.Close() }
+            $keep = Find-Id $app 'CloseButton' 5
+            if ($keep) {
+                $line = & $scanner $app.Process.Id $results 'close-question' 2>&1 | Select-Object -Last 1
+                $summary.Add("$line"); Write-Host "  $line"
+                Invoke-Element $keep
+            }
+            else { Skip 'close-question' 'the export had finished before the close step' }
         }
-        else { Skip 'close-question' 'the export had finished before the close step' }
+        if (-not $app.Process.HasExited -and (Find-Id $app 'CancelButton' 0.5)) {
+            $line = & $scanner $app.Process.Id $results 'export-running' 2>&1 | Select-Object -Last 1
+            $summary.Add("$line"); Write-Host "  $line"
+        }
+        else { Skip 'export-running' 'the export had finished before the scan' }
+        Find-Id $app 'PlayButton' 240 | Out-Null
+        Scan $app 'finished'
+        Resize $app 900 760
+        Scan $app 'finished-narrow'
     }
-    if (-not $app.Process.HasExited -and (Find-Id $app 'CancelButton' 0.5)) {
-        $line = & $scanner $app.Process.Id $results 'export-running' 2>&1 | Select-Object -Last 1
-        $summary.Add("$line"); Write-Host "  $line"
-    }
-    else { Skip 'export-running' 'the export had finished before the scan' }
-    Find-Id $app 'PlayButton' 240 | Out-Null
-    Scan $app 'finished'
-    Resize $app 900 760
-    Scan $app 'finished-narrow'
+    finally { Stop-App $app; Keep-FocusLog 'export' }
 }
-finally { Stop-App $app; Keep-FocusLog 'export' }
 
 # 4: the keyboard-only path through the shortcuts, run by Debug --shortcut-after at fixed seconds after launch, through
 # the same method each keyboard accelerator calls (no key is pressed): Ctrl+O opens the folder picker (closed again here
 # through UIA), Ctrl+N on a project with changes asks first (scanned, then Cancel), Ctrl+E exports (--export-to answers the
 # Save dialog, --export-wait keeps it from starting by itself), Ctrl+N after the export opens the Empty screen, Ctrl+E
 # there and Ctrl+O on the Settings page do nothing. focus-keys.log has each shortcut's result and every focus landing.
-Write-Host 'Run: shortcuts'
-$export2 = Join-Path $base 'a11y-keys.mp4'
-Remove-Item $export2 -ErrorAction SilentlyContinue
-$app = Start-App ((Common 'keys') + '--sample-frames=400' + '--output=2160' + "--export-to=$export2" + '--export-wait' + '--shortcut-after=ctrl+o@8,ctrl+n@14,ctrl+e@22,ctrl+n@36,ctrl+e@39,ctrl+o@48')
-function Wait-Until($app, [double]$second) {
-    $left = $second - ((Get-Date) - $app.Process.StartTime).TotalSeconds
-    if ($left -gt 0) { Start-Sleep -Milliseconds ([int]($left * 1000)) }
+if (Want 'keys') {
+    Write-Host 'Run: shortcuts'
+    $export2 = Join-Path $base 'a11y-keys.mp4'
+    Remove-Item $export2 -ErrorAction SilentlyContinue
+    $app = Start-App ((Common 'keys') + '--sample-frames=400' + '--output=2160' + "--export-to=$export2" + '--export-wait' + '--shortcut-after=ctrl+o@8,ctrl+n@14,ctrl+e@22,ctrl+n@36,ctrl+e@39,ctrl+o@48')
+    function Wait-Until($app, [double]$second) {
+        $left = $second - ((Get-Date) - $app.Process.StartTime).TotalSeconds
+        if ($left -gt 0) { Start-Sleep -Milliseconds ([int]($left * 1000)) }
+    }
+    try {
+        Resize $app 1280 800
+        # Ctrl+O at 8 s: the folder picker is a second window of the process.
+        $picker = $null
+        $until = (Get-Date).AddSeconds(20)
+        while (-not $picker -and (Get-Date) -lt $until -and -not $app.Process.HasExited) {
+            Start-Sleep -Milliseconds 300
+            $windows = $AE::RootElement.FindAll($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ProcessIdProperty, $app.Process.Id)))
+            $picker = @($windows) | Where-Object { $_.Current.ClassName -eq '#32770' } | Select-Object -First 1
+            if (-not $picker) { $picker = $app.Window.FindFirst($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ClassNameProperty, '#32770'))) }
+        }
+        if ($picker) {
+            $summary.Add("ctrl+o opened '$($picker.Current.Name)' ($($picker.Current.ClassName)); closed through UIA")
+            Write-Host "  Ctrl+O opened '$($picker.Current.Name)'"
+            $picker.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
+        }
+        else { Skip 'ctrl+o picker' 'no picker window appeared' }
+        # Ctrl+N at 14 s: the project has changes, so it asks first.
+        Wait-Until $app 14
+        if (Find-Id $app 'PrimaryButton' 8) {
+            $line = & $scanner $app.Process.Id $results 'new-project-question' 2>&1 | Select-Object -Last 1
+            $summary.Add("$line"); Write-Host "  $line"
+            Invoke-Element (Find-Id $app 'CloseButton' 2)
+        }
+        else { Skip 'new-project-question' 'no question appeared' }
+        # Ctrl+E at 22 s, the finished state, Ctrl+N at 36 s, Ctrl+E at 39 s on the Empty screen, then Settings.
+        Wait-Until $app 41
+        if (Find-Id $app 'ChooseFolderButton' 5) { $summary.Add('ctrl+n after the export: the Empty screen') }
+        Invoke-Element (Find-Id $app 'SettingsButton' 2)
+        # Ctrl+O at 48 s on the Settings page.
+        Wait-Until $app 51
+        Invoke-Element (Find-Id $app 'BackButton' 2)
+        Start-Sleep -Seconds 2
+    }
+    finally { Stop-App $app; Keep-FocusLog 'keys' }
 }
-try {
-    Resize $app 1280 800
-    # Ctrl+O at 8 s: the folder picker is a second window of the process.
-    $picker = $null
-    $until = (Get-Date).AddSeconds(20)
-    while (-not $picker -and (Get-Date) -lt $until -and -not $app.Process.HasExited) {
-        Start-Sleep -Milliseconds 300
-        $windows = $AE::RootElement.FindAll($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ProcessIdProperty, $app.Process.Id)))
-        $picker = @($windows) | Where-Object { $_.Current.ClassName -eq '#32770' } | Select-Object -First 1
-        if (-not $picker) { $picker = $app.Window.FindFirst($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ClassNameProperty, '#32770'))) }
-    }
-    if ($picker) {
-        $summary.Add("ctrl+o opened '$($picker.Current.Name)' ($($picker.Current.ClassName)); closed through UIA")
-        Write-Host "  Ctrl+O opened '$($picker.Current.Name)'"
-        $picker.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
-    }
-    else { Skip 'ctrl+o picker' 'no picker window appeared' }
-    # Ctrl+N at 14 s: the project has changes, so it asks first.
-    Wait-Until $app 14
-    if (Find-Id $app 'PrimaryButton' 8) {
-        $line = & $scanner $app.Process.Id $results 'new-project-question' 2>&1 | Select-Object -Last 1
-        $summary.Add("$line"); Write-Host "  $line"
-        Invoke-Element (Find-Id $app 'CloseButton' 2)
-    }
-    else { Skip 'new-project-question' 'no question appeared' }
-    # Ctrl+E at 22 s, the finished state, Ctrl+N at 36 s, Ctrl+E at 39 s on the Empty screen, then Settings.
-    Wait-Until $app 41
-    if (Find-Id $app 'ChooseFolderButton' 5) { $summary.Add('ctrl+n after the export: the Empty screen') }
-    Invoke-Element (Find-Id $app 'SettingsButton' 2)
-    # Ctrl+O at 48 s on the Settings page.
-    Wait-Until $app 51
-    Invoke-Element (Find-Id $app 'BackButton' 2)
-    Start-Sleep -Seconds 2
-}
-finally { Stop-App $app; Keep-FocusLog 'keys' }
-Remove-Item $export, $export2 -ErrorAction SilentlyContinue
+Remove-Item (Join-Path $base 'a11y-export.mp4'), (Join-Path $base 'a11y-keys.mp4') -ErrorAction SilentlyContinue
 
 $summary | Set-Content (Join-Path $results 'summary.txt')
 Write-Host "Results in $results"
