@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using TenLapse.Core.Preview;
@@ -202,9 +203,9 @@ public sealed class FrameImageCacheTests
         source.Next().Fail(SkipReason.FileNotFound);
         var retry = source.Next();
         Assert.Equal(frames[0].Id, retry.Frame.Id);
-        Assert.Single(told);
         retry.Succeed();
         Eventually(() => Quality(cache, frames[0]) != FrameImageQuality.None);
+        Assert.Single(told);
         Assert.Null(cache.FailureOf(frames[0].Id));
     }
 
@@ -218,6 +219,8 @@ public sealed class FrameImageCacheTests
 
         source.Next().Fail(SkipReason.DecodeFailed);
 
+        // The cache records the failure on its own continuation: wait for it, then check nothing retries inside the window.
+        Eventually(() => cache.FailureOf(frames[0].Id) is not null);
         Assert.True(source.Quiet());
         Assert.Equal(SkipReason.DecodeFailed, cache.FailureOf(frames[0].Id)!.File.Reason);
     }
@@ -227,8 +230,8 @@ public sealed class FrameImageCacheTests
     {
         var source = new FakeFrameImageSource();
         using var cache = new FrameImageCache<FakeImage>(source, _one with { BuildProxiesInBackground = true });
-        var failures = new List<Exception>();
-        cache.CacheFailed += (_, e) => failures.Add(e.Exception);
+        var failures = new ConcurrentQueue<Exception>();
+        cache.CacheFailed += (_, e) => failures.Enqueue(e.Exception);
         var frames = Frames("a", 3);
         cache.SetFrames(frames);
         var first = source.Next();
@@ -252,6 +255,9 @@ public sealed class FrameImageCacheTests
         }
 
         Eventually(() => cache.ProxyProgress == (3, 3));
+
+        // The event is raised after the cache's lock is released, so it can trail the progress.
+        Eventually(() => !failures.IsEmpty);
         Assert.True(source.Quiet());
         Assert.Single(failures);
         Assert.Single(builds, call => call.Frame.Id == frames[1].Id);
@@ -339,6 +345,7 @@ public sealed class FrameImageCacheTests
 
         Eventually(() => Quality(cache, frames[10]) == FrameImageQuality.Proxy);
         Eventually(() => cache.IsPassStopped);
+        Eventually(() => Volatile.Read(ref told) >= 1);
         Assert.True(source.Quiet(300));
 
         var builds = source.All.Count(call => call.Build);
