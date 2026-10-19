@@ -57,6 +57,18 @@ public static class MotionSpec
     /// <summary>The first thumbnail of the cascade starts this long after the photos land.</summary>
     public static readonly TimeSpan ThumbnailCascadeStart = TimeSpan.FromMilliseconds(220);
 
+    /// <summary>
+    /// How long after the photos land a thumbnail the strip shows for the first time still joins the cascade (the
+    /// prototype's cascade lasts 1.6 s); later ones, scrolled to, appear at rest.
+    /// </summary>
+    public static readonly TimeSpan ThumbnailCascadeWindow = TimeSpan.FromMilliseconds(1600);
+
+    /// <summary>
+    /// How long the preview's develop waits for the first picture to be decoded before it gives up and the picture simply
+    /// appears (not a design token: the develop must start on a picture, not on the empty gate).
+    /// </summary>
+    public static readonly TimeSpan DevelopPatience = TimeSpan.FromSeconds(2);
+
     /// <summary>The inspector's sections on arrival: each starts this much after the one before.</summary>
     public static readonly TimeSpan SectionStagger = TimeSpan.FromMilliseconds(60);
 

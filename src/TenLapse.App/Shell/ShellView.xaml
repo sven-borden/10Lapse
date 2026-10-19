@@ -135,7 +135,10 @@
       </VisualStateGroup>
     </VisualStateManager.VisualStateGroups>
 
-    <!-- Where Mica is not available (Windows 10), the Mica token instead. -->
+    <!--
+      Where Mica is not available, the flat Mica token instead: Windows 11 can still refuse Mica (transparency effects off,
+      a remote session, a backdrop that cannot connect; ShellView.SetMicaFallback).
+    -->
     <Border x:Name="MicaFallback" Grid.RowSpan="3" Visibility="Collapsed" Background="{ThemeResource MicaBrush}" />
 
     <!--

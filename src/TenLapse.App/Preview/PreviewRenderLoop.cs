@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Numerics;
 using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.Effects;
 using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.Graphics.Canvas.UI.Xaml;
@@ -11,9 +12,11 @@ using TenLapse.Core.Projects;
 using TenLapse.Media;
 using TenLapse.Media.Rendering;
 using TenLapse.Presentation;
+using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Preview;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
+using TenLapse.Themes;
 using Windows.Foundation;
 using Windows.UI;
 
@@ -100,6 +103,24 @@ internal sealed class PreviewRenderLoop : IDisposable
     private bool _drawFailureTold;
     private int _quickBlanks;
 
+    // The motion (#35). Shared under _gate: a develop the UI thread asked for, and when. The render thread's own: the
+    // develop and the reframe that run, and what the last draw put on screen (the gate and the whole photo's rectangle,
+    // shown and aimed at, the shape and fit they were for, the panel size).
+    private MotionStep? _developAsked;
+    private long _developAskedAt;
+    private MotionStep? _develop;
+    private long _developStart;
+    private long _developDeadline;
+    private Reframe? _reframe;
+    private Rect _shownGate;
+    private Rect _shownPhoto;
+    private Rect _aimedGate;
+    private Rect _aimedPhoto;
+    private PixelSize _shownVideo;
+    private FitMode _shownFit;
+    private Size _shownPanel;
+    private bool _shownPicture;
+
     public PreviewRenderLoop(CanvasSwapChainPanel panel, PlayerViewModel player, FrameImageCache<CanvasBitmap> images, IErrorPresenter errors, IErrorSink log)
     {
         _panel = panel;
@@ -160,6 +181,26 @@ internal sealed class PreviewRenderLoop : IDisposable
 
         _wake.Set();
     }
+
+    /// <summary>
+    /// The photos landed (UI thread; motion spec, Arrival): the first frame develops like a print, blur 14 to 0 px, scale
+    /// 1.03 to 1 and opacity in over 700 ms Enter, after the drop zone's exit; with animations off, a short fade. Its clock
+    /// starts when the first picture is there to draw (within <see cref="DevelopPatience"/>; after that it shows at rest).
+    /// </summary>
+    public void Develop()
+    {
+        var step = MotionTokens.Plan(MotionCatalogue.ArrivalDevelop);
+        lock (_gate)
+        {
+            _developAsked = step.Animates ? step : null;
+            _developAskedAt = Stopwatch.GetTimestamp();
+            _changes++;
+        }
+
+        _wake.Set();
+    }
+
+    private static TimeSpan DevelopPatience => MotionSpec.DevelopPatience;
 
     public void Dispose()
     {
@@ -238,6 +279,13 @@ internal sealed class PreviewRenderLoop : IDisposable
             dpi = _dpi;
             look = _look;
             changes = _changes;
+            if (_developAsked is { } asked)
+            {
+                _develop = asked;
+                _developStart = _developAskedAt;
+                _developDeadline = _developAskedAt + (long)(DevelopPatience.TotalSeconds * Stopwatch.Frequency);
+                _developAsked = null;
+            }
         }
 
         var chain = _swapChain;
@@ -309,9 +357,14 @@ internal sealed class PreviewRenderLoop : IDisposable
             draw = resized || changes != _drawnChanges || !_drewAnything;
         }
 
+        // A develop or a reframe draws every pass (each present waits for the vertical blank) until it ends; only a draw the
+        // picture itself needed counts for the events below.
+        var animating = _develop is not null || _reframe is not null;
+        var needed = draw;
+        draw |= animating;
         if (draw)
         {
-            Draw(chain, state.Snapshot, lease?.Image ?? (lease is null && failure is null ? _shown?.Image : null), failure, frame, look);
+            Draw(chain, state.Snapshot, lease?.Image ?? (lease is null && failure is null ? _shown?.Image : null), failure, frame, look, now);
             chain.Present();
             var presented = Stopwatch.GetTimestamp();
             _drewAnything = true;
@@ -325,7 +378,10 @@ internal sealed class PreviewRenderLoop : IDisposable
                 _shownId = frame.Id;
                 _shownQuality = _shown.Quality;
                 _shownPlaceholder = false;
-                FrameShown?.Invoke(index, _shownQuality, presented);
+                if (needed)
+                {
+                    FrameShown?.Invoke(index, _shownQuality, presented);
+                }
             }
             else if (failure is not null)
             {
@@ -336,7 +392,7 @@ internal sealed class PreviewRenderLoop : IDisposable
                 _shownPlaceholder = true;
             }
 
-            if (reading is { } shownReading)
+            if (needed && reading is { } shownReading)
             {
                 Presented?.Invoke(presented, shownReading, _shownId == frame.Id && !_shownPlaceholder
                     ? (_shownQuality == FrameImageQuality.Proxy ? PresentedImage.Proxy : PresentedImage.Quick)
@@ -349,7 +405,12 @@ internal sealed class PreviewRenderLoop : IDisposable
         }
 
         lease?.Dispose();
-        if (state.IsPlaying)
+        if (animating)
+        {
+            // The present waited for the blank; the next pass draws the next step.
+            _quickBlanks = 0;
+        }
+        else if (state.IsPlaying)
         {
             if (!draw)
             {
@@ -378,37 +439,195 @@ internal sealed class PreviewRenderLoop : IDisposable
         }
     }
 
-    private void Draw(CanvasSwapChain chain, ProjectSnapshot snapshot, CanvasBitmap? image, FrameLoadFailure? failure, Frame frame, PreviewLook look)
+    private void Draw(CanvasSwapChain chain, ProjectSnapshot snapshot, CanvasBitmap? image, FrameLoadFailure? failure, Frame frame, PreviewLook look, long now)
     {
         var video = snapshot.VideoSize;
+        var fit = snapshot.FrameSettings.Fit;
         var size = chain.Size;
         using var session = chain.CreateDrawingSession(look.Ground);
         var place = PreviewLayout.Gate(size.Width, size.Height, video);
         if (place.IsEmpty)
         {
+            _reframe = null;
             return;
         }
 
         var gate = new Rect(place.X, place.Y, place.Width, place.Height);
-        using var clip = CanvasGeometry.CreateRoundedRectangle(session, gate, look.Radius, look.Radius);
-        using var layer = session.CreateLayer(1f, clip);
+        var photo = image is null ? gate : PhotoRect(gate, video, fit, image);
+        var (shownGate, shownPhoto) = Reframing(gate, photo, image is not null, video, fit, size, now);
+        var (opacity, blur, grow) = Developing(image is not null, now);
+        _shownGate = shownGate;
+        _shownPhoto = shownPhoto;
+        _aimedGate = gate;
+        _aimedPhoto = photo;
+        _shownVideo = video;
+        _shownFit = fit;
+        _shownPanel = size;
+        _shownPicture = image is not null;
+        if (opacity <= 0)
+        {
+            // The develop's delay: the stage only, until the drop zone has gone.
+            return;
+        }
+
+        // The develop's scale grows the whole gate around its middle; the clip follows the reframe.
+        var center = new Vector2((float)(gate.X + (gate.Width / 2)), (float)(gate.Y + (gate.Height / 2)));
+        var develop = grow == 1f ? Matrix3x2.Identity : Matrix3x2.CreateScale(grow, center);
+        session.Transform = develop;
+        using var clip = CanvasGeometry.CreateRoundedRectangle(session, shownGate, look.Radius, look.Radius);
+        using var layer = session.CreateLayer(opacity, clip);
         if (image is null)
         {
-            session.FillRectangle(gate, look.Gate);
+            session.FillRectangle(shownGate, look.Gate);
             if (failure is not null)
             {
-                DrawPlaceholder(session, gate, frame, look);
+                DrawPlaceholder(session, shownGate, frame, look);
             }
 
+            return;
+        }
+
+        if (blur <= 0)
+        {
+            DrawPicture(session, snapshot, image, gate, shownGate, shownPhoto, develop);
+            return;
+        }
+
+        // Developing: the same picture through a blur that clears.
+        using var picture = new CanvasCommandList(session);
+        using (var inner = picture.CreateDrawingSession())
+        {
+            DrawPicture(inner, snapshot, image, gate, shownGate, shownPhoto, Matrix3x2.Identity);
+        }
+
+        using var effect = new GaussianBlurEffect { Source = picture, BlurAmount = blur, BorderMode = EffectBorderMode.Hard };
+        session.DrawImage(effect);
+    }
+
+    // At rest the frame is FrameRenderer's, the export's own drawing. Only while the gate reshapes is the photo placed by
+    // hand: the whole photo at its moving rectangle on the gate's black, inside the moving clip; the reframe's end is
+    // FrameRenderer's picture again.
+    private void DrawPicture(CanvasDrawingSession session, ProjectSnapshot snapshot, CanvasBitmap image, Rect gate, Rect shownGate, Rect shownPhoto, Matrix3x2 develop)
+    {
+        var video = snapshot.VideoSize;
+        if (_reframe is not null)
+        {
+            session.Transform = develop;
+            session.FillRectangle(shownGate, FrameRenderer.Background);
+            session.DrawImage(image, shownPhoto, new Rect(0, 0, image.Size.Width, image.Size.Height), 1f, CanvasImageInterpolation.HighQualityCubic);
             return;
         }
 
         // FrameRenderer draws video.Width pixels of the target, which is video.Width * 96 / dpi DIPs: scale that onto the gate.
         var frameDips = session.ConvertPixelsToDips(video.Width);
         var scale = (float)(gate.Width / frameDips);
-        session.Transform = Matrix3x2.CreateScale(scale) * Matrix3x2.CreateTranslation((float)gate.X, (float)gate.Y);
+        session.Transform = Matrix3x2.CreateScale(scale) * Matrix3x2.CreateTranslation((float)gate.X, (float)gate.Y) * develop;
         FrameRenderer.Draw(session, image, snapshot.FrameSettings, video);
     }
+
+    // The reframe (motion spec, Reframe): a new shape or fit at the same panel size moves the gate's clip and the photo's
+    // rectangle from where they are on screen to their new places, 400 ms Move; with animations off, at once. A resize ends
+    // it (the old places no longer mean anything). Returns the gate and the photo to draw now.
+    private (Rect Gate, Rect Photo) Reframing(Rect gate, Rect photo, bool hasPicture, PixelSize video, FitMode fit, Size panel, long now)
+    {
+        if (panel != _shownPanel)
+        {
+            _reframe = null;
+        }
+        else if (hasPicture && _shownPicture && (video != _shownVideo || fit != _shownFit) && (gate != _aimedGate || photo != _aimedPhoto))
+        {
+            var step = MotionTokens.Plan(MotionCatalogue.ReframeGate);
+            MotionTokens.Plan(MotionCatalogue.ReframePhoto);
+            _reframe = step.Animates ? new Reframe(_shownGate, _shownPhoto, now, step) : null;
+        }
+
+        if (_reframe is not { } reframe)
+        {
+            return (gate, photo);
+        }
+
+        var share = Stopwatch.GetElapsedTime(reframe.Start, now) / reframe.Step.Duration;
+        if (share >= 1)
+        {
+            _reframe = null;
+            return (gate, photo);
+        }
+
+        var eased = MotionSpec.Ease(reframe.Step.Easing, share);
+        return (Lerp(reframe.FromGate, gate, eased), Lerp(reframe.FromPhoto, photo, eased));
+    }
+
+    // The develop now: the gate's opacity, the blur in DIPs and the scale. Its clock waits for the first picture.
+    private (float Opacity, float Blur, float Scale) Developing(bool hasPicture, long now)
+    {
+        if (_develop is not { } develop)
+        {
+            return (1f, 0f, 1f);
+        }
+
+        if (!hasPicture)
+        {
+            if (now > _developDeadline)
+            {
+                _develop = null;
+                return (1f, 0f, 1f);
+            }
+
+            _developStart = now;
+            return (0f, 0f, 1f);
+        }
+
+        var since = Stopwatch.GetElapsedTime(_developStart, now) - develop.Delay;
+        if (since < TimeSpan.Zero)
+        {
+            return (0f, 0f, 1f);
+        }
+
+        var share = since / develop.Duration;
+        if (share >= 1)
+        {
+            _develop = null;
+            return (1f, 0f, 1f);
+        }
+
+        var eased = (float)MotionSpec.Ease(develop.Easing, share);
+        return develop.Moves
+            ? (eased, DevelopBlur * (1 - eased), DevelopScale - ((DevelopScale - 1) * eased))
+            : (eased, 0f, 1f);
+    }
+
+    // Where the whole photo lies on screen when FrameRenderer draws it into the gate (Fill overflows the gate, Fit fits in it).
+    private static Rect PhotoRect(Rect gate, PixelSize video, FitMode fit, CanvasBitmap image)
+    {
+        var pixels = image.SizeInPixels;
+        var photo = new PixelSize((int)pixels.Width, (int)pixels.Height);
+        if (photo.Width <= 0 || photo.Height <= 0 || video.Width <= 0)
+        {
+            return gate;
+        }
+
+        var (source, destination) = FrameRenderer.Layout(photo, video, fit);
+        var perPhotoPixel = destination.Width / source.Width;
+        var toScreen = gate.Width / video.Width;
+        return new Rect(
+            gate.X + ((destination.X - (source.X * perPhotoPixel)) * toScreen),
+            gate.Y + ((destination.Y - (source.Y * perPhotoPixel)) * toScreen),
+            photo.Width * perPhotoPixel * toScreen,
+            photo.Height * perPhotoPixel * toScreen);
+    }
+
+    private static Rect Lerp(Rect from, Rect to, double share) => new(
+        from.X + ((to.X - from.X) * share),
+        from.Y + ((to.Y - from.Y) * share),
+        Math.Max(0, from.Width + ((to.Width - from.Width) * share)),
+        Math.Max(0, from.Height + ((to.Height - from.Height) * share)));
+
+    // The develop starts this blurred (DIPs, the canvas's blur(14px)) and this much larger (the canvas's scale(1.03)).
+    private const float DevelopBlur = 14f;
+    private const float DevelopScale = 1.03f;
+
+    // A reframe running: where the gate and the photo were on screen when it began, when, and its step.
+    private sealed record Reframe(Rect FromGate, Rect FromPhoto, long Start, MotionStep Step);
 
     private static void DrawPlaceholder(CanvasDrawingSession session, Rect gate, Frame frame, PreviewLook look)
     {
