@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #97 merged (minimum Windows 11). #99 merged (#98 flaky cache tests). In flight: PR #100 (#35 motion) fix round. Then #39 strings, #38 accessibility (each alone).
+2026-10-19: #100 merged (#35 motion). In flight: #39 strings, with #101 flaky timing test beside it (test code only). Then #38 accessibility (alone).
 
 ## Waves
 
@@ -48,10 +48,11 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | merged #89 |
 | 15 | #36 Narrow window layout | S | shell visual states | merged #94 |
 | 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | merged #95 |
-| 16 | #35 Motion system | O | every view | PR #100, fix round |
+| 16 | #35 Motion system | O | every view | merged #100 |
 | 16 | #96 Minimum Windows 11 | S | build props, manifest, README | merged #97 |
 | 16 | #98 Flaky cache test (bug) | S | `tests/` Preview | merged #99 |
-| 17 | #39 Strings to resource files | S | every view, alone | |
+| 17 | #39 Strings to resource files | S | every view | in progress |
+| 17 | #101 Flaky timing lower bound (bug) | S | `tests/` timing asserts | in progress |
 | 18 | #38 Accessibility pass | O | every view, alone | |
 
 After wave 18, 3.0 is code-complete. Milestones 4 (private beta) and 5
@@ -169,6 +170,18 @@ Nothing blocks the build loop. Everything below waits until release is near
   no schema bump. *Send feedback* opens GitHub issues, *Rate 10Lapse* the Store.
 - 2026-10-19 (#2): same listing confirmed from the acquisitions and usage
   numbers Sven posted on #2 (#2 closed).
+- 2026-10-19 (#35, PR #100): every timing and distance lives in
+  `Presentation/Motion/MotionSpec.cs`, every transition in `MotionCatalogue`;
+  animate only through `MotionTokens.Plan` (the one reduced-motion decision;
+  `MotionRuleTests` bans literal times and curves elsewhere). The spec has no
+  thumbnail-to-preview flight, so a thumbnail click stays an instant seek; the
+  Settings cards' stagger is prototype-only and not built. InfoBars wait for a
+  running transition (`MotionQuiet`). The shell pins its own `RequestedTheme`
+  to Windows' mode (Default in high contrast) so the theme can crossfade; read
+  `ActualTheme`, not `Application.RequestedTheme`, and a new swap chain or
+  media element showing photos joins `ShellView.PhotosOnScreen`. One exception
+  to "preview and export draw through the same code": during a 400 ms reframe
+  the preview draws the photo by hand with geometry from `FrameRenderer.Layout`.
 - 2026-10-19 (#90, PR #91): every framework callback (`AppWindow.Closing`,
   `Changed`, `Destroying`, backdrop, lambda handlers) runs through `RunLogged`;
   `FrameworkCallbackRuleTests` catches lambda and method-group handlers.
@@ -256,3 +269,7 @@ Details are in each PR's "What the next issues should know".
 - #98 PR #99: cache tests wait for state, disposals and events, which the
   caches record under `_gate` and then free and raise after it; positive state
   is waited for, negative checks keep a short quiet window.
+- #35 PR #100: motion system (26 transitions, `ScreenMotion`, `ThemeCrossfade`,
+  arrival develop and cascade, retime and reframe, InfoBar hold);
+  `scripts/motion-check.ps1`; Debug `--motion-log`, `--motion-import=`,
+  `--theme-flip-after=`, `--motion-infobar-after=`.
