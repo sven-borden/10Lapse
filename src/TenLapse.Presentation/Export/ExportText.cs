@@ -19,7 +19,9 @@ public static class ExportText
     /// <summary>The amber button in the command bar (Ctrl+E).</summary>
     public static string ExportVideo => _strings.Get();
 
-    /// <summary>The Export button's shortcut as a screen reader names it (its accelerator key).</summary>
+    /// <summary>
+    /// The Export button's shortcut as a screen reader names it (its accelerator key). The key E is fixed in code; translate only "Control", as Windows names that key in the language ("Strg+E" in German).
+    /// </summary>
     public static string ExportKeys => _strings.Get();
 
     /// <summary>The same button, dimmed, while an export runs.</summary>

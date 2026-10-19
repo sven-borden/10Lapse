@@ -20,7 +20,7 @@
   </resheader>
   <data name="Second" xml:space="preserve">
     <value>s</value>
-    <comment>Seconds, as in "24.7 s".</comment>
+    <comment>Seconds, as in "24.7 s". Also the unit the Timing box accepts when the user types a duration ("2 s"), so keep it short and easy to type.</comment>
   </data>
   <data name="Minute" xml:space="preserve">
     <value>min</value>
@@ -32,7 +32,7 @@
   </data>
   <data name="FramesPerSecond" xml:space="preserve">
     <value>fps</value>
-    <comment>Frames per second, as in "30 fps".</comment>
+    <comment>Frames per second, as in "30 fps". Also the unit the Timing box accepts when the user types a rate ("30 fps"), so keep it short and easy to type.</comment>
   </data>
   <data name="PerPhoto" xml:space="preserve">
     <value>per photo</value>

@@ -208,6 +208,6 @@
   </data>
   <data name="ExportKeys" xml:space="preserve">
     <value>Control+E</value>
-    <comment>The Export button's shortcut as a screen reader names it (its accelerator key).</comment>
+    <comment>The Export button's shortcut as a screen reader names it (its accelerator key). The key E is fixed in code; translate only "Control", as Windows names that key in the language ("Strg+E" in German).</comment>
   </data>
 </root>

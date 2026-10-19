@@ -632,7 +632,7 @@
   </data>
   <data name="FilmstripUndoRemoveMany" xml:space="preserve">
     <value>Undo removing {0} frames</value>
-    <comment>The context menu's Undo of a removal of several frames.</comment>
+    <comment>The context menu's Undo of a removal of several frames. {0} the number of frames removed ("12").</comment>
   </data>
   <data name="FilmstripUndoMove" xml:space="preserve">
     <value>Undo move</value>

@@ -997,7 +997,7 @@ public static class ProjectText
     /// <summary>The context menu's Undo of a removal of one frame.</summary>
     public static string FilmstripUndoRemoveOne => _strings.Get();
 
-    /// <summary>The context menu's Undo of a removal of several frames.</summary>
+    /// <summary>The context menu's Undo of a removal of several frames. {0} the number of frames removed ("12").</summary>
     public static string FilmstripUndoRemoveMany => _strings.Get();
 
     /// <summary>The context menu's Undo of a move.</summary>
