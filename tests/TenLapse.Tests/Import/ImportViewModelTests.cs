@@ -52,6 +52,67 @@ public sealed class ImportViewModelTests
     }
 
     [Fact]
+    public async Task OnlineOnlyPhotosAreDownloadedAndReadAfterOneQuestionWhenTheUserSaysDownload()
+    {
+        var source = new ScriptedImportSource([ScriptedImportSource.Photo("IMG_1.jpg")])
+        {
+            CloudOnly = [ScriptedImportSource.Photo("IMG_2.jpg", 600L * 1024 * 1024), ScriptedImportSource.Photo("IMG_3.jpg", 900L * 1024 * 1024)],
+        };
+        using var harness = ImportHarness.With(source);
+        harness.Dialogs.Answer = true;
+
+        await harness.ImportAsync(@"C:\Scripted");
+
+        var asked = Assert.Single(harness.Dialogs.Asked);
+        Assert.Equal("2 photos are only in OneDrive. Download them now? About 1.5 GB.", asked.Message);
+        Assert.Equal("Download", asked.ConfirmText);
+        Assert.Equal("Skip them", asked.CancelText);
+        Assert.Equal(["IMG_1.jpg", "IMG_2.jpg", "IMG_3.jpg"], harness.Project.Frames.Select(frame => frame.FileName));
+        Assert.All(harness.Project.Frames, frame => Assert.NotNull(frame.PixelSize));
+        Assert.Equal(["IMG_1.jpg", "IMG_2.jpg", "IMG_3.jpg"], source.ReadRequested.Select(frame => frame.FileName));
+        Assert.Empty(harness.Project.SkippedFiles);
+        Assert.Empty(harness.InfoBars.Shown);
+    }
+
+    [Fact]
+    public async Task OnlineOnlyPhotosStayOutOfReadingAndAreSkippedWhenTheUserSaysSkip()
+    {
+        var source = new ScriptedImportSource([ScriptedImportSource.Photo("IMG_1.jpg")])
+        {
+            CloudOnly = [ScriptedImportSource.Photo("IMG_2.jpg", 5L * 1024 * 1024)],
+        };
+        using var harness = ImportHarness.With(source);
+        harness.Dialogs.Answer = false;
+
+        await harness.ImportAsync(@"C:\Scripted");
+
+        var asked = Assert.Single(harness.Dialogs.Asked);
+        Assert.Equal(ProjectText.CloudDownload(1, 5L * 1024 * 1024), asked);
+        Assert.Equal("1 photo is only in OneDrive. Download it now? About 5 MB.", asked.Message);
+        Assert.Equal(["IMG_1.jpg"], harness.Project.Frames.Select(frame => frame.FileName));
+        Assert.Equal(["IMG_1.jpg"], source.ReadRequested.Select(frame => frame.FileName));
+        var skipped = Assert.Single(harness.Project.SkippedFiles);
+        Assert.Equal(SkipReason.CloudOnly, skipped.Reason);
+        Assert.Equal("Only in OneDrive, not on this PC", SkippedFileText.Reason(skipped.Reason));
+        Assert.Empty(harness.InfoBars.Shown);
+    }
+
+    [Fact]
+    public async Task OnlineOnlyPhotosAlreadyInTheProjectAskNothing()
+    {
+        var known = ScriptedImportSource.Photo("IMG_2.jpg");
+        var source = new ScriptedImportSource([]) { CloudOnly = [ScriptedImportSource.Photo("IMG_2.jpg")] };
+        using var harness = ImportHarness.With(source);
+        harness.Ui.Run(() => harness.Project.AddFrames([known]));
+
+        await harness.ImportAsync(@"C:\Scripted");
+
+        Assert.Empty(harness.Dialogs.Asked);
+        Assert.Empty(harness.Project.SkippedFiles);
+        Assert.Equal(ProjectText.ImportAlreadyAdded, Assert.Single(harness.InfoBars.Shown).Message);
+    }
+
+    [Fact]
     public async Task AFolderThatWillNotOpenGetsItsOwnInfoBarAndIsNotASkippedPhoto()
     {
         using var harness = ImportHarness.WithPhotoImporter();

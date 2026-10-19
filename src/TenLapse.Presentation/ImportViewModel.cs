@@ -289,18 +289,40 @@ public sealed partial class ImportViewModel : ObservableObject
         var unread = new HashSet<Guid>();
         var skipped = new List<SkippedFile>();
         var unopened = new List<UnopenedPath>();
+        var cloudOnly = new List<Frame>();
+        var declined = 0;
         var found = 0;
         var kept = 0;
         try
         {
             await foreach (var batch in _source.ListAsync(request, token).ConfigureAwait(false))
             {
-                found += batch.Frames.Count;
+                found += batch.Frames.Count + batch.CloudOnly.Count;
                 var added = await _ui.InvokeAsync(() => AddListed(target, batch, wasEmpty ? name : null, listed.Count)).ConfigureAwait(false);
                 listed.AddRange(added);
                 unread.UnionWith(added.Select(frame => frame.Id));
                 skipped.AddRange(batch.Skipped);
                 unopened.AddRange(batch.Unopened);
+                cloudOnly.AddRange(batch.CloudOnly);
+            }
+
+            // Online-only OneDrive photos: reading one downloads it, so ask once, then add them or list them as skipped.
+            if (cloudOnly.Count > 0)
+            {
+                var pending = await _ui.InvokeAsync(() => NotInProject(target, cloudOnly)).ConfigureAwait(false);
+                if (pending.Count > 0 && await AskToDownloadAsync(pending, token).ConfigureAwait(false))
+                {
+                    var added = await _ui.InvokeAsync(() => AddListed(target, new ImportListBatch(pending, []), wasEmpty ? name : null, listed.Count)).ConfigureAwait(false);
+                    listed.AddRange(added);
+                    unread.UnionWith(added.Select(frame => frame.Id));
+                }
+                else if (pending.Count > 0)
+                {
+                    // Listed in the project, not in the InfoBar: the user has just chosen this.
+                    SkippedFile[] left = [.. pending.Select(frame => new SkippedFile(frame.SourcePath, SkipReason.CloudOnly, "Only in OneDrive; not downloaded."))];
+                    await _ui.RunAsync(() => target.AddSkippedFiles(left)).ConfigureAwait(false);
+                    declined = left.Length;
+                }
             }
 
             // Phase 2: read, then write back once per batch.
@@ -342,10 +364,27 @@ public sealed partial class ImportViewModel : ObservableObject
                 InfoBarSeverity.Caution,
                 !request.IncludeSubfolders && request.Paths.Any(Directory.Exists) ? ProjectText.ImportNothingFoundSubfolders : ProjectText.ImportNothingFound);
         }
-        else if (found > 0 && listed.Count == 0)
+        else if (found > 0 && listed.Count == 0 && declined == 0)
         {
             _infoBars.Show(InfoBarSeverity.Neutral, ProjectText.ImportAlreadyAdded);
         }
+    }
+
+    // UI thread. The online-only photos whose path is not in the project yet (a second import of the same folder asks
+    // nothing and skips nothing for them).
+    private static List<Frame> NotInProject(Project target, List<Frame> frames)
+    {
+        var present = new HashSet<string>(target.Frames.Select(frame => frame.SourcePath), StringComparer.OrdinalIgnoreCase);
+        return [.. frames.Where(frame => present.Add(frame.SourcePath))];
+    }
+
+    // Asks once whether to download the online-only photos (their reported sizes give the total). The default button
+    // skips them, so Esc or closing the dialog downloads nothing. A Cancel of the import stops the wait.
+    private async Task<bool> AskToDownloadAsync(List<Frame> pending, CancellationToken token)
+    {
+        var question = ProjectText.CloudDownload(pending.Count, pending.Sum(frame => frame.FileSize));
+        var answer = await _ui.InvokeAsync(() => _dialogs.ConfirmAsync(question)).ConfigureAwait(false);
+        return await answer.WaitAsync(token).ConfigureAwait(false);
     }
 
     // UI thread. Adds one listing batch and returns the frames really added (AddFrames appends them, so they are the

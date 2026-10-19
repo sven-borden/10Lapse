@@ -20,6 +20,13 @@ public sealed record ImportListBatch(IReadOnlyList<Frame> Frames, IReadOnlyList<
     /// never join <see cref="Project.SkippedFiles"/>: the import names them in an InfoBar of their own.
     /// </summary>
     public IReadOnlyList<UnopenedPath> Unopened { get; init; } = [];
+
+    /// <summary>
+    /// Photos that are online-only cloud files (OneDrive files on demand: the file system reports them as recalled on
+    /// open or on data access, or offline), as new frames like <see cref="Frames"/> but kept apart: reading one downloads
+    /// it, so the import asks first and adds them, or lists them as <see cref="SkipReason.CloudOnly"/>.
+    /// </summary>
+    public IReadOnlyList<Frame> CloudOnly { get; init; } = [];
 }
 
 /// <summary>A folder (or a path that was gone) the import could not open.</summary>

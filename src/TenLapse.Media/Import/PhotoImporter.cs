@@ -25,6 +25,9 @@ public sealed class PhotoImporter : IPhotoImportSource
     // cap is the last stop against anything else that nests without end.
     private const int MaxFolderDepth = 32;
 
+    // FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS, FILE_ATTRIBUTE_RECALL_ON_OPEN (no FileAttributes names) and Offline.
+    private const FileAttributes CloudOnlyAttributes = (FileAttributes)0x400000 | (FileAttributes)0x40000 | FileAttributes.Offline;
+
     // A read batch is handed out at this size, or sooner once this much time has passed since the last one.
     private static readonly TimeSpan _readBatchInterval = TimeSpan.FromMilliseconds(150);
 
@@ -74,6 +77,19 @@ public sealed class PhotoImporter : IPhotoImportSource
     /// </summary>
     internal Func<string, bool> IsReadable { get; init; } = PhotoCodecs.IsReadable;
 
+    /// <summary>
+    /// The attributes the listing sees for a file, given its path and what the file system reported. Tests mark files
+    /// as OneDrive placeholders with it (real ones cannot be made without OneDrive); the importer takes them as they are.
+    /// </summary>
+    internal Func<string, FileAttributes, FileAttributes> Attributes { get; init; } = static (_, attributes) => attributes;
+
+    /// <summary>
+    /// True for an online-only cloud file (OneDrive files on demand): opening or reading it downloads it. Windows marks
+    /// those as recall on data access (0x400000), recall on open (0x40000) or offline (0x1000). Reading only the listing's
+    /// attributes downloads nothing.
+    /// </summary>
+    public static bool IsCloudOnly(FileAttributes attributes) => (attributes & CloudOnlyAttributes) != 0;
+
     /// <inheritdoc />
     public bool IsPhotoFile(string path) => !string.IsNullOrEmpty(path) && _isPhoto(path);
 
@@ -92,6 +108,13 @@ public sealed class PhotoImporter : IPhotoImportSource
         {
             foreach (var file in group)
             {
+                if (file.CloudOnly)
+                {
+                    // Kept apart: reading it would download it, so the import asks first.
+                    listing.CloudOnly.Add(new Frame(file.Path, file.Length, file.LastWriteTimeUtc));
+                    continue;
+                }
+
                 frames.Add(new Frame(file.Path, file.Length, file.LastWriteTimeUtc));
                 if (frames.Count >= limit)
                 {
@@ -311,7 +334,7 @@ public sealed class PhotoImporter : IPhotoImportSource
                 {
                     if (!entry.IsDirectory)
                     {
-                        files.Add(new ListedFile(entry.Path, entry.Length, entry.LastWriteTimeUtc));
+                        files.Add(new ListedFile(entry.Path, entry.Length, entry.LastWriteTimeUtc, IsCloudOnly(Attributes(entry.Path, entry.Attributes))));
                     }
                     else if (!IsLink(entry))
                     {
@@ -404,12 +427,12 @@ public sealed class PhotoImporter : IPhotoImportSource
     }
 
     // A file picked or dropped by itself: its size and write time, or a skipped entry when it cannot be read.
-    private static ListedFile? Listed(string path, List<SkippedFile> skipped)
+    private ListedFile? Listed(string path, List<SkippedFile> skipped)
     {
         try
         {
             var info = new FileInfo(path);
-            return new ListedFile(info.FullName, info.Length, info.LastWriteTimeUtc);
+            return new ListedFile(info.FullName, info.Length, info.LastWriteTimeUtc, IsCloudOnly(Attributes(info.FullName, info.Attributes)));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -422,7 +445,7 @@ public sealed class PhotoImporter : IPhotoImportSource
     }
 
     /// <summary>A listed file's path and the facts the frame records.</summary>
-    internal sealed record ListedFile(string Path, long Length, DateTime LastWriteTimeUtc);
+    internal sealed record ListedFile(string Path, long Length, DateTime LastWriteTimeUtc, bool CloudOnly = false);
 
     /// <summary>One entry of a folder's listing: a photo file or a subfolder, with its attributes.</summary>
     private readonly record struct ListedEntry(string Path, bool IsDirectory, long Length, DateTime LastWriteTimeUtc, FileAttributes Attributes);
@@ -440,13 +463,16 @@ public sealed class PhotoImporter : IPhotoImportSource
         /// <summary>Every folder walked, by its final path.</summary>
         public HashSet<string> Visited { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-        public bool HasNews => Skipped.Count > 0 || Unopened.Count > 0;
+        public List<Frame> CloudOnly { get; } = [];
+
+        public bool HasNews => Skipped.Count > 0 || Unopened.Count > 0 || CloudOnly.Count > 0;
 
         public ImportListBatch Take(List<Frame> frames)
         {
-            var batch = new ImportListBatch(frames, [.. Skipped]) { Unopened = [.. Unopened] };
+            var batch = new ImportListBatch(frames, [.. Skipped]) { Unopened = [.. Unopened], CloudOnly = [.. CloudOnly] };
             Skipped.Clear();
             Unopened.Clear();
+            CloudOnly.Clear();
             return batch;
         }
     }

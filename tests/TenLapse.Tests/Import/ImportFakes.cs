@@ -24,6 +24,12 @@ internal sealed class ScriptedImportSource(params IReadOnlyList<Frame>[] batches
     /// <summary>Frames per reading batch.</summary>
     public int ReadBatch { get; set; } = 2;
 
+    /// <summary>Online-only photos the listing hands out in a batch of their own, after the others.</summary>
+    public IReadOnlyList<Frame> CloudOnly { get; set; } = [];
+
+    /// <summary>Every frame reading was asked for, in order.</summary>
+    public List<Frame> ReadRequested { get; } = [];
+
     /// <summary>Raised (on the source's thread) just before reading batch n would be handed out and its gate waits.</summary>
     public TaskCompletionSource ReadBatchReached { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -52,11 +58,17 @@ internal sealed class ScriptedImportSource(params IReadOnlyList<Frame>[] batches
             cancellationToken.ThrowIfCancellationRequested();
             yield return new ImportListBatch(batches[i], []);
         }
+
+        if (CloudOnly.Count > 0)
+        {
+            yield return new ImportListBatch([], []) { CloudOnly = CloudOnly };
+        }
     }
 
     public async IAsyncEnumerable<IReadOnlyList<FrameReading>> ReadAsync(IReadOnlyList<Frame> frames, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await Task.Yield();
+        ReadRequested.AddRange(frames);
         var index = 0;
         foreach (var chunk in frames.Chunk(ReadBatch))
         {

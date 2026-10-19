@@ -103,6 +103,45 @@ public sealed class PhotoImporterTests : IDisposable
     }
 
     [Fact]
+    public async Task OnlineOnlyFilesAreListedApartWithTheirSizesAndNothingIsRead()
+    {
+        Touch("IMG_1.jpg", "IMG_2.jpg", "IMG_3.jpg", "IMG_4.jpg", "loose/IMG_5.jpg");
+        File.WriteAllBytes(Path.Combine(_root, "IMG_2.jpg"), new byte[2048]);
+        var marks = new Dictionary<string, FileAttributes>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["IMG_2.jpg"] = (FileAttributes)0x400000, // recall on data access: OneDrive's online-only files
+            ["IMG_3.jpg"] = (FileAttributes)0x40000, // recall on open
+            ["IMG_4.jpg"] = FileAttributes.Offline,
+            ["IMG_5.jpg"] = (FileAttributes)0x400000,
+        };
+        var asked = new List<string>();
+        var importer = new PhotoImporter(Importable)
+        {
+            Attributes = (path, attributes) =>
+            {
+                asked.Add(Path.GetFileName(path));
+                return marks.TryGetValue(Path.GetFileName(path), out var mark) ? attributes | mark : attributes;
+            },
+        };
+
+        var cloud = new List<Frame>();
+        var frames = new List<Frame>();
+        await foreach (var batch in importer.ListAsync(new ImportRequest([_root, Path.Combine(_root, "loose", "IMG_5.jpg")], IncludeSubfolders: false), TestContext.Current.CancellationToken))
+        {
+            frames.AddRange(batch.Frames);
+            cloud.AddRange(batch.CloudOnly);
+        }
+
+        Assert.Equal(["IMG_1.jpg"], Names(frames));
+        Assert.Equal(["IMG_5.jpg", "IMG_2.jpg", "IMG_3.jpg", "IMG_4.jpg"], Names(cloud));
+        Assert.Equal(2048, cloud.Single(frame => frame.FileName == "IMG_2.jpg").FileSize);
+        Assert.All(cloud, frame => Assert.Null(frame.PixelSize));
+        Assert.True(PhotoImporter.IsCloudOnly(FileAttributes.Archive | (FileAttributes)0x400000));
+        Assert.False(PhotoImporter.IsCloudOnly(FileAttributes.Archive | FileAttributes.ReparsePoint));
+        Assert.Contains("IMG_5.jpg", asked);
+    }
+
+    [Fact]
     public async Task AJunctionBackToItsOwnFolderIsNotFollowedSoEachPhotoIsListedOnceAndTheWalkEnds()
     {
         Touch("IMG_1.jpg", "a/IMG_2.jpg");
