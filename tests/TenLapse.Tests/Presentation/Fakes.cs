@@ -1,3 +1,4 @@
+using TenLapse.Core.Projects;
 using TenLapse.Presentation.Services;
 
 namespace TenLapse.Tests.Presentation;
@@ -82,6 +83,54 @@ internal sealed class FakeInfoBarService : IInfoBarService
 
     public void Dismiss(InfoBarTicket ticket)
     {
+    }
+}
+
+/// <summary>The PC's photo extensions, as the test says: which are missing, what opening the Store does.</summary>
+internal sealed class FakeCodecExtensions : ICodecExtensions
+{
+    private readonly Lock _gate = new();
+
+    /// <summary>The extensions this PC does not have.</summary>
+    public HashSet<PhotoCodecExtension> Missing { get; } = [];
+
+    /// <summary>What opening the Store page answers: true, false (nothing to open it with), or a throw.</summary>
+    public Func<PhotoCodecExtension, bool> OpenResult { get; set; } = _ => true;
+
+    /// <summary>The extensions whose Store page was asked for, in order.</summary>
+    public List<PhotoCodecExtension> Opened { get; } = [];
+
+    /// <summary>How many times the verdicts were forgotten.</summary>
+    public int Refreshed { get; private set; }
+
+    /// <summary>The extensions IsInstalled was asked about.</summary>
+    public List<PhotoCodecExtension> Asked { get; } = [];
+
+    public void Refresh()
+    {
+        lock (_gate)
+        {
+            Refreshed++;
+        }
+    }
+
+    public bool IsInstalled(PhotoCodecExtension extension)
+    {
+        lock (_gate)
+        {
+            Asked.Add(extension);
+            return !Missing.Contains(extension);
+        }
+    }
+
+    public Task<bool> OpenStorePageAsync(PhotoCodecExtension extension)
+    {
+        lock (_gate)
+        {
+            Opened.Add(extension);
+        }
+
+        return Task.FromResult(OpenResult(extension));
     }
 }
 

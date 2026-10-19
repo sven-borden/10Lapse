@@ -58,7 +58,7 @@ internal static class PhotoFixtureCatalogue
         new("empty.jpg", SkipReason.EmptyFile),
         new("truncated.jpg", SkipReason.Truncated),
         new("no-eoi.jpg", SkipReason.Truncated),
-        new("text.heic", HeicTextReason()),
+        new("text.heic", SkipReason.UnsupportedFormat),
 
         // ---- awkward and fine ----
         new("png-named.jpg", Size: new(96, 64), Quadrants: Scene, Tolerance: 2),
@@ -108,8 +108,4 @@ internal static class PhotoFixtureCatalogue
         new($"orientation-{orientation}.jpg", Size: new(width, height), Orientation: orientation, Quadrants: Displayed(Scene, orientation), Tolerance: JpegTolerance);
 
     private static Rgba Gray(byte level) => new(level, level, level);
-
-    // Text named .heic: with the HEIF decoder installed the content is not a HEIF file; without it Windows can only say the extension is missing.
-    private static SkipReason HeicTextReason() =>
-        PhotoCodecs.DecoderFor(".heic") is null ? SkipReason.NeedsExtension : SkipReason.UnsupportedFormat;
 }

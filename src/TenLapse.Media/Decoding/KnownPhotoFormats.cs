@@ -1,9 +1,6 @@
-namespace TenLapse.Media.Decoding;
+using TenLapse.Core.Projects;
 
-/// <summary>A free Windows extension from the Microsoft Store that adds a WIC decoder or a codec one needs (#14 offers it).</summary>
-/// <param name="Name">The Store name, as the user will find it ("HEIF Image Extensions").</param>
-/// <param name="StoreProductId">The Store product ID for <c>ms-windows-store://pdp/?ProductId=…</c>.</param>
-public sealed record PhotoCodecExtension(string Name, string StoreProductId);
+namespace TenLapse.Media.Decoding;
 
 /// <summary>A photo format 10Lapse knows by name, whether or not this PC can read it.</summary>
 /// <param name="Name">The friendly name ("HEIF", "Camera RAW").</param>
@@ -34,10 +31,10 @@ public static class KnownPhotoFormats
     public static readonly PhotoCodecExtension HeifExtension = new("HEIF Image Extensions", "9PMMSR1CGPWG");
 
     /// <summary>HEVC Video Extensions: the codec of HEIC photos (the iPhone default). A fresh Windows 11 has the HEIF decoder but not this.</summary>
-    public static readonly PhotoCodecExtension HevcExtension = new("HEVC Video Extensions", "9NMZLZ57R3T7");
+    public static readonly PhotoCodecExtension HevcExtension = new("HEVC Video Extensions", "9NMZLZ57R3T7", HasFee: true, IsCodec: true);
 
     /// <summary>AV1 Video Extension: the codec of AVIF photos.</summary>
-    public static readonly PhotoCodecExtension Av1Extension = new("AV1 Video Extension", "9MVZQVXJBQ9V");
+    public static readonly PhotoCodecExtension Av1Extension = new("AV1 Video Extension", "9MVZQVXJBQ9V", IsCodec: true);
 
     /// <summary>Webp Image Extensions.</summary>
     public static readonly PhotoCodecExtension WebpExtension = new("Webp Image Extensions", "9PG2DK419DRG");

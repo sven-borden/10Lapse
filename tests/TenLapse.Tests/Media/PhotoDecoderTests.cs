@@ -3,6 +3,7 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using TenLapse.Core.Projects;
 using TenLapse.Media.Decoding;
+using TenLapse.Media.Encoding;
 using TenLapse.Media.Export;
 using TenLapse.Media.Rendering;
 using Windows.Graphics.Imaging;
@@ -510,6 +511,8 @@ public sealed class PhotoDecoderTests : IDisposable
     private static readonly byte[] _plainHeifHeader = [0, 0, 0, 0x14, .. "ftypmif1"u8, 0, 0, 0, 0, .. "mif1"u8];
 
     // name, stage, HRESULT, is the decoder for the extension installed, header, the extension expected (null: unreadable, not NeedsExtension)
+    private static readonly byte[] _textHeader = [.. "Just some notes, not a photo at all."u8];
+
     public static TheoryData<string, string, uint, bool, string, string?> MissingComponents => new()
     {
         // No decoder claims the extension: the extension that adds the decoder.
@@ -525,6 +528,11 @@ public sealed class PhotoDecoderTests : IDisposable
         { "IMG_4402.HEIC", "Decode", 0x88982F50, true, "", "HEVC Video Extensions" },
         { "IMG_4402.avif", "Open", 0x88982F81, true, "avif", "AV1 Video Extension" },
         { "renamed.jpg", "Open", 0x88982F81, true, "heic", "HEVC Video Extensions" },
+        // Text named .heic or .avif on a PC with no HEIF decoder: the first bytes are no HEIF file, so it is unreadable, not a Store visit.
+        { "notes.heic", "Open", 0x88982F50, false, "text", null },
+        { "notes.avif", "Open", 0x88982F50, false, "text", null },
+        // RAW has no cheap check of its first bytes: with no decoder it is told by its extension.
+        { "DSC_0001.NEF", "Open", 0x88982F50, false, "text", "Raw Image Extension" },
         // Unreadable, not a missing extension: text named .heic, a HEIF naming no codec opened, a JPEG, RAW with its decoder.
         { "notes.heic", "Open", 0x88982F50, true, "", null },
         { "IMG_4402.HEIC", "Open", 0x88982F50, true, "mif1", null },
@@ -538,7 +546,7 @@ public sealed class PhotoDecoderTests : IDisposable
     {
         // The HEVC codec is installed here, so the fresh-Windows case is injected: the HRESULTs are those seen
         // with a HEIC whose image is coded in a codec this PC lacks (see AHeicWhoseCodecIsMissingNeedsTheCodecExtension).
-        var header = brand switch { "heic" => _heicHeader, "avif" => _avifHeader, "mif1" => _plainHeifHeader, _ => null };
+        var header = brand switch { "heic" => _heicHeader, "avif" => _avifHeader, "mif1" => _plainHeifHeader, "text" => _textHeader, _ => null };
         var exception = new COMException("Component missing.", unchecked((int)hresult));
 
         var failure = PhotoFailures.Classify(exception, @"C:\Photos\" + name, Enum.Parse<PhotoFailures.Stage>(stage), _ => decoderInstalled ? PhotoCodecs.Decoders[0] : null, header);
@@ -550,6 +558,72 @@ public sealed class PhotoDecoderTests : IDisposable
         {
             Assert.Contains(failure.MissingExtension!.StoreProductId, failure.Detail, StringComparison.Ordinal);
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(MissingComponents))]
+    public void TheSkippedFileCarriesTheExtensionsInInstallOrder(string name, string stage, uint hresult, bool decoderInstalled, string brand, string? expected)
+    {
+        // #14: a missing decoder adds the format's codec as a second candidate (the import asks the PC whether it has
+        // it); a missing codec, or a missing RAW decoder, is alone; a broken file carries none.
+        var header = brand switch { "heic" => _heicHeader, "avif" => _avifHeader, "mif1" => _plainHeifHeader, "text" => _textHeader, _ => null };
+        var exception = new COMException("Component missing.", unchecked((int)hresult));
+
+        var skipped = PhotoFailures.Classify(exception, @"C:\Photos\" + name, Enum.Parse<PhotoFailures.Stage>(stage), _ => decoderInstalled ? PhotoCodecs.Decoders[0] : null, header).ToSkippedFile();
+
+        var names = skipped.MissingExtensions.Select(extension => extension.Name).ToArray();
+        string[] expectedNames = (name.ToLowerInvariant(), expected) switch
+        {
+            (_, null) => [],
+            (var n, "HEIF Image Extensions") when n.EndsWith(".heic", StringComparison.Ordinal) => ["HEIF Image Extensions", "HEVC Video Extensions"],
+            (var n, "HEIF Image Extensions") when n.EndsWith(".avif", StringComparison.Ordinal) => ["HEIF Image Extensions", "AV1 Video Extension"],
+            (_, var only) => [only],
+        };
+        Assert.Equal(expectedNames, names);
+        Assert.Equal(expected is null ? SkipReason.UnsupportedFormat : SkipReason.NeedsExtension, skipped.Reason);
+    }
+
+    [Fact]
+    public void OnlyASoftwareHevcDecoderCountsAsTheHevcExtensionBeingInstalled()
+    {
+        // A vendor's hardware HEVC decoder (Intel, AMD, an OEM) is not what WIC's HEIF decoder uses: HEIC would still fail.
+        static DecoderMft Decoder(bool hardware) => new(VideoFormat.Mp4Hevc, "HEVC decoder", hardware, Guid.NewGuid());
+
+        Assert.False(PhotoCodecs.IsInstalled(KnownPhotoFormats.HevcExtension, _ => []));
+        Assert.False(PhotoCodecs.IsInstalled(KnownPhotoFormats.HevcExtension, _ => [Decoder(hardware: true)]));
+        Assert.True(PhotoCodecs.IsInstalled(KnownPhotoFormats.HevcExtension, _ => [Decoder(hardware: true), Decoder(hardware: false)]));
+        Assert.True(PhotoCodecs.IsInstalled(KnownPhotoFormats.HevcExtension, _ => [Decoder(hardware: false)]));
+
+        // When Media Foundation cannot be asked, the answer is "installed": "missing" must be certain.
+        Assert.True(PhotoCodecs.IsInstalled(KnownPhotoFormats.HevcExtension, _ => throw new COMException("No Media Foundation.", unchecked((int)0xC00D36B0))));
+    }
+
+    [Fact]
+    public void TheHeifDecoderOnThisPcIsFoundWhenItIsThereAndAnUnknownExtensionCountsAsInstalled()
+    {
+        // Asked of Windows each time: a refresh in between changes nothing about a PC that did not change.
+        var before = PhotoCodecs.IsInstalled(KnownPhotoFormats.HeifExtension);
+        PhotoCodecs.Refresh();
+        var after = PhotoCodecs.IsInstalled(KnownPhotoFormats.HeifExtension);
+
+        Assert.Equal(before, after);
+        Assert.Equal(PhotoCodecs.DecoderFor(".heic") is not null, after);
+        Assert.Equal(PhotoCodecs.DecoderFor(".cr2") is not null, PhotoCodecs.IsInstalled(KnownPhotoFormats.RawExtension));
+
+        // The AV1 codec cannot be told here, so it is never reported as missing.
+        Assert.True(PhotoCodecs.IsInstalled(KnownPhotoFormats.Av1Extension));
+    }
+
+    [Fact]
+    public void TheDecoderListIsReadAgainAfterARefreshSoAnInstallDuringTheSessionIsSeen()
+    {
+        var before = PhotoCodecs.Decoders;
+        PhotoCodecs.Refresh();
+
+        var after = PhotoCodecs.Decoders;
+
+        Assert.NotSame(before, after);
+        Assert.Equal(before.Select(d => d.CodecId), after.Select(d => d.CodecId));
     }
 
     [Fact]

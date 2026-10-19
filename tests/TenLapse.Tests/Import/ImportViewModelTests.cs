@@ -26,6 +26,8 @@ public sealed class ImportViewModelTests
         var reasons = PhotoFixtureCatalogue.All.Where(fixture => fixture.Reason is not null).ToDictionary(fixture => fixture.Name, fixture => fixture.Reason);
         Assert.All(project.SkippedFiles, file => Assert.Equal(reasons[Path.GetFileName(file.Path)], file.Reason));
 
+        // text.heic is unreadable on any PC, with or without the HEIF decoder: its first bytes are no HEIF file, so it
+        // never becomes a Store prompt (#14) and stays in the list.
         var bar = Assert.Single(harness.InfoBars.Shown);
         Assert.Equal(InfoBarSeverity.Caution, bar.Severity);
         Assert.Equal("4 photos couldn't be read and were skipped.", bar.Message);
@@ -46,7 +48,7 @@ public sealed class ImportViewModelTests
         var gate = source.HoldReadBatch(1);
         using var harness = ImportHarness.With(source);
         var dispatcher = new ClosingDispatcher(harness.Ui);
-        var import = harness.Ui.Run(() => new ImportViewModel(harness.Shell, source, harness.Picker, harness.Folders, dispatcher, harness.Dialogs, harness.InfoBars, harness.Errors));
+        var import = harness.Ui.Run(() => new ImportViewModel(harness.Shell, source, harness.Picker, harness.Folders, dispatcher, harness.Dialogs, harness.InfoBars, harness.Codecs, harness.Errors));
 
         var running = harness.Ui.Run(() => import.ImportAsync([@"C:\Scripted"]));
         await source.ReadBatchReached.Task.WaitAsync(TestContext.Current.CancellationToken);
