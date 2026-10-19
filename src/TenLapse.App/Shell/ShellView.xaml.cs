@@ -338,10 +338,18 @@ public sealed partial class ShellView : UserControl
     }
 
     // The panel's height: 260 px, less when the window is short (ShellLayout.PanelHeight). Docked, the pane takes the body's height.
-    private void ApplyPanelHeight() =>
+    // Skipped until the body has been measured: a height worked out from 0 would clamp to the minimum for one frame.
+    private void ApplyPanelHeight()
+    {
+        if (Layout.IsNarrow && Body.ActualHeight <= 0)
+        {
+            return;
+        }
+
         InspectorPane.Height = Layout.IsNarrow
             ? Layout.PanelHeight(Body.ActualHeight, StageChromeHeight())
             : double.NaN;
+    }
 
     private void OnPanelHeightInputsChanged(object sender, SizeChangedEventArgs e) =>
         _presenter.Guard(ApplyPanelHeight, ProjectText.LayoutSwitchFailed);
