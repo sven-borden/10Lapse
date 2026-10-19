@@ -50,9 +50,12 @@ internal static class TransportKeyboard
     }
 
     // What kind of control has the focus; the order matters (an editable ComboBox before ComboBox, ComboBox, ListBox
-    // and the lists before Selector, their base).
-    private static FocusedControl Describe(object? focused) => focused switch
+    // and the lists before Selector, their base). The filmstrip (#20) asks it too.
+    internal static FocusedControl Describe(object? focused) => focused switch
     {
+        null => FocusedControl.None,
+        PreviewView => FocusedControl.None,
+        Filmstrip.FilmstripThumb => FocusedControl.FilmstripItem,
         TextBox => FocusedControl.TextBox,
         PasswordBox => FocusedControl.PasswordBox,
         RichEditBox => FocusedControl.RichEditBox,
@@ -60,6 +63,7 @@ internal static class TransportKeyboard
         NumberBox => FocusedControl.NumberBox,
         ComboBox { IsEditable: true } => FocusedControl.EditableComboBox,
         ComboBox => FocusedControl.ComboBox,
+        ComboBoxItem => FocusedControl.ComboBoxItem,
         RangeBase => FocusedControl.RangeBase,
         ListViewBase => FocusedControl.ListViewBase,
         ListBox => FocusedControl.ListBox,
@@ -72,6 +76,6 @@ internal static class TransportKeyboard
         _ => FocusedControl.Other,
     };
 
-    private static bool IsDown(VirtualKey key) =>
+    internal static bool IsDown(VirtualKey key) =>
         InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);
 }

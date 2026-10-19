@@ -39,6 +39,7 @@ public sealed partial class ShellView : UserControl
     private readonly long _emptyRegionVisibilityToken;
     private readonly TimingPanelViewModel _timing;
     private readonly FramePanelViewModel _frame;
+    private readonly Presentation.Filmstrip.FilmstripViewModel _filmstrip;
 
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
@@ -88,6 +89,15 @@ public sealed partial class ShellView : UserControl
         PreviewSurface.Attach(preview);
         Transport.Attach(preview.Player, presenter);
         ShellRoot.KeyDown += OnShellKeyDown;
+
+        // The filmstrip (#20): thumbnails, selection, removal and undo, reorder and gap markers. Its Delete and Ctrl+Z
+        // also listen on ShellRoot, after the transport keys, and not on the Settings page. The export panel (#24) is
+        // built after this line and given _filmstrip (its SetPending and ClearPending dim what is not exported yet).
+        _filmstrip = new Presentation.Filmstrip.FilmstripViewModel(viewModel, preview.Player, presenter);
+        Filmstrip.Attach(_filmstrip, preview, ShellRoot, () => !ViewModel.IsSettingsOpen);
+#if DEBUG
+        Debugging.DebugLaunch.ApplyFilmstrip(Filmstrip, preview);
+#endif
 
         // The shell leaves the tree only when the window closes; the shadow goes with it.
         Unloaded += (_, _) => _infoBarShadow.Dispose();
@@ -206,6 +216,8 @@ public sealed partial class ShellView : UserControl
         _infoBarShadow.Dispose();
         _timing.Dispose();
         _frame.Dispose();
+        Filmstrip.Detach();
+        _filmstrip.Dispose();
     }
 
     // Opening Settings puts focus on Back, leaving it puts focus back on the Settings button, so the keyboard and a

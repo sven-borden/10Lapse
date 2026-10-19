@@ -76,12 +76,11 @@
 
   <!--
     Shell regions (prototype docs/design/canvas/Main.dc.html): the InfoBar floats 32 px below the top of the
-    stage (20 padding + 12), at most 560 wide and at least 40 px in from each side. The filmstrip holds 3:2
-    thumbnails, an 8 px gap and a 16 px caption row: 56 px in the 1280 px window.
+    stage (20 padding + 12), at most 560 wide and at least 40 px in from each side. The filmstrip (#20) sizes itself:
+    its 3:2 thumbnails (32 to 96 px tall), 4 px around them for the rings, an 8 px gap and a 16 px caption row.
   -->
   <x:Double x:Key="InfoBarMaxWidth">560</x:Double>
   <Thickness x:Key="InfoBarHostMargin">40,32,40,0</Thickness>
-  <x:Double x:Key="FilmstripMinHeight">56</x:Double>
 
   <!--
     Settings page (prototype: a column at most 760 px wide, centered, 28 / 40 / 48 around it; the title 14 px above

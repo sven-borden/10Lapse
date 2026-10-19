@@ -53,6 +53,7 @@ internal static partial class DebugLaunch
     public static void ApplyPreview(PreviewSession preview, Window window, ILog log)
     {
         _previewLog = new LogErrorSink(log);
+        RememberBench(window, log);
 
         // Closing stops the sample generator; with --sample-clean it also deletes the generated photos.
         window.Closed += (_, _) =>
