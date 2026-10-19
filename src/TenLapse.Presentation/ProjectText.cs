@@ -397,6 +397,9 @@ public static class ProjectText
     public static string PreviewTimecodeName(long ticks, long lengthTicks) =>
         Format(PreviewTimecodeNameFormat, TimingFormat.Timecode(ticks), TimingFormat.Timecode(lengthTicks));
 
+    /// <summary>"IMG_4402.JPG can't be read", drawn in the frame's place.</summary>
+    public static string PreviewPlaceholder(string fileName) => Format(PreviewPlaceholderFormat, fileName);
+
     /// <summary>The InfoBar message for <paramref name="count"/> photos the preview cannot read.</summary>
     public static string PreviewFrameUnreadable(int count)
     {

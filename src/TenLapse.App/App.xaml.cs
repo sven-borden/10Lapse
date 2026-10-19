@@ -127,12 +127,28 @@ public partial class App : Application
             dialogs,
             infoBars,
             errors);
-        window = new MainWindow(shell, settings, import, infoBars, logOnly, errors);
+        // The preview (#19): the proxy cache in LocalCache (beside the log unpackaged), the frame images, the player.
+        var preview = new Preview.PreviewSession(shell, errors, infoBars, logOnly, PreviewCacheFolder());
+        window = new MainWindow(shell, settings, import, infoBars, logOnly, errors, preview);
+        window.Closed += (_, _) => logOnly.RunLogged(preview.Dispose, ProjectText.PreviewProjectFailed);
         _errors = errors;
 #if DEBUG
+        errors.Guard(() => Debugging.DebugLaunch.ApplyPreview(preview, window, _log), "Applying the preview's Debug switches failed.");
         errors.Guard(() => Debugging.DebugLaunch.Apply(shell, infoBars), "Applying the Debug switches failed.");
 #endif
         return window;
+    }
+
+    // Debug can point the proxy cache elsewhere (--cache-folder=PATH), so a test run leaves the user's cache alone.
+    private static string PreviewCacheFolder()
+    {
+#if DEBUG
+        if (Debugging.DebugLaunch.CacheFolder is { } folder)
+        {
+            return folder;
+        }
+#endif
+        return AppEnvironment.ProxyCacheFolder();
     }
 
     // An exception that reached the UI thread unhandled: an event handler, a binding, a continuation. Unless it

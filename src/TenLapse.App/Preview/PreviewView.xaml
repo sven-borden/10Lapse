@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The preview gate (#19): a swap chain the render thread (PreviewRenderLoop) draws the frame into, through the export's
+  FrameRenderer, as large as fits at the video's shape, centred, with 6 px corners (RadiusCard). Around the gate the
+  swap chain is transparent, so the Layer shows. It resizes with the window.
+-->
+<UserControl
+  x:Class="TenLapse.Preview.PreviewView"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml">
+  <win2d:CanvasSwapChainPanel x:Name="Panel" />
+</UserControl>

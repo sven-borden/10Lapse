@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The scrubber (#19), one of DESIGN.md's bespoke pieces (docs/design/canvas/components/Controls.dc.html, Transport):
+  a 4 px Track with the played part in Deep Amber Indicator, and a 16 px Card knob with a Control Stroke ring and an
+  8 px indicator dot. The hit area is the whole 20 px row. Pointer drags seek (Scrubber.xaml.cs); the keys are the
+  transport's (TransportKeyboard), so focus here changes nothing about them. Narrator sees a slider whose value is the
+  frame number (ScrubberAutomationPeer), and hears it change only while paused.
+-->
+<UserControl
+  x:Class="TenLapse.Preview.Scrubber"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  Height="20"
+  Background="Transparent"
+  IsTabStop="True"
+  UseSystemFocusVisuals="True">
+  <Grid x:Name="Root" Background="Transparent">
+    <VisualStateManager.VisualStateGroups>
+      <!-- Hover and press tint the indicator (DESIGN.md: DeepAmberIndicatorHover and Pressed for interactive feedback). -->
+      <VisualStateGroup x:Name="CommonStates">
+        <VisualState x:Name="Normal" />
+        <VisualState x:Name="PointerOver">
+          <VisualState.Setters>
+            <Setter Target="KnobDot.Fill" Value="{ThemeResource DeepAmberIndicatorHoverBrush}" />
+            <Setter Target="Played.Background" Value="{ThemeResource DeepAmberIndicatorHoverBrush}" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState x:Name="Pressed">
+          <VisualState.Setters>
+            <Setter Target="KnobDot.Fill" Value="{ThemeResource DeepAmberIndicatorPressedBrush}" />
+            <Setter Target="Played.Background" Value="{ThemeResource DeepAmberIndicatorPressedBrush}" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
+    <Border
+      x:Name="Track"
+      Height="4"
+      Margin="8,0,8,0"
+      VerticalAlignment="Center"
+      Background="{ThemeResource TrackBrush}"
+      CornerRadius="2" />
+    <Border
+      x:Name="Played"
+      Width="0"
+      Height="4"
+      Margin="8,0,0,0"
+      HorizontalAlignment="Left"
+      VerticalAlignment="Center"
+      Background="{ThemeResource DeepAmberIndicatorBrush}"
+      CornerRadius="2" />
+    <Grid
+      x:Name="Knob"
+      Width="16"
+      Height="16"
+      HorizontalAlignment="Left"
+      VerticalAlignment="Center">
+      <Grid.RenderTransform>
+        <TranslateTransform x:Name="KnobOffset" />
+      </Grid.RenderTransform>
+      <Ellipse
+        Fill="{ThemeResource CardBrush}"
+        Stroke="{ThemeResource ControlStrokeBrush}"
+        StrokeThickness="1" />
+      <Ellipse
+        x:Name="KnobDot"
+        Width="8"
+        Height="8"
+        Fill="{ThemeResource DeepAmberIndicatorBrush}" />
+    </Grid>
+  </Grid>
+</UserControl>
