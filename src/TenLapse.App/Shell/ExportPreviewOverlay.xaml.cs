@@ -74,11 +74,12 @@ public sealed partial class ExportPreviewOverlay : UserControl
             player.StateChanged -= OnPlayerStateChanged;
         }
 
+        // The player is not disposed: the element still holds it while the window tears down, and disposing it under the
+        // element ended the process with a stowed exception (or hung it) on close. Without a source it holds nothing.
         StopPremiere();
         if (_media is { } media)
         {
             media.MediaFailed -= OnMediaFailed;
-            media.Dispose();
             _media = null;
         }
     }

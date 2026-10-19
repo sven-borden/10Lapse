@@ -42,7 +42,7 @@ public sealed partial class FilmGate : UserControl
     private IErrorSink? _log;
     private DispatcherQueueTimer? _timer;
     private ImmutableArray<Frame> _frames = [];
-    private int _writing;
+    private bool _ended = true;
     private double _shown;
     private double _from;
     private double _to;
@@ -81,20 +81,20 @@ public sealed partial class FilmGate : UserControl
     {
         if (frames.IsDefaultOrEmpty)
         {
+            // The export ended: the strip keeps its last picture while the panel leaves.
             _timer?.Stop();
-            _frames = [];
-            Place();
+            _ended = true;
             return;
         }
 
-        if (frames != _frames)
+        if (_ended || frames != _frames)
         {
+            _ended = false;
             // A new export: the strip starts where it is, without a glide from the last one.
             _frames = frames;
             _shown = _from = _to = writing;
         }
 
-        _writing = writing;
         if (MotionTokens.AnimationsEnabled && !ExportPanel.ReduceMotionSwitch && IsLoaded)
         {
             _from = _shown;
@@ -144,6 +144,9 @@ public sealed partial class FilmGate : UserControl
         var first = (int)Math.Floor(_shown);
         var offset = _shown - first;
         var left = (ActualWidth / 2) - (SlotWidth / 2);
+
+        // A frame is at full strength from the moment it reaches the gate, so the dimming moves with the strip.
+        var gate = (int)Math.Round(_shown);
         for (var k = -Reach; k <= Reach; k++)
         {
             var slot = _slots[k + Reach];
@@ -157,7 +160,7 @@ public sealed partial class FilmGate : UserControl
 
             slot.Element.Visibility = Visibility.Visible;
             slot.Move(left + ((k - offset) * Stride));
-            slot.Element.Opacity = index <= _writing ? 1 : PendingOpacity;
+            slot.Element.Opacity = index <= gate ? 1 : PendingOpacity;
             slot.Bind(_frames[index].Id, _thumbnails);
         }
     }

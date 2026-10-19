@@ -14,6 +14,9 @@ internal static class DebugExport
 {
     private static readonly string[] _args = Environment.GetCommandLineArgs();
 
+    // Held, or the collector may take the timer before it fires.
+    private static DispatcherQueueTimer? _timer;
+
     /// <summary>The path the export goes to without the Save dialog, or null.</summary>
     public static string? Target => Value("--export-to=");
 
@@ -29,7 +32,7 @@ internal static class DebugExport
         }
 
         var wanted = int.TryParse(Value("--sample-frames="), out var count) ? count : 1;
-        var timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+        var timer = _timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
         timer.Interval = TimeSpan.FromMilliseconds(250);
         timer.IsRepeating = true;
         timer.Tick += (sender, _) => log.RunLogged(

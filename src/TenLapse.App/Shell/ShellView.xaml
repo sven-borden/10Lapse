@@ -20,8 +20,8 @@
   1 px gap above its own divider).
   The stage and the InfoBar layer stay in cell (0, 0) and need no change.
 
-  Unbuilt actions are absent, not disabled (CLAUDE.md): the command bar holds Add photos (#12), New project and
-  Settings for now, with a commented slot for each later button. Buttons for a project go in ProjectCommands (left), the Export
+  Unbuilt actions are absent, not disabled (CLAUDE.md): the command bar holds Add photos (#12), New project, Settings
+  and Export video (#24, only while it can run), with a commented slot for each later button. Buttons for a project go in ProjectCommands (left), the Export
   button in WorkCommands (right): the Settings state hides both and shows Back.
 -->
 <UserControl
