@@ -22,8 +22,9 @@ public partial class App : Application
     // Opening it never throws: an unwritable folder makes it keep its lines in memory.
     private static readonly RollingFileLog _log = new(AppEnvironment.LogFolder());
 
-    // The start-up phases in the log (#90): the last line of a log that stops at start-up names the phase.
-    private readonly StartupTrace _startup = new(_log);
+    // The start-up phases in the log (#90), timed from the process start: the last line of a log that stops at
+    // start-up names the phase.
+    private readonly StartupTrace _startup = StartupTrace.ForThisProcess(_log);
     private ErrorPresenter? _errors;
     private Window? _window;
 
@@ -125,6 +126,7 @@ public partial class App : Application
         // The remembered settings (#21): a small file read now, on this thread, before the window; a new project starts
         // from them, the pickers open in the last folder, and the file is written a moment after each change.
         var remembered = new RememberedSettings(new JsonFileSettingsStore(SettingsFile()), errors, _log);
+        _startup.Phase("building the view models");
         var shell = new ShellViewModel(dialogs, errors, remembered.CreateProject);
         var settings = new SettingsViewModel(errors, diagnostics, remembered, infoBars, new LauncherService());
 

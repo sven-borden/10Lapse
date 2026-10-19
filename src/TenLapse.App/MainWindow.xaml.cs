@@ -178,11 +178,11 @@ public sealed partial class MainWindow : Window
         CompositionTarget.Rendering += OnFirstRendering;
     }
 
-    // The first frame is being drawn: start-up is over, and so is its trace.
+    // The first frame is being drawn: one end of start-up (the encoder probe's answer is the other).
     private void OnFirstRendering(object? sender, object e)
     {
         CompositionTarget.Rendering -= OnFirstRendering;
-        _startup.Done("first frame rendering");
+        _startup.FirstFrame("first frame rendering");
     }
 
     // Inactive windows dim their title (Windows 11): the title texts go to Ink Secondary. Back in the window, a failed
