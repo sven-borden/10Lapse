@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #22, #29, #23, #17, #14, #19 merged. Building: #18 frame panel (Sonnet), #20 filmstrip (Opus). Next: #24 export panel.
+Paused (Sven, 2026-10-19). Agents stopped mid-task; their worktrees are kept. On resume: the #20 filmstrip build (not pushed yet), the PR #80 fix round (#18; decision: the stored output is the user's preference, never overwritten; the panel shows and exports an EffectiveOutput), the PR #81 review (#32). Then #24 export panel.
 
 ## Waves
 
@@ -36,8 +36,8 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 10 | #20 Filmstrip | O | filmstrip view | building |
 | 10 | #17 Timing panel | S | timing inspector section | merged #78 |
 | 11 | #24 Export panel and finished state | O | export panel | |
-| 11 | #18 Frame panel | S | frame inspector section | building |
-| 12 | #32 Golden render test | O | `tests/` golden | |
+| 11 | #18 Frame panel | S | frame inspector section | PR #80, fix round |
+| 12 | #32 Golden render test | O | `tests/` golden | PR #81, in review |
 | 12 | #25 Export while minimized, keep awake | S | export power request | |
 | 13 | #21 Remember settings | S | settings persistence | |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
