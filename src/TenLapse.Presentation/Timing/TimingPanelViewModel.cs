@@ -19,8 +19,8 @@ namespace TenLapse.Presentation;
 /// stored in range and rounded, and <see cref="Message"/> says what became of it; text that is not a number is
 /// refused with a sentence and the box goes back to the stored value (see <see cref="TimingInput"/>). In Length
 /// mode a target the photos cannot reach at 1 to 120 fps is played at the nearest limit, and <see cref="Notice"/>
-/// says so for as long as it holds. The numbers in the box, the presets and these sentences are written in the
-/// user's culture; the readout keeps Core's invariant numbers until #39.
+/// says so for as long as it holds. The numbers everywhere in the panel (the box, the presets, the readout and these
+/// sentences) are written in the user's culture, so one sentence never mixes a dot and a comma.
 /// </remarks>
 public sealed class TimingPanelViewModel : ObservableObject, IDisposable
 {
@@ -47,6 +47,8 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
     private string _notice = string.Empty;
     private double _lengthFraction;
     private int _modeIndex;
+    private bool _noticeAppeared;
+    private bool _editing;
     private bool _disposed;
 
     /// <summary>Follows the shell's current project, also across <c>New project</c>.</summary>
@@ -83,8 +85,9 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
             if (value >= 0 && value < _modes.Length && value != _modeIndex)
             {
                 Message = string.Empty;
+                var before = _project.Timing;
                 Edit(timing => timing with { Mode = _modes[value] });
-                Announce();
+                AnnounceIfChanged(before);
             }
         }
     }
@@ -110,8 +113,9 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
             if (value >= 0 && value < presets.Count && value != _selectedPresetIndex)
             {
                 Message = string.Empty;
+                var before = _project.Timing;
                 Apply(Field, presets[value]);
-                Announce();
+                AnnounceIfChanged(before);
             }
         }
     }
@@ -208,6 +212,7 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
 
         var entry = TimingInput.Parse(Field, text, Culture);
         Message = entry.Message;
+        var before = _project.Timing;
         if (entry.IsValid)
         {
             Apply(Field, entry.Value);
@@ -215,7 +220,14 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
 
         // The box goes back to the stored value, also when nothing changed, so a refused entry does not stay on screen.
         OnPropertyChanged(nameof(ValueText));
-        Announce();
+        if (entry.Message.Length > 0)
+        {
+            Announce();
+        }
+        else
+        {
+            AnnounceIfChanged(before);
+        }
     }
 
     /// <summary>Stops following the project.</summary>
@@ -268,15 +280,24 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
     // A closed project (the window is going away) takes no edits.
     private void Edit(Func<TimingSettings, TimingSettings> change)
     {
-        _errors.Guard(
-            () =>
-            {
-                if (!_project.IsClosed)
+        // Refresh runs inside the write; what it finds (a new Notice) is announced with the edit, not on its own.
+        _editing = true;
+        try
+        {
+            _errors.Guard(
+                () =>
                 {
-                    _project.Timing = change(_project.Timing);
-                }
-            },
-            TimingText.ChangeFailed);
+                    if (!_project.IsClosed)
+                    {
+                        _project.Timing = change(_project.Timing);
+                    }
+                },
+                TimingText.ChangeFailed);
+        }
+        finally
+        {
+            _editing = false;
+        }
 
         // A control that showed the pick but did not keep it (the write failed) goes back to the project's value.
         OnPropertyChanged(nameof(SelectedModeIndex));
@@ -284,9 +305,24 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ValueText));
     }
 
+    // A pick that did not change the speed (the write failed, or the same value again) says nothing.
+    private void AnnounceIfChanged(TimingSettings before)
+    {
+        if (_project.Timing != before)
+        {
+            Announce();
+        }
+    }
+
     private void Announce()
     {
         var text = _message.Length > 0 ? $"{_message} {Readout}" : Readout;
+        if (_noticeAppeared && _notice.Length > 0)
+        {
+            text = $"{text} {_notice}";
+        }
+
+        _noticeAppeared = false;
         Announced?.Invoke(this, text);
     }
 
@@ -326,7 +362,7 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
                 SetProperty(ref _selectedPresetIndex, IndexOf(presets, value), nameof(SelectedPresetIndex));
                 SetProperty(ref _valueText, TimingInput.Number(value, culture), nameof(ValueText));
 
-                var (headline, detail) = ProjectText.TimingReadoutParts(count, timing);
+                var (headline, detail) = ProjectText.TimingReadoutParts(count, timing, culture);
                 var readoutChanged = headline != _headline || detail != _detail;
                 _headline = headline;
                 _detail = detail;
@@ -339,7 +375,18 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
 
                 var rate = timing.EffectiveRate(count);
                 SetProperty(ref _lengthFraction, Math.Min(1, (double)FrameTiming.Duration(count, rate.Rate) / FrameTiming.TicksPerSecond / BarSeconds), nameof(LengthFraction));
+                var hadNotice = _notice.Length > 0;
                 Notice = count > 0 && timing.Mode == SpeedMode.Length ? NoticeFor(rate, timing, count, culture) : string.Empty;
+                if (!hadNotice && _notice.Length > 0)
+                {
+                    // It appears when the photos are added or removed too, where a screen reader would otherwise miss it.
+                    _noticeAppeared = true;
+                    if (!_editing)
+                    {
+                        Announced?.Invoke(this, $"{_notice} {Readout}");
+                        _noticeAppeared = false;
+                    }
+                }
             },
             TimingText.RefreshFailed);
 
@@ -351,10 +398,10 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
         }
 
         var target = TimingInput.Describe(TimingField.LengthSeconds, timing.LengthSeconds, culture);
-        var actual = TimingFormat.Duration(FrameTiming.Duration(count, rate.Rate));
+        var actual = TimingFormat.Duration(FrameTiming.Duration(count, rate.Rate), culture);
         return rate.Clamp == RateClamp.Max
-            ? TimingText.Format(culture, TimingText.LengthTooShort, target, TimingFormat.FrameRate(FrameRates.Max), actual)
-            : TimingText.Format(culture, TimingText.LengthTooLong, target, TimingFormat.SecondsPerPhoto(FrameRates.Min), actual);
+            ? TimingText.Format(culture, TimingText.LengthTooShort, target, TimingFormat.FrameRate(FrameRates.Max, culture), actual)
+            : TimingText.Format(culture, TimingText.LengthTooLong, target, TimingFormat.SecondsPerPhoto(FrameRates.Min, culture), actual);
     }
 
     private static string PresetLabel(SpeedMode mode, Fraction preset, CultureInfo culture)

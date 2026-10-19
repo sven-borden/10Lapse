@@ -580,6 +580,172 @@ public sealed class TimingPanelViewModelTests
         Assert.Contains(nameof(TimingPanelViewModel.SelectedPresetIndex), raised);
     }
 
+    [Theory]
+    [InlineData("de-DE")]
+    [InlineData("fr-FR")]
+    public void TheMessageTheReadoutAndTheAnnouncementAllUseTheCulturesDecimalSeparator(string name)
+    {
+        var panel = Panel(Shell(), culture: CultureInfo.GetCultureInfo(name));
+        var said = new List<string>();
+        panel.Announced += (_, text) => said.Add(text);
+
+        panel.CommitValue("37,4829");
+
+        Assert.Equal("Rounded to 37,48 fps.", panel.Message);
+        Assert.Equal("742 photos → 19,8 s", panel.Headline);
+        Assert.Equal("at 37,48 fps", panel.Detail);
+        Assert.Equal("37,48", panel.ValueText);
+        Assert.Equal(["Rounded to 37,48 fps. 742 photos → 19,8 s at 37,48 fps"], said);
+
+        panel.CommitValue("fast");
+
+        Assert.Equal("Type a frame rate from 1 to 120 fps, like 24 or 29,97.", panel.Message);
+        Assert.Equal("Type a frame rate from 1 to 120 fps, like 24 or 29,97. 742 photos → 19,8 s at 37,48 fps", said[1]);
+    }
+
+    [Fact]
+    public void ThePerPhotoReadoutAndTheNoticeAndTheCountUseTheCultureToo()
+    {
+        var panel = Panel(Shell(), photos: 3, culture: _de);
+
+        panel.SelectedModeIndex = 2;
+        panel.CommitValue("0,5");
+
+        Assert.Equal("3 photos → 1,5 s", panel.Headline);
+        Assert.Equal("at 0,5 s per photo", panel.Detail);
+
+        panel.SelectedModeIndex = 1;
+        panel.CommitValue("60");
+
+        Assert.Equal("Your photos can't fill 60 s: the slowest speed is 10 s per photo, so the video is 30,0 s long.", panel.Notice);
+        Assert.Equal("1.234 photos → 41,1 s", Panel(Shell(), photos: 1234, culture: _de).Headline);
+    }
+
+    [Fact]
+    public void ALengthNoticeThatAppearsBecausePhotosWereAddedIsAnnounced()
+    {
+        var shell = Shell();
+        var panel = Panel(shell, photos: 100);
+        panel.SelectedModeIndex = 1;
+        panel.CommitValue("3");
+        Assert.False(panel.HasNotice);
+        var said = new List<string>();
+        panel.Announced += (_, text) => said.Add(text);
+        var project = shell.CurrentProject.Model;
+
+        project.AddFrames(TestFrames.Folder("b", 642));
+
+        Assert.True(panel.HasNotice);
+        Assert.Equal(["Your photos can't play in 3 s: the fastest speed is 120 fps, so the video is 6.2 s long. 742 photos → 6.2 s at 120 fps"], said);
+
+        // More photos with the notice still showing, and its going, say nothing.
+        project.AddFrames(TestFrames.Folder("c", 10));
+        project.RemoveFrames(project.Frames.Take(700).Select(frame => frame.Id));
+
+        Assert.False(panel.HasNotice);
+        Assert.Single(said);
+    }
+
+    [Fact]
+    public void ANoticeThatAnEditCausesIsAnnouncedOnceWithTheEdit()
+    {
+        var panel = Panel(Shell(), photos: 742);
+        panel.SelectedModeIndex = 1;
+        var said = new List<string>();
+        panel.Announced += (_, text) => said.Add(text);
+
+        panel.CommitValue("3");
+
+        Assert.Equal(["742 photos → 6.2 s at 120 fps Your photos can't play in 3 s: the fastest speed is 120 fps, so the video is 6.2 s long."], said);
+    }
+
+    [Fact]
+    public void RemovingEveryPhotoInLengthModeClearsTheNoticeAndKeepsTheTarget()
+    {
+        var shell = Shell();
+        var panel = Panel(shell, photos: 742);
+        panel.SelectedModeIndex = 1;
+        panel.CommitValue("3");
+        Assert.True(panel.HasNotice);
+        var project = shell.CurrentProject.Model;
+
+        project.RemoveFrames(project.Frames.Select(frame => frame.Id));
+
+        Assert.Empty(project.Frames);
+        Assert.False(panel.HasNotice);
+        Assert.Equal(string.Empty, panel.Notice);
+        Assert.Equal("0 photos → 0.0 s", panel.Headline);
+        Assert.Equal(0, panel.LengthFraction);
+        Assert.Equal(new Fraction(3, 1), project.Timing.LengthSeconds);
+        Assert.Equal(SpeedMode.Length, project.Timing.Mode);
+        Assert.Equal("3", panel.ValueText);
+    }
+
+    [Fact]
+    public void APickThatChangesNothingIsNotAnnounced()
+    {
+        var errors = new FakeErrorSink();
+        var shell = Shell(errors);
+        var panel = Panel(shell, errors: errors);
+        var said = new List<string>();
+        panel.Announced += (_, text) => said.Add(text);
+        shell.CurrentProject.Model.Close();
+
+        panel.SelectedModeIndex = 1;
+        panel.SelectedPresetIndex = 0;
+        panel.CommitValue("37");
+
+        Assert.Empty(said);
+        Assert.Equal(0, panel.SelectedModeIndex);
+        Assert.Equal(3, panel.SelectedPresetIndex);
+    }
+
+    [Fact]
+    public void AValueTypedThatEqualsTheStoredOneIsNotAnnounced()
+    {
+        var panel = Panel(Shell());
+        var said = new List<string>();
+        panel.Announced += (_, text) => said.Add(text);
+
+        panel.CommitValue("30.00");
+
+        Assert.Empty(said);
+    }
+
+    [Fact]
+    public void AnNtscEntryThatChangedItsDigitsIsSaidAndAnnounced()
+    {
+        var shell = Shell();
+        var panel = Panel(shell);
+        var said = new List<string>();
+        panel.Announced += (_, text) => said.Add(text);
+
+        panel.CommitValue("23.976");
+
+        Assert.Equal(new Fraction(24000, 1001), shell.CurrentProject.Model.Timing.FramesPerSecond);
+        Assert.Equal("Using the NTSC rate 23.98 fps (24000/1001).", panel.Message);
+        Assert.Equal("23.98", panel.ValueText);
+        Assert.StartsWith("Using the NTSC rate 23.98 fps (24000/1001). 742 photos", said.Single(), StringComparison.Ordinal);
+
+        panel.CommitValue("29.97");
+
+        Assert.Equal(string.Empty, panel.Message);
+    }
+
+    [Fact]
+    public void AThousandsLookingEntryIsRefusedAndChangesNothing()
+    {
+        var shell = Shell();
+        var panel = Panel(shell);
+        panel.SelectedModeIndex = 1;
+
+        panel.CommitValue("1,000");
+
+        Assert.Equal(TimingSettings.Default with { Mode = SpeedMode.Length }, shell.CurrentProject.Model.Timing);
+        Assert.Equal("Type 1000 without a separator, or 1.5 for one and a half.", panel.Message);
+        Assert.Equal("30", panel.ValueText);
+    }
+
     [Fact]
     public void EveryUserChangeIsAnnouncedWithTheReadout()
     {
