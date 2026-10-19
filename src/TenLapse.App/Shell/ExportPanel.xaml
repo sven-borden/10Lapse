@@ -13,7 +13,8 @@
 
   Narrow (#36): the panel sits in the 260 px strip under the stage, where one column would push Cancel export and Play
   below the fold. The two blocks of each part (RunningHead and RunningDetails, FinishedHead and FinishedDetails) then
-  stand side by side, 32 px apart, head left. ShellView calls SetNarrow. The reading and Tab order is the same in both.
+  stand side by side, 32 px apart, head left, with 12 px gaps instead of 20 and Cancel export above the minimize hint, so
+  the button shows in the panel's shortest height. ShellView calls SetNarrow. The reading and Tab order is the same in both.
   The Export button in the command bar is absent while this panel shows, so Play is the only amber button on the
   finished screen (DESIGN.md: one accent button per screen).
 -->
@@ -40,12 +41,20 @@
           <VisualState.Setters>
             <Setter Target="RunningSideColumn.Width" Value="*" />
             <Setter Target="RunningLayout.RowSpacing" Value="0" />
+            <Setter Target="RunningLayout.Padding" Value="20,12,20,12" />
+            <Setter Target="RunningHead.Spacing" Value="12" />
             <Setter Target="RunningDetails.(Grid.Row)" Value="0" />
             <Setter Target="RunningDetails.(Grid.Column)" Value="1" />
+            <Setter Target="RunningDetails.RowSpacing" Value="12" />
+            <Setter Target="MinimizeHint.(Grid.Row)" Value="2" />
+            <Setter Target="CancelButton.(Grid.Row)" Value="1" />
             <Setter Target="FinishedSideColumn.Width" Value="*" />
             <Setter Target="FinishedLayout.RowSpacing" Value="0" />
+            <Setter Target="FinishedLayout.Padding" Value="20,12,20,12" />
+            <Setter Target="FinishedHead.Spacing" Value="12" />
             <Setter Target="FinishedDetails.(Grid.Row)" Value="0" />
             <Setter Target="FinishedDetails.(Grid.Column)" Value="1" />
+            <Setter Target="FinishedDetails.Spacing" Value="12" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -117,7 +126,12 @@
           <!-- The film gate: decoration for the eye; the numbers say the same to a screen reader. -->
           <shell:FilmGate x:Name="Gate" AutomationProperties.AccessibilityView="Raw" />
         </StackPanel>
-        <StackPanel x:Name="RunningDetails" Grid.Row="1" Spacing="{StaticResource SpacingXl}">
+        <Grid x:Name="RunningDetails" Grid.Row="1" RowSpacing="{StaticResource SpacingXl}">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
 
           <Grid ColumnSpacing="{StaticResource SpacingLg}" RowSpacing="{StaticResource SpacingSm}">
             <Grid.ColumnDefinitions>
@@ -151,17 +165,23 @@
               TextWrapping="Wrap" />
           </Grid>
 
-          <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind export:ExportText.MinimizeHint}" TextWrapping="Wrap" />
+          <TextBlock
+            x:Name="MinimizeHint"
+            Grid.Row="1"
+            Style="{StaticResource CaptionSecondaryTextStyle}"
+            Text="{x:Bind export:ExportText.MinimizeHint}"
+            TextWrapping="Wrap" />
 
           <Button
             x:Name="CancelButton"
+            Grid.Row="2"
             Height="{StaticResource ControlHeight}"
             Padding="{StaticResource PaddingButtonStandard}"
             HorizontalAlignment="Left"
             AutomationProperties.Name="{x:Bind export:ExportText.CancelExport}"
             Command="{x:Bind ViewModel.CancelCommand}"
             Content="{x:Bind export:ExportText.CancelExport}" />
-        </StackPanel>
+        </Grid>
       </Grid>
     </ScrollViewer>
 

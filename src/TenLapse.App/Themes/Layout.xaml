@@ -69,10 +69,10 @@
   <x:Double x:Key="NarrowPanelHeight">260</x:Double>
   <!--
     #36: below 1,000 px the inspector is a 260 px panel under the stage. In a short window (640 x 480 leaves 392 px under the
-    bars) it gives height to the preview, down to the tab row and a section's first controls (it scrolls); the preview then
-    gives way too. ShellLayout.PanelHeight holds the rule.
+    bars) it gives height to the preview, down to 152 px: the 50 px tab row and the Output heading with its selects (102 px),
+    or the finished state's last button; the panel scrolls past that, and the preview takes what is left (ShellLayout.PanelHeight).
   -->
-  <x:Double x:Key="NarrowPanelMinHeight">140</x:Double>
+  <x:Double x:Key="NarrowPanelMinHeight">152</x:Double>
   <x:Double x:Key="NarrowPreviewMinHeight">96</x:Double>
   <x:Double x:Key="InspectorDockMinWindowWidth">1000</x:Double>
   <x:Double x:Key="MinWindowWidth">640</x:Double>

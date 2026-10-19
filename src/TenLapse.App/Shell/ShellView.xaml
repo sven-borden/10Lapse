@@ -211,6 +211,14 @@
       Grid.Row="1"
       Height="{StaticResource CommandBarHeight}"
       Padding="12,0,12,0">
+      <!--
+        Two columns (#36), so the left buttons never run under the right ones in a narrow window: the left takes what the
+        right leaves, and the import progress text (the one part that varies) trims to fit.
+      -->
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
       <Grid.Resources>
         <ResourceDictionary>
           <ResourceDictionary.ThemeDictionaries>
@@ -269,12 +277,16 @@
         </StackPanel>
       </Button>
 
-      <StackPanel
+      <Grid
         x:Name="ProjectCommands"
         HorizontalAlignment="Left"
         VerticalAlignment="Center"
-        Orientation="Horizontal"
-        Spacing="{StaticResource SpacingXs}">
+        ColumnSpacing="{StaticResource SpacingXs}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
         <!--
           Add photos (#12): a subtle button with the plus icon, always visible (the Settings state hides the whole
           panel). It opens a menu: Choose folder…, Choose photos…, and the Include subfolders toggle, which also
@@ -319,6 +331,7 @@
         -->
         <Button
           x:Name="NewProjectButton"
+          Grid.Column="1"
           Height="{StaticResource ControlHeight}"
           Padding="{StaticResource PaddingButtonSubtle}"
           AutomationProperties.Name="New project"
@@ -343,13 +356,19 @@
           Import progress (#12): a 16 px ring (the indicator color, from the ProgressRing override), "Adding 1,240 of
           5,000 photos…" and Cancel, while an import runs. Indeterminate while the photos are listed, then it fills.
         -->
-        <StackPanel
+        <Grid
           x:Name="ImportProgress"
+          Grid.Column="2"
           Margin="8,0,0,0"
+          HorizontalAlignment="Left"
           VerticalAlignment="Center"
-          Orientation="Horizontal"
-          Spacing="{StaticResource SpacingSm}"
+          ColumnSpacing="{StaticResource SpacingSm}"
           Visibility="{x:Bind Import.IsImporting, Mode=OneWay}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
           <ProgressRing
             Width="16"
             Height="16"
@@ -362,22 +381,26 @@
             Value="{x:Bind Import.ProgressPercent, Mode=OneWay}" />
           <TextBlock
             x:Name="ImportProgressText"
+            Grid.Column="1"
             VerticalAlignment="Center"
             Foreground="{ThemeResource InkSecondaryBrush}"
             Style="{StaticResource BodyTabularTextStyle}"
-            Text="{x:Bind Import.ProgressText, Mode=OneWay}" />
+            Text="{x:Bind Import.ProgressText, Mode=OneWay}"
+            TextTrimming="CharacterEllipsis" />
           <Button
             x:Name="CancelImportButton"
+            Grid.Column="2"
             Height="{StaticResource ControlHeight}"
             Padding="{StaticResource PaddingButtonSubtle}"
             AutomationProperties.Name="{x:Bind presentation:ProjectText.ImportCancelName}"
             Command="{x:Bind Import.CancelCommand}"
             Content="{x:Bind presentation:ProjectText.Cancel}" />
-        </StackPanel>
-      </StackPanel>
+        </Grid>
+      </Grid>
 
       <StackPanel
         x:Name="WorkCommands"
+        Grid.Column="1"
         HorizontalAlignment="Right"
         VerticalAlignment="Center"
         Orientation="Horizontal"
