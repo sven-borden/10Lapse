@@ -13,6 +13,9 @@ namespace TenLapse.Services;
 /// <param name="window">The id of the window the pickers belong to.</param>
 internal sealed class PhotoPickerService(Func<WindowId> window) : IPhotoPicker
 {
+    // How long the remembered folder may take to answer before the picker opens in Pictures instead.
+    private static readonly TimeSpan _startFolderLimit = TimeSpan.FromMilliseconds(500);
+
     /// <inheritdoc />
     public async Task<string?> PickFolderAsync(string? startFolder)
     {
@@ -20,7 +23,7 @@ internal sealed class PhotoPickerService(Func<WindowId> window) : IPhotoPicker
         {
             SuggestedStartLocation = PickerLocationId.PicturesLibrary,
         };
-        if (StartFolder(startFolder) is { } folder)
+        if (await StartFolderAsync(startFolder) is { } folder)
         {
             picker.SuggestedFolder = folder;
         }
@@ -44,7 +47,7 @@ internal sealed class PhotoPickerService(Func<WindowId> window) : IPhotoPicker
             picker.FileTypeFilter.Add(extension);
         }
 
-        if (StartFolder(startFolder) is { } folder)
+        if (await StartFolderAsync(startFolder) is { } folder)
         {
             picker.SuggestedFolder = folder;
         }
@@ -53,7 +56,23 @@ internal sealed class PhotoPickerService(Func<WindowId> window) : IPhotoPicker
         return results is null ? [] : [.. results.Select(result => result.Path).Where(path => !string.IsNullOrEmpty(path))];
     }
 
-    // A remembered folder that is gone (an unplugged card) would make the picker fail; Pictures it is then.
-    private static string? StartFolder(string? folder) =>
-        !string.IsNullOrEmpty(folder) && Directory.Exists(folder) ? folder : null;
+    // A remembered folder that is gone (an unplugged card) would make the picker fail; Pictures it is then. Checked off
+    // the UI thread with a short limit: a folder on a sleeping network drive or a disconnected share can take seconds to
+    // answer, and the picker must open at once. Back on the caller's (UI) thread afterwards, where the picker lives.
+    private static async Task<string?> StartFolderAsync(string? folder)
+    {
+        if (string.IsNullOrEmpty(folder))
+        {
+            return null;
+        }
+
+        try
+        {
+            return await Task.Run(() => Directory.Exists(folder)).WaitAsync(_startFolderLimit) ? folder : null;
+        }
+        catch (TimeoutException)
+        {
+            return null;
+        }
+    }
 }
