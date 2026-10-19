@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using TenLapse.Services;
 
 namespace TenLapse.Tests.Presentation;
@@ -63,15 +64,40 @@ public sealed class PowerRequestKeepAwakeTests
     [Fact]
     public void WindowsAcceptsAndReleasesARealRequest()
     {
-        // The real API with a reason string: nothing to see in the machine afterwards, but nothing may throw or be logged.
+        // The real API with a reason string: while a lease is held, the machine's execution state has ES_SYSTEM_REQUIRED
+        // (other apps may hold it too, so only "set while held" is asserted; "cleared after" would be flaky).
         var log = new FakeErrorSink();
         var awake = new PowerRequestKeepAwake(log);
 
-        awake.Hold("10Lapse test: Exporting Harbor.mp4").Dispose();
+        var lease = awake.Hold("10Lapse test: Exporting Harbor.mp4");
+        var readable = TryReadExecutionState(out var whileHeld);
+        lease.Dispose();
         awake.Hold("10Lapse test: a second one").Dispose();
 
         Assert.Empty(log.Reported);
+        Assert.SkipUnless(readable, "CallNtPowerInformation(SystemExecutionState) is not available here.");
+        Assert.Equal(EsSystemRequired, whileHeld & EsSystemRequired);
     }
+
+    private const uint EsSystemRequired = 0x1;
+
+    // POWER_INFORMATION_LEVEL.SystemExecutionState: the ES_* flags in force on the machine.
+    private static bool TryReadExecutionState(out uint state)
+    {
+        try
+        {
+            return CallNtPowerInformation(16, 0, 0, out state, sizeof(uint)) == 0;
+        }
+        catch (Exception exception) when (exception is DllNotFoundException or EntryPointNotFoundException)
+        {
+            state = 0;
+            return false;
+        }
+    }
+
+    [DllImport("powrprof.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static extern int CallNtPowerInformation(int level, nint input, uint inputSize, out uint output, uint outputSize);
 
     private sealed class FakePowerRequests : IPowerRequests
     {
