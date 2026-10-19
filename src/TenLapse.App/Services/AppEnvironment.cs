@@ -52,6 +52,27 @@ internal static class AppEnvironment
     public static string UnfinishedExportsFile() => Path.Combine(Path.GetDirectoryName(LogFolder())!, "unfinished-exports.txt");
 
     /// <summary>
+    /// The preview's proxy cache (#19): <c>Proxies</c> in the package's LocalCache (which Windows may clear, and which
+    /// is not roamed or backed up), or %LOCALAPPDATA%\10Lapse\Proxies unpackaged, beside the log. Never throws.
+    /// </summary>
+    public static string ProxyCacheFolder()
+    {
+        if (HasPackageIdentity)
+        {
+            try
+            {
+                return Path.Combine(ApplicationData.Current.LocalCacheFolder.Path, "Proxies");
+            }
+            catch (Exception)
+            {
+                // Fall through to the folder that needs no identity.
+            }
+        }
+
+        return Path.Combine(Path.GetDirectoryName(LogFolder())!, "Proxies");
+    }
+
+    /// <summary>
     /// The profile folder's 8.3 short form (<c>C:\Users\JANEDO~1</c>), which some paths in exception messages carry,
     /// so Copy diagnostics can redact it too. Null when Windows has none or cannot say. Never throws.
     /// </summary>

@@ -150,4 +150,31 @@ public sealed class FrameTimingTests
     {
         Assert.Throws<OverflowException>(() => FrameTiming.FrameStart(long.MaxValue, new Fraction(1, 10)));
     }
+
+    [Theory]
+    [MemberData(nameof(Rates))]
+    public void FrameAtIsTheExactInverseOfFrameStart(int num, int den)
+    {
+        var rate = new Fraction(num, den);
+        for (long n = 0; n < 20_000; n++)
+        {
+            var start = FrameTiming.FrameStart(n, rate);
+            var next = FrameTiming.FrameStart(n + 1, rate);
+
+            Assert.Equal(n, FrameTiming.FrameAt(start, rate));
+            Assert.Equal(n, FrameTiming.FrameAt(next - 1, rate));
+            Assert.Equal(n, FrameTiming.FrameAt(start + ((next - start) / 2), rate));
+        }
+    }
+
+    [Fact]
+    public void FrameAtAnHourIntoA2997ClipIsFrame107892()
+    {
+        var rate = new Fraction(30000, 1001);
+
+        // 3600 s * 30000 / 1001 = 107,892.1...: the clock lands on the frame the index math says, an hour later.
+        Assert.Equal(107_892, FrameTiming.FrameAt(3600 * FrameTiming.TicksPerSecond, rate));
+        Assert.Throws<ArgumentOutOfRangeException>(() => FrameTiming.FrameAt(-1, rate));
+        Assert.Throws<ArgumentOutOfRangeException>(() => FrameTiming.FrameAt(0, default));
+    }
 }

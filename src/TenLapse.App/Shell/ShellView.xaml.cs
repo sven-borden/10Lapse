@@ -25,6 +25,7 @@ public sealed partial class ShellView : UserControl
     private readonly FlyoutShadow _infoBarShadow;
     private readonly IErrorSink _errors;
     private readonly IErrorPresenter _presenter;
+    private readonly Presentation.Preview.PlayerViewModel _player;
 
     // What the drag over the window holds, counted once per drag: the photo files, null while not known (still
     // counting, or folders among them), 0 when nothing in it can be imported; _countDone once the count has finished
@@ -45,7 +46,8 @@ public sealed partial class ShellView : UserControl
     /// <param name="infoBars">The InfoBars to float over the stage.</param>
     /// <param name="errors">Logs failures of the shell's dispatcher callbacks (log only, see <see cref="DispatcherQueueExtensions"/>).</param>
     /// <param name="presenter">The error path for the drop handler.</param>
-    public ShellView(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter)
+    /// <param name="preview">The preview's player, images and cache (#19), for the stage's preview and transport.</param>
+    internal ShellView(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(settings);
@@ -75,6 +77,13 @@ public sealed partial class ShellView : UserControl
 
         // Handled events too: a button or the page's ScrollViewer under the pointer may have handled the press.
         ShellRoot.AddHandler(PointerPressedEvent, new PointerEventHandler(OnShellPointerPressed), handledEventsToo: true);
+
+        // The preview (#19): the picture, the transport row, and the transport keys for keys no control handled.
+        ArgumentNullException.ThrowIfNull(preview);
+        _player = preview.Player;
+        PreviewSurface.Attach(preview);
+        Transport.Attach(preview.Player, presenter);
+        ShellRoot.KeyDown += OnShellKeyDown;
 
         // The shell leaves the tree only when the window closes; the shadow goes with it.
         Unloaded += (_, _) => _infoBarShadow.Dispose();
@@ -125,6 +134,10 @@ public sealed partial class ShellView : UserControl
         }
     }
 
+    /// <summary>The window was minimized or hidden (false), or shows again: the preview pauses, and plays on (#19).</summary>
+    public void SetWindowShown(bool shown) =>
+        _presenter.Guard(() => _player.SetWindowShown(shown), ProjectText.PreviewPlayFailed);
+
     private void OnFirstLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= OnFirstLoaded;
@@ -173,6 +186,9 @@ public sealed partial class ShellView : UserControl
     /// </summary>
     public void Detach()
     {
+        ShellRoot.KeyDown -= OnShellKeyDown;
+        PreviewSurface.Detach();
+        Transport.Detach();
         if (Import.CancelCommand.CanExecute(null))
         {
             Import.CancelCommand.Execute(null);
@@ -363,6 +379,16 @@ public sealed partial class ShellView : UserControl
         _countedView = null;
         _draggedPhotos = null;
         _countDone = false;
+    }
+
+    // The transport keys (#19) while editing, for keys no control used: Space, the arrows, Home and End. A key typed in a
+    // text box stays there (TransportKeyboard).
+    private void OnShellKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (ViewModel.ShowsEditing)
+        {
+            _presenter.Guard(() => Preview.TransportKeyboard.Handle(e, _player, XamlRoot), ProjectText.PreviewSeekFailed);
+        }
     }
 
     // Walks the panels down to the controls, skipping what is collapsed; a control's own parts are its business.

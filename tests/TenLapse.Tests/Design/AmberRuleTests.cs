@@ -40,6 +40,9 @@ public sealed partial class AmberRuleTests
         // #29: the drop zone's drag-over outline (XAML) and the ring on Daybreak's current thumbnail (code).
         "src/TenLapse.App/Shell/FirstLaunchView.xaml",
         "src/TenLapse.App/Shell/FirstLaunchView.xaml.cs",
+
+        // #19: the scrubber's played part and knob dot, with their hover and pressed tints.
+        "src/TenLapse.App/Preview/Scrubber.xaml",
     ];
 
     [Fact]

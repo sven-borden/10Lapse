@@ -48,14 +48,15 @@ public sealed partial class MainWindow : Window
     /// <param name="infoBars">The InfoBars to float over the stage; the composition root hands the same queue to whoever raises them.</param>
     /// <param name="errors">Logs failures of the window's dispatcher callbacks (log only, see <see cref="DispatcherQueueExtensions"/>).</param>
     /// <param name="presenter">The error path, for the shell's drop handler.</param>
-    public MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter)
+    /// <param name="preview">The preview's player, images and cache (#19).</param>
+    internal MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(errors);
         ViewModel = viewModel;
         _errors = errors;
         InitializeComponent();
-        _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter);
+        _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter, preview);
         Content = _shell;
 
         // Window is not a DependencyObject, so its Title cannot take a binding: follow the view model by hand.
@@ -130,12 +131,18 @@ public sealed partial class MainWindow : Window
     private void OnActivated(object sender, WindowActivatedEventArgs args) =>
         _shell.SetWindowActive(args.WindowActivationState != WindowActivationState.Deactivated);
 
-    // A minimum size measured while maximized waits for the window to be restored.
+    // A minimum size measured while maximized waits for the window to be restored. Minimized or hidden, the preview
+    // pauses (and plays on when the window shows again): nothing should decode and draw unseen.
     private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
     {
         if (_minimumPending && (args.DidPresenterChange || args.DidSizeChange) && IsRestored)
         {
             ApplyMinimumSize(Scale);
+        }
+
+        if (!_closed)
+        {
+            _shell.SetWindowShown(sender.IsVisible && sender.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Minimized });
         }
     }
 

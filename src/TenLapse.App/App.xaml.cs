@@ -140,7 +140,6 @@ public partial class App : Application
             infoBars,
             codecs,
             errors);
-
         // The Output panel (#23) offers only what the probe confirms; until then it says it is checking. A probe
         // that is slow or fails leaves it with H.264 up to 1080p (OutputCapabilitiesDelivery).
         var output = new OutputPanelViewModel(shell, errors);
@@ -149,7 +148,10 @@ public partial class App : Application
         probe = Debugging.DebugOutputCapabilities.FromSwitches(Environment.GetCommandLineArgs()) ?? probe;
 #endif
         _ = errors.GuardAsync(() => output.DeliverAsync(probe, ui, errors, OutputCapabilitiesDelivery.DefaultPatience, encoders.Token), OutputText.ProbeFailed);
-        window = new MainWindow(shell, settings, import, output, infoBars, logOnly, errors);
+
+        // The preview (#19): the proxy cache in LocalCache (beside the log unpackaged), the frame images, the player.
+        var preview = new Preview.PreviewSession(shell, errors, infoBars, _log, PreviewCacheFolder());
+        window = new MainWindow(shell, settings, import, output, infoBars, logOnly, errors, preview);
 
         // Closing the window stops the probe (it ends within one test encode and removes that file) and the panel.
         window.Closed += (_, _) =>
@@ -157,8 +159,12 @@ public partial class App : Application
             encoders.Cancel();
             output.Dispose();
         };
+
+        // And the preview: its render thread, its loads and the frame images.
+        window.Closed += (_, _) => logOnly.RunLogged(preview.Dispose, ProjectText.PreviewProjectFailed);
         _errors = errors;
 #if DEBUG
+        errors.Guard(() => Debugging.DebugLaunch.ApplyPreview(preview, window, _log), "Applying the preview's Debug switches failed.");
         errors.Guard(() => Debugging.DebugLaunch.Apply(shell, infoBars), "Applying the Debug switches failed.");
         if (Debugging.DebugMissingCodecs.FromSwitches(Environment.GetCommandLineArgs()) is { } fakedMissing)
         {
@@ -167,6 +173,18 @@ public partial class App : Application
         }
 #endif
         return window;
+    }
+
+    // Debug can point the proxy cache elsewhere (--cache-folder=PATH), so a test run leaves the user's cache alone.
+    private static string PreviewCacheFolder()
+    {
+#if DEBUG
+        if (Debugging.DebugLaunch.CacheFolder is { } folder)
+        {
+            return folder;
+        }
+#endif
+        return AppEnvironment.ProxyCacheFolder();
     }
 
     // An exception that reached the UI thread unhandled: an event handler, a binding, a continuation. Unless it

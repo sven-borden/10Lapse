@@ -417,17 +417,20 @@
           <RowDefinition Height="Auto" />
           <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <!-- Preview gate (#19): the photo in a 6 px gate; Letterbox where Fit leaves space. -->
-        <Grid
-          x:Name="PreviewRegion"
-          Grid.Row="0"
-          Background="{StaticResource LetterboxBrush}"
-          CornerRadius="{StaticResource RadiusCard}" />
-        <!-- Transport (#19): the 36 px play button, the scrubber and the time code. -->
+        <!--
+          Preview gate (#19, Preview/PreviewView.xaml): the frame drawn by the export's renderer, as large as fits at the
+          video's shape, in a 6 px gate; the Layer shows around it.
+        -->
+        <Grid x:Name="PreviewRegion" Grid.Row="0">
+          <preview:PreviewView xmlns:preview="using:TenLapse.Preview" x:Name="PreviewSurface" />
+        </Grid>
+        <!-- Transport (#19, Preview/TransportBar.xaml): the 36 px play button, the scrubber, the frame counter and the time code. -->
         <Grid
           x:Name="TransportRegion"
           Grid.Row="1"
-          Height="{StaticResource PlayButtonSize}" />
+          Height="{StaticResource PlayButtonSize}">
+          <preview:TransportBar xmlns:preview="using:TenLapse.Preview" x:Name="Transport" />
+        </Grid>
         <!-- Filmstrip (#20): the thumbnails and their caption row; drop MinHeight once the strip sizes itself. -->
         <Grid
           x:Name="FilmstripRegion"

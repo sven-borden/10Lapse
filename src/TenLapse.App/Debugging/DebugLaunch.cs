@@ -6,12 +6,12 @@ namespace TenLapse.Debugging;
 
 /// <summary>
 /// Debug-only switches for looking at the shell before import exists (this folder is not built in Release):
-/// <c>--sample-frames=N</c> fills the project with N frames whose files do not exist, so the Editing state
-/// shows, and <c>--infobar</c> raises #13's skipped-photos InfoBar with its detail list, and a neutral one behind
-/// it. <c>--output=720|1080|1440|2160[,hevc][,standard|maximum]</c> stores those Output settings in the project (to see the
-/// Output panel replace what this PC cannot do, with <c>--max-resolution</c> and the other switches in
-/// DebugOutputCapabilities.cs). <c>--theme=light|dark</c> is the gallery's switch. <c>--crash=command|task|ui|unhandled</c>
-/// is in DebugCrash.cs.
+/// <c>--sample-frames=N</c> fills the project with N generated photos (DebugPreview.cs, which also has the
+/// preview's switches), so the Editing state shows and plays, and <c>--infobar</c> raises #13's skipped-photos InfoBar
+/// with its detail list, and a neutral one behind it. <c>--output=720|1080|1440|2160[,hevc][,standard|maximum]</c> stores
+/// those Output settings in the project (to see the Output panel replace what this PC cannot do, with
+/// <c>--max-resolution</c> and the other switches in DebugOutputCapabilities.cs). <c>--theme=light|dark</c> is the
+/// gallery's switch. <c>--crash=command|task|ui|unhandled</c> is in DebugCrash.cs.
 /// </summary>
 internal static partial class DebugLaunch
 {
@@ -30,7 +30,7 @@ internal static partial class DebugLaunch
     {
         if (Value("--sample-frames=") is { } text && int.TryParse(text, out var count) && count > 0)
         {
-            AddSampleFrames(shell.CurrentProject.Model, Math.Min(count, MaxSampleFrames));
+            AddSampleFrames(shell.CurrentProject.Model, Math.Min(count, MaxSampleFrames), infoBars);
         }
 
         if (Value("--output=") is { } output)
@@ -74,15 +74,6 @@ internal static partial class DebugLaunch
         }
 
         project.Output = settings;
-    }
-
-    private static void AddSampleFrames(Project project, int count)
-    {
-        project.Name = "Harbor sunset";
-        var start = new DateTime(2026, 6, 21, 19, 0, 0, DateTimeKind.Utc);
-        project.AddFrames(Enumerable.Range(1, count)
-            .Select(i => new Frame($@"C:\10Lapse debug samples\Harbor sunset\IMG_{i:0000}.JPG", 4_200_000, start.AddSeconds(5 * i)))
-            .ToArray());
     }
 
     private static string? Value(string prefix) =>
