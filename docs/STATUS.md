@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Paused (Sven, 2026-10-19). Agents stopped mid-task; their worktrees are kept. On resume: the #20 filmstrip build (not pushed yet), the PR #80 fix round (#18; decision: the stored output is the user's preference, never overwritten; the panel shows and exports an EffectiveOutput), the PR #81 review (#32). Then #24 export panel.
+2026-10-19, resumed: #20 filmstrip building, PR #80 (#18) fix round (decision: the stored output is the user's preference, never overwritten; the panel shows and exports an EffectiveOutput), PR #81 (#32) in review. Next: #24 export panel.
 
 ## Waves
 
