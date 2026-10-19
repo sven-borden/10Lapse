@@ -537,10 +537,11 @@ public static class ProjectText
     public static string FirstLaunchDropTitle => "Drop to start your timelapse";
 
     /// <summary>
-    /// What a timelapse is, in one sentence after the lead. {0} the product name, {1} the photo count ("300"),
-    /// {2} the frame rate ("30"), {3} the whole seconds of the clip ("10").
+    /// What a timelapse is, in one sentence after the lead: photos shot at an interval, played back as a clip
+    /// (Main.dc.html, the approved copy). {0} the product name, {1} the photo count ("300"), {2} the frame rate
+    /// ("30"), {3} the whole seconds of the clip ("10").
     /// </summary>
-    public static string FirstLaunchExplanationFormat => "{0} plays your photos back as a video. {1} photos at {2} frames per second make a {3}-second clip.";
+    public static string FirstLaunchExplanationFormat => "{0} plays your photos back as a video. Shoot one photo every few seconds, and {1} of them become a {3}-second clip at {2} frames per second.";
 
     /// <summary>The privacy line under the actions.</summary>
     public static string FirstLaunchPrivacy => "Your photos never leave this PC.";
@@ -572,7 +573,7 @@ public static class ProjectText
     /// <summary>
     /// The explanation sentence for <paramref name="photos"/> photos at <paramref name="rate"/>, its length taken from
     /// <see cref="FrameTiming.Duration"/> so the example can never disagree with the app's own math. The example
-    /// must make a whole number of seconds at a whole frame rate ("300 photos at 30 frames per second make a 10-second clip").
+    /// must make a whole number of seconds at a whole frame rate ("300 of them become a 10-second clip at 30 frames per second").
     /// </summary>
     public static string FirstLaunchExplanation(int photos, Fraction rate)
     {

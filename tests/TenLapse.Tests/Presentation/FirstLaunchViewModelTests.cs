@@ -7,11 +7,11 @@ namespace TenLapse.Tests.Presentation;
 public sealed class FirstLaunchViewModelTests
 {
     [Fact]
-    public void TheExplanationIsTheOneSentenceOfTheIssue()
+    public void TheExplanationIsTheCanvasSentence()
     {
         var viewModel = new FirstLaunchViewModel();
 
-        Assert.Equal("10Lapse plays your photos back as a video. 300 photos at 30 frames per second make a 10-second clip.", viewModel.Explanation);
+        Assert.Equal("10Lapse plays your photos back as a video. Shoot one photo every few seconds, and 300 of them become a 10-second clip at 30 frames per second.", viewModel.Explanation);
         Assert.Equal("Your photos never leave this PC.", ProjectText.FirstLaunchPrivacy);
     }
 
@@ -19,7 +19,7 @@ public sealed class FirstLaunchViewModelTests
     public void TheExampleTakesItsLengthFromFrameTiming()
     {
         Assert.Equal(10 * FrameTiming.TicksPerSecond, FrameTiming.Duration(FirstLaunchViewModel.ExamplePhotos, FirstLaunchViewModel.ExampleRate));
-        Assert.Contains("600 photos at 30 frames per second make a 20-second clip.", ProjectText.FirstLaunchExplanation(600, new Fraction(30, 1)), StringComparison.Ordinal);
+        Assert.Contains("600 of them become a 20-second clip at 30 frames per second.", ProjectText.FirstLaunchExplanation(600, new Fraction(30, 1)), StringComparison.Ordinal);
     }
 
     [Theory]

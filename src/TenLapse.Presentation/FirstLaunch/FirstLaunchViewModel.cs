@@ -18,7 +18,7 @@ namespace TenLapse.Presentation.FirstLaunch;
 /// </remarks>
 public sealed partial class FirstLaunchViewModel : ObservableObject
 {
-    /// <summary>The example's photo count: 300 photos at 30 fps make a 10-second clip.</summary>
+    /// <summary>The example's photo count: 300 photos at 30 fps become a 10-second clip.</summary>
     public const int ExamplePhotos = 300;
 
     /// <summary>How long a leave inside the window waits for the drag to show up again before the look goes.</summary>
@@ -32,7 +32,7 @@ public sealed partial class FirstLaunchViewModel : ObservableObject
     /// <summary>The title: what to do at rest, what will happen while a drag is over the window.</summary>
     public string Title => IsDragOver ? ProjectText.FirstLaunchDropTitle : ProjectText.FirstLaunchTitle;
 
-    /// <summary>"10Lapse plays your photos back as a video. 300 photos at 30 frames per second make a 10-second clip."</summary>
+    /// <summary>"10Lapse plays your photos back as a video. Shoot one photo every few seconds, and 300 of them become a 10-second clip at 30 frames per second." (Main.dc.html)</summary>
     public string Explanation { get; } = ProjectText.FirstLaunchExplanation(ExamplePhotos, ExampleRate);
 
     /// <summary>True while a drag the window would accept is over it: the drop zone shows its drag-over look.</summary>
