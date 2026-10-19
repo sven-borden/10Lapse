@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #91 merged (#90 start-up hardening; #90 stays open). In flight: #35 motion, with #96 minimum Windows 11 beside it (build files only). Then #39 strings, #38 accessibility (each alone).
+2026-10-19: #97 merged (minimum Windows 11). Paused by Sven: #35 motion (two commits pushed on `feat/35-motion`, rest in its worktree) waits for his go. Queued: #98 flaky test, then #39 strings, #38 accessibility (each alone).
 
 ## Waves
 
@@ -48,8 +48,9 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | merged #89 |
 | 15 | #36 Narrow window layout | S | shell visual states | merged #94 |
 | 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | merged #95 |
-| 16 | #35 Motion system | O | every view | in progress |
-| 16 | #96 Minimum Windows 11 | S | build props, manifest, README | in progress |
+| 16 | #35 Motion system | O | every view | paused (Sven) |
+| 16 | #96 Minimum Windows 11 | S | build props, manifest, README | merged #97 |
+| 16 | #98 Flaky cache test (bug) | S | `tests/` Preview | |
 | 17 | #39 Strings to resource files | S | every view, alone | |
 | 18 | #38 Accessibility pass | O | every view, alone | |
 
@@ -83,7 +84,7 @@ Nothing blocks the build loop. Everything below waits until release is near
 - 2026-10-18 (Sven): the orchestrator merges each PR itself after the review,
   the fix round and a green gate on the PR branch.
 - 2026-10-18 (#3): solution `TenLapse.slnx`. Windows projects target
-  `net10.0-windows10.0.26100.0`, minimum 10.0.17763.0; Core is `net10.0`. Each
+  `net10.0-windows10.0.26100.0`, minimum 10.0.22000.0 (#96); Core is `net10.0`. Each
   new project needs the same three platform mappings in the slnx (Any CPU maps
   Windows projects to x64), and the gate fails if a tracked csproj is missing
   from it. App root namespace is `TenLapse`; Core's is `TenLapse.Core`.
@@ -249,3 +250,6 @@ Details are in each PR's "What the next issues should know".
 - #90 PR #91 (refs only): start-up hardening, `StartupTrace`,
   `WindowCloseGate`, probe after the first frame, `scripts/launch-test.ps1`,
   `tools/TenLapse.CrashCatcher`; Debug `--log-folder=`, `--encoder-cache=`.
+- #96 PR #97: minimum OS 10.0.22000.0 (`TenLapseWindowsMinVersion`, manifest,
+  README). The Mica fallback stays; the stale "Windows 10" comment in
+  `Shell/ShellView.xaml` is left for #35.
