@@ -5,6 +5,7 @@ using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Export;
 using TenLapse.Presentation.Services;
@@ -27,14 +28,16 @@ public sealed partial class MainWindow : Window
     private readonly ShellView _shell;
     private readonly TintedMicaBackdrop? _backdrop;
     private readonly IErrorSink _errors;
-    private readonly IErrorPresenter _presenter;
+    private readonly StartupTrace _startup;
     private readonly TaskbarProgress _taskbar;
     private readonly WindowExportFeedback _exportFeedback;
+    private readonly WindowCloseGate _closeGate;
 
-    // The window is the active one (for the export's notification, #24), and the close was asked about or approved.
+    // Taken on the UI thread: background-thread callbacks must not read Window.DispatcherQueue.
+    private readonly Microsoft.UI.Dispatching.DispatcherQueue _queue;
+
+    // The window is the active one (for the export's notification, #24).
     private bool _active = true;
-    private bool _closeAsked;
-    private bool _closeApproved;
 
     // Kept as a field: its events stop when nothing holds it.
     private readonly UISettings _uiSettings = new();
@@ -60,16 +63,18 @@ public sealed partial class MainWindow : Window
     /// <param name="preview">The preview's player, images and cache (#19).</param>
     /// <param name="notifications">The export's Windows notifications, registered at start (#24).</param>
     /// <param name="exportServices">Builds the export's services (#24) around this window's taskbar button and notifications.</param>
-    internal MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, ExportNotifications notifications, Func<IExportWindow, ExportServices> exportServices)
+    /// <param name="startup">Logs the start-up phases (#90).</param>
+    internal MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, ExportNotifications notifications, Func<IExportWindow, ExportServices> exportServices, StartupTrace startup)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(errors);
         ArgumentNullException.ThrowIfNull(presenter);
         ArgumentNullException.ThrowIfNull(notifications);
         ArgumentNullException.ThrowIfNull(exportServices);
+        ArgumentNullException.ThrowIfNull(startup);
         ViewModel = viewModel;
         _errors = errors;
-        _presenter = presenter;
+        _startup = startup;
         InitializeComponent();
 
         // The export's taskbar progress and its notification when the window is in the background (#24). A click on the
@@ -78,11 +83,14 @@ public sealed partial class MainWindow : Window
         _exportFeedback = new WindowExportFeedback(_taskbar, notifications, () => !_active || IsMinimized, errors);
 
         // Invoked comes on a background thread, where Window.DispatcherQueue must not be read: the queue is taken here.
-        var queue = DispatcherQueue;
-        notifications.Invoked += (_, _) => queue.TryEnqueueGuarded(errors, Activate, ExportText.NotificationFailed);
+        _queue = DispatcherQueue;
+        notifications.Invoked += (_, _) => _queue.TryEnqueueGuarded(errors, Activate, ExportText.NotificationFailed);
 
+        _startup.Phase("building the shell");
         _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter, preview, exportServices(_exportFeedback));
         Content = _shell;
+        _closeGate = new WindowCloseGate(() => _shell.Export.MayCloseNow, _shell.Export.PrepareToCloseAsync, _shell.Export.CancelForClose, Close, presenter);
+        _startup.Phase("setting the title bar and the backdrop");
 
         // Window is not a DependencyObject, so its Title cannot take a binding: follow the view model by hand.
         Title = ViewModel.Title;
@@ -93,14 +101,17 @@ public sealed partial class MainWindow : Window
         SetTitleBar(_shell.TitleBar);
         if (MicaController.IsSupported())
         {
-            _backdrop = new TintedMicaBackdrop();
+            // XAML connects the backdrop inside this setter and again whenever the window's target comes back; a Mica
+            // failure falls back to the flat color the shell paints where Mica is not supported (#90).
+            _backdrop = new TintedMicaBackdrop(errors, _shell.SetMicaFallback);
             SystemBackdrop = _backdrop;
         }
         else
         {
-            _shell.ShowMicaFallback();
+            _shell.SetMicaFallback(true);
         }
 
+        _startup.Phase("sizing the window");
         SizeWindow();
         _shell.Loaded += OnLoaded;
         _shell.ActualThemeChanged += (_, _) => ColorCaptionButtons();
@@ -129,6 +140,9 @@ public sealed partial class MainWindow : Window
 
     /// <summary>The window's view model.</summary>
     public ShellViewModel ViewModel { get; }
+
+    /// <summary>Raised once, as the first frame is drawn: the encoder probe begins then (#90).</summary>
+    internal event EventHandler? FirstFrameRendered;
 
     /// <summary>The export panel's view model (the rating prompt, #31, follows its starts and ends).</summary>
     internal ExportViewModel Export => _shell.Export;
@@ -164,6 +178,7 @@ public sealed partial class MainWindow : Window
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         _shell.Loaded -= OnLoaded;
+        _startup.Phase("shell loaded; fitting the title bar");
         ColorCaptionButtons();
         FitTitleBarInsets();
         UpdatePassthrough();
@@ -177,6 +192,17 @@ public sealed partial class MainWindow : Window
                 ApplyMinimumSize(Scale);
             }
         };
+
+        _startup.Phase("waiting for the first frame");
+        CompositionTarget.Rendering += OnFirstRendering;
+    }
+
+    // The first frame is being drawn: one end of start-up (the encoder probe's answer is the other).
+    private void OnFirstRendering(object? sender, object e)
+    {
+        CompositionTarget.Rendering -= OnFirstRendering;
+        _startup.FirstFrame("first frame rendering");
+        FirstFrameRendered?.Invoke(this, EventArgs.Empty);
     }
 
     // Inactive windows dim their title (Windows 11): the title texts go to Ink Secondary. Back in the window, a failed
@@ -193,60 +219,35 @@ public sealed partial class MainWindow : Window
 
     private bool IsMinimized => AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized };
 
-    // Closing during an export asks first (#24): "Stop the export and close?". On yes the export stops and its unfinished
-    // file goes (waited for at most ExportViewModel.CloseLimit), then the window closes. A cancelled export still removing
-    // its file is waited for the same way. Otherwise the window closes at once.
-    private void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
-    {
-        if (_closeApproved || _shell.Export.MayCloseNow)
-        {
-            return;
-        }
-
-        args.Cancel = true;
-        if (_closeAsked)
-        {
-            return;
-        }
-
-        _closeAsked = true;
-        _ = _presenter.GuardAsync(CloseAfterExportAsync, ExportText.CloseFailed);
-    }
-
-    private async Task CloseAfterExportAsync()
-    {
-        try
-        {
-            if (await _shell.Export.PrepareToCloseAsync())
-            {
-                _closeApproved = true;
-                Close();
-            }
-        }
-        finally
-        {
-            _closeAsked = false;
-        }
-    }
+    // Closing during an export asks first (#24, WindowCloseGate). AppWindow.Closing is raised by the window's message
+    // handling, not by XAML, so the answer runs inside RunLogged (#90); Cancel is set only once the gate has answered,
+    // so a failure lets the window close (the gate itself never throws, and stops a running export when its check fails).
+    private void OnClosing(AppWindow sender, AppWindowClosingEventArgs args) =>
+        _errors.RunLogged(() => args.Cancel = !_closeGate.Closing(), ExportText.CloseCheckFailed);
 
     // A minimum size measured while maximized waits for the window to be restored. Minimized or hidden, the preview
     // pauses (and plays on when the window shows again): nothing should decode and draw unseen.
-    private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
+    // AppWindow.Changed is raised by the window's message handling, not by XAML: an exception from its handler reaches
+    // no handler and leaves no trace (checked in #90), so the work runs inside RunLogged.
+    private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args) =>
+        _errors.RunLogged(() => FollowAppWindow(sender, args.DidPresenterChange || args.DidSizeChange), ProjectText.WindowChangeFailed);
+
+    private void FollowAppWindow(AppWindow window, bool presenterOrSizeChanged)
     {
-        if (_minimumPending && (args.DidPresenterChange || args.DidSizeChange) && IsRestored)
+        if (_minimumPending && presenterOrSizeChanged && IsRestored)
         {
             ApplyMinimumSize(Scale);
         }
 
         if (!_closed)
         {
-            _shell.SetWindowShown(sender.IsVisible && sender.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Minimized });
+            _shell.SetWindowShown(window.IsVisible && window.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Minimized });
         }
     }
 
     // Raised on a background thread.
     private void OnColorValuesChanged(UISettings sender, object args) =>
-        DispatcherQueue.TryEnqueueGuarded(_errors, RefreshSystemColors, ProjectText.SystemColorsFailed);
+        _queue.TryEnqueueGuarded(_errors, RefreshSystemColors, ProjectText.SystemColorsFailed);
 
     // What follows the theme by hand: the caption buttons, the shell's shadows and the Mica tint.
     private void RefreshSystemColors()

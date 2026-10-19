@@ -20,8 +20,11 @@ public partial class App : Application
 {
     // The first thing that exists, so a failure anywhere after it (InitializeComponent included) reaches the log.
     // Opening it never throws: an unwritable folder makes it keep its lines in memory.
-    private static readonly RollingFileLog _log = new(AppEnvironment.LogFolder());
+    private static readonly RollingFileLog _log = new(LogFolder());
 
+    // The start-up phases in the log (#90), timed from the process start: the last line of a log that stops at
+    // start-up names the phase.
+    private readonly StartupTrace _startup = StartupTrace.ForThisProcess(_log);
     private ErrorPresenter? _errors;
     private Window? _window;
 
@@ -69,7 +72,9 @@ public partial class App : Application
 #else
             _window = CreateMainWindow();
 #endif
+            _startup.Phase("activating the window");
             _window.Activate();
+            _startup.Phase("waiting for the shell to load");
         }
         catch (Exception exception)
         {
@@ -101,15 +106,15 @@ public partial class App : Application
         var logOnly = new LogErrorSink(_log);
         var infoBars = new InfoBarQueue(logOnly);
 
-        // The encoder probe (#9) starts now, in the background; the Output panel (#23) takes its answer when it comes
-        // and nothing waits for it.
-        var encoders = new EncoderStartup(AppEnvironment.EncoderCacheFile());
+        // The encoder probe (#9) runs in the background once the window's first frame is on screen (#90); the Output
+        // panel (#23) takes its answer when it comes and nothing waits for it.
+        var encoders = new EncoderStartup(EncoderCacheFile(), _startup);
 
         // Copy diagnostics. The encoder section reads this session's probe result, else the cache #9's probe writes,
         // and never probes itself.
         var diagnostics = new DiagnosticsCopier(
             new DiagnosticsCollector(
-                [new AppDiagnostics(), new GraphicsDiagnostics(), new EncoderDiagnostics(AppEnvironment.EncoderCacheFile(), () => encoders.Loaded)],
+                [new AppDiagnostics(), new GraphicsDiagnostics(), new EncoderDiagnostics(EncoderCacheFile(), () => encoders.Loaded)],
                 _log,
                 redaction: DiagnosticsRedaction.ForCurrentUser(AppEnvironment.ShortProfileFolder())),
             new ClipboardService(),
@@ -118,9 +123,13 @@ public partial class App : Application
         // The error path: every command goes through it. Mappers word the failures of libraries Presentation
         // cannot see.
         var errors = new ErrorPresenter(_log, infoBars, [new VideoExportErrorMapper()], diagnostics.CopyAsync);
+
+        // From here an exception XAML routes is shown and handled (its InfoBar waits for the window), not fatal (#90).
+        _errors = errors;
         // The remembered settings (#21): a small file read now, on this thread, before the window; a new project starts
         // from them, the pickers open in the last folder, and the file is written a moment after each change.
         var remembered = new RememberedSettings(new JsonFileSettingsStore(SettingsFile()), errors, _log);
+        _startup.Phase("building the view models");
         var shell = new ShellViewModel(dialogs, errors, remembered.CreateProject);
         var settings = new SettingsViewModel(errors, diagnostics, remembered, infoBars, new LauncherService());
 
@@ -151,14 +160,22 @@ public partial class App : Application
 #if DEBUG
         probe = Debugging.DebugOutputCapabilities.FromSwitches(Environment.GetCommandLineArgs()) ?? probe;
 #endif
-        _ = errors.GuardAsync(() => output.DeliverAsync(probe, ui, errors, OutputCapabilitiesDelivery.DefaultPatience, encoders.Token), OutputText.ProbeFailed);
+        _ = errors.GuardAsync(
+            async () =>
+            {
+                await output.DeliverAsync(probe, ui, errors, OutputCapabilitiesDelivery.DefaultPatience, encoders.Token).ConfigureAwait(false);
+                _startup.ProbeApplied("encoder answer applied to the Output panel");
+            },
+            OutputText.ProbeFailed);
 
         // The preview (#19): the proxy cache in LocalCache (beside the log unpackaged), the frame images, the player.
+        _startup.Phase("creating the preview session");
         var preview = new Preview.PreviewSession(shell, errors, infoBars, _log, PreviewCacheFolder());
 
         // The export (#24): Media's exporter behind Presentation's interface, the Save dialog in the folder of the last
         // export (#21), Show in folder, and the window's taskbar progress and notification. The notifications register
         // now, before the window, as the Windows App SDK asks: packaged always, unpackaged Debug only with --notifications.
+        _startup.Phase("registering the export notifications");
         var notifications = new ExportNotifications(logOnly);
         notifications.Register();
         Presentation.Export.ISaveVideoPicker savePicker = new SaveVideoPicker(() => window!.AppWindow.Id);
@@ -166,6 +183,7 @@ public partial class App : Application
         savePicker = Debugging.DebugExport.Picker(savePicker);
 #endif
         var exporter = new ProjectVideoExporter();
+        _startup.Phase("creating the window");
         window = new MainWindow(
             shell,
             settings,
@@ -176,8 +194,11 @@ public partial class App : Application
             errors,
             preview,
             notifications,
-            exportWindow => new Presentation.Export.ExportServices(exporter, savePicker, remembered, dialogs, infoBars, new ExplorerFileReveal(), exportWindow, new PowerRequestKeepAwake(logOnly)));
+            exportWindow => new Presentation.Export.ExportServices(exporter, savePicker, remembered, dialogs, infoBars, new ExplorerFileReveal(), exportWindow, new PowerRequestKeepAwake(logOnly)),
+            _startup);
+        _startup.Phase("attaching the window's services");
         window.Closed += (_, _) => notifications.Dispose();
+        window.FirstFrameRendered += (_, _) => encoders.Start();
 
         // Closing the window stops the probe (it ends within one test encode and removes that file) and the panel.
         window.Closed += (_, _) =>
@@ -201,7 +222,6 @@ public partial class App : Application
         var rating = new RatingPrompt(remembered, ratingService, () => window!.IsInForeground && !dialogs.HasOpenDialog && window.Export.IsFinished, AppDiagnostics.AppVersion(), _log, logOnly);
         rating.Attach(window.Export);
         window.Closed += (_, _) => rating.Dispose();
-        _errors = errors;
 #if DEBUG
         errors.Guard(() => Debugging.DebugLaunch.ApplyPreview(preview, window, _log), "Applying the preview's Debug switches failed.");
         errors.Guard(() => Debugging.DebugLaunch.Apply(shell, infoBars), "Applying the Debug switches failed.");
@@ -220,6 +240,18 @@ public partial class App : Application
         return window;
     }
 
+    // Debug can point the log elsewhere (--log-folder=PATH), so a launch test leaves the user's log folder alone (#90).
+    private static string LogFolder()
+    {
+#if DEBUG
+        if (Debugging.DebugLaunch.LogFolder is { } folder)
+        {
+            return folder;
+        }
+#endif
+        return AppEnvironment.LogFolder();
+    }
+
     // Debug can point the remembered settings elsewhere (--settings-folder=PATH), so a test run leaves the user's alone.
     private static string SettingsFile()
     {
@@ -230,6 +262,19 @@ public partial class App : Application
         }
 #endif
         return AppEnvironment.SettingsFile();
+    }
+
+    // Debug can point the encoder probe's cache elsewhere (--encoder-cache=FILE), so a launch test can make every launch
+    // probe cold, as the first launch of a new build does, without touching the user's cache (#90).
+    private static string EncoderCacheFile()
+    {
+#if DEBUG
+        if (Debugging.DebugLaunch.EncoderCacheFile is { } file)
+        {
+            return file;
+        }
+#endif
+        return AppEnvironment.EncoderCacheFile();
     }
 
     // Debug can point the proxy cache elsewhere (--cache-folder=PATH), so a test run leaves the user's cache alone.
