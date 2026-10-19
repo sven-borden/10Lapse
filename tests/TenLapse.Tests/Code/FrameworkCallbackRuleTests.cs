@@ -48,6 +48,70 @@ public sealed partial class ErrorPathRuleTests
     [InlineData("AppWindow.Changed -= OnAppWindowChanged; AppWindow.Closing -= (_, _) => Release();")]
     public void TheScannerAllowsARunLoggedFrameworkCallback(string source) => Assert.Empty(FrameworkCallbackViolations(source));
 
+    [Fact]
+    public void EveryAnimationCompletionRunsLogged()
+    {
+        // #35: a Composition batch's or a Storyboard's Completed is raised by the compositor, outside XAML's error routing
+        // (and a batch's may come off the UI thread), so its handler is one RunLogged call or one TryEnqueueGuarded call
+        // (which runs the work inside RunLogged on the UI thread).
+        var offenders = Sources()
+            .SelectMany(file => CompletionViolations(File.ReadAllText(file)).Select(hit => $"{Relative(file)}: {hit}"))
+            .ToList();
+
+        Assert.True(offenders.Count == 0, "Animation Completed handlers must be one RunLogged or TryEnqueueGuarded call:\n" + string.Join('\n', offenders));
+    }
+
+    [Theory]
+    [InlineData("batch.Completed += (_, _) => Settle(leaving);")]
+    [InlineData("batch.Completed += (_, _) => { _layer.Visibility = Visibility.Collapsed; };")]
+    [InlineData("storyboard.Completed += OnArrived; private void OnArrived(object? sender, object e) { Settle(); }")]
+    [InlineData("batch.Completed += OnFaded;")]
+    [InlineData("batch.Completed += (_, _) => { _dispatcher.TryEnqueueGuarded(_log, Clear, Context); Clear(); };")]
+    public void TheScannerFlagsAnUnguardedCompletion(string source) => Assert.NotEmpty(CompletionViolations(source));
+
+    [Theory]
+    [InlineData("batch.Completed += (_, _) => _dispatcher.TryEnqueueGuarded(_log, () => Clear(generation), ProjectText.MotionFailed);")]
+    [InlineData("batch.Completed += (_, _) => _dispatcher.TryEnqueueGuarded(\n    _log,\n    () =>\n    {\n        Settle(leaving);\n    },\n    ExportText.PanelFailed);")]
+    [InlineData("storyboard.Completed += (_, _) => _log.RunLogged(Settle, ProjectText.MotionFailed);")]
+    [InlineData("storyboard.Completed += OnArrived; private void OnArrived(object? sender, object e) => _log.RunLogged(Settle, Context);")]
+    [InlineData("batch.Completed -= OnFaded;")]
+    public void TheScannerAllowsAGuardedCompletion(string source) => Assert.Empty(CompletionViolations(source));
+
+    private static IEnumerable<string> CompletionViolations(string source)
+    {
+        var code = WithoutComments(source);
+        foreach (Match subscription in CompletedSubscription().Matches(code))
+        {
+            var rest = code[(subscription.Index + subscription.Length)..];
+            var lambda = LambdaHead().Match(rest);
+            var handler = HandlerName().Match(rest);
+            var declaration = handler.Success ? Regex.Match(code, $@"\bvoid\s+{handler.Groups[1].Value}\s*\([^)]*\)") : Match.Empty;
+            var ok = lambda.Success
+                ? IsOneGuardedCall(Body(rest, lambda.Length))
+                : declaration.Success && IsOneGuardedCall(Body(code, declaration.Index + declaration.Length));
+            if (!ok)
+            {
+                yield return Line(subscription.Value + rest[..Math.Min(rest.Length, 40)].Split('\n')[0]);
+            }
+        }
+    }
+
+    // A body that is one RunLogged or one TryEnqueueGuarded call.
+    private static bool IsOneGuardedCall(string body)
+    {
+        body = body.Trim();
+        var call = GuardedCallHead().Match(body);
+        var close = call.Success ? Closing(body, call.Index + call.Length - 1) : -1;
+        return close >= 0 && body[(close + 1)..].Trim() == ";";
+    }
+
+    // A handler added to an animation's (a batch's, a Storyboard's) Completed.
+    [GeneratedRegex(@"\b\w+\s*\.\s*Completed\s*\+=\s*")]
+    private static partial Regex CompletedSubscription();
+
+    [GeneratedRegex(@"^(?:this\.)?\w+\.(?:RunLogged|TryEnqueueGuarded)\s*\(")]
+    private static partial Regex GuardedCallHead();
+
     private static IEnumerable<string> FrameworkCallbackViolations(string source)
     {
         var code = WithoutComments(source);
