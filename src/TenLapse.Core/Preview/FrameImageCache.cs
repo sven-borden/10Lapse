@@ -500,16 +500,20 @@ public sealed class FrameImageCache<TImage> : IDisposable
         }
         catch (Exception exception)
         {
-            // The source must not throw for a bad photo; if it does anyway, the frame still gets its placeholder.
+            // The source says a bad photo with a result; a throw is something else (a lost graphics device, a bug). It is
+            // reported as such, not as an unreadable photo; the frame shows its placeholder and is tried again later.
+            ReportUnexpected(exception);
             var failure = new FrameLoadFailure(new SkippedFile(job.Frame.SourcePath, SkipReason.Other, exception.Message), exception);
             loaded = job.Build ? null : FrameImageResult<TImage>.Failed(failure);
             built = job.Build ? new FrameProxyResult(failure) : null;
+            Complete(job, loaded, built, unexpected: true);
+            return;
         }
 
-        Complete(job, loaded, built);
+        Complete(job, loaded, built, unexpected: false);
     }
 
-    private void Complete(Job job, FrameImageResult<TImage>? loaded, FrameProxyResult? built)
+    private void Complete(Job job, FrameImageResult<TImage>? loaded, FrameProxyResult? built, bool unexpected)
     {
         var id = job.Frame.Id;
         var dispose = new List<TImage>();
@@ -527,7 +531,7 @@ public sealed class FrameImageCache<TImage> : IDisposable
             if (failure is not null && stillThere)
             {
                 _failed[id] = (failure, Environment.TickCount64);
-                if (_reported.Add(id))
+                if (!unexpected && _reported.Add(id))
                 {
                     failed = new FrameLoadFailedEventArgs(job.Frame, failure);
                 }
