@@ -28,4 +28,9 @@
     <!-- xunit.v3 4.x runs on Microsoft.Testing.Platform v2; global.json switches dotnet test to that runner. No VSTest packages needed. -->
     <PackageVersion Include="xunit.v3" Version="4.0.2" />
   </ItemGroup>
+
+  <ItemGroup Label="Tools">
+    <!-- The accessibility scan (#38, tools/TenLapse.A11yScan): the rules engine of Accessibility Insights for Windows. -->
+    <PackageVersion Include="Axe.Windows" Version="2.4.2" />
+  </ItemGroup>
 </Project>

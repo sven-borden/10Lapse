@@ -150,9 +150,6 @@ public sealed partial class TimingPanel : UserControl
 
     // Narrator does not reliably hear a text that changes under it, so what a change came to is raised as a notification:
     // the sentence about a refused or corrected entry, then the readout.
-    private void OnAnnounced(object? sender, string message)
-    {
-        var peer = FrameworkElementAutomationPeer.FromElement(this) ?? FrameworkElementAutomationPeer.CreatePeerForElement(this);
-        peer?.RaiseNotificationEvent(AutomationNotificationKind.Other, AutomationNotificationProcessing.ImportantMostRecent, message, "TimingChanged");
-    }
+    private void OnAnnounced(object? sender, string message) =>
+        Announcer.Announce(this, message, AutomationNotificationProcessing.ImportantMostRecent, "TimingChanged");
 }

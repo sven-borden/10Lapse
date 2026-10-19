@@ -597,11 +597,12 @@ public sealed partial class FilmstripView : UserControl
     // ---- Narrator ----
 
     private void OnAnnounced(object? sender, string text) => Guarded(
-        () => ListPeer().RaiseNotificationEvent(
-            AutomationNotificationKind.ActionCompleted,
-            AutomationNotificationProcessing.ImportantMostRecent,
+        () => Shell.Announcer.Announce(
+            ListHost,
             text,
-            "TenLapse.Filmstrip.Edit"));
+            AutomationNotificationProcessing.ImportantMostRecent,
+            "TenLapse.Filmstrip.Edit",
+            AutomationNotificationKind.ActionCompleted));
 
     // ---- The playhead ----
 

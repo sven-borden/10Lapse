@@ -154,9 +154,6 @@ public sealed partial class ExportPanel : UserControl
     }
 
     // Narrator hears the start, every ten percent at most, and the end (the view model decides when).
-    private void OnAnnounced(object? sender, string message)
-    {
-        var peer = FrameworkElementAutomationPeer.FromElement(this) ?? FrameworkElementAutomationPeer.CreatePeerForElement(this);
-        peer?.RaiseNotificationEvent(AutomationNotificationKind.Other, AutomationNotificationProcessing.MostRecent, message, "Export");
-    }
+    private void OnAnnounced(object? sender, string message) =>
+        Announcer.Announce(this, message, AutomationNotificationProcessing.MostRecent, "Export");
 }
