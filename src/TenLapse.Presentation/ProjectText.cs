@@ -258,6 +258,9 @@ public static class ProjectText
     /// <summary>Error context (log only): moving focus after opening or leaving Settings failed.</summary>
     public static string SettingsFocusFailed => "Moving focus after opening or leaving Settings failed.";
 
+    /// <summary>Error context (log only): putting focus on the drop zone's Choose folder at launch failed.</summary>
+    public static string FirstLaunchFocusFailed => "Putting focus on Choose folder at launch failed.";
+
     /// <summary>Log line for a cancellation, which is not an error. {0} the context.</summary>
     public static string LogCancelled => "Cancelled, not an error: {0}";
 

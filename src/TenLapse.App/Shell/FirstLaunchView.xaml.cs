@@ -86,6 +86,9 @@ public sealed partial class FirstLaunchView : UserControl
         UpdatePlayback();
     }
 
+    /// <summary>Puts focus on Choose folder, the screen's primary action, without a focus ring for mouse users.</summary>
+    public bool FocusPrimaryAction() => ChooseFolderButton.Focus(FocusState.Programmatic);
+
     /// <summary>
     /// Takes the colors again for a theme change the elements may not see, and shows or hides Daybreak as high
     /// contrast goes on or off.

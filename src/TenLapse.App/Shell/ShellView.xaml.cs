@@ -34,6 +34,7 @@ public sealed partial class ShellView : UserControl
     private int? _draggedPhotos;
     private bool _countDone;
     private int _dragGeneration;
+    private bool _activatedOnce;
     private readonly long _emptyRegionVisibilityToken;
 
     /// <param name="viewModel">The shell view model.</param>
@@ -92,11 +93,26 @@ public sealed partial class ShellView : UserControl
     /// <summary>Paints the Mica token behind the shell where the system has no Mica backdrop.</summary>
     public void ShowMicaFallback() => MicaFallback.Visibility = Visibility.Visible;
 
-    /// <summary>Dims the title texts while the window is inactive, and stops the first-launch timelapse (motion spec, Daybreak).</summary>
+    /// <summary>
+    /// Dims the title texts while the window is inactive, and stops the first-launch timelapse (motion spec,
+    /// Daybreak). At the first activation on the Empty screen, focus starts on the drop zone's Choose folder.
+    /// </summary>
     public void SetWindowActive(bool active)
     {
         VisualStateManager.GoToState(this, active ? nameof(WindowActive) : nameof(WindowInactive), useTransitions: false);
         FirstLaunch.ViewModel.IsWindowActive = active;
+        if (active && !_activatedOnce)
+        {
+            _activatedOnce = true;
+
+            // The screen's primary action rather than Add photos, the first control in the Tab order, which the
+            // window would focus. Programmatic, so a mouse user sees no focus ring, and Enter runs it; the Tab order
+            // is unchanged. After the activation, so the window's own initial focus has been placed.
+            if (EmptyRegion.Visibility == Visibility.Visible)
+            {
+                DispatcherQueue.TryEnqueueGuarded(_errors, () => FirstLaunch.FocusPrimaryAction(), ProjectText.FirstLaunchFocusFailed);
+            }
+        }
     }
 
     /// <summary>
