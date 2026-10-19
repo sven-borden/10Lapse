@@ -160,8 +160,9 @@ public static class UserSettingsJson
         {
             return read(node);
         }
-        catch (Exception exception) when (exception is InvalidOperationException or FormatException or ArgumentException or OverflowException)
+        catch (Exception exception) when (exception is not OutOfMemoryException)
         {
+            // Any non-fatal exception: a hand-edited file must never cost more than the field it spoils.
             problems.Add($"Setting {path} is not usable ({exception.Message}); using the default.");
             return fallback;
         }
@@ -189,7 +190,13 @@ public static class UserSettingsJson
             throw new FormatException("expected [numerator, denominator]");
         }
 
-        return new Fraction(parts[0]!.GetValue<int>(), parts[1]!.GetValue<int>());
+        // A null or nested element is not a number: say so rather than dereference it.
+        if (parts[0] is not JsonValue numerator || parts[1] is not JsonValue denominator)
+        {
+            throw new FormatException("expected two numbers");
+        }
+
+        return new Fraction(numerator.GetValue<int>(), denominator.GetValue<int>());
     }
 
     // The timing record checks each input against its range when it is set; borrowing that check keeps one source of truth.

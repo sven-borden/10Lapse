@@ -197,4 +197,45 @@ public sealed class UserSettingsJsonTests
     {
         Assert.NotNull(UserSettingsJson.Read(null).Settings);
     }
+
+    [Theory]
+    [InlineData("""{ "version": 1, "timing": { "framesPerSecond": [null, 1] } }""")]
+    [InlineData("""{ "version": 1, "timing": { "framesPerSecond": [1, null] } }""")]
+    [InlineData("""{ "version": 1, "timing": { "framesPerSecond": [null, null] } }""")]
+    [InlineData("""{ "version": 1, "timing": { "framesPerSecond": [[1], 2] } }""")]
+    [InlineData("""{ "version": 1, "timing": { "framesPerSecond": [{ "a": 1 }, 2] } }""")]
+    [InlineData("""{ "version": 1, "timing": { "lengthSeconds": ["a", 1] } }""")]
+    [InlineData("""{ "version": 1, "timing": { "secondsPerPhoto": [1.5, 1] } }""")]
+    [InlineData("""{ "version": 1, "timing": { "framesPerSecond": [1e400, 1] } }""")]
+    [InlineData("""{ "version": 1, "timing": { "framesPerSecond": {} } }""")]
+    [InlineData("""{ "version": 1, "timing": [] }""")]
+    [InlineData("""{ "version": 1, "frame": { "aspect": [1], "fit": 5 } }""")]
+    [InlineData("""{ "version": 1, "output": { "resolution": null, "format": {}, "quality": true } }""")]
+    [InlineData("""{ "version": 1, "importFolder": [1] }""")]
+    [InlineData("""{ "version": 1, "exportFolder": 5 }""")]
+    [InlineData("""{ "version": 1, "importFolder": "C:\\a\u0000b" }""")]
+    [InlineData("""[null, 1]""")]
+    [InlineData("""{ "version": [1], "timing": null }""")]
+    public void HostileShapesNeverThrowAndGiveUsableSettings(string text)
+    {
+        var result = UserSettingsJson.Read(text);
+
+        Assert.NotNull(result.Settings);
+        Assert.NotNull(result.Problems);
+    }
+
+    [Fact]
+    public void ANullFractionElementIsOneProblemAndTheOtherFieldsKeepTheirValues()
+    {
+        var result = UserSettingsJson.Read("""
+            { "version": 1,
+              "timing": { "framesPerSecond": [null, 1], "lengthSeconds": [45, 1] },
+              "frame": { "aspect": "Ratio9x16", "fit": "Fit" } }
+            """);
+
+        Assert.Single(result.Problems);
+        Assert.Equal(UserSettings.Default.Timing.FramesPerSecond, result.Settings.Timing.FramesPerSecond);
+        Assert.Equal(new Fraction(45, 1), result.Settings.Timing.LengthSeconds);
+        Assert.Equal(FrameAspect.Ratio9x16, result.Settings.Frame.Aspect);
+    }
 }
