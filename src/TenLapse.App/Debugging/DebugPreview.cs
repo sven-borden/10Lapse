@@ -186,6 +186,10 @@ internal static partial class DebugLaunch
 /// <summary>The measurements behind <c>--preview-bench</c> (see <see cref="DebugLaunch"/>). Runs on the UI thread.</summary>
 internal static class PreviewBench
 {
+    // What the app holds besides the frame images (the runtime, WinUI, Win2D and the driver, the decoders' buffers):
+    // about 250 MB idle with a warm cache. Private bytes after a proxy pass stay under the image budget plus this.
+    private const long MemoryMargin = 320L << 20;
+
     public static async Task RunAsync(PreviewSession preview, Window window, ILog log, int expectedFrames, string? reportPath)
     {
         var player = preview.Player;
@@ -199,12 +203,19 @@ internal static class PreviewBench
         var cold = await PlayAsync(preview, TimeSpan.FromSeconds(5));
         Line(report, $"Cold playback (5 s, proxies being built): {cold}");
 
-        // 2. The background pass.
+        // 2. The background pass, and the process's private bytes during it and once it is done (paused: nothing
+        // allocates then, so garbage the pass left would stay resident).
         player.Seek(0);
         var pass = Stopwatch.StartNew();
-        await WaitAsync(() => preview.Images.ProxyProgress is var progress && progress.Done == progress.Total, TimeSpan.FromMinutes(60));
+        var peak = PrivateBytes();
+        await WaitAsync(() => preview.Images.ProxyProgress is var progress && progress.Done == progress.Total, TimeSpan.FromMinutes(60), () => peak = Math.Max(peak, PrivateBytes()));
         var (count, bytes) = preview.Proxies.Size;
         Line(report, $"Proxy pass finished {pass.Elapsed.TotalSeconds:0.0} s after cold playback ({started.Elapsed.TotalSeconds:0.0} s after the frames were ready); cache holds {count} proxies, {bytes / 1048576.0:0.0} MB, bound {preview.Proxies.Options.MaxBytes / 1048576.0:0} MB.");
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        var after = PrivateBytes();
+        var budget = new FrameImageCacheOptions().MemoryBudgetBytes;
+        var limit = budget + MemoryMargin;
+        Line(report, $"Memory: private bytes peak during the pass {peak / 1048576.0:0} MB, 2 s after it (paused) {after / 1048576.0:0} MB; image budget {budget / 1048576.0:0} MB + margin {MemoryMargin / 1048576.0:0} MB = {limit / 1048576.0:0} MB: {(after <= limit ? "within" : "OVER")}.");
 
         // 3. Playback with every proxy built.
         player.Seek(0);
@@ -344,11 +355,18 @@ internal static class PreviewBench
     private static int PresentationFrame(double fraction, int count) =>
         Math.Clamp((int)Math.Round(fraction * (count - 1)), 0, count - 1);
 
-    private static async Task WaitAsync(Func<bool> condition, TimeSpan limit)
+    private static long PrivateBytes()
+    {
+        using var process = Process.GetCurrentProcess();
+        return process.PrivateMemorySize64;
+    }
+
+    private static async Task WaitAsync(Func<bool> condition, TimeSpan limit, Action? sample = null)
     {
         var waited = Stopwatch.StartNew();
         while (!condition())
         {
+            sample?.Invoke();
             if (waited.Elapsed > limit)
             {
                 throw new TimeoutException("The preview bench waited too long.");
