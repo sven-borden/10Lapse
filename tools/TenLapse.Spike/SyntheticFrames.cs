@@ -118,7 +118,7 @@ internal static class SyntheticJpegs
 
     // Grain of +-amplitude levels per channel, so a JPEG compresses like a real 24 MP photo (8 to 12 MB at
     // quality 0.9) instead of a smooth gradient (about 1 MB): #13 measures decode memory on these.
-    private static void AddNoise(CanvasRenderTarget target, int index, int amplitude)
+    internal static void AddNoise(CanvasRenderTarget target, int index, int amplitude)
     {
         var pixels = target.GetPixelBytes();
         var random = new Random(index);

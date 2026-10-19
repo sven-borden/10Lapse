@@ -15,6 +15,11 @@ using TenLapse.Spike;
 //   TenLapse.Spike export-project --dir D [--distinct N] [--frames 1000] [--resolution 2160] [--aspect 16x9]
 //                         [--fit fill|fit] [--quality high] [--format h264|hevc] [--fps 30] [--out file.mp4]
 //                         (#22: ProjectExporter, the product's entry point, through the .partial file)
+//                         [--decode-ahead N] [--decode-threads N] force the decode depth (the tight-memory profile is 4 and 3)
+//                         [--photos D] exports every JPEG of D as it is (no links, --distinct is ignored; #34's folder), and the last line
+//                         is a BENCH line of key=value pairs for scripts/bench.ps1
+//   TenLapse.Spike bench-photos --dir D [--count 1000] [--size 6000x4000] [--bases 24] [--noise 25] [--no-thumbnail]
+//                         [--start 2026-06-21T06:00:00] [--interval 5]   (#34: camera-like photos with EXIF capture times)
 // --verify decodes the output and checks every frame's FrameCode. Results go to the console, the
 // last line is a Markdown table row. Large files belong in %TEMP%, never in the repository.
 // --noise adds grain so the JPEGs compress like real photos (#13); --distinct N cycles the export over the
@@ -33,6 +38,7 @@ try
         "generate" => await GenerateAsync(options),
         "encode" => await EncodeAsync(options),
         "export-project" => await ExportProjectAsync(options),
+        "bench-photos" => await BenchPhotos.RunAsync(options),
         "inspect" => Inspect(options),
         "decode-bench" => await DecodeBench.RunAsync(
             options.Positional ?? throw new ArgumentException("decode-bench needs a photo."),
@@ -144,7 +150,7 @@ static async Task<int> EncodeAsync(Options options)
     process.Refresh();
     var peak = process.PeakWorkingSet64;
     Console.WriteLine($"result: {result.FrameCount} frames in {wall.TotalSeconds:0.00} s = {result.FrameCount / wall.TotalSeconds:0.0} fps; " +
-        $"peak working set {peak / 1048576.0:0} MB (before export {startPeak / 1048576.0:0} MB); file {new FileInfo(output).Length / 1e6:0.0} MB");
+        $"peak working set {peak / 1048576.0:0} MB, peak private bytes {process.PeakPagedMemorySize64 / 1048576.0:0} MB (before export {startPeak / 1048576.0:0} MB); file {new FileInfo(output).Length / 1e6:0.0} MB");
     Console.WriteLine($"encoder reported: {(result.Encoder is { } ran ? $"{ran.Name} ({(ran.IsHardware ? "hardware" : "software")})" : "not reported")}");
     Console.WriteLine($"gpu: {string.Join(", ", gpu.Select(g => $"{g.Engine} max {g.Max:0}% mean {g.Mean:0}%"))}");
     foreach (var instance in instances.Order())
@@ -174,8 +180,14 @@ static FitMode Fit(Options options) => options.Text("fit", "fill") switch
 // through the .partial file with the bitrate of --quality; prints wall time, speed, peak working set and progress.
 static async Task<int> ExportProjectAsync(Options options)
 {
-    var directory = Path.GetFullPath(options.Require("dir"));
+    var photos = options.Flag("photos") ? Path.GetFullPath(options.Require("photos")) : null;
+    var directory = photos ?? Path.GetFullPath(options.Require("dir"));
     var frames = options.Int("frames", 1000);
+    if (photos is not null && !options.Flag("frames"))
+    {
+        frames = Directory.EnumerateFiles(photos, "*.jpg").Count();
+    }
+
     var distinct = options.Int("distinct", frames);
     var rate = FrameRates.TryParse(options.Text("fps", "30"), out var parsed) ? parsed : throw new FormatException("--fps is not a frame rate.");
     var resolution = options.Int("resolution", 2160) switch
@@ -201,22 +213,31 @@ static async Task<int> ExportProjectAsync(Options options)
 
     // A project holds each file once: hard-link the distinct files under as many names as there are frames
     // (symbolic links need Developer Mode).
-    var links = Path.Combine(directory, "project");
-    Directory.CreateDirectory(links);
     var project = new Project(TimingSettings.PerSecond(rate), new FrameSettings(aspect, Fit(options)), new OutputSettings(resolution, format, quality), SortMode.Manual);
     var paths = new List<string>();
-    for (var i = 0; i < frames; i++)
+    if (photos is not null)
     {
-        var link = Path.Combine(links, $"f{i:D5}.jpg");
-        if (!File.Exists(link))
+        paths.AddRange(Directory.EnumerateFiles(photos, "*.jpg").Order(StringComparer.OrdinalIgnoreCase).Take(frames));
+        frames = paths.Count;
+        distinct = frames;
+    }
+    else
+    {
+        var links = Path.Combine(directory, "project");
+        Directory.CreateDirectory(links);
+        for (var i = 0; i < frames; i++)
         {
-            if (!Windows.Win32.PInvoke.CreateHardLink(link, SyntheticJpegs.PathOf(directory, i % distinct)))
+            var link = Path.Combine(links, $"f{i:D5}.jpg");
+            if (!File.Exists(link))
             {
-                throw new IOException($"Could not link {link}: error {System.Runtime.InteropServices.Marshal.GetLastPInvokeError()}.");
+                if (!Windows.Win32.PInvoke.CreateHardLink(link, SyntheticJpegs.PathOf(directory, i % distinct)))
+                {
+                    throw new IOException($"Could not link {link}: error {System.Runtime.InteropServices.Marshal.GetLastPInvokeError()}.");
+                }
             }
-        }
 
-        paths.Add(link);
+            paths.Add(link);
+        }
     }
 
     project.AddFrames(paths.Select(path => new Frame(path, 1, DateTime.UtcNow)));
@@ -237,13 +258,77 @@ static async Task<int> ExportProjectAsync(Options options)
             Console.WriteLine($"  {report.Stage} {report.Frame} / {report.FrameCount}, {report.FramesPerSecond:0.0} fps, {report.TimeLeft?.TotalSeconds:0} s left");
         }
     });
+    // Sampled every 100 ms: what the process holds before the export (the runtime, Windows App SDK, the project's 5,000
+    // frames), and its highest working set, private bytes and managed heap during it.
+    process.Refresh();
+    var baselinePrivate = process.PrivateMemorySize64;
+    var maxPrivate = baselinePrivate;
+    var maxWorkingSet = process.WorkingSet64;
+    long maxManaged = 0;
+    using var stopSampling = new CancellationTokenSource();
+    var sampler = Task.Run(async () =>
+    {
+        using var self = Process.GetCurrentProcess();
+        while (!stopSampling.IsCancellationRequested)
+        {
+            self.Refresh();
+            maxPrivate = Math.Max(maxPrivate, self.PrivateMemorySize64);
+            maxWorkingSet = Math.Max(maxWorkingSet, self.WorkingSet64);
+            maxManaged = Math.Max(maxManaged, GC.GetTotalMemory(false));
+            try
+            {
+                await Task.Delay(100, stopSampling.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                // The export ended.
+            }
+        }
+    });
     var clock = Stopwatch.StartNew();
-    var result = await ProjectExporter.ExportAsync(snapshot, output, progress);
+    // The product picks the decode depth itself (8 ahead and up to 6 threads, or 4 and 3 on 8 GB of RAM or less or an
+    // integrated GPU). --decode-ahead and --decode-threads force it, to measure the tight-memory profile on a big PC.
+    var decodeAhead = options.Flag("decode-ahead") ? options.Int("decode-ahead", 0) : (int?)null;
+    var decodeThreads = options.Flag("decode-threads") ? options.Int("decode-threads", 0) : (int?)null;
+    if (decodeAhead is not null || decodeThreads is not null)
+    {
+        Console.WriteLine($"decode depth forced: ahead {decodeAhead?.ToString(CultureInfo.InvariantCulture) ?? "auto"}, threads {decodeThreads?.ToString(CultureInfo.InvariantCulture) ?? "auto"}");
+    }
+
+    var result = decodeAhead is null && decodeThreads is null
+        ? await ProjectExporter.ExportAsync(snapshot, output, progress)
+        : await ExportWithDecodeDepthAsync(snapshot, output, progress, decodeAhead, decodeThreads);
     var wall = clock.Elapsed;
+    await stopSampling.CancelAsync();
+    await sampler;
     process.Refresh();
     Console.WriteLine($"result: {result.FrameCount} frames in {wall.TotalSeconds:0.00} s = {result.FrameCount / wall.TotalSeconds:0.0} fps; peak working set " +
         $"{process.PeakWorkingSet64 / 1048576.0:0} MB; file {result.FileBytes / 1e6:0.0} MB; {reports} progress reports; encoder {result.Encoder?.Name}");
+
+    // PeakPagedMemorySize64 is the peak commit charge of the process: its private bytes at their highest.
+    Console.WriteLine(string.Create(
+        CultureInfo.InvariantCulture,
+        $"BENCH export frames={result.FrameCount} seconds={wall.TotalSeconds:0.00} fps={result.FrameCount / wall.TotalSeconds:0.0} " +
+        $"peakWorkingSetMB={process.PeakWorkingSet64 / 1048576.0:0} peakPrivateMB={process.PeakPagedMemorySize64 / 1048576.0:0} " +
+        $"baselinePrivateMB={baselinePrivate / 1048576.0:0} sampledPrivateMB={maxPrivate / 1048576.0:0} sampledWorkingSetMB={maxWorkingSet / 1048576.0:0} peakManagedMB={maxManaged / 1048576.0:0} " +
+        $"fileMB={result.FileBytes / 1e6:0} encoder={result.Encoder?.Name.Replace(' ', '_')} hardware={result.Encoder?.IsHardware} width={settings.Width} height={settings.Height}"));
     return 0;
+}
+
+// ProjectExporter's test seam (ProjectExportOptions.Tune) is internal to TenLapse.Media; an InternalsVisibleTo would also
+// expose its internal PInvoke class and clash with the Spike's own, so the seam is reached by reflection. Spike only.
+static Task<ProjectExportResult> ExportWithDecodeDepthAsync(ProjectSnapshot snapshot, string output, IProgress<ExportProgress> progress, int? ahead, int? threads)
+{
+    var exporter = typeof(ProjectExporter);
+    var optionsType = exporter.Assembly.GetType($"{exporter.Namespace}.ProjectExportOptions", throwOnError: true)!;
+    var options = Activator.CreateInstance(optionsType)!;
+    Func<VideoExportSettings, VideoExportSettings> tune = settings => settings with { DecodeAhead = ahead, DecodeThreads = threads };
+    optionsType.GetProperty("Tune")!.SetValue(options, tune);
+    var method = exporter.GetMethod(
+        "ExportAsync",
+        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+        [typeof(ProjectSnapshot), typeof(string), typeof(IProgress<ExportProgress>), typeof(CancellationToken), optionsType])!;
+    return (Task<ProjectExportResult>)method.Invoke(null, [snapshot, output, progress, CancellationToken.None, options])!;
 }
 
 static string ReadBack(string path, Fraction rate)

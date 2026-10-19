@@ -191,6 +191,7 @@ public partial class App : Application
 #if DEBUG
         errors.Guard(() => Debugging.DebugLaunch.ApplyPreview(preview, window, _log), "Applying the preview's Debug switches failed.");
         errors.Guard(() => Debugging.DebugLaunch.Apply(shell, infoBars), "Applying the Debug switches failed.");
+        errors.Guard(() => Debugging.DebugLaunch.ApplyImport(import, shell, errors), "Applying the import bench failed.");
 #endif
         // After the Debug switches, so only the user's own changes are remembered. The last change is written as the window closes.
         errors.Guard(() => remembered.Attach(shell), ProjectText.SettingsAttachFailed);

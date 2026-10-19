@@ -34,6 +34,7 @@ internal static partial class DebugLaunch
     /// </summary>
     public static void ApplyFilmstrip(FilmstripView strip, PreviewSession preview)
     {
+        _benchStrip = strip;
         var expected = Value("--sample-frames=") is { } text && int.TryParse(text, out var count) ? Math.Min(count, MaxSampleFrames) : 0;
         if (Value("--filmstrip-height=") is { } height && double.TryParse(height, CultureInfo.InvariantCulture, out var dips) && strip.ViewModel is { } viewModel)
         {

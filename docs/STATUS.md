@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: in flight: PR #88 (#24 export panel) in review, PR #89 (#34 bench) fix round, #90 (new bug: intermittent start-up crash 0xC000027B) building. Queued after #88: #31, #25, #36.
+2026-10-19: #34 merged. In flight: PR #88 (#24 export panel) fix round, #90 (start-up crash) building. Queued after #88: #31, #25, #36.
 
 ## Waves
 
@@ -35,7 +35,7 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 9 | #23 Output panel | S | output inspector section | merged #76 |
 | 10 | #20 Filmstrip | O | filmstrip view | merged #82 |
 | 10 | #17 Timing panel | S | timing inspector section | merged #78 |
-| 11 | #24 Export panel and finished state | O | export panel | PR #88, in review |
+| 11 | #24 Export panel and finished state | O | export panel | PR #88, fix round |
 | 11 | #18 Frame panel | S | frame inspector section | merged #80 |
 | 12 | #32 Golden render test | O | `tests/` golden | merged #81 |
 | 12 | #25 Export while minimized, keep awake | S | export power request | |
@@ -45,7 +45,7 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 13 | #86 Flaky memory assertion (bug) | S | `tests/` | merged #87 |
 | 13 | #90 Start-up crash 0xC000027B (bug) | O | App start-up | building |
 | 14 | #31 Rating prompt | S | Store rating | |
-| 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | PR #89, fix round |
+| 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | merged #89 |
 | 15 | #36 Narrow window layout | S | shell visual states | |
 | 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | |
 | 16 | #35 Motion system | O | every view, alone | |
@@ -281,3 +281,8 @@ Nothing blocks the build loop. Everything below waits until release is near
   raw.pixls.us CC0) with licences in `tests/.../Ordering/Fixtures/README.md`.
 - #86 PR #87: no process-wide memory deltas in tests (parallel classes skew
   them); count saves and changes instead.
+- #34 PR #89: `scripts/bench.ps1` (`-Quick`, `-Full`, `-TightMemory`, `-Keep`,
+  disk check, retries a start-up crash once) and `docs/benchmarks.md`. Debug
+  `--import-bench=FOLDER`; Spike `bench-photos`, `export-project` with decode
+  depth. 3.0-dev on this PC: first view of 1,000 photos 455 ms, 5,000 x 24 MP to
+  4K at 25.5 fps (1.3 GB private, default profile) or 13 fps at 938 MB (tight).
