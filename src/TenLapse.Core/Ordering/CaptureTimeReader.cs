@@ -1,6 +1,4 @@
 using System.Globalization;
-using MetadataExtractor;
-using MetadataExtractor.Formats.Exif;
 
 namespace TenLapse.Core.Ordering;
 
@@ -29,7 +27,7 @@ public enum CaptureTimeSource
 public readonly record struct CaptureTimeReading(DateTime Time, TimeSpan? UtcOffset, CaptureTimeSource Source);
 
 /// <summary>
-/// Reads when a photo was taken from its EXIF block with MetadataExtractor: <c>DateTimeOriginal</c> plus
+/// Reads when a photo was taken from its Exif block: <c>DateTimeOriginal</c> plus
 /// <c>SubSecTimeOriginal</c> and, when present, <c>OffsetTimeOriginal</c>; <c>DateTimeDigitized</c> (with its own
 /// sub-seconds and offset) only when the original is missing or unusable. It never falls back to file times:
 /// a copied or exported file has a new write time but the same capture time, and a file without EXIF should be
@@ -41,27 +39,29 @@ public readonly record struct CaptureTimeReading(DateTime Time, TimeSpan? UtcOff
 /// It never throws: a file that is missing, locked, truncated, not an image or has no usable time gives null.
 /// </para>
 /// <para>
-/// Formats are found by content, not by extension. JPEG, TIFF and the TIFF-based RAW formats (CR2, NEF, ARW, DNG,
-/// ORF, RW2, PEF) keep the time in an Exif IFD; HEIC and HEIF keep an Exif item in the ISO base media file; CR3
-/// keeps the Exif IFDs in Canon's metadata boxes. All of them end up as an Exif SubIFD in MetadataExtractor.
+/// Bounded (#84): it reads the six time tags with its own walkers (<see cref="ExifContainers"/>) and checks every
+/// count and length against the bytes that are really there before it reads. Whatever a damaged or hostile file's
+/// fields claim, a read tries at most four Exif blocks, makes a bounded number of stream reads, holds at most about
+/// 2 MB of pooled buffers live (a HEIF meta box and a split Exif item) and, once the pool is warm, allocates a few
+/// hundred bytes. MetadataExtractor, used before, trusted ISO base media counts and allocated up to 15 GB on a
+/// two-byte corruption of a HEIC.
 /// </para>
 /// <para>
-/// <b>Verified and not.</b> JPEG and HEIC are checked against real files (JPEG and HEIC encoded by Windows Imaging), and
-/// the TIFF layout behind DNG, ARW and NEF against hand-built containers. <b>Unverified:</b> real camera RAW (CR2, NEF, ARW, DNG,
-/// ORF, RW2, PEF) and CR3 are supported by MetadataExtractor but no camera file has been tried; the first check is Sven's
-/// sample photos (#30). A format that does not yield a time gives null, which makes the default sort fall back to name order.
+/// Formats are found by content, not by extension. JPEG, TIFF and the TIFF-based RAW formats (CR2, NEF, ARW, DNG,
+/// ORF, RW2, PEF) keep the time in an Exif IFD; PNG in an <c>eXIf</c> chunk or an ImageMagick "raw profile" text
+/// chunk; WebP in an <c>EXIF</c> chunk; HEIC, HEIF and AVIF in an Exif item of the ISO base media file; CR3 in
+/// Canon's <c>CMT2</c> box; RAF in its embedded JPEG. When a file has several Exif blocks, the first
+/// <c>DateTimeOriginal</c> in any of them wins over a <c>DateTimeDigitized</c>, as before.
+/// </para>
+/// <para>
+/// <b>Verified.</b> Every format above was compared with exiftool and MetadataExtractor on 743 real files (#85), and
+/// small cuts of real files from the MetadataExtractor sample images and raw.pixls.us are tests
+/// (<c>tests/TenLapse.Tests/Ordering/Fixtures</c>). A format that does not yield a time gives null, which makes the
+/// default sort fall back to name order.
 /// </para>
 /// </remarks>
 public static class CaptureTimeReader
 {
-    // Exif tag numbers (the names exist on ExifDirectoryBase, but the offset tags are newer than its constants).
-    private const int DateTimeOriginalTag = 0x9003;
-    private const int DateTimeDigitizedTag = 0x9004;
-    private const int SubSecTimeOriginalTag = 0x9291;
-    private const int SubSecTimeDigitizedTag = 0x9292;
-    private const int OffsetTimeOriginalTag = 0x9011;
-    private const int OffsetTimeDigitizedTag = 0x9012;
-
     private const int FileBufferSize = 8 * 1024;
 
     /// <summary>Reads the capture time of the photo at <paramref name="path"/>; null when there is none or the file cannot be read.</summary>
@@ -93,35 +93,33 @@ public static class CaptureTimeReader
         ArgumentNullException.ThrowIfNull(stream);
         try
         {
-            var directories = ImageMetadataReader.ReadMetadata(stream).OfType<ExifSubIfdDirectory>().ToList();
-            return Find(directories, DateTimeOriginalTag, SubSecTimeOriginalTag, OffsetTimeOriginalTag, CaptureTimeSource.DateTimeOriginal)
-                ?? Find(directories, DateTimeDigitizedTag, SubSecTimeDigitizedTag, OffsetTimeDigitizedTag, CaptureTimeSource.DateTimeDigitized);
+            return stream.CanSeek ? ExifContainers.Read(ByteWindow.Over(stream)) : null;
         }
         catch (Exception)
         {
-            // Whatever a damaged or odd file makes MetadataExtractor throw (it has no single exception type for them) means
-            // "no time" for that file, an OutOfMemoryException from a hostile length field included: one bad file must not
-            // fail a 5,000-file batch. (MetadataExtractor 2.9 refuses such lengths before allocating; this is the backstop.)
+            // The walkers check every bound before they read, so this is for the stream itself failing (a file that
+            // goes away, a network share that drops): one bad file must not fail a 5,000-file batch.
             return null;
         }
     }
 
-    private static CaptureTimeReading? Find(
-        List<ExifSubIfdDirectory> directories,
-        int timeTag,
-        int subSecondTag,
-        int offsetTag,
-        CaptureTimeSource source)
+    /// <summary>The capture time from one Exif block's tags: the original time first, the digitized time only when there is no usable original.</summary>
+    internal static CaptureTimeReading? FromTags(ExifTimeTags tags)
     {
-        foreach (var directory in directories)
+        if (TryParseExifTime(tags.Original, out var original))
         {
-            if (TryParseExifTime(directory.GetString(timeTag), out var time))
-            {
-                return new CaptureTimeReading(
-                    time.AddTicks(ParseSubSeconds(directory.GetString(subSecondTag))),
-                    ParseOffset(directory.GetString(offsetTag)),
-                    source);
-            }
+            return new CaptureTimeReading(
+                original.AddTicks(ParseSubSeconds(tags.SubSecOriginal)),
+                ParseOffset(tags.OffsetOriginal),
+                CaptureTimeSource.DateTimeOriginal);
+        }
+
+        if (TryParseExifTime(tags.Digitized, out var digitized))
+        {
+            return new CaptureTimeReading(
+                digitized.AddTicks(ParseSubSeconds(tags.SubSecDigitized)),
+                ParseOffset(tags.OffsetDigitized),
+                CaptureTimeSource.DateTimeDigitized);
         }
 
         return null;

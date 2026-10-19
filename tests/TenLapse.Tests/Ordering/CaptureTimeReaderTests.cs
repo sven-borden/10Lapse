@@ -161,6 +161,29 @@ public static class CaptureTimeReaderTests
                 { "tiff little-endian (DNG, ARW)", ExifFiles.RawTiff(tags) },
                 { "tiff big-endian (NEF)", ExifFiles.RawTiff(tags, bigEndian: true) },
                 { "cr2", ExifFiles.Cr2(tags) },
+                { "png, eXIf before IDAT", ExifFiles.Png(tags) },
+                { "png, eXIf after IDAT", ExifFiles.Png(tags, afterIdat: true) },
+                { "png, eXIf with an Exif preamble", ExifFiles.Png(tags, preamble: true) },
+                { "webp", ExifFiles.WebP(tags) },
+                { "webp, EXIF with an Exif preamble", ExifFiles.WebP(tags, preamble: true) },
+                { "cr3", ExifFiles.Cr3(tags) },
+                { "heif, one extent", ExifFiles.Heif(tags) },
+                { "heif, two extents", ExifFiles.Heif(tags, ExifFiles.HeifExif.TwoExtents) },
+                { "heif, item in idat", ExifFiles.Heif(tags, ExifFiles.HeifExif.InIdat) },
+                { "heif, iloc version 2", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 2)) },
+                { "heif, iloc version 2, three extents", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 2, Extents: 3)) },
+                { "heif, extent index fields", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 1, IndexSize: 4, Extents: 2)) },
+                { "heif, 8-byte index fields", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 2, IndexSize: 8)) },
+                { "heif, 8-byte offsets and lengths", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 1, OffsetSize: 8, LengthSize: 8)) },
+                { "heif, 4-byte base offset", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(BaseOffsetSize: 4)) },
+                { "heif, 8-byte base offset, two extents", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 1, OffsetSize: 8, LengthSize: 8, BaseOffsetSize: 8, Extents: 2)) },
+                { "heif, two extents in idat", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 1, Extents: 2, InIdat: true)) },
+                { "png, raw profile in tEXt", ExifFiles.PngRawProfile(tags, ExifFiles.PngText.Plain) },
+                { "png, raw profile in zTXt", ExifFiles.PngRawProfile(tags, ExifFiles.PngText.Compressed) },
+                { "png, raw profile in iTXt", ExifFiles.PngRawProfile(tags, ExifFiles.PngText.International) },
+                { "png, raw profile in compressed iTXt", ExifFiles.PngRawProfile(tags, ExifFiles.PngText.InternationalCompressed) },
+                { "png, APP1 raw profile in zTXt", ExifFiles.PngRawProfile(tags, ExifFiles.PngText.Compressed, "Raw profile type APP1") },
+                { "raf", ExifFiles.Raf(ExifFiles.Jpeg(tags, paddingBytes: 1000)) },
             };
         }
     }
@@ -228,7 +251,7 @@ public static class CaptureTimeReaderTests
     {
         // A batch of 5,000 photos must survive one file whose IFD claims billions of bytes: the entry for
         // DateTimeOriginal says it holds `count` values, so a reader that trusts it tries to allocate that much.
-        // (Whether MetadataExtractor refuses before allocating or allocates and fails, the result is null and no exception.)
+        // The value does not fit in the file, so the tag is skipped: no time, no allocation, no exception.
         var file = ExifFiles.Jpeg(new ExifFiles.Tags(Original: "2026:05:01 18:30:07"));
 
         // The entry: tag 0x9003, type 2 (ASCII), count 20 (19 characters and the terminator), little-endian.
@@ -251,19 +274,49 @@ public static class CaptureTimeReaderTests
         }
     }
 
+    /// <summary>
+    /// What one read may allocate: the six tag strings and the reader's own small objects. Its buffers (the 64 KB
+    /// block buffer, a HEIF meta box, a split Exif item) come from the shared array pool, so they are not counted once
+    /// the pool holds them. MetadataExtractor allocated up to 15 GB on these files (#84).
+    /// </summary>
+    internal const long AllocationLimitPerRead = 64 * 1024;
+
+    /// <summary>
+    /// Reads <paramref name="file"/> twice and returns what the second read allocated on this thread: the first fills
+    /// the array pool (and the JIT), so the second shows what every later read of such a file costs.
+    /// </summary>
+    internal static long AllocatedByRead(byte[] file, out CaptureTimeReading? reading)
+    {
+        _ = CaptureTimeReader.Read(new MemoryStream(file));
+        var stream = new MemoryStream(file);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        reading = CaptureTimeReader.Read(stream);
+        return GC.GetAllocatedBytesForCurrentThread() - before;
+    }
+
     [Fact]
     public static void NeverThrowsOnEveryTruncationOrCorruptionOfARealisticFile()
     {
-        foreach (var file in new[]
+        // Every container the reader walks; a corruption of a count or length must not make it allocate (#84).
+        var tags = new ExifFiles.Tags(Original: "2026:05:01 18:30:07", SubSecOriginal: "42", OffsetOriginal: "+02:00");
+        _ = AllocatedByRead(ExifFiles.Jpeg(tags), out _);
+        foreach (var (name, file) in new[]
         {
-            ExifFiles.Jpeg(new ExifFiles.Tags(Original: "2026:05:01 18:30:07", SubSecOriginal: "42", OffsetOriginal: "+02:00")),
-            ExifFiles.RawTiff(new ExifFiles.Tags(Original: "2026:05:01 18:30:07", SubSecOriginal: "42")),
-            EncodeWithWic(BitmapEncoder.HeifEncoderId, "2026:05:01 18:30:07", "42") ?? [],
+            ("jpeg", ExifFiles.Jpeg(tags)),
+            ("tiff", ExifFiles.RawTiff(tags)),
+            ("png", ExifFiles.Png(tags)),
+            ("webp", ExifFiles.WebP(tags)),
+            ("cr3", ExifFiles.Cr3(tags)),
+            ("heif", ExifFiles.Heif(tags)),
+            ("heif, two extents", ExifFiles.Heif(tags, ExifFiles.HeifExif.TwoExtents)),
+            ("heif, idat", ExifFiles.Heif(tags, ExifFiles.HeifExif.InIdat)),
+            ("heic from Windows Imaging", EncodeWithWic(BitmapEncoder.HeifEncoderId, "2026:05:01 18:30:07", "42") ?? []),
         })
         {
+            long most = 0;
             for (var length = 0; length < file.Length; length++)
             {
-                _ = Read(file[..length]);
+                most = Math.Max(most, AllocatedByRead(file[..length], out _));
             }
 
             var random = new Random(150);
@@ -272,9 +325,108 @@ public static class CaptureTimeReaderTests
                 var copy = (byte[])file.Clone();
                 copy[random.Next(copy.Length)] = (byte)random.Next(256);
                 copy[random.Next(copy.Length)] = (byte)random.Next(256);
-                _ = Read(copy);
+                most = Math.Max(most, AllocatedByRead(copy, out _));
             }
+
+            Assert.True(most < AllocationLimitPerRead, $"{name}: one read allocated {most:N0} bytes");
         }
+    }
+
+    public static TheoryData<string, byte[], bool> HostileFiles
+    {
+        get
+        {
+            var tags = new ExifFiles.Tags(Original: "2026:05:01 18:30:07");
+            return new TheoryData<string, byte[], bool>
+            {
+                // The corruption behind #84: a HEIC whose ipma entry count is 0x72000004 (MetadataExtractor sized an array
+                // by it, about 15 GB). The reader never parses ipma, so the time is still there.
+                { "heif ipma entry count 0x72000004", Patch(ExifFiles.Heif(tags), "ipma"u8, 8, [0x72, 0x00, 0x00, 0x04]), true },
+                { "heif iinf entry count 0xFFFF", Patch(ExifFiles.Heif(tags), "iinf"u8, 8, [0xFF, 0xFF]), true },
+                { "heif iloc item count 0xFFFF", Patch(ExifFiles.Heif(tags), "iloc"u8, 10, [0xFF, 0xFF]), true },
+                { "heif meta box of 2 GB", Patch(ExifFiles.Heif(tags), "meta"u8, -4, [0x7F, 0xFF, 0xFF, 0xF0]), false },
+                { "heif meta box of 16 TB (64-bit size)", Patch(ExifFiles.Heif(tags), "meta"u8, -4, [0, 0, 0, 1, .. "meta"u8, 0, 0, 0x10, 0, 0, 0, 0, 0]), false },
+                { "heif Exif extent count 0xFFFF", Patch(ExifFiles.Heif(tags), "iloc"u8, 30, [0xFF, 0xFF]), false },
+                { "heif Exif extent of 2 GB", Patch(ExifFiles.Heif(tags), "iloc"u8, 36, [0x7F, 0xFF, 0xFF, 0xFF]), false },
+                {
+                    "heif two Exif extents of 1 MB each",
+                    Patch(Patch(ExifFiles.Heif(tags, ExifFiles.HeifExif.TwoExtents), "iloc"u8, 40, [0x00, 0x0F, 0xFF, 0xF0]), "iloc"u8, 48, [0x00, 0x0F, 0xFF, 0xF0]),
+                    false
+                },
+                { "png eXIf of 2 GB", Patch(ExifFiles.Png(tags), "eXIf"u8, -4, [0x7F, 0xFF, 0xFF, 0xFF]), false },
+                { "webp EXIF of 4 GB", Patch(ExifFiles.WebP(tags), "EXIF"u8, 4, [0xF0, 0xFF, 0xFF, 0xFF]), false },
+                { "cr3 CMT2 of 2 GB", Patch(ExifFiles.Cr3(tags), "CMT2"u8, -4, [0x7F, 0xFF, 0xFF, 0xF0]), false },
+                { "jpeg APP1 of 64 KB in a short file", Patch(ExifFiles.Jpeg(tags), [0xFF, 0xE1], 2, [0xFF, 0xFF]), false },
+                { "tiff Exif IFD of 65,535 entries", Patch(ExifFiles.RawTiff(tags), [0x69, 0x87, 0x04, 0x00], 16, [0xFF, 0xFF]), true },
+                { "heif one Exif item named 4 times, 16 extents of 64 KB", ExifFiles.HeifRepeatedExifItem(names: 4, extents: 16, extentBytes: 64 * 1024), false },
+                { "png zTXt raw profile inflating to 64 MB", PngDeflateBomb(), false },
+                { "png zTXt raw profile with damaged deflate data", Patch(ExifFiles.PngRawProfile(tags, ExifFiles.PngText.Compressed), "zTXt"u8, 30, [0xFF, 0xFF, 0xFF, 0xFF]), false },
+                { "png raw profile declaring 999,999,999 bytes", ExifFiles.PngWithText(ExifFiles.PngText.Plain, "Raw profile type exif", "\nexif\n999999999\n4578"u8.ToArray()), false },
+            };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(HostileFiles))]
+    public static void AHostileCountOrLengthCostsKilobytesNotGigabytes(string name, byte[] file, bool keepsTheTime)
+    {
+        _ = AllocatedByRead(ExifFiles.Jpeg(new ExifFiles.Tags(Original: "2026:05:01 18:30:07")), out _);
+
+        var allocated = AllocatedByRead(file, out var reading);
+
+        Assert.True(allocated < AllocationLimitPerRead, $"{name}: the read allocated {allocated:N0} bytes");
+        Assert.Equal(keepsTheTime ? new DateTime(2026, 5, 1, 18, 30, 7) : null, reading?.Time);
+    }
+
+    [Fact]
+    public static void AMetaBoxLargerThanTheCapIsNotLoaded()
+    {
+        // The Exif item sits in idat, so padding the end of the meta box moves nothing it points to: at the cap the
+        // time is read, one byte over the box is not loaded at all.
+        var atCap = HeifWithMetaPayload(ExifContainers.MaxMetaBoxBytes);
+        var overCap = HeifWithMetaPayload(ExifContainers.MaxMetaBoxBytes + 1);
+
+        Assert.Equal(new DateTime(2026, 5, 1, 18, 30, 7), Read(atCap)?.Time);
+        var allocated = AllocatedByRead(overCap, out var reading);
+        Assert.Null(reading);
+        Assert.True(allocated < AllocationLimitPerRead, $"allocated {allocated:N0} bytes");
+    }
+
+    /// <summary>A HEIF with its Exif item in idat whose meta box payload is padded to <paramref name="payloadBytes"/> with a <c>free</c> box.</summary>
+    private static byte[] HeifWithMetaPayload(int payloadBytes)
+    {
+        var heif = ExifFiles.Heif(new ExifFiles.Tags(Original: "2026:05:01 18:30:07"), ExifFiles.HeifExif.InIdat);
+        var meta = heif.AsSpan().IndexOf("meta"u8) - 4;
+        var metaSize = (int)System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(heif.AsSpan(meta));
+        var padding = payloadBytes - (metaSize - 8) - 8;
+        byte[] free = [.. BigEndianBytes((uint)padding + 8), .. "free"u8, .. new byte[padding]];
+        return [.. heif[..meta], .. BigEndianBytes((uint)(metaSize + free.Length)), .. heif[(meta + 4)..(meta + metaSize)], .. free, .. heif[(meta + metaSize)..]];
+    }
+
+    /// <summary>A PNG whose <c>zTXt</c> raw profile inflates to 16 MB of hex zeros (about 16 KB deflated).</summary>
+    private static byte[] PngDeflateBomb()
+    {
+        var text = new byte[16 * 1024 * 1024];
+        Array.Fill(text, (byte)'0');
+        "\nexif\n 99999999\n"u8.CopyTo(text);
+        return ExifFiles.PngWithText(ExifFiles.PngText.Compressed, "Raw profile type exif", text);
+    }
+
+    /// <summary>A copy of <paramref name="file"/> with <paramref name="value"/> written at the first <paramref name="anchor"/> plus <paramref name="delta"/>.</summary>
+    private static byte[] Patch(byte[] file, ReadOnlySpan<byte> anchor, int delta, byte[] value)
+    {
+        var at = file.AsSpan().IndexOf(anchor);
+        Assert.True(at >= 0, "The anchor was not found in the test file.");
+        var copy = (byte[])file.Clone();
+        value.CopyTo(copy, at + delta);
+        return copy;
+    }
+
+    private static byte[] BigEndianBytes(uint value)
+    {
+        var bytes = new byte[4];
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(bytes, value);
+        return bytes;
     }
 
     [Fact]
@@ -376,42 +528,6 @@ public static class CaptureTimeReaderTests
         {
             return null;
         }
-    }
-
-    private sealed class CountingStream(Stream inner) : Stream
-    {
-        public long BytesRead { get; private set; }
-
-        public override bool CanRead => inner.CanRead;
-
-        public override bool CanSeek => inner.CanSeek;
-
-        public override bool CanWrite => false;
-
-        public override long Length => inner.Length;
-
-        public override long Position
-        {
-            get => inner.Position;
-            set => inner.Position = value;
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            var read = inner.Read(buffer, offset, count);
-            BytesRead += read;
-            return read;
-        }
-
-        public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
-
-        public override void Flush()
-        {
-        }
-
-        public override void SetLength(long value) => throw new NotSupportedException();
-
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 
     private sealed class NonSeekableStream(byte[] bytes) : Stream
