@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #22, #29, #23 merged. PR #77 (#19 preview) in review. Next: wave 10, #17 timing panel (now), #20 filmstrip (after #77).
+2026-10-19: #22, #29, #23 merged. PR #77 (#19) fix round, PR #78 (#17) in review, #14 building (pulled forward: no dependencies). Next: #20 filmstrip after #77.
 
 ## Waves
 
@@ -31,16 +31,16 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | merged #72 |
 | 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | merged #74 |
 | 8 | #29 First launch drop zone | O | App empty state view | merged #75 |
-| 9 | #19 Preview with proxy cache | O | preview view and cache | PR #77, in review |
+| 9 | #19 Preview with proxy cache | O | preview view and cache | PR #77, fix round |
 | 9 | #23 Output panel | S | output inspector section | merged #76 |
 | 10 | #20 Filmstrip | O | filmstrip view | |
-| 10 | #17 Timing panel | S | timing inspector section | |
+| 10 | #17 Timing panel | S | timing inspector section | PR #78, in review |
 | 11 | #24 Export panel and finished state | O | export panel | |
 | 11 | #18 Frame panel | S | frame inspector section | |
 | 12 | #32 Golden render test | O | `tests/` golden | |
 | 12 | #25 Export while minimized, keep awake | S | export power request | |
 | 13 | #21 Remember settings | S | settings persistence | |
-| 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | |
+| 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | building |
 | 14 | #31 Rating prompt | S | Store rating | |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | |
 | 15 | #36 Narrow window layout | S | shell visual states | |
