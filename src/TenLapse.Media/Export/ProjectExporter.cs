@@ -136,7 +136,20 @@ public static class ProjectExporter
         CancellationToken cancellationToken)
     {
         var partial = NewPartialPath(target);
-        await PrepareOutputAsync(target, partial, settings.Format, options.InUsePatience, cancellationToken).ConfigureAwait(false);
+
+        // Listed before it exists, so a crash at any point leaves it in the journal for the next launch to delete.
+        var journal = options.Journal ?? ExportCleanup.Journal;
+        journal?.Add(partial);
+        try
+        {
+            await PrepareOutputAsync(target, partial, settings.Format, options.InUsePatience, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            journal?.Remove(partial);
+            throw;
+        }
+
         try
         {
             var createEncoder = options.CreateEncoder ?? (static (path, s, device) => new SinkWriterEncoder(path, s, device));
@@ -158,6 +171,7 @@ public static class ProjectExporter
             tracker.Enter(ExportStage.Finishing);
             SetHidden(partial, false);
             var saved = await PlaceAsync(partial, target, settings.Format, options.ReplacePatience, cancellationToken).ConfigureAwait(false);
+            journal?.Remove(partial);
             return new ProjectExportResult(
                 saved,
                 written.FrameCount,
@@ -175,8 +189,18 @@ public static class ProjectExporter
         {
             // The exporter deletes the partial file once its encoder has opened it; one it never opened (the
             // encoder failed to start) or one a failed move left is deleted here, after any clean-up still holding
-            // it. WhenDone(target) waits for it.
-            ExportCleanup.Track(target, ExportCleanup.DeleteWhenDone(partial));
+            // it. WhenDone(target) waits for it. A file that could not be deleted stays in the journal.
+            ExportCleanup.Track(target, ExportCleanup.DeleteWhenDone(partial).ContinueWith(
+                _ =>
+                {
+                    if (!File.Exists(partial))
+                    {
+                        journal?.Remove(partial);
+                    }
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default));
             throw;
         }
     }
@@ -339,6 +363,9 @@ internal sealed record ProjectExportOptions
 
     /// <summary>The progress clock; null for a stopwatch.</summary>
     public Func<TimeSpan>? Clock { get; init; }
+
+    /// <summary>The journal of unfinished files; null for <see cref="ExportCleanup.Journal"/>.</summary>
+    public PartialFileJournal? Journal { get; init; }
 
     /// <summary>How long the early check waits for another app to let go of an existing target.</summary>
     public TimeSpan InUsePatience { get; init; } = TimeSpan.FromSeconds(1.5);

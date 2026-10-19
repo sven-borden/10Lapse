@@ -37,6 +37,23 @@ public static class ExportCleanup
         return _pending.TryGetValue(Path.GetFullPath(path), out var task) ? task : Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Completes once every clean-up started so far, of any file, has finished (it never faults). The app waits
+    /// on it briefly as it closes (#25), so an export cancelled just before does not leave its unfinished file;
+    /// what it does not wait for, <see cref="Journal"/> deletes at the next launch.
+    /// </summary>
+    public static Task WhenAllDone() => Task.WhenAll(_pending.Values.ToArray());
+
+    /// <summary>
+    /// Where project exports record their unfinished files (set once by the app at start, before any export);
+    /// null records nothing (tests, tools).
+    /// </summary>
+    public static PartialFileJournal? Journal
+    {
+        get => Volatile.Read(ref field);
+        set => Volatile.Write(ref field, value);
+    }
+
     /// <summary>Records a clean-up of <paramref name="path"/>, which must not fault (it reports instead).</summary>
     internal static void Track(string path, Task cleanup)
     {
