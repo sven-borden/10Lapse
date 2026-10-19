@@ -31,10 +31,10 @@ public static class KnownPhotoFormats
     public static readonly PhotoCodecExtension HeifExtension = new("HEIF Image Extensions", "9PMMSR1CGPWG");
 
     /// <summary>HEVC Video Extensions: the codec of HEIC photos (the iPhone default). A fresh Windows 11 has the HEIF decoder but not this.</summary>
-    public static readonly PhotoCodecExtension HevcExtension = new("HEVC Video Extensions", "9NMZLZ57R3T7", HasFee: true);
+    public static readonly PhotoCodecExtension HevcExtension = new("HEVC Video Extensions", "9NMZLZ57R3T7", HasFee: true, IsCodec: true);
 
     /// <summary>AV1 Video Extension: the codec of AVIF photos.</summary>
-    public static readonly PhotoCodecExtension Av1Extension = new("AV1 Video Extension", "9MVZQVXJBQ9V");
+    public static readonly PhotoCodecExtension Av1Extension = new("AV1 Video Extension", "9MVZQVXJBQ9V", IsCodec: true);
 
     /// <summary>Webp Image Extensions.</summary>
     public static readonly PhotoCodecExtension WebpExtension = new("Webp Image Extensions", "9PG2DK419DRG");

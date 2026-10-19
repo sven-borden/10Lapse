@@ -68,13 +68,18 @@ public sealed class InfoBarRequest
     /// <see cref="ProjectText.InfoBarShowDetails"/> / <see cref="ProjectText.InfoBarHideDetails"/> that never
     /// dismisses. Null or empty for none. The toggle is the InfoBar's one button, so it cannot have an action too.
     /// </param>
+    /// <param name="showsNext">
+    /// True for an InfoBar that continues what the user just did (the second step after an action's button): it waits
+    /// at the front of the queue (visible at once) instead of at the back.
+    /// </param>
     public InfoBarRequest(
         InfoBarSeverity severity,
         string message,
         string? actionLabel = null,
         Func<Task>? action = null,
         bool actionKeepsOpen = false,
-        IEnumerable<InfoBarDetail>? details = null)
+        IEnumerable<InfoBarDetail>? details = null,
+        bool showsNext = false)
     {
         if (!Enum.IsDefined(severity))
         {
@@ -114,6 +119,7 @@ public sealed class InfoBarRequest
         Action = action;
         ActionKeepsOpen = actionKeepsOpen;
         Details = lines;
+        ShowsNext = showsNext;
     }
 
     /// <summary>The kind of the InfoBar.</summary>
@@ -130,6 +136,9 @@ public sealed class InfoBarRequest
 
     /// <summary>True when pressing the action leaves the InfoBar open.</summary>
     public bool ActionKeepsOpen { get; }
+
+    /// <summary>True when it goes to the front of the queue and shows at once.</summary>
+    public bool ShowsNext { get; }
 
     /// <summary>The lines of its detail list, in order; empty when it has none.</summary>
     public IReadOnlyList<InfoBarDetail> Details { get; }

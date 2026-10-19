@@ -53,7 +53,8 @@ public enum SkipReason
 /// <param name="Name">The Store name, as the user will find it ("HEIF Image Extensions").</param>
 /// <param name="StoreProductId">The Store product ID for <c>ms-windows-store://pdp/?ProductId=…</c>.</param>
 /// <param name="HasFee">True when the Store sells it (the HEVC Video Extensions); the InfoBar then does not call it free.</param>
-public sealed record PhotoCodecExtension(string Name, string StoreProductId, bool HasFee = false);
+/// <param name="IsCodec">True for a codec a decoder needs inside a file (HEVC, AV1), false for the extension that adds a decoder. A "missing" verdict on a codec is checked against the PC before the InfoBar speaks.</param>
+public sealed record PhotoCodecExtension(string Name, string StoreProductId, bool HasFee = false, bool IsCodec = false);
 
 /// <summary>A file import could not use, kept so the user can see which and why.</summary>
 public sealed record SkippedFile

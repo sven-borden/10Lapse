@@ -34,6 +34,25 @@ public sealed class InfoBarQueueTests
     }
 
     [Fact]
+    public void AnInfoBarThatContinuesAnActionShowsAtOnceAheadOfTheWaitingOnes()
+    {
+        var queue = NewQueue();
+        var visible = queue.Show(InfoBarSeverity.Caution, "One.");
+        var waiting = queue.Show(InfoBarSeverity.Caution, "Two.");
+        var changes = 0;
+        queue.CurrentChanged += (_, _) => changes++;
+
+        var next = queue.Show(new InfoBarRequest(InfoBarSeverity.Caution, "Next.", showsNext: true));
+
+        Assert.Same(next, queue.Current);
+        Assert.Equal(1, changes);
+        queue.Dismiss(next);
+        Assert.Same(visible, queue.Current);
+        queue.Dismiss(visible);
+        Assert.Same(waiting, queue.Current);
+    }
+
+    [Fact]
     public void DismissingAWaitingInfoBarDropsItWithoutTouchingTheVisibleOne()
     {
         var queue = NewQueue();

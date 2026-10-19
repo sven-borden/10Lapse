@@ -543,18 +543,17 @@ public sealed partial class ImportViewModel : ObservableObject
         }
     }
 
-    // Photos that need a Store extension get one InfoBar per missing extension (#14); the rest get the one list.
+    // Photos that need a Store extension get one InfoBar per missing extension (#14); the rest get the one list. The
+    // prompts decide once (and ask the PC) which files they speak for, so the list gets exactly the others.
     private void ReportSkipped(List<SkippedFile> skipped)
     {
-        if (SkippedFilesInfoBar.Create(skipped.Where(file => !CodecExtensionPrompts.Covers(file))) is { } request)
+        var plan = _extensionPrompts.Plan(skipped);
+        if (SkippedFilesInfoBar.Create(plan.NotCovered) is { } request)
         {
             _infoBars.Show(request);
         }
 
-        if (skipped.Any(CodecExtensionPrompts.Covers))
-        {
-            _extensionPrompts.Show(skipped);
-        }
+        _extensionPrompts.Show(plan);
     }
 
     // Folders that would not open are not photos: one InfoBar of their own, never the skipped list.

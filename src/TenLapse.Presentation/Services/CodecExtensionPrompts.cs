@@ -27,7 +27,10 @@ public sealed class CodecExtensionPrompts
         _errors = errors;
     }
 
-    /// <summary>True for a skipped file these prompts speak for: it needs an extension and the cause is known.</summary>
+    /// <summary>
+    /// True for a skipped file these prompts may speak for: it needs an extension and the cause is known. Not the
+    /// whole decision: a file whose missing extension is a codec the PC has is left out by <see cref="Plan"/>.
+    /// </summary>
     public static bool Covers(SkippedFile file)
     {
         ArgumentNullException.ThrowIfNull(file);
@@ -35,31 +38,38 @@ public sealed class CodecExtensionPrompts
     }
 
     /// <summary>
-    /// The InfoBars for the files <see cref="Covers"/> in <paramref name="skipped"/>, one per distinct set of missing
-    /// extensions, in the order the sets first appear. Asks the PC about each later extension once. Empty when no file
-    /// is covered. Blocking (it may list Media Foundation decoders): call it off the UI thread.
+    /// Decides once which skipped files the prompts speak for and builds their InfoBars, one per distinct set of
+    /// missing extensions, in the order the sets first appear. Asks the PC about each extension once. A file whose
+    /// first extension is a codec (HEVC, AV1) is covered only when the PC does not have it: the classifier's
+    /// "component missing" codes are broad, so a damaged or 10-bit HEIC on a PC with HEVC must not send the user to
+    /// buy it, and stays in <see cref="CodecPromptPlan.NotCovered"/> with the other unreadable files. Blocking (it may
+    /// list Media Foundation decoders): call it off the UI thread.
     /// </summary>
-    public IReadOnlyList<InfoBarRequest> Create(IEnumerable<SkippedFile> skipped)
+    public CodecPromptPlan Plan(IEnumerable<SkippedFile> skipped)
     {
         ArgumentNullException.ThrowIfNull(skipped);
         var installed = new Dictionary<PhotoCodecExtension, bool>();
         var groups = new List<(List<PhotoCodecExtension> Needed, int Count)>();
-        foreach (var file in skipped.Where(Covers))
+        var notCovered = new List<SkippedFile>();
+        foreach (var file in skipped)
         {
-            // The first is known missing; each later one only if the PC does not have it.
-            List<PhotoCodecExtension> needed = [file.MissingExtensions[0]];
-            foreach (var later in file.MissingExtensions.Skip(1))
+            if (!Covers(file))
             {
-                if (!installed.TryGetValue(later, out var has))
-                {
-                    installed[later] = has = _codecs.IsInstalled(later);
-                }
-
-                if (!has)
-                {
-                    needed.Add(later);
-                }
+                notCovered.Add(file);
+                continue;
             }
+
+            var first = file.MissingExtensions[0];
+            if (first.IsCodec && Has(first))
+            {
+                // The PC has this codec, so it is not what stopped the file: the file is unreadable for another reason.
+                notCovered.Add(file);
+                continue;
+            }
+
+            // The first is known missing; each later one only if the PC does not have it.
+            List<PhotoCodecExtension> needed = [first];
+            needed.AddRange(file.MissingExtensions.Skip(1).Where(later => !Has(later)));
 
             var index = groups.FindIndex(group => group.Needed.SequenceEqual(needed));
             if (index < 0)
@@ -72,13 +82,27 @@ public sealed class CodecExtensionPrompts
             }
         }
 
-        return [.. groups.Select(group => Prompt(group.Needed, group.Count))];
+        return new CodecPromptPlan([.. groups.Select(group => Prompt(group.Needed, group.Count))], notCovered);
+
+        bool Has(PhotoCodecExtension extension)
+        {
+            if (!installed.TryGetValue(extension, out var has))
+            {
+                installed[extension] = has = _codecs.IsInstalled(extension);
+            }
+
+            return has;
+        }
     }
 
-    /// <summary>Shows the InfoBars <see cref="Create"/> makes. Off the UI thread, like <see cref="Create"/>.</summary>
-    public void Show(IEnumerable<SkippedFile> skipped)
+    /// <summary>The InfoBars of <see cref="Plan"/>. Blocking, like it.</summary>
+    public IReadOnlyList<InfoBarRequest> Create(IEnumerable<SkippedFile> skipped) => Plan(skipped).Requests;
+
+    /// <summary>Shows the InfoBars of <paramref name="plan"/>.</summary>
+    public void Show(CodecPromptPlan plan)
     {
-        foreach (var request in Create(skipped))
+        ArgumentNullException.ThrowIfNull(plan);
+        foreach (var request in plan.Requests)
         {
             _infoBars.Show(request);
         }
@@ -107,7 +131,7 @@ public sealed class CodecExtensionPrompts
 
         if (!opened)
         {
-            _infoBars.Show(InfoBarSeverity.Critical, ProjectText.CodecStoreFallback(extension));
+            _infoBars.Show(InfoBarSeverity.Caution, ProjectText.CodecStoreFallback(extension));
             return;
         }
 
@@ -117,7 +141,13 @@ public sealed class CodecExtensionPrompts
                 InfoBarSeverity.Caution,
                 ProjectText.CodecNext(needed[index + 1]),
                 ProjectText.CodecGetFromStore,
-                () => OpenAsync(needed, index + 1)));
+                () => OpenAsync(needed, index + 1),
+                showsNext: true));
         }
     }
 }
+
+/// <summary>What <see cref="CodecExtensionPrompts.Plan"/> decided about the skipped files of one import.</summary>
+/// <param name="Requests">The extension InfoBars, in order.</param>
+/// <param name="NotCovered">The skipped files the InfoBars do not speak for: they belong in the generic "couldn't be read" list.</param>
+public sealed record CodecPromptPlan(IReadOnlyList<InfoBarRequest> Requests, IReadOnlyList<SkippedFile> NotCovered);

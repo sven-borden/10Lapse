@@ -44,6 +44,34 @@ public sealed class ImportCodecExtensionTests
     }
 
     [Fact]
+    public async Task PhotosClassifiedAsMissingHevcOnAPcThatHasHevcStayInTheGenericListWithNoPrompt()
+    {
+        // The PC has the HEVC codec (the fake's default): whatever stopped these photos, it was not the missing extension.
+        using var harness = ImportHarness.With(Source(12, 0, KnownPhotoFormats.HevcExtension));
+
+        await harness.ImportAsync(@"C:\Scripted");
+
+        var bar = Assert.Single(harness.InfoBars.Shown);
+        Assert.Equal("12 photos couldn't be read and were skipped.", bar.Message);
+        Assert.True(bar.HasDetails);
+        Assert.Null(bar.ActionLabel);
+        Assert.Equal([KnownPhotoFormats.HevcExtension], harness.Codecs.Asked);
+    }
+
+    [Fact]
+    public async Task WhenHevcReallyIsMissingTheSameClassifiedPhotosGetThePromptInsteadOfTheList()
+    {
+        using var harness = ImportHarness.With(Source(12, 0, KnownPhotoFormats.HevcExtension));
+        harness.Codecs.Missing.Add(KnownPhotoFormats.HevcExtension);
+
+        await harness.ImportAsync(@"C:\Scripted");
+
+        var bar = Assert.Single(harness.InfoBars.Shown);
+        Assert.Equal("These 12 photos need the HEVC Video Extensions from Microsoft, which costs a small fee.", bar.Message);
+        Assert.Equal("Get it from the Store", bar.ActionLabel);
+    }
+
+    [Fact]
     public async Task DamagedPhotosKeepTheirOwnListAndThePromptStaysSeparate()
     {
         using var harness = ImportHarness.With(Source(12, 2, KnownPhotoFormats.HeifExtension));
