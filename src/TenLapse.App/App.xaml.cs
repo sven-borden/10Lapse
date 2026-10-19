@@ -21,6 +21,8 @@ public partial class App : Application
     // Opening it never throws: an unwritable folder makes it keep its lines in memory.
     private static readonly RollingFileLog _log = new(AppEnvironment.LogFolder());
 
+    // The start-up phases in the log (#90): the last line of a log that stops at start-up names the phase.
+    private readonly StartupTrace _startup = new(_log);
     private ErrorPresenter? _errors;
     private Window? _window;
 
@@ -68,7 +70,9 @@ public partial class App : Application
 #else
             _window = CreateMainWindow();
 #endif
+            _startup.Phase("activating the window");
             _window.Activate();
+            _startup.Phase("waiting for the shell to load");
         }
         catch (Exception exception)
         {
@@ -153,8 +157,11 @@ public partial class App : Application
         _ = errors.GuardAsync(() => output.DeliverAsync(probe, ui, errors, OutputCapabilitiesDelivery.DefaultPatience, encoders.Token), OutputText.ProbeFailed);
 
         // The preview (#19): the proxy cache in LocalCache (beside the log unpackaged), the frame images, the player.
+        _startup.Phase("creating the preview session");
         var preview = new Preview.PreviewSession(shell, errors, infoBars, _log, PreviewCacheFolder());
-        window = new MainWindow(shell, settings, import, output, infoBars, logOnly, errors, preview);
+        _startup.Phase("creating the window");
+        window = new MainWindow(shell, settings, import, output, infoBars, logOnly, errors, preview, _startup);
+        _startup.Phase("attaching the window's services");
 
         // Closing the window stops the probe (it ends within one test encode and removes that file) and the panel.
         window.Closed += (_, _) =>

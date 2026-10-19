@@ -5,6 +5,7 @@ using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
@@ -26,6 +27,7 @@ public sealed partial class MainWindow : Window
     private readonly ShellView _shell;
     private readonly TintedMicaBackdrop? _backdrop;
     private readonly IErrorSink _errors;
+    private readonly StartupTrace _startup;
 
     // Kept as a field: its events stop when nothing holds it.
     private readonly UISettings _uiSettings = new();
@@ -49,15 +51,20 @@ public sealed partial class MainWindow : Window
     /// <param name="errors">Logs failures of the window's dispatcher callbacks (log only, see <see cref="DispatcherQueueExtensions"/>).</param>
     /// <param name="presenter">The error path, for the shell's drop handler.</param>
     /// <param name="preview">The preview's player, images and cache (#19).</param>
-    internal MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview)
+    /// <param name="startup">Logs the start-up phases up to the first frame (#90).</param>
+    internal MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, StartupTrace startup)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(errors);
+        ArgumentNullException.ThrowIfNull(startup);
         ViewModel = viewModel;
         _errors = errors;
+        _startup = startup;
         InitializeComponent();
+        _startup.Phase("building the shell");
         _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter, preview);
         Content = _shell;
+        _startup.Phase("setting the title bar and the backdrop");
 
         // Window is not a DependencyObject, so its Title cannot take a binding: follow the view model by hand.
         Title = ViewModel.Title;
@@ -75,6 +82,7 @@ public sealed partial class MainWindow : Window
             _shell.ShowMicaFallback();
         }
 
+        _startup.Phase("sizing the window");
         SizeWindow();
         _shell.Loaded += OnLoaded;
         _shell.ActualThemeChanged += (_, _) => ColorCaptionButtons();
@@ -112,6 +120,7 @@ public sealed partial class MainWindow : Window
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         _shell.Loaded -= OnLoaded;
+        _startup.Phase("shell loaded; fitting the title bar");
         ColorCaptionButtons();
         FitTitleBarInsets();
         UpdatePassthrough();
@@ -125,6 +134,16 @@ public sealed partial class MainWindow : Window
                 ApplyMinimumSize(Scale);
             }
         };
+
+        _startup.Phase("waiting for the first frame");
+        CompositionTarget.Rendering += OnFirstRendering;
+    }
+
+    // The first frame is being drawn: start-up is over, and so is its trace.
+    private void OnFirstRendering(object? sender, object e)
+    {
+        CompositionTarget.Rendering -= OnFirstRendering;
+        _startup.Done("first frame rendering");
     }
 
     // Inactive windows dim their title (Windows 11): the title texts go to Ink Secondary.

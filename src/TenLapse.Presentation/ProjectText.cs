@@ -258,6 +258,10 @@ public static class ProjectText
     public static string SettingsLoaded(double milliseconds) =>
         Format("Remembered settings loaded in {0:0.0} ms.", milliseconds);
 
+    /// <summary>Log line: a start-up phase begins (#90), with the time since the app started.</summary>
+    public static string StartupPhase(string phase, double milliseconds) =>
+        Format("Start-up: {0} ({1:0} ms).", phase, milliseconds);
+
     // Error contexts: what was being done, for the log only.
 
     /// <summary>Error context: <c>New project</c> failed.</summary>
