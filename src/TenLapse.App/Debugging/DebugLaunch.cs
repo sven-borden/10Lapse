@@ -11,7 +11,8 @@ namespace TenLapse.Debugging;
 /// with its detail list, and a neutral one behind it. <c>--output=720|1080|1440|2160[,hevc][,standard|maximum]</c> stores
 /// those Output settings in the project (to see the Output panel replace what this PC cannot do, with
 /// <c>--max-resolution</c> and the other switches in DebugOutputCapabilities.cs). <c>--theme=light|dark</c> is the
-/// gallery's switch. <c>--crash=command|task|ui|unhandled</c> is in DebugCrash.cs.
+/// gallery's switch (it sets the main window's theme too). <c>--frame=</c> is in DebugFrame.cs. <c>--crash=command|task|ui|unhandled</c>
+/// is in DebugCrash.cs.
 /// </summary>
 internal static partial class DebugLaunch
 {
