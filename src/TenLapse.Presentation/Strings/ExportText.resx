@@ -138,10 +138,6 @@
     <value>Back to editing</value>
     <comment>Back to the inspector.</comment>
   </data>
-  <data name="DoneName" xml:space="preserve">
-    <value>Done</value>
-    <comment>The name of the check for a screen reader.</comment>
-  </data>
   <data name="Cancelled" xml:space="preserve">
     <value>Export cancelled. The unfinished file was removed.</value>
     <comment>The InfoBar once a cancelled export's unfinished file is gone.</comment>

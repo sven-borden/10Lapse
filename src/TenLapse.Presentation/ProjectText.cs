@@ -579,6 +579,12 @@ public static class ProjectText
     /// <summary>The accessible name of the progress's Cancel button.</summary>
     public static string ImportCancelName => _strings.Get();
 
+    /// <summary>Narrator once an import's progress goes and the project holds one photo.</summary>
+    public static string ImportDoneOne => _strings.Get();
+
+    /// <summary>Narrator once an import's progress goes. {0} the photos in the project now ("742").</summary>
+    public static string ImportDoneMany => _strings.Get();
+
     /// <summary>The drag caption when the count is not known (folders, or items still being looked at).</summary>
     public static string DragCaptionAny => _strings.Get();
 
@@ -710,6 +716,10 @@ public static class ProjectText
         ArgumentOutOfRangeException.ThrowIfLessThan(total, read);
         return total == 1 ? ImportAddingOne : Format(ImportAddingMany, Count(read), Count(total));
     }
+
+    /// <summary>Narrator once the import's progress goes: the project's frames now ("742 photos in the project.").</summary>
+    public static string ImportDoneAnnouncement(int frames) =>
+        frames == 1 ? ImportDoneOne : Format(ImportDoneMany, Count(frames));
 
     /// <summary>The InfoBar after Cancel, with the photos the import kept.</summary>
     public static string ImportStopped(int kept)

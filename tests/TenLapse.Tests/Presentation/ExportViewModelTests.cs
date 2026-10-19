@@ -625,6 +625,34 @@ public sealed class ExportViewModelTests
     }
 
     [Fact]
+    public void NarratorHearsFinishingOnceAndNeverEveryFrame()
+    {
+        using var app = new ExportHarness(frames: 1000, capabilities: _everything);
+        app.StartExport();
+
+        // A fast export: a report every millisecond, as many as frames.
+        for (var frame = 1; frame <= 1000; frame++)
+        {
+            app.Now = TimeSpan.FromMilliseconds(frame);
+            app.Report(ExportPhase.Encoding, frame, 500, TimeSpan.FromSeconds(1));
+        }
+
+        app.Now += TimeSpan.FromMilliseconds(5);
+        app.Report(ExportPhase.Finishing, 1000, 500, null);
+        app.Now += TimeSpan.FromMilliseconds(500);
+        app.Report(ExportPhase.Finishing, 1000, 500, null);
+        app.Exporter.Finish(app.Video());
+        app.Settle();
+
+        var percents = app.Announced.Where(line => line.EndsWith(" percent exported.", StringComparison.Ordinal)).ToList();
+        Assert.InRange(percents.Count, 1, 9);
+        Assert.Equal(percents.Distinct().Count(), percents.Count);
+        Assert.Equal("Exporting Harbor sunset.mp4.", app.Announced[0]);
+        Assert.Equal(["Finishing the file.", "Harbor sunset.mp4 is ready"], app.Announced[^2..]);
+        Assert.Single(app.Announced, line => line == ExportText.FinishingAnnouncement);
+    }
+
+    [Fact]
     public void NarratorHearsTheStartEveryTenPercentAtMostAndTheEnd()
     {
         using var app = new ExportHarness(frames: 100, capabilities: _everything);

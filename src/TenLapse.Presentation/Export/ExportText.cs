@@ -115,9 +115,6 @@ public static class ExportText
     /// <summary>Back to the inspector.</summary>
     public static string BackToEditing => _strings.Get();
 
-    /// <summary>The name of the check for a screen reader.</summary>
-    public static string DoneName => _strings.Get();
-
     // ---- InfoBars and questions ----
 
     /// <summary>The InfoBar once a cancelled export's unfinished file is gone.</summary>

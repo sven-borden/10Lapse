@@ -209,19 +209,23 @@
           <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <StackPanel x:Name="FinishedHead" Spacing="{StaticResource SpacingXl}">
-          <!-- The check: a Success Fill disc and a Success stroke that draws in (500 ms Enter after 200 ms; at once with animations off). -->
+          <!--
+            The check: a Success Fill disc and a Success stroke that draws in (500 ms Enter after 200 ms; at once with animations
+            off). Decoration to a screen reader (#38): the title under it says the video is ready, and Narrator hears it then.
+          -->
           <Grid
             Width="48"
             Height="48"
-            HorizontalAlignment="Left"
-            AutomationProperties.Name="{x:Bind export:ExportText.DoneName}">
+            HorizontalAlignment="Left">
             <Ellipse
               Width="44"
               Height="44"
+              AutomationProperties.AccessibilityView="Raw"
               Fill="{ThemeResource SuccessFillBrush}" />
             <!-- The stroke is 26.2 px long; a 28 px dash (9.34 x the 3 px thickness) hides it at offset 9.34 and shows it at 0. -->
             <Path
               x:Name="CheckStroke"
+              AutomationProperties.AccessibilityView="Raw"
               Data="M15,24.5 L21,30.5 L33,17.5"
               StrokeDashArray="9.34,9.34"
               StrokeDashOffset="9.34"

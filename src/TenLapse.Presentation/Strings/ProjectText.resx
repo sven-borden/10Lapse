@@ -370,6 +370,14 @@
     <value>Stop adding photos</value>
     <comment>The accessible name of the progress's Cancel button.</comment>
   </data>
+  <data name="ImportDoneOne" xml:space="preserve">
+    <value>1 photo in the project.</value>
+    <comment>Narrator once an import's progress goes and the project holds one photo.</comment>
+  </data>
+  <data name="ImportDoneMany" xml:space="preserve">
+    <value>{0} photos in the project.</value>
+    <comment>Narrator once an import's progress goes. {0} the photos in the project now ("742").</comment>
+  </data>
   <data name="DragCaptionAny" xml:space="preserve">
     <value>Add photos</value>
     <comment>The drag caption when the count is not known (folders, or items still being looked at).</comment>

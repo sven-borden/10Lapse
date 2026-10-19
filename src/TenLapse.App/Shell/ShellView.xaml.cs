@@ -51,6 +51,9 @@ public sealed partial class ShellView : UserControl
     private readonly PanelSwap _inspectorSwap;
     private readonly ScreenMotion? _screens;
     private ShellScreen _screen;
+    private readonly LiveProgress _importProgress = LiveProgress.ForImport();
+    private readonly System.Diagnostics.Stopwatch _importClock = System.Diagnostics.Stopwatch.StartNew();
+    private bool _importAnnounced;
 
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
@@ -101,6 +104,7 @@ public sealed partial class ShellView : UserControl
         _infoBarShadow = FlyoutShadow.Attach(InfoBarShadowCaster);
         _infoBars = new InfoBarPresenter(infoBars, InfoBarLayer, ShellInfoBar, InfoBarDetails, InfoBarDetailList, errors);
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        Import.PropertyChanged += OnImportPropertyChanged;
 
         // Handled events too: a button or the page's ScrollViewer under the pointer may have handled the press.
         ShellRoot.AddHandler(PointerPressedEvent, new PointerEventHandler(OnShellPointerPressed), handledEventsToo: true);
@@ -285,6 +289,7 @@ public sealed partial class ShellView : UserControl
         }
 
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        Import.PropertyChanged -= OnImportPropertyChanged;
         ViewModel.PropertyChanged -= OnScreenMayChange;
         EmptyRegion.UnregisterPropertyChangedCallback(VisibilityProperty, _emptyRegionVisibilityToken);
         FirstLaunch.Detach();
@@ -400,6 +405,31 @@ public sealed partial class ShellView : UserControl
                 MoveFocus(FocusTargets.AfterScreenChange(from, screen, focusLost: before is null || !IsOnScreen(before)));
             },
             ProjectText.SettingsFocusFailed);
+    }
+
+    // The import's progress to Narrator (#38): its first text, then the newest at most every 5 s (LiveProgress), and the
+    // photos in the project once the progress goes, instead of every batch. Raised on Add photos, which shows on both
+    // screens the import can run on.
+    private void OnImportPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        string? text = null;
+        if (e.PropertyName is nameof(ImportViewModel.ProgressText) or nameof(ImportViewModel.IsImporting) && Import.IsImporting)
+        {
+            text = _importProgress.Next(Import.ProgressText, _importClock.Elapsed);
+            _importAnnounced |= text is not null;
+        }
+        else if (e.PropertyName == nameof(ImportViewModel.IsImporting) && _importAnnounced)
+        {
+            _importProgress.Reset();
+            _importAnnounced = false;
+            var frames = ViewModel.CurrentProject.FrameCount;
+            text = frames > 0 ? ProjectText.ImportDoneAnnouncement(frames) : null;
+        }
+
+        if (text is not null)
+        {
+            Announcer.Announce(AddPhotosButton, text, AutomationNotificationProcessing.MostRecent, "Import");
+        }
     }
 
     // Puts the keyboard focus on the target; false when it cannot take it (not on screen, disabled).
