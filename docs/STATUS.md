@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19, resumed: #20 filmstrip building, PR #80 (#18) fix round (decision: the stored output is the user's preference, never overwritten; the panel shows and exports an EffectiveOutput), PR #81 (#32) in review. Next: #24 export panel.
+2026-10-19: #18 merged. Building: #20 filmstrip (Opus), #21 remember settings (Sonnet). PR #81 (#32) in review. Next: #24 export panel after #20.
 
 ## Waves
 
@@ -36,10 +36,10 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 10 | #20 Filmstrip | O | filmstrip view | building |
 | 10 | #17 Timing panel | S | timing inspector section | merged #78 |
 | 11 | #24 Export panel and finished state | O | export panel | |
-| 11 | #18 Frame panel | S | frame inspector section | PR #80, fix round |
+| 11 | #18 Frame panel | S | frame inspector section | merged #80 |
 | 12 | #32 Golden render test | O | `tests/` golden | PR #81, in review |
 | 12 | #25 Export while minimized, keep awake | S | export power request | |
-| 13 | #21 Remember settings | S | settings persistence | |
+| 13 | #21 Remember settings | S | settings persistence | building |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
 | 14 | #31 Rating prompt | S | Store rating | |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | |
@@ -245,3 +245,9 @@ Nothing blocks the build loop. Everything below waits until release is near
   PRIVACY.md describes the copies. Debug `--sample-frames` writes real photos
   (pass `--sample-folder` under your branch folder, `--sample-clean`),
   `--cache-folder`, `--preview-bench`.
+- #18 PR #80: `Shell/FramePanel` between Timing and Output (shapes Match
+  photos, 16:9, 9:16, 1:1, 4:5, 4:3; Fit/Fill; `SegmentedControl.ItemNames`).
+  Portrait hint (more than half portrait in 16:9 or 4:3) with *Use 9:16* and
+  *Dismiss*, never automatic, kept in the view model only. `OutputPlan.Resolve`
+  gives the effective output; *Use these settings* stores a shown replacement.
+  `FrameText.NoSize` when Match photos has no encodable size. Debug `--frame=`.
