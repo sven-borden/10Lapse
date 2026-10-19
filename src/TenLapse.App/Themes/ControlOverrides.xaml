@@ -648,11 +648,8 @@
               ContentTemplate="{TemplateBinding ContentTemplate}"
               ContentTransitions="{TemplateBinding ContentTransitions}"
               CornerRadius="{TemplateBinding CornerRadius}"
-              Foreground="{TemplateBinding Foreground}">
-              <ContentPresenter.BackgroundTransition>
-                <BrushTransition Duration="0:0:0.083" />
-              </ContentPresenter.BackgroundTransition>
-            </ContentPresenter>
+              BackgroundTransition="{StaticResource MotionTapBrushTransition}"
+              Foreground="{TemplateBinding Foreground}" />
             <VisualStateManager.VisualStateGroups>
               <VisualStateGroup x:Name="CommonStates">
                 <VisualState x:Name="Normal" />

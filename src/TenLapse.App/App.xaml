@@ -7,12 +7,12 @@
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
         <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
-        <!-- Tokens (docs: DESIGN.md). Order matters: ControlOverrides and Typography read the color tokens. -->
+        <!-- Tokens (docs: DESIGN.md). Order matters: ControlOverrides and Typography read the color and motion tokens. -->
         <ResourceDictionary Source="ms-appx:///Themes/Colors.xaml" />
+        <ResourceDictionary Source="ms-appx:///Themes/Motion.xaml" />
         <ResourceDictionary Source="ms-appx:///Themes/ControlOverrides.xaml" />
         <ResourceDictionary Source="ms-appx:///Themes/Typography.xaml" />
         <ResourceDictionary Source="ms-appx:///Themes/Layout.xaml" />
-        <ResourceDictionary Source="ms-appx:///Themes/Motion.xaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>
