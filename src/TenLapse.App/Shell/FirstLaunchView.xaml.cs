@@ -18,11 +18,12 @@ namespace TenLapse.Shell;
 /// handling and tells <see cref="ViewModel"/> about drags; this view shows the drag-over look and runs Daybreak.
 /// </summary>
 /// <remarks>
-/// Daybreak runs at 30 fps on a dispatcher timer while <see cref="FirstLaunchViewModel.ShouldAnimate"/> says so: on
-/// screen, in the active window, with animations on (polled at every start and every tick). Otherwise it stands
-/// still; with animations off it shows the golden-hour still frame. The frame shown is computed from the playback
-/// time (<see cref="DaybreakClock"/>), so a slow tick skips frames instead of slowing the loop. A drawing failure
-/// hides Daybreak for good and goes through the error path; the drop zone works on without it.
+/// Daybreak runs at 30 fps on a dispatcher timer while <see cref="DaybreakPlayback"/> says Run: on screen, in the
+/// active window, with animations on (polled at every update and every tick), and not in high contrast. Otherwise it
+/// stands still or hides; with animations off it shows the golden-hour still frame. The frame shown is computed from
+/// the playback time, so a slow tick skips frames instead of slowing the loop. A drawing failure hides Daybreak for
+/// good and goes through the error path; the drop zone works on without it. A lost graphics device is not a failure:
+/// the CanvasControls make a new one.
 /// </remarks>
 public sealed partial class FirstLaunchView : UserControl
 {
@@ -32,7 +33,7 @@ public sealed partial class FirstLaunchView : UserControl
     private const double LiftDistance = -6;
 
     private readonly DispatcherQueueTimer _timer;
-    private DaybreakClock _clock = new(Daybreak.StartOf(Daybreak.StillFrame));
+    private readonly DaybreakPlayback _playback = new();
     private IErrorPresenter? _errors;
     private IErrorSink? _sink;
     private DaybreakPalette? _palette;
@@ -40,7 +41,6 @@ public sealed partial class FirstLaunchView : UserControl
     private Storyboard? _dragStoryboard;
     private FirstLaunchLayout _layout;
     private bool _regionVisible = true;
-    private bool _broken;
     private int _frame = -1;
     private int _thumb = -1;
 
@@ -78,21 +78,24 @@ public sealed partial class FirstLaunchView : UserControl
     public void SetRegionVisible(bool visible)
     {
         _regionVisible = visible;
-        UpdateShown();
+        UpdatePlayback();
     }
 
-    /// <summary>Takes the colors again for a theme change the elements may not see (high contrast on or off).</summary>
+    /// <summary>
+    /// Takes the colors again for a theme change the elements may not see, and shows or hides Daybreak as high
+    /// contrast goes on or off.
+    /// </summary>
     public void RefreshTheme()
     {
         _shadow?.Recolor();
         StripCanvas.Invalidate();
+        UpdatePlayback();
     }
 
     /// <summary>Stops Daybreak and lets go of the shadow and the Win2D controls (the window is closing).</summary>
     public void Detach()
     {
         _timer.Stop();
-        _clock.Stop();
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
         _shadow?.Dispose();
         _shadow = null;
@@ -115,8 +118,7 @@ public sealed partial class FirstLaunchView : UserControl
                 _palette ??= LoadPalette();
                 _shadow ??= FlyoutShadow.Attach(DaybreakShadowCaster);
                 ActualThemeChanged += OnActualThemeChanged;
-                ShowFrame(Daybreak.StillFrame);
-                UpdateShown();
+                UpdatePlayback();
 #if DEBUG
                 if (Debugging.DebugLaunch.DragOver)
                 {
@@ -130,7 +132,7 @@ public sealed partial class FirstLaunchView : UserControl
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
         ActualThemeChanged -= OnActualThemeChanged;
-        UpdateShown();
+        UpdatePlayback();
     }
 
     private void OnActualThemeChanged(FrameworkElement sender, object args) => StripCanvas.Invalidate();
@@ -142,9 +144,8 @@ public sealed partial class FirstLaunchView : UserControl
             case nameof(FirstLaunchViewModel.IsDragOver):
                 _errors?.Guard(ShowDragLook, ProjectText.DropZoneLookFailed);
                 break;
-            case nameof(FirstLaunchViewModel.IsShown):
             case nameof(FirstLaunchViewModel.IsWindowActive):
-                UpdateRunning();
+                UpdatePlayback();
                 break;
         }
     }
@@ -152,10 +153,6 @@ public sealed partial class FirstLaunchView : UserControl
     private void OnDropZoneSizeChanged(object sender, SizeChangedEventArgs e)
     {
         _layout = FirstLaunchLayout.Fit(e.NewSize.Width, e.NewSize.Height);
-        Columns.Padding = new Thickness(_layout.SidePadding, 0, _layout.SidePadding, 0);
-        Columns.ColumnSpacing = _layout.ColumnGap;
-        DaybreakColumnDefinition.Width = new GridLength(_layout.IllustrationShare, GridUnitType.Star);
-        TextColumn.HorizontalAlignment = _layout.ShowsIllustration ? HorizontalAlignment.Left : HorizontalAlignment.Center;
         if (_layout.ShowsIllustration)
         {
             DaybreakPanel.Width = _layout.FrameWidth;
@@ -165,36 +162,42 @@ public sealed partial class FirstLaunchView : UserControl
             StripCanvas.Invalidate();
         }
 
-        UpdateShown();
+        UpdatePlayback();
     }
 
-    // On screen: loaded, the Empty region showing, wide enough for Daybreak, and Daybreak not broken.
-    private void UpdateShown()
+    // Every change Daybreak depends on funnels through here: the playback decides Run, Still or Hidden, and the view
+    // lays the columns out, starts or stops the timer and shows the frame.
+    private void UpdatePlayback()
     {
-        var shown = IsLoaded && _regionVisible && _layout.ShowsIllustration && !_broken;
-        DaybreakPanel.Visibility = _layout.ShowsIllustration && !_broken ? Visibility.Visible : Visibility.Collapsed;
-        ViewModel.IsShown = shown;
-        UpdateRunning();
-    }
+        var mode = _playback.Update(new DaybreakConditions(
+            Loaded: IsLoaded && _palette is not null,
+            RegionVisible: _regionVisible,
+            FitsLayout: _layout.ShowsIllustration,
+            AnimationsEnabled: AnimationsEnabled,
+            WindowActive: ViewModel.IsWindowActive,
+            HighContrast: ThemeTokens.IsHighContrast));
 
-    private void UpdateRunning()
-    {
-        var animations = AnimationsEnabled;
-        if (!_broken && _palette is not null && ViewModel.ShouldAnimate(animations))
+        Arrange(_playback.TakesPlace ? _layout : FirstLaunchLayout.TextsAlone);
+        if (mode == DaybreakMode.Run)
         {
-            _clock.Start();
             _timer.Start();
-            return;
+        }
+        else
+        {
+            _timer.Stop();
         }
 
-        _timer.Stop();
-        _clock.Stop();
-        if (!animations && !_broken)
-        {
-            // Reduced motion: the still frame at golden hour, and the loop starts from there when animations return.
-            _clock = new DaybreakClock(Daybreak.StartOf(Daybreak.StillFrame));
-            ShowFrame(Daybreak.StillFrame);
-        }
+        ShowFrame(_playback.Frame);
+    }
+
+    // Two columns with Daybreak, or the texts alone and centered.
+    private void Arrange(FirstLaunchLayout layout)
+    {
+        Columns.Padding = new Thickness(layout.SidePadding, 0, layout.SidePadding, 0);
+        Columns.ColumnSpacing = layout.ColumnGap;
+        DaybreakColumnDefinition.Width = new GridLength(layout.IllustrationShare, GridUnitType.Star);
+        TextColumn.HorizontalAlignment = layout.ShowsIllustration ? HorizontalAlignment.Left : HorizontalAlignment.Center;
+        DaybreakPanel.Visibility = layout.ShowsIllustration ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OnTick(DispatcherQueueTimer sender, object args)
@@ -203,11 +206,11 @@ public sealed partial class FirstLaunchView : UserControl
         {
             if (!AnimationsEnabled)
             {
-                UpdateRunning();
+                UpdatePlayback();
                 return;
             }
 
-            ShowFrame(Daybreak.FrameAt(_clock.Played));
+            ShowFrame(_playback.Frame);
         }
         catch (Exception exception)
         {
@@ -237,7 +240,7 @@ public sealed partial class FirstLaunchView : UserControl
 
     private void OnDrawFrame(CanvasControl sender, CanvasDrawEventArgs args)
     {
-        if (_broken || _palette is null || _frame < 0)
+        if (_playback.IsBroken || _palette is null || _frame < 0)
         {
             return;
         }
@@ -254,7 +257,7 @@ public sealed partial class FirstLaunchView : UserControl
 
     private void OnDrawStrip(CanvasControl sender, CanvasDrawEventArgs args)
     {
-        if (_broken || _palette is null || _thumb < 0)
+        if (_playback.IsBroken || _palette is null || _thumb < 0)
         {
             return;
         }
@@ -284,17 +287,16 @@ public sealed partial class FirstLaunchView : UserControl
     // (a driver update, a GPU reset, sleep and resume, a remote desktop reconnect).
     private void Break(Exception exception, string context)
     {
-        if (_broken)
+        if (_playback.IsBroken)
         {
             return;
         }
 
-        _broken = true;
+        _playback.Break();
         _timer.Stop();
-        _clock.Stop();
         if (_sink is { } sink)
         {
-            DispatcherQueue.TryEnqueueGuarded(sink, UpdateShown, context);
+            DispatcherQueue.TryEnqueueGuarded(sink, UpdatePlayback, context);
         }
 
         _errors?.Show(exception, context);

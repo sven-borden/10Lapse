@@ -51,6 +51,9 @@ public readonly record struct FirstLaunchLayout(
     /// <summary>The caption row's height (Caption, 16 px lines).</summary>
     public const double CaptionHeight = 16;
 
+    /// <summary>The texts alone, centered, without Daybreak: a narrow or short drop zone, or Daybreak not shown.</summary>
+    public static FirstLaunchLayout TextsAlone { get; } = new(false, NarrowPadding, 0, 0, 0);
+
     /// <summary>The frame's height: 16:9.</summary>
     public double FrameHeight => FrameWidth * 9 / 16;
 
@@ -75,8 +78,12 @@ public readonly record struct FirstLaunchLayout(
 
         return text >= MinTextWidth && frame >= MinFrameWidth
             ? new FirstLaunchLayout(true, WidePadding, WideGap, WideIllustrationShare, frame)
-            : new FirstLaunchLayout(false, NarrowPadding, 0, 0, 0);
+            : TextsAlone;
     }
+
+    /// <summary>The text column's width in a drop zone <paramref name="width"/> wide (before the column's own cap).</summary>
+    public double TextColumnWidth(double width) =>
+        Math.Max(0, width - (2 * SidePadding) - ColumnGap) * TextShare / (TextShare + IllustrationShare);
 
     /// <summary>The height Daybreak takes at this layout: frame, strip and caption with their gaps.</summary>
     public double IllustrationHeight => ShowsIllustration ? FrameHeight + RowGap + ThumbHeight + RowGap + CaptionHeight : 0;

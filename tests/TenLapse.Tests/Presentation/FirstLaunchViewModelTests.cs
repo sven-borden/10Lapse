@@ -126,26 +126,13 @@ public sealed class FirstLaunchViewModelTests
         Assert.True(viewModel.IsDragOver);
     }
 
-    [Theory]
-    [InlineData(true, true, true, true)]
-    [InlineData(false, true, true, false)]  // animations off in Windows
-    [InlineData(true, false, true, false)]  // hidden: an import arrived, Settings, a narrow window
-    [InlineData(true, true, false, false)]  // the window is in the background
-    public void DaybreakRunsOnlyOnScreenInTheActiveWindowWithAnimationsOn(bool animations, bool shown, bool active, bool expected)
-    {
-        var viewModel = new FirstLaunchViewModel { IsShown = shown, IsWindowActive = active };
-
-        Assert.Equal(expected, viewModel.ShouldAnimate(animations));
-    }
-
     [Fact]
-    public void ANewDropZoneIsActiveButNotYetShown()
+    public void ANewDropZoneStartsInAnActiveWindowWithoutTheDragLook()
     {
         var viewModel = new FirstLaunchViewModel();
 
         Assert.True(viewModel.IsWindowActive);
-        Assert.False(viewModel.IsShown);
-        Assert.False(viewModel.ShouldAnimate(animationsEnabled: true));
+        Assert.False(viewModel.IsDragOver);
     }
 
     [Theory]

@@ -4,8 +4,8 @@ using TenLapse.Core.Timing;
 namespace TenLapse.Presentation.FirstLaunch;
 
 /// <summary>
-/// The first-launch drop zone (#29): its texts, its drag-over look and whether its small timelapse (Daybreak)
-/// may run. The actions are the import's own commands (<see cref="ImportViewModel.ChooseFolderCommand"/>,
+/// The first-launch drop zone (#29): its texts, its drag-over look and whether the window is active, which its
+/// small timelapse (Daybreak) follows through <see cref="DaybreakPlayback"/>. The actions are the import's own commands (<see cref="ImportViewModel.ChooseFolderCommand"/>,
 /// <see cref="ImportViewModel.ChoosePhotosCommand"/>) and drops go through the shell's drop handling, so there is
 /// one import path. Lives on the UI thread like the shell.
 /// </summary>
@@ -40,22 +40,12 @@ public sealed partial class FirstLaunchViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(Title))]
     public partial bool IsDragOver { get; private set; }
 
-    /// <summary>True while the drop zone and its timelapse are on screen (the Empty state, wide enough for it).</summary>
-    [ObservableProperty]
-    public partial bool IsShown { get; set; }
-
     /// <summary>True while the window is the active one; the timelapse stops in the background (motion spec, Daybreak).</summary>
     [ObservableProperty]
     public partial bool IsWindowActive { get; set; }
 
-    /// <summary>A drop zone at rest in an active window, not yet on screen.</summary>
+    /// <summary>A drop zone at rest in an active window.</summary>
     public FirstLaunchViewModel() => IsWindowActive = true;
-
-    /// <summary>
-    /// Whether the timelapse runs: on screen, in the active window, and with animations on in Windows. With
-    /// animations off it shows its still frame instead (<see cref="Daybreak.StillFrame"/>).
-    /// </summary>
-    public bool ShouldAnimate(bool animationsEnabled) => animationsEnabled && IsShown && IsWindowActive;
 
     /// <summary>
     /// A drag moved over the window (DragOver); <paramref name="acceptable"/> is the shell's verdict on the look
