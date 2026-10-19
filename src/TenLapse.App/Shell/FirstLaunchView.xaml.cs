@@ -86,8 +86,15 @@ public sealed partial class FirstLaunchView : UserControl
         UpdatePlayback();
     }
 
-    /// <summary>Puts focus on Choose folder, the screen's primary action, without a focus ring for mouse users.</summary>
-    public bool FocusPrimaryAction() => ChooseFolderButton.Focus(FocusState.Programmatic);
+    /// <summary>
+    /// Puts focus on Choose folder, the screen's primary action, without a focus ring until the keyboard is used.
+    /// </summary>
+    /// <remarks>
+    /// FocusState.Pointer, not Programmatic: at launch WinUI draws the ring for programmatic focus as it does for
+    /// its own initial focus, which is the ring the review saw on Add photos. With Pointer the ring appears with
+    /// the first Tab or arrow key, Enter still runs the button, and Narrator announces it all the same.
+    /// </remarks>
+    public bool FocusPrimaryAction() => ChooseFolderButton.Focus(FocusState.Pointer);
 
     /// <summary>
     /// Takes the colors again for a theme change the elements may not see, and shows or hides Daybreak as high

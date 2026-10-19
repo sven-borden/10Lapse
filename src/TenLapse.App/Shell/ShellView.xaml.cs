@@ -104,16 +104,38 @@ public sealed partial class ShellView : UserControl
         if (active && !_activatedOnce)
         {
             _activatedOnce = true;
-
-            // The screen's primary action rather than Add photos, the first control in the Tab order, which the
-            // window would focus. Programmatic, so a mouse user sees no focus ring, and Enter runs it; the Tab order
-            // is unchanged. After the activation, so the window's own initial focus has been placed.
-            if (EmptyRegion.Visibility == Visibility.Visible)
+            if (IsLoaded)
             {
-                DispatcherQueue.TryEnqueueGuarded(_errors, () => FirstLaunch.FocusPrimaryAction(), ProjectText.FirstLaunchFocusFailed);
+                FocusPrimaryActionAtLaunch();
+            }
+            else
+            {
+                // The window activates before its content loads, and places its own initial focus as it loads.
+                Loaded += OnFirstLoaded;
             }
         }
     }
+
+    private void OnFirstLoaded(object sender, RoutedEventArgs e)
+    {
+        Loaded -= OnFirstLoaded;
+        FocusPrimaryActionAtLaunch();
+    }
+
+    // The Empty screen's primary action rather than Add photos, the first control in the Tab order, which the window
+    // focuses. No focus ring until the keyboard is used (FirstLaunchView.FocusPrimaryAction), Enter runs it, and the
+    // Tab order is unchanged. Queued, so it comes after the window's own initial focus.
+    private void FocusPrimaryActionAtLaunch() =>
+        DispatcherQueue.TryEnqueueGuarded(
+            _errors,
+            () =>
+            {
+                if (EmptyRegion.Visibility == Visibility.Visible)
+                {
+                    FirstLaunch.FocusPrimaryAction();
+                }
+            },
+            ProjectText.FirstLaunchFocusFailed);
 
     /// <summary>
     /// Takes the theme again for what follows it by hand: the InfoBar shadow's colors. MainWindow calls it when
