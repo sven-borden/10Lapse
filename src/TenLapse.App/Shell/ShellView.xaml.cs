@@ -65,6 +65,11 @@ public sealed partial class ShellView : UserControl
         Import = import;
         _errors = errors;
         _presenter = presenter;
+        Layout = new ShellLayout(
+            ThemeTokens.Number("InspectorDockMinWindowWidth"),
+            ThemeTokens.Number("NarrowPanelHeight"),
+            ThemeTokens.Number("NarrowPanelMinHeight"),
+            ThemeTokens.Number("NarrowPreviewMinHeight"));
         InitializeComponent();
         SettingsPage.ViewModel = settings;
         OutputSection.ViewModel = output;
@@ -108,8 +113,14 @@ public sealed partial class ShellView : UserControl
         Export = new ExportViewModel(viewModel, output, preview.Player, _filmstrip, () => Import.IsImporting, exportServices, presenter);
         ExportSection.Attach(Export, Filmstrip.Thumbnails, errors);
         ExportOverlay.Attach(Export, preview.Player, presenter, errors, infoBars);
-        _inspectorSwap = new PanelSwap([InspectorScroll, ExportSection.Running, ExportSection.Finished], DispatcherQueue, errors);
+        _inspectorSwap = new PanelSwap([InspectorSections, ExportSection.Running, ExportSection.Finished], DispatcherQueue, errors);
         Export.PropertyChanged += OnExportPropertyChanged;
+
+        // The narrow layout (#36): the window's width picks it, the body's and the stage's heights size the panel.
+        ShellRoot.SizeChanged += OnShellSizeChanged;
+        Body.SizeChanged += OnPanelHeightInputsChanged;
+        FilmstripRegion.SizeChanged += OnPanelHeightInputsChanged;
+        Layout.PropertyChanged += OnLayoutPropertyChanged;
 #if DEBUG
         Debugging.DebugExport.AutoStart(Export, viewModel, errors);
 #endif
@@ -126,6 +137,9 @@ public sealed partial class ShellView : UserControl
 
     /// <summary>The export's view model (#24), for x:Bind and for the window's close check.</summary>
     public ExportViewModel Export { get; }
+
+    /// <summary>The responsive layout (#36): narrow or docked, the tab and the sections it shows, for x:Bind.</summary>
+    public ShellLayout Layout { get; }
 
     /// <summary>The title bar and command bar band, which the window makes its drag region.</summary>
     public UIElement TitleBar => DragRegion;
@@ -219,6 +233,10 @@ public sealed partial class ShellView : UserControl
     public void Detach()
     {
         ShellRoot.KeyDown -= OnShellKeyDown;
+        ShellRoot.SizeChanged -= OnShellSizeChanged;
+        Body.SizeChanged -= OnPanelHeightInputsChanged;
+        FilmstripRegion.SizeChanged -= OnPanelHeightInputsChanged;
+        Layout.PropertyChanged -= OnLayoutPropertyChanged;
         Export.PropertyChanged -= OnExportPropertyChanged;
         ExportOverlay.Detach();
         ExportSection.Detach();
@@ -278,9 +296,110 @@ public sealed partial class ShellView : UserControl
                 break;
             default:
                 ExportSection.ResetFinished();
-                _inspectorSwap.Show(InspectorScroll, FocusExportButton);
+                _inspectorSwap.Show(InspectorSections, FocusExportButton);
                 break;
         }
+    }
+
+    // The narrow layout (#36). Below the dock width the inspector is a panel under the stage; the switch is instant (the
+    // canvas does not animate it). Focus stays on the control that has it: folding keeps the section holding the focus on
+    // its tab (a collapsed section would drop it), and unfolding from the tab row puts focus on the first control of the
+    // section that tab showed. The preview, the transport and the filmstrip only get another size, which they follow.
+    private void OnShellSizeChanged(object sender, SizeChangedEventArgs e) =>
+        _presenter.Guard(() => ApplyLayout(e.NewSize.Width), ProjectText.LayoutSwitchFailed);
+
+    private void ApplyLayout(double width)
+    {
+        var focused = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+        var onTabs = focused is not null && IsWithin(focused, InspectorTabs);
+        if (!Layout.Resize(width, SectionOf(focused)))
+        {
+            return;
+        }
+
+        var narrow = Layout.IsNarrow;
+        VisualStateManager.GoToState(this, narrow ? nameof(Narrow) : nameof(Wide), useTransitions: false);
+        OutputSection.SetNarrow(narrow);
+        ExportSection.SetNarrow(narrow);
+        ApplyPanelHeight();
+        if (onTabs && !narrow)
+        {
+            var section = Layout.Tab switch
+            {
+                InspectorTab.Timing => (UIElement)TimingSection,
+                InspectorTab.Frame => FrameSection,
+                _ => OutputSection,
+            };
+            DispatcherQueue.TryEnqueueGuarded(
+                _errors,
+                () => (FocusManager.FindFirstFocusableElement(section) as Control)?.Focus(FocusState.Programmatic),
+                ProjectText.LayoutFocusFailed);
+        }
+    }
+
+    // The panel's height: 260 px, less when the window is short (ShellLayout.PanelHeight). Docked, the pane takes the body's height.
+    // Skipped until the body has been measured: a height worked out from 0 would clamp to the minimum for one frame.
+    private void ApplyPanelHeight()
+    {
+        if (Layout.IsNarrow && Body.ActualHeight <= 0)
+        {
+            return;
+        }
+
+        InspectorPane.Height = Layout.IsNarrow
+            ? Layout.PanelHeight(Body.ActualHeight, StageChromeHeight())
+            : double.NaN;
+    }
+
+    private void OnPanelHeightInputsChanged(object sender, SizeChangedEventArgs e) =>
+        _presenter.Guard(ApplyPanelHeight, ProjectText.LayoutSwitchFailed);
+
+    // What the stage needs besides the preview: its padding and the gaps between rows, the transport and the filmstrip
+    // (which grows with the thumbnail size slider).
+    private double StageChromeHeight() =>
+        StageRegion.Padding.Top + StageRegion.Padding.Bottom + (2 * StageRegion.RowSpacing) + TransportRegion.ActualHeight + FilmstripRegion.ActualHeight;
+
+    // A new tab starts at the top of its section.
+    private void OnLayoutPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ShellLayout.Tab))
+        {
+            InspectorScroll.ChangeView(null, 0, null, disableAnimation: true);
+        }
+    }
+
+    // The inspector section a control sits in, or null.
+    private InspectorTab? SectionOf(DependencyObject? node)
+    {
+        if (node is null)
+        {
+            return null;
+        }
+
+        if (IsWithin(node, TimingSection))
+        {
+            return InspectorTab.Timing;
+        }
+
+        if (IsWithin(node, FrameSection))
+        {
+            return InspectorTab.Frame;
+        }
+
+        return IsWithin(node, OutputSection) ? InspectorTab.Output : null;
+    }
+
+    private static bool IsWithin(DependencyObject node, DependencyObject ancestor)
+    {
+        for (var current = node; current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (ReferenceEquals(current, ancestor))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // The Export button's opacity while the export panel or the finished state shows (the canvas's exportOpacity).

@@ -67,6 +67,18 @@
   <x:Double x:Key="ToggleSwitchTrackHeight">20</x:Double>
   <x:Double x:Key="InspectorWidth">320</x:Double>
   <x:Double x:Key="NarrowPanelHeight">260</x:Double>
+  <!--
+    #36: below 1,000 px the inspector is a 260 px panel under the stage. In a short window (640 x 480 leaves 392 px under the
+    bars) it gives height to the preview, down to 152 px: the 50 px tab row and the Output heading with its selects (102 px),
+    or the finished state's last button; the panel scrolls past that, and the preview takes what is left (ShellLayout.PanelHeight).
+  -->
+  <x:Double x:Key="NarrowPanelMinHeight">152</x:Double>
+  <x:Double x:Key="NarrowPreviewMinHeight">96</x:Double>
+  <!-- The narrow export panel and finished state: a 32 px gutter between the head and the details (wide has the 20 px stage rhythm), 20,12 padding -->
+  <x:Double x:Key="ExportColumnSpacing">32</x:Double>
+  <Thickness x:Key="PaddingExportNarrow">20,12,20,12</Thickness>
+  <!-- The Output panel's pending block keeps this height in a narrow window, where the three selects sit in one row and the lists do not fit under them -->
+  <x:Double x:Key="OutputPendingNarrowMinHeight">82</x:Double>
   <x:Double x:Key="InspectorDockMinWindowWidth">1000</x:Double>
   <x:Double x:Key="MinWindowWidth">640</x:Double>
   <x:Double x:Key="MinWindowHeight">480</x:Double>

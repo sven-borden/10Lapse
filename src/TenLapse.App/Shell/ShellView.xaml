@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   The app shell (#28), the whole content of MainWindow. It is a UserControl, not the window's own XAML, because
-  visual state triggers only run inside a control: the Empty and Editing states here, #36's narrow layout later.
+  visual state triggers only run inside a control: the Empty, Editing and Settings states here, and #36's narrow layout.
   Laid out after the prototype in docs/design/canvas/Main.dc.html and DESIGN.md section 5:
 
     Title bar    40 px on Mica: app icon, "10Lapse" in Caption, the project name in Ink Secondary, a dot
@@ -10,15 +10,19 @@
     Body         three states from ShellViewModel (ShowsEmpty, ShowsEditing, IsSettingsOpen):
                  Empty    EmptyRegion, the first-launch drop zone (#29).
                  Editing  the Layer surface with StageRegion (PreviewRegion, TransportRegion, FilmstripRegion)
-                          and InspectorPane (InspectorRegion) docked right at 320 px.
+                          and InspectorPane (InspectorSections) docked right at 320 px, or under the stage when narrow.
                  Settings SettingsPage (SettingsView.xaml) over the whole body; the command bar shows only Back.
                  InfoBarLayer floats over the top of the stage in every state and never moves the layout.
 
-  The body grid is 2 x 2 so #36 can fold the inspector under the stage below 1,000 px with one visual state:
-  InspectorPane to Grid.Row 1, Grid.Column 0, Width Auto, Height NarrowPanelHeight, BorderThickness 0,1,0,0 and
-  Margin 0 (its 0,1,0,0 keeps it off the Layer's top divider when docked right; under the stage it would leave a
-  1 px gap above its own divider).
-  The stage and the InfoBar layer stay in cell (0, 0) and need no change.
+  Narrow layout (#36; the canvas's Screen-Narrow-Dark): the body grid is 2 x 2 and the LayoutStates group folds the
+  inspector under the stage below 1,000 px of window width. Its Narrow state moves InspectorPane to Grid.Row 1,
+  Grid.Column 0, Width Auto, BorderThickness 0,1,0,0 and Margin 0 (the 0,1,0,0 margin keeps it off the Layer's top
+  divider when docked right; under the stage it would leave a 1 px gap above its own divider), and shows the tab
+  row. The panel's Height is set in ShellView.xaml.cs (260 px, less in a short window: ShellLayout.PanelHeight). The
+  breakpoint, the tab and the sections each tab shows are ShellLayout (Presentation, tested); ShellView.xaml.cs
+  applies them and keeps the keyboard focus across a switch. Document order is Tab order in both layouts: the stage
+  first, then the inspector. The stage and the InfoBar layer stay in cell (0, 0) and need no change. The Output and
+  export panels have their own Narrow states (OutputPanel.SetNarrow, ExportPanel.SetNarrow).
 
   Unbuilt actions are absent, not disabled (CLAUDE.md): the command bar holds Add photos (#12), New project, Settings
   and Export video (#24, with frames and an output to export), with a commented slot for each later button. Buttons for a project go in ProjectCommands (left), the Export
@@ -63,7 +67,7 @@
     <VisualStateManager.VisualStateGroups>
       <!--
         Empty, Editing or Settings: exactly one is active (ShellViewModel.ShowsEmpty, ShowsEditing, IsSettingsOpen).
-        #36 adds its own group beside this one for the narrow layout.
+        The narrow layout is its own group, LayoutStates, below.
       -->
       <VisualStateGroup x:Name="ProjectStates">
         <VisualState x:Name="Empty">
@@ -99,6 +103,24 @@
             <Setter Target="EditingSurface.Visibility" Value="Visible" />
             <Setter Target="StageRegion.Visibility" Value="Visible" />
             <Setter Target="InspectorPane.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      <!--
+        Wide (the inspector docked right, 320 px) or Narrow (a panel under the stage, with the tab row), by the window's
+        width (ShellLayout.IsNarrowAt). Entered with GoToState from ShellView.xaml.cs, not by a trigger, so the switch can
+        keep the focus. Nothing here sets Height: the panel's height follows the window's (ShellView.ApplyPanelHeight).
+      -->
+      <VisualStateGroup x:Name="LayoutStates">
+        <VisualState x:Name="Wide" />
+        <VisualState x:Name="Narrow">
+          <VisualState.Setters>
+            <Setter Target="InspectorPane.(Grid.Row)" Value="1" />
+            <Setter Target="InspectorPane.(Grid.Column)" Value="0" />
+            <Setter Target="InspectorPane.Width" Value="NaN" />
+            <Setter Target="InspectorPane.BorderThickness" Value="0,1,0,0" />
+            <Setter Target="InspectorPane.Margin" Value="0" />
+            <Setter Target="InspectorTabs.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -189,6 +211,14 @@
       Grid.Row="1"
       Height="{StaticResource CommandBarHeight}"
       Padding="12,0,12,0">
+      <!--
+        Two columns (#36), so the left buttons never run under the right ones in a narrow window: the left takes what the
+        right leaves, and the import progress text (the one part that varies) trims to fit.
+      -->
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
       <Grid.Resources>
         <ResourceDictionary>
           <ResourceDictionary.ThemeDictionaries>
@@ -247,12 +277,16 @@
         </StackPanel>
       </Button>
 
-      <StackPanel
+      <Grid
         x:Name="ProjectCommands"
         HorizontalAlignment="Left"
         VerticalAlignment="Center"
-        Orientation="Horizontal"
-        Spacing="{StaticResource SpacingXs}">
+        ColumnSpacing="{StaticResource SpacingXs}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
         <!--
           Add photos (#12): a subtle button with the plus icon, always visible (the Settings state hides the whole
           panel). It opens a menu: Choose folder…, Choose photos…, and the Include subfolders toggle, which also
@@ -297,6 +331,7 @@
         -->
         <Button
           x:Name="NewProjectButton"
+          Grid.Column="1"
           Height="{StaticResource ControlHeight}"
           Padding="{StaticResource PaddingButtonSubtle}"
           AutomationProperties.Name="New project"
@@ -321,13 +356,19 @@
           Import progress (#12): a 16 px ring (the indicator color, from the ProgressRing override), "Adding 1,240 of
           5,000 photos…" and Cancel, while an import runs. Indeterminate while the photos are listed, then it fills.
         -->
-        <StackPanel
+        <Grid
           x:Name="ImportProgress"
+          Grid.Column="2"
           Margin="8,0,0,0"
+          HorizontalAlignment="Left"
           VerticalAlignment="Center"
-          Orientation="Horizontal"
-          Spacing="{StaticResource SpacingSm}"
+          ColumnSpacing="{StaticResource SpacingSm}"
           Visibility="{x:Bind Import.IsImporting, Mode=OneWay}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
           <ProgressRing
             Width="16"
             Height="16"
@@ -340,22 +381,26 @@
             Value="{x:Bind Import.ProgressPercent, Mode=OneWay}" />
           <TextBlock
             x:Name="ImportProgressText"
+            Grid.Column="1"
             VerticalAlignment="Center"
             Foreground="{ThemeResource InkSecondaryBrush}"
             Style="{StaticResource BodyTabularTextStyle}"
-            Text="{x:Bind Import.ProgressText, Mode=OneWay}" />
+            Text="{x:Bind Import.ProgressText, Mode=OneWay}"
+            TextTrimming="CharacterEllipsis" />
           <Button
             x:Name="CancelImportButton"
+            Grid.Column="2"
             Height="{StaticResource ControlHeight}"
             Padding="{StaticResource PaddingButtonSubtle}"
             AutomationProperties.Name="{x:Bind presentation:ProjectText.ImportCancelName}"
             Command="{x:Bind Import.CancelCommand}"
             Content="{x:Bind presentation:ProjectText.Cancel}" />
-        </StackPanel>
-      </StackPanel>
+        </Grid>
+      </Grid>
 
       <StackPanel
         x:Name="WorkCommands"
+        Grid.Column="1"
         HorizontalAlignment="Right"
         VerticalAlignment="Center"
         Orientation="Horizontal"
@@ -478,9 +523,9 @@
 
       <!--
         Inspector (#17, #18, #23, Look; #24 swaps in the export panel): 320 px, one divider on its left. The 1 px
-        top margin clears the Layer's divider; #36's narrow state must set Margin to 0 along with the rest. The
-        sections (Timing #17, Output #23; #18's Frame panel goes between them) stack in InspectorRegion, which
-        scrolls when the window is short.
+        top margin clears the Layer's divider; the Narrow state sets Margin to 0 along with the rest. The sections
+        (Timing #17, Frame #18, Output #23) stack in InspectorRegion, which scrolls when the window is short. Narrow,
+        the tab row above it picks one section (the canvas's "Panel" tabs; Look is not built, so it has no tab).
       -->
       <Border
         x:Name="InspectorPane"
@@ -493,13 +538,27 @@
         Visibility="Collapsed">
         <!-- The sections, or the export panel (#24): ShellView.xaml.cs swaps them (PanelSwap). -->
         <Grid>
-          <ScrollViewer x:Name="InspectorScroll" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
-            <StackPanel x:Name="InspectorRegion" Padding="20,0,20,20">
-              <shell:TimingPanel x:Name="TimingSection" />
-              <shell:FramePanel x:Name="FrameSection" />
-              <shell:OutputPanel x:Name="OutputSection" />
-            </StackPanel>
-          </ScrollViewer>
+          <Grid x:Name="InspectorSections">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <!-- Narrow only: 10 px above the 32 px control, 8 below, the canvas's 50 px tab strip. -->
+            <Border x:Name="InspectorTabs" Padding="20,10,20,8" Visibility="Collapsed">
+              <shell:SegmentedControl
+                x:Name="InspectorTabsControl"
+                AutomationProperties.Name="{x:Bind presentation:ShellLayout.TabsName}"
+                Items="{x:Bind presentation:ShellLayout.TabLabels}"
+                SelectedIndex="{x:Bind Layout.SelectedTabIndex, Mode=TwoWay}" />
+            </Border>
+            <ScrollViewer x:Name="InspectorScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+              <StackPanel x:Name="InspectorRegion" Padding="20,0,20,20">
+                <shell:TimingPanel x:Name="TimingSection" Visibility="{x:Bind Layout.ShowsTiming, Mode=OneWay}" />
+                <shell:FramePanel x:Name="FrameSection" Visibility="{x:Bind Layout.ShowsFrame, Mode=OneWay}" />
+                <shell:OutputPanel x:Name="OutputSection" Visibility="{x:Bind Layout.ShowsOutput, Mode=OneWay}" />
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
           <shell:ExportPanel x:Name="ExportSection" />
         </Grid>
       </Border>
