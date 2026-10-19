@@ -24,8 +24,11 @@ public sealed class SettingsViewModel
             () =>
             {
                 // No question first: nothing is lost that one pick does not give back, and DESIGN.md asks for none.
-                remembered.ResetToDefaults();
-                infoBars.Show(InfoBarSeverity.Success, ProjectText.ResetDone);
+                // A failed write has shown its own InfoBar; "back to defaults" is only said when it is true.
+                if (remembered.ResetToDefaults())
+                {
+                    infoBars.Show(InfoBarSeverity.Success, ProjectText.ResetDone);
+                }
             },
             ProjectText.ResetSettingsFailed);
     }
