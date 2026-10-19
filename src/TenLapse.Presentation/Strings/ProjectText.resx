@@ -72,7 +72,7 @@
   </data>
   <data name="InfoBarActionFailed" xml:space="preserve">
     <value>That couldn't be done because of an unexpected problem. Try again, and restart 10Lapse if it keeps happening.</value>
-    <comment>The Critical InfoBar shown when an InfoBar's action failed, and the error context it is reported with.</comment>
+    <comment>The Critical InfoBar shown when an InfoBar's action failed.</comment>
   </data>
   <data name="InfoBarShowDetails" xml:space="preserve">
     <value>View list</value>

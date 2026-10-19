@@ -70,9 +70,12 @@ public static class ProjectText
     public static string SwitchingViewFailed => "A view could not switch to the new project.";
 
     /// <summary>
-    /// The Critical InfoBar shown when an InfoBar's action failed, and the error context it is reported with.
+    /// The Critical InfoBar shown when an InfoBar's action failed. The log reads <see cref="InfoBarActionFailedContext"/>.
     /// </summary>
     public static string InfoBarActionFailed => _strings.Get();
+
+    /// <summary>Error context: an InfoBar's action threw; the user sees <see cref="InfoBarActionFailed"/>.</summary>
+    public static string InfoBarActionFailedContext => "An InfoBar's action failed.";
 
     /// <summary>The InfoBar button that shows its detail list (the prototype's "View list").</summary>
     public static string InfoBarShowDetails => _strings.Get();
