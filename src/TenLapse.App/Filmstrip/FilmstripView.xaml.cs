@@ -83,6 +83,12 @@ public sealed partial class FilmstripView : UserControl
     private bool _autoScrolling;
     private double _dragX;
 
+    // The user scrolling the strip themselves (wheel, touch or touchpad pan, the scroll bar), and until when a scroll
+    // still counts as just done: an export's playhead does not pull the strip back from under them meanwhile (#24).
+    private bool _manipulating;
+    private bool _scrollPressed;
+    private long _userScrollUntil;
+
     public FilmstripView()
     {
         InitializeComponent();
@@ -95,6 +101,16 @@ public sealed partial class FilmstripView : UserControl
         Unloaded += (_, _) => Guarded(StopWatchingScale);
         Scroller.ViewChanged += (_, _) => ScheduleWant();
         Scroller.SizeChanged += (_, _) => ScheduleWant();
+        Scroller.AddHandler(PointerWheelChangedEvent, new PointerEventHandler((_, _) => UserScrolled()), handledEventsToo: true);
+        Scroller.AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => _scrollPressed = true), handledEventsToo: true);
+        Scroller.AddHandler(PointerReleasedEvent, new PointerEventHandler((_, _) => EndScrollPress()), handledEventsToo: true);
+        Scroller.AddHandler(PointerCaptureLostEvent, new PointerEventHandler((_, _) => EndScrollPress()), handledEventsToo: true);
+        Scroller.DirectManipulationStarted += (_, _) => _manipulating = true;
+        Scroller.DirectManipulationCompleted += (_, _) =>
+        {
+            _manipulating = false;
+            UserScrolled();
+        };
         ListHost.AddHandler(PointerPressedEvent, new PointerEventHandler(OnPointerPressed), handledEventsToo: true);
         ListHost.PointerMoved += OnPointerMoved;
         ListHost.PointerReleased += OnPointerReleased;
@@ -500,7 +516,28 @@ public sealed partial class FilmstripView : UserControl
         var index = viewModel.PlayheadIndex;
         var previous = _lastPlayhead;
         _lastPlayhead = index;
-        if (index < 0 || _pointer?.IsDragging == true || (previous >= 0 && !InView(previous)) || InView(index))
+        if (index < 0 || _pointer?.IsDragging == true)
+        {
+            return;
+        }
+
+        // While an export runs the playhead is the frame being written: kept in view wherever it was before (its jumps
+        // can outrun the strip), at once, unless the user is scrolling the strip (#24 review, M5).
+        if (viewModel.IsExporting)
+        {
+            if (!UserScrolling && !InView(index))
+            {
+                Guarded(() =>
+                {
+                    var x = Inset + (index * Stride);
+                    Scroller.ChangeView(Math.Clamp(x - ((Scroller.ViewportWidth - viewModel.ThumbnailWidth) / 2), 0, Scroller.ScrollableWidth), null, null, disableAnimation: true);
+                });
+            }
+
+            return;
+        }
+
+        if ((previous >= 0 && !InView(previous)) || InView(index))
         {
             return;
         }
@@ -514,6 +551,20 @@ public sealed partial class FilmstripView : UserControl
                 var target = playing ? x - (Scroller.ViewportWidth / 4) : x - ((Scroller.ViewportWidth - width) / 2);
                 Scroller.ChangeView(Math.Clamp(target, 0, Scroller.ScrollableWidth), null, null, disableAnimation: playing || !MotionTokens.AnimationsEnabled);
             });
+    }
+
+    private bool UserScrolling => _manipulating || _scrollPressed || Environment.TickCount64 < _userScrollUntil;
+
+    // A scroll the user just made counts for two seconds.
+    private void UserScrolled() => _userScrollUntil = Environment.TickCount64 + 2000;
+
+    private void EndScrollPress()
+    {
+        if (_scrollPressed)
+        {
+            _scrollPressed = false;
+            UserScrolled();
+        }
     }
 
     // Whether thumbnail index is wholly in view.

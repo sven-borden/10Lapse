@@ -13,6 +13,9 @@ public sealed class ContentDialogService(Func<XamlRoot?> xamlRoot) : IDialogServ
     // their turn here, and each waits for any ContentDialog it did not open, so none is lost or read as "no".
     private readonly DialogQueue _queue = new();
 
+    /// <summary>True while a <see cref="ContentDialog"/> is open on the window (the rating prompt never lands on one).</summary>
+    public bool HasOpenDialog => xamlRoot() is { } root && VisualTreeHelper.GetOpenPopupsForXamlRoot(root).Any(popup => popup.Child is ContentDialog);
+
     /// <inheritdoc />
     public Task<bool> ConfirmAsync(Confirmation confirmation)
     {

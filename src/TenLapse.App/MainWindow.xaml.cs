@@ -7,6 +7,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
+using TenLapse.Presentation.Export;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using TenLapse.Shell;
@@ -28,6 +29,14 @@ public sealed partial class MainWindow : Window
     private readonly TintedMicaBackdrop? _backdrop;
     private readonly IErrorSink _errors;
     private readonly StartupTrace _startup;
+    private readonly IErrorPresenter _presenter;
+    private readonly TaskbarProgress _taskbar;
+    private readonly WindowExportFeedback _exportFeedback;
+
+    // The window is the active one (for the export's notification, #24), and the close was asked about or approved.
+    private bool _active = true;
+    private bool _closeAsked;
+    private bool _closeApproved;
 
     // Kept as a field: its events stop when nothing holds it.
     private readonly UISettings _uiSettings = new();
@@ -51,18 +60,34 @@ public sealed partial class MainWindow : Window
     /// <param name="errors">Logs failures of the window's dispatcher callbacks (log only, see <see cref="DispatcherQueueExtensions"/>).</param>
     /// <param name="presenter">The error path, for the shell's drop handler.</param>
     /// <param name="preview">The preview's player, images and cache (#19).</param>
-    /// <param name="startup">Logs the start-up phases up to the first frame (#90).</param>
-    internal MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, StartupTrace startup)
+    /// <param name="notifications">The export's Windows notifications, registered at start (#24).</param>
+    /// <param name="exportServices">Builds the export's services (#24) around this window's taskbar button and notifications.</param>
+    /// <param name="startup">Logs the start-up phases (#90).</param>
+    internal MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, ExportNotifications notifications, Func<IExportWindow, ExportServices> exportServices, StartupTrace startup)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(errors);
+        ArgumentNullException.ThrowIfNull(presenter);
+        ArgumentNullException.ThrowIfNull(notifications);
+        ArgumentNullException.ThrowIfNull(exportServices);
         ArgumentNullException.ThrowIfNull(startup);
         ViewModel = viewModel;
         _errors = errors;
+        _presenter = presenter;
         _startup = startup;
         InitializeComponent();
+
+        // The export's taskbar progress and its notification when the window is in the background (#24). A click on the
+        // notification brings the window back.
+        _taskbar = new TaskbarProgress(() => Win32Interop.GetWindowFromWindowId(AppWindow.Id));
+        _exportFeedback = new WindowExportFeedback(_taskbar, notifications, () => !_active || IsMinimized, errors);
+
+        // Invoked comes on a background thread, where Window.DispatcherQueue must not be read: the queue is taken here.
+        var queue = DispatcherQueue;
+        notifications.Invoked += (_, _) => queue.TryEnqueueGuarded(errors, Activate, ExportText.NotificationFailed);
+
         _startup.Phase("building the shell");
-        _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter, preview);
+        _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter, preview, exportServices(_exportFeedback));
         Content = _shell;
         _startup.Phase("setting the title bar and the backdrop");
 
@@ -91,6 +116,7 @@ public sealed partial class MainWindow : Window
         _shell.SizeChanged += (_, _) => FitTitleBarInsets();
         _shell.CommandBar.LayoutUpdated += (_, _) => UpdatePassthrough();
         AppWindow.Changed += OnAppWindowChanged;
+        AppWindow.Closing += OnClosing;
         Activated += OnActivated;
 
         // High contrast on or off, and the system's light / dark switch, change the system colors, and may come
@@ -103,13 +129,24 @@ public sealed partial class MainWindow : Window
             _closed = true;
             ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
             AppWindow.Changed -= OnAppWindowChanged;
+            AppWindow.Closing -= OnClosing;
             _uiSettings.ColorValuesChanged -= OnColorValuesChanged;
             _shell.Detach();
+            _taskbar.Dispose();
         };
     }
 
     /// <summary>The window's view model.</summary>
     public ShellViewModel ViewModel { get; }
+
+    /// <summary>The export panel's view model (the rating prompt, #31, follows its starts and ends).</summary>
+    internal ExportViewModel Export => _shell.Export;
+
+    /// <summary>True while this is the active window and not minimized: the rating prompt only asks then (#31).</summary>
+    internal bool IsInForeground => _active && !IsMinimized;
+
+    /// <summary>The window's handle, for the Store's rating dialog (#31).</summary>
+    internal nint Handle => Win32Interop.GetWindowFromWindowId(AppWindow.Id);
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -148,9 +185,55 @@ public sealed partial class MainWindow : Window
         _startup.Done("first frame rendering");
     }
 
-    // Inactive windows dim their title (Windows 11): the title texts go to Ink Secondary.
-    private void OnActivated(object sender, WindowActivatedEventArgs args) =>
-        _shell.SetWindowActive(args.WindowActivationState != WindowActivationState.Deactivated);
+    // Inactive windows dim their title (Windows 11): the title texts go to Ink Secondary. Back in the window, a failed
+    // export's red taskbar button goes (the InfoBar says it now).
+    private void OnActivated(object sender, WindowActivatedEventArgs args)
+    {
+        _active = args.WindowActivationState != WindowActivationState.Deactivated;
+        _shell.SetWindowActive(_active);
+        if (_active)
+        {
+            _exportFeedback.WindowActivated();
+        }
+    }
+
+    private bool IsMinimized => AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized };
+
+    // Closing during an export asks first (#24): "Stop the export and close?". On yes the export stops and its unfinished
+    // file goes (waited for at most ExportViewModel.CloseLimit), then the window closes. A cancelled export still removing
+    // its file is waited for the same way. Otherwise the window closes at once.
+    private void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+        if (_closeApproved || _shell.Export.MayCloseNow)
+        {
+            return;
+        }
+
+        args.Cancel = true;
+        if (_closeAsked)
+        {
+            return;
+        }
+
+        _closeAsked = true;
+        _ = _presenter.GuardAsync(CloseAfterExportAsync, ExportText.CloseFailed);
+    }
+
+    private async Task CloseAfterExportAsync()
+    {
+        try
+        {
+            if (await _shell.Export.PrepareToCloseAsync())
+            {
+                _closeApproved = true;
+                Close();
+            }
+        }
+        finally
+        {
+            _closeAsked = false;
+        }
+    }
 
     // A minimum size measured while maximized waits for the window to be restored. Minimized or hidden, the preview
     // pauses (and plays on when the window shows again): nothing should decode and draw unseen.

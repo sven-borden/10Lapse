@@ -17,7 +17,7 @@ namespace TenLapse.Presentation;
 /// <c>Project.Output</c>, the user's preference; the effective output is never stored. The portrait hint's
 /// dismissal is not remembered: projects are not saved, so it lives and dies with the open project.
 /// </remarks>
-public sealed class RememberedSettings : IImportFolderMemory, IDisposable
+public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFolderMemory, Rating.IRatingMemory, IDisposable
 {
     /// <summary>How long after the last change the file is written.</summary>
     public static readonly TimeSpan DefaultDebounce = TimeSpan.FromMilliseconds(600);
@@ -108,6 +108,25 @@ public sealed class RememberedSettings : IImportFolderMemory, IDisposable
         set => Update(Current with { ExportFolder = value });
     }
 
+    /// <summary>The app version the rating prompt was last shown in (#31), or null. Setting it saves it.</summary>
+    public string? RatingAskedVersion
+    {
+        get => Current.RatingAskedVersion;
+        set => Update(Current with { RatingAskedVersion = value });
+    }
+
+    /// <summary>How many exports have succeeded on this PC (#31).</summary>
+    public int SuccessfulExports => Current.SuccessfulExports;
+
+    /// <summary>Counts one successful export (#31), saves the count after the pause, and returns it. Stops counting at <see cref="int.MaxValue"/>.</summary>
+    public int CountSuccessfulExport()
+    {
+        var next = Current;
+        next = next with { SuccessfulExports = next.SuccessfulExports == int.MaxValue ? int.MaxValue : next.SuccessfulExports + 1 };
+        Update(next);
+        return next.SuccessfulExports;
+    }
+
     /// <summary>
     /// A new, empty, clean project that starts with the remembered timing, frame shape and output preference: the
     /// factory for <see cref="ShellViewModel"/>. On the UI thread.
@@ -133,15 +152,28 @@ public sealed class RememberedSettings : IImportFolderMemory, IDisposable
     /// <summary>
     /// <i>Reset to defaults</i>: forgets everything remembered (the folders too), writes that at once, and sets the
     /// current project's timing, frame shape and output to the defaults through the project, so the panels follow.
-    /// The frames and the project's order are not touched. On the UI thread. Returns whether the file was written;
-    /// a failure has been reported already.
+    /// The frames and the project's order are not touched. The rating prompt's count and last version are not preferences
+    /// and stay (#31), so a reset cannot bring the prompt back. On the UI thread. Returns whether the file was written;
+    /// a failure has been reported already. While an export runs (<see cref="ShellViewModel.Edits"/> closed) nothing
+    /// changes and it returns false.
     /// </summary>
     public bool ResetToDefaults()
     {
+        // While an export holds the project (#24) nothing is reset: the export says why (its EditsWait InfoBar), and the
+        // remembered file and the open project stay as they are together.
+        if (_shell is { } shell && !shell.Edits.Allow())
+        {
+            return false;
+        }
+
         var project = _shell?.CurrentProject.Model;
         lock (_gate)
         {
-            _current = UserSettings.Default;
+            _current = UserSettings.Default with
+            {
+                SuccessfulExports = _current.SuccessfulExports,
+                RatingAskedVersion = _current.RatingAskedVersion,
+            };
             _pending = true;
         }
 

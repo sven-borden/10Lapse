@@ -4,6 +4,7 @@ using TenLapse.Core.Diagnostics;
 using TenLapse.Core.Settings;
 using TenLapse.Media.Import;
 using TenLapse.Presentation;
+using TenLapse.Presentation.Rating;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 
@@ -125,7 +126,7 @@ public partial class App : Application
         // from them, the pickers open in the last folder, and the file is written a moment after each change.
         var remembered = new RememberedSettings(new JsonFileSettingsStore(SettingsFile()), errors, _log);
         var shell = new ShellViewModel(dialogs, errors, remembered.CreateProject);
-        var settings = new SettingsViewModel(errors, diagnostics, remembered, infoBars);
+        var settings = new SettingsViewModel(errors, diagnostics, remembered, infoBars, new LauncherService());
 
         // Import (#12): Media's PhotoImporter does the file work behind Core's IPhotoImportSource; the batches reach
         // the project on this (the UI) thread's queue. The pickers remember the last folder across launches (#21).
@@ -159,9 +160,33 @@ public partial class App : Application
         // The preview (#19): the proxy cache in LocalCache (beside the log unpackaged), the frame images, the player.
         _startup.Phase("creating the preview session");
         var preview = new Preview.PreviewSession(shell, errors, infoBars, _log, PreviewCacheFolder());
+
+        // The export (#24): Media's exporter behind Presentation's interface, the Save dialog in the folder of the last
+        // export (#21), Show in folder, and the window's taskbar progress and notification. The notifications register
+        // now, before the window, as the Windows App SDK asks: packaged always, unpackaged Debug only with --notifications.
+        _startup.Phase("registering the export notifications");
+        var notifications = new ExportNotifications(logOnly);
+        notifications.Register();
+        Presentation.Export.ISaveVideoPicker savePicker = new SaveVideoPicker(() => window!.AppWindow.Id);
+#if DEBUG
+        savePicker = Debugging.DebugExport.Picker(savePicker);
+#endif
+        var exporter = new ProjectVideoExporter();
         _startup.Phase("creating the window");
-        window = new MainWindow(shell, settings, import, output, infoBars, logOnly, errors, preview, _startup);
+        window = new MainWindow(
+            shell,
+            settings,
+            import,
+            output,
+            infoBars,
+            logOnly,
+            errors,
+            preview,
+            notifications,
+            exportWindow => new Presentation.Export.ExportServices(exporter, savePicker, remembered, dialogs, infoBars, new ExplorerFileReveal(), exportWindow, new PowerRequestKeepAwake(logOnly)),
+            _startup);
         _startup.Phase("attaching the window's services");
+        window.Closed += (_, _) => notifications.Dispose();
 
         // Closing the window stops the probe (it ends within one test encode and removes that file) and the panel.
         window.Closed += (_, _) =>
@@ -172,6 +197,19 @@ public partial class App : Application
 
         // And the preview: its render thread, its loads and the frame images.
         window.Closed += (_, _) => logOnly.RunLogged(preview.Dispose, ProjectText.PreviewProjectFailed);
+
+        // The rating prompt (#31): after the second successful export, once per version, if the window is in front and
+        // nothing is open. Unpackaged it does nothing; Debug --fake-rating logs the ask instead of calling the Store.
+        IRatingService ratingService = new StoreRatingService(() => window!.Handle, _log);
+#if DEBUG
+        if (Debugging.DebugRating.Requested)
+        {
+            ratingService = new Debugging.DebugRating(_log);
+        }
+#endif
+        var rating = new RatingPrompt(remembered, ratingService, () => window!.IsInForeground && !dialogs.HasOpenDialog && window.Export.IsFinished, AppDiagnostics.AppVersion(), _log, logOnly);
+        rating.Attach(window.Export);
+        window.Closed += (_, _) => rating.Dispose();
         _errors = errors;
 #if DEBUG
         errors.Guard(() => Debugging.DebugLaunch.ApplyPreview(preview, window, _log), "Applying the preview's Debug switches failed.");

@@ -140,7 +140,7 @@ public sealed partial class ImportViewModel : ObservableObject
     public Task ImportAsync(IReadOnlyList<string> paths)
     {
         ArgumentNullException.ThrowIfNull(paths);
-        return Start(_shell.CurrentProject, paths);
+        return _shell.Edits.Allow() ? Start(_shell.CurrentProject, paths) : Task.CompletedTask;
     }
 
     /// <summary>
@@ -152,6 +152,10 @@ public sealed partial class ImportViewModel : ObservableObject
     public async Task DropAsync(IReadOnlyList<string> paths)
     {
         ArgumentNullException.ThrowIfNull(paths);
+        if (!_shell.Edits.Allow())
+        {
+            return;
+        }
 
         // Off the UI thread: a folder on a sleeping network drive can take seconds to answer.
         var usable = await Task.Run(() => paths.Where(IsUsable).ToList());
@@ -197,6 +201,11 @@ public sealed partial class ImportViewModel : ObservableObject
 
     private async Task ChooseFolderAsync()
     {
+        if (!_shell.Edits.Allow())
+        {
+            return;
+        }
+
         var folder = await _picker.PickFolderAsync(_folders.LastFolder);
         if (string.IsNullOrEmpty(folder))
         {
@@ -210,6 +219,11 @@ public sealed partial class ImportViewModel : ObservableObject
 
     private async Task ChoosePhotosAsync()
     {
+        if (!_shell.Edits.Allow())
+        {
+            return;
+        }
+
         var files = await _picker.PickPhotosAsync(_folders.LastFolder);
         if (files.Count == 0)
         {
