@@ -9,6 +9,7 @@ using TenLapse.Presentation.FirstLaunch;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using TenLapse.Themes;
+using Windows.Foundation;
 using DrawingColor = System.Drawing.Color;
 
 namespace TenLapse.Shell;
@@ -40,6 +41,9 @@ public sealed partial class FirstLaunchView : UserControl
     private FlyoutShadow? _shadow;
     private Storyboard? _dragStoryboard;
     private FirstLaunchLayout _layout;
+    private readonly long _titleTextToken;
+    private double _width;
+    private double _titleWidth;
     private bool _regionVisible = true;
     private int _frame = -1;
     private int _thumb = -1;
@@ -53,6 +57,7 @@ public sealed partial class FirstLaunchView : UserControl
         _timer.IsRepeating = true;
         _timer.Tick += OnTick;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        _titleTextToken = TitleText.RegisterPropertyChangedCallback(TextBlock.TextProperty, OnTitleTextChanged);
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
     }
@@ -97,6 +102,7 @@ public sealed partial class FirstLaunchView : UserControl
     {
         _timer.Stop();
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        TitleText.UnregisterPropertyChangedCallback(TextBlock.TextProperty, _titleTextToken);
         _shadow?.Dispose();
         _shadow = null;
         FrameCanvas.RemoveFromVisualTree();
@@ -152,6 +158,7 @@ public sealed partial class FirstLaunchView : UserControl
 
     private void OnDropZoneSizeChanged(object sender, SizeChangedEventArgs e)
     {
+        _width = e.NewSize.Width;
         _layout = FirstLaunchLayout.Fit(e.NewSize.Width, e.NewSize.Height);
         if (_layout.ShowsIllustration)
         {
@@ -198,6 +205,36 @@ public sealed partial class FirstLaunchView : UserControl
         DaybreakColumnDefinition.Width = new GridLength(layout.IllustrationShare, GridUnitType.Star);
         TextColumn.HorizontalAlignment = layout.ShowsIllustration ? HorizontalAlignment.Left : HorizontalAlignment.Center;
         DaybreakPanel.Visibility = layout.ShowsIllustration ? Visibility.Visible : Visibility.Collapsed;
+
+        var titleWidth = Math.Min(TextColumn.MaxWidth, layout.TextColumnWidth(_width));
+        if (titleWidth != _titleWidth)
+        {
+            _titleWidth = titleWidth;
+            BalanceTitle();
+        }
+    }
+
+    // The title at rest and the drop title differ in length: each is balanced as it arrives.
+    private void OnTitleTextChanged(DependencyObject sender, DependencyProperty property) =>
+        _errors?.Guard(BalanceTitle, ProjectText.DropZoneLookFailed);
+
+    // The title breaks into even lines, as the canvas's text-wrap: balance does ("Drop a folder of photos / to make a
+    // timelapse"), not greedily with "timelapse" alone on the second line.
+    private void BalanceTitle()
+    {
+        if (_titleWidth <= 0)
+        {
+            return;
+        }
+
+        TitleText.MaxWidth = double.PositiveInfinity;
+        TitleText.MaxWidth = TextBalance.Width(_titleWidth, MeasureTitle);
+    }
+
+    private double MeasureTitle(double width)
+    {
+        TitleText.Measure(new Size(width, double.PositiveInfinity));
+        return TitleText.DesiredSize.Height;
     }
 
     private void OnTick(DispatcherQueueTimer sender, object args)
