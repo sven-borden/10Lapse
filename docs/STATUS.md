@@ -4,7 +4,7 @@ Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Running: #22 (wave 8) and #12 (wave 7).
+Running: PR #73 fix round (#12). Paused after it (Sven, 2026-10-19). Next on resume: the PR #74 fix round (#22), findings in the PR comment, then #29.
 
 ## Waves
 
@@ -27,9 +27,9 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | merged #70 |
 | 6 | #26 One error path | O | App startup, `Core/Diagnostics` | merged #69 |
 | 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | merged #71 |
-| 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | running |
+| 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | PR #73, fix round |
 | 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | merged #72 |
-| 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | running |
+| 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | PR #74, reviewed, fix round pending |
 | 8 | #29 First launch drop zone | O | App empty state view | |
 | 9 | #19 Preview with proxy cache | O | preview view and cache | |
 | 9 | #23 Output panel | S | output inspector section | |
