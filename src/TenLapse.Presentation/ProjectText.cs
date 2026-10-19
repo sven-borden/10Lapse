@@ -310,6 +310,111 @@ public static class ProjectText
         return new Confirmation(NewProjectTitle, message, NewProjectConfirm, Cancel);
     }
 
+    // ---- Preview (#19): the player, its transport and its cache. One block so other issues' strings merge around it. ----
+
+    /// <summary>The play button's name while paused.</summary>
+    public static string PreviewPlay => "Play";
+
+    /// <summary>The play button's name while playing.</summary>
+    public static string PreviewPause => "Pause";
+
+    /// <summary>The scrubber's name.</summary>
+    public static string PreviewScrubberName => "Frame";
+
+    /// <summary>The transport's frame counter. {0} the frame number, {1} the total, both zero-padded to the same width ("0312 / 0742").</summary>
+    public static string PreviewCounterFormat => "{0} / {1}";
+
+    /// <summary>The frame counter as Narrator reads it. {0} the frame number, {1} the total ("Frame 312 of 742").</summary>
+    public static string PreviewCounterNameFormat => "Frame {0} of {1}";
+
+    /// <summary>The transport's time code and the clip length. {0} the time ("00:10.40"), {1} the length ("00:24.73").</summary>
+    public static string PreviewTimecodeFormat => "{0} / {1}";
+
+    /// <summary>The time code as Narrator reads it. {0} the time, {1} the length.</summary>
+    public static string PreviewTimecodeNameFormat => "Time {0} of {1}";
+
+    /// <summary>A frame whose photo cannot be read, drawn in its place. {0} the file name.</summary>
+    public static string PreviewPlaceholderFormat => "{0} can't be read";
+
+    /// <summary>One photo of the project cannot be read while previewing. The detail list names it.</summary>
+    public static string PreviewFrameUnreadableOne => "1 photo can't be read, so the preview shows a placeholder for it. Restore or replace it before you export.";
+
+    /// <summary>Several photos cannot be read while previewing. {0} the count ("3"). The detail list names them.</summary>
+    public static string PreviewFrameUnreadableMany => "{0} photos can't be read, so the preview shows placeholders for them. Restore or replace them before you export.";
+
+    /// <summary>The proxy cache cannot be written: the preview works from the photos, slower.</summary>
+    public static string PreviewCacheFailed => "Preview copies of your photos can't be saved, so the preview may be slow. Your photos and the export aren't affected.";
+
+    /// <summary>Error context (log only): play or pause failed.</summary>
+    public static string PreviewPlayFailed => "Playing or pausing the preview failed.";
+
+    /// <summary>Error context (log only): a transport key or the scrubber failed.</summary>
+    public static string PreviewSeekFailed => "Moving the preview's playhead failed.";
+
+    /// <summary>Error context (log only): following a change of the project in the preview failed.</summary>
+    public static string PreviewProjectFailed => "Following the project in the preview failed.";
+
+    /// <summary>Error context: drawing the preview failed.</summary>
+    public static string PreviewDrawFailed => "Drawing the preview failed.";
+
+    /// <summary>Error context (log only): advancing the counter during playback failed.</summary>
+    public static string PreviewTickFailed => "Advancing the preview's counter failed.";
+
+    /// <summary>Error context (log only): a frame could not be read for the preview. {0} the path.</summary>
+    public static string PreviewFrameFailedLog => "The preview could not read {0}.";
+
+    /// <summary>Error context (log only): the proxy cache failed.</summary>
+    public static string PreviewCacheFailedLog => "The preview cache could not save or read a proxy.";
+
+    /// <summary>Error context (log only): the preview's frame cache failed in its own code.</summary>
+    public static string PreviewCacheUnexpected => "The preview's frame cache failed.";
+
+    /// <summary>Error context (log only): showing the preview's problems failed.</summary>
+    public static string PreviewProblemsFailed => "Telling about a preview problem failed.";
+
+    /// <summary>Error context (log only): cleaning up the proxy cache failed.</summary>
+    public static string PreviewCacheCleanupFailed => "Cleaning up the preview cache failed.";
+
+    /// <summary>"0312 / 0742": frame <paramref name="number"/> (from 1) of <paramref name="total"/>, zero-padded to four digits or the total's width.</summary>
+    public static string PreviewCounter(int number, int total)
+    {
+        var (padded, paddedTotal) = PadFrames(number, total);
+        return Format(PreviewCounterFormat, padded, paddedTotal);
+    }
+
+    /// <summary>"Frame 312 of 742": the counter for Narrator.</summary>
+    public static string PreviewCounterName(int number, int total)
+    {
+        PadFrames(number, total);
+        return Format(PreviewCounterNameFormat, number, total);
+    }
+
+    /// <summary>"00:10.40 / 00:24.73": the time at <paramref name="ticks"/> and the clip's <paramref name="lengthTicks"/>.</summary>
+    public static string PreviewTimecode(long ticks, long lengthTicks) =>
+        Format(PreviewTimecodeFormat, TimingFormat.Timecode(ticks), TimingFormat.Timecode(lengthTicks));
+
+    /// <summary>"Time 00:10.40 of 00:24.73": the time code for Narrator.</summary>
+    public static string PreviewTimecodeName(long ticks, long lengthTicks) =>
+        Format(PreviewTimecodeNameFormat, TimingFormat.Timecode(ticks), TimingFormat.Timecode(lengthTicks));
+
+    /// <summary>The InfoBar message for <paramref name="count"/> photos the preview cannot read.</summary>
+    public static string PreviewFrameUnreadable(int count)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+        return count == 1 ? PreviewFrameUnreadableOne : Format(PreviewFrameUnreadableMany, Count(count));
+    }
+
+    private static (string Number, string Total) PadFrames(int number, int total)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(total);
+        ArgumentOutOfRangeException.ThrowIfLessThan(number, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(number, total);
+        var digits = "D" + Math.Max(4, total.ToString(CultureInfo.InvariantCulture).Length).ToString(CultureInfo.InvariantCulture);
+        return (number.ToString(digits, CultureInfo.InvariantCulture), total.ToString(digits, CultureInfo.InvariantCulture));
+    }
+
+    // ---- End of the preview block (#19). ----
+
     // ---- Import (#12): Add photos, drag and drop, progress. One block so other issues' strings merge around it. ----
 
     /// <summary>The command bar button that opens the import menu.</summary>
