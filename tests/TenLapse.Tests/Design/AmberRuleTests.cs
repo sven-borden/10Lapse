@@ -43,6 +43,9 @@ public sealed partial class AmberRuleTests
 
         // #19: the scrubber's played part and knob dot, with their hover and pressed tints.
         "src/TenLapse.App/Preview/Scrubber.xaml",
+
+        // #20: the playhead ring on the filmstrip thumbnail the preview shows.
+        "src/TenLapse.App/Filmstrip/FilmstripThumb.xaml",
     ];
 
     [Fact]

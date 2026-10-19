@@ -82,7 +82,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
         CaptionText = string.Empty;
         FileText = string.Empty;
         RemoveCommand = errors.Command(() => Remove(), ProjectText.FilmstripRemoveFailed);
-        UndoCommand = errors.Command(() => Undo(), ProjectText.FilmstripUndoFailed);
+        UndoCommand = errors.Command(() => Undo(), ProjectText.FilmstripUndoFailed, () => CanUndo);
         MoveEarlierCommand = errors.Command(() => MoveBy(-1), ProjectText.FilmstripMoveFailed);
         MoveLaterCommand = errors.Command(() => MoveBy(1), ProjectText.FilmstripMoveFailed);
 
@@ -133,6 +133,8 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     /// <summary>True when Ctrl+Z has something to undo.</summary>
     [ObservableProperty]
     public partial bool CanUndo { get; private set; }
+
+    partial void OnCanUndoChanged(bool value) => UndoCommand.NotifyCanExecuteChanged();
 
     /// <summary>The thumbnails' height in DIPs, <see cref="MinThumbnailHeight"/> to <see cref="MaxThumbnailHeight"/>, on the 4 px grid.</summary>
     public double ThumbnailHeight

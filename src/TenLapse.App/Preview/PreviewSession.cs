@@ -94,14 +94,23 @@ internal sealed class PreviewSession : IDisposable
         Images.Dispose();
     }
 
-    // Worker thread: gathered, and shown as one bar a moment later on the UI thread.
-    private void OnFrameFailed(object? sender, FrameLoadFailedEventArgs e)
+    /// <summary>
+    /// A photo that cannot be read, from any thread: the preview's frames and the filmstrip's thumbnails (#20) gather
+    /// into the same InfoBar a moment later, once per photo.
+    /// </summary>
+    internal void ReportFrameFailure(FrameLoadFailure failure)
     {
-        if (Problems.FrameFailed(e.Failure))
+        if (Problems.FrameFailed(failure))
         {
             _dispatcher.TryEnqueueGuarded(_log, _problemTimer.Start, ProjectText.PreviewProblemsFailed);
         }
     }
+
+    /// <summary>An unexpected failure of the preview's or the filmstrip's image code, from any thread: shown at most once a minute, logged always.</summary>
+    internal void ReportUnexpected(Exception exception) => OnUnexpectedFailure(this, new PreviewFailureEventArgs(exception));
+
+    // Worker thread: gathered, and shown as one bar a moment later on the UI thread.
+    private void OnFrameFailed(object? sender, FrameLoadFailedEventArgs e) => ReportFrameFailure(e.Failure);
 
     private void OnCacheFailed(object? sender, PreviewFailureEventArgs e) => Problems.CacheFailed(e.Exception);
 

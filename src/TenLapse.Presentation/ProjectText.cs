@@ -879,6 +879,18 @@ public static class ProjectText
     /// <summary>The context menu's move one place later; Alt+Right does the same.</summary>
     public static string FilmstripMoveLater => "Move later";
 
+    /// <summary>The key shown beside the context menu's removal.</summary>
+    public static string FilmstripRemoveKeys => "Delete";
+
+    /// <summary>The keys shown beside the context menu's undo.</summary>
+    public static string FilmstripUndoKeys => "Ctrl+Z";
+
+    /// <summary>The keys shown beside the context menu's move earlier.</summary>
+    public static string FilmstripMoveEarlierKeys => "Alt+Left";
+
+    /// <summary>The keys shown beside the context menu's move later.</summary>
+    public static string FilmstripMoveLaterKeys => "Alt+Right";
+
     /// <summary>The thumbnail size slider's name.</summary>
     public static string FilmstripThumbnailSize => "Thumbnail size";
 

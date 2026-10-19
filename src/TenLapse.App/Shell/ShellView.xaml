@@ -431,11 +431,13 @@
           Height="{StaticResource PlayButtonSize}">
           <preview:TransportBar xmlns:preview="using:TenLapse.Preview" x:Name="Transport" />
         </Grid>
-        <!-- Filmstrip (#20): the thumbnails and their caption row; drop MinHeight once the strip sizes itself. -->
-        <Grid
-          x:Name="FilmstripRegion"
-          Grid.Row="2"
-          MinHeight="{StaticResource FilmstripMinHeight}" />
+        <!--
+          Filmstrip (#20, Filmstrip/FilmstripView.xaml): every frame as a 3:2 thumbnail in a row that scrolls, and the
+          caption row under it. It sizes itself: the thumbnail height (the slider) plus the rings' inset and the caption.
+        -->
+        <Grid x:Name="FilmstripRegion" Grid.Row="2">
+          <filmstrip:FilmstripView xmlns:filmstrip="using:TenLapse.Filmstrip" x:Name="Filmstrip" />
+        </Grid>
       </Grid>
 
       <!--

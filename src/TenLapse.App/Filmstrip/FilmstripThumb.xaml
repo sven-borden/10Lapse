@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One filmstrip thumbnail (#20; DESIGN.md, Filmstrip; docs/design/canvas/components/Controls.dc.html, Transport and
+  filmstrip): the photo at 3:2 with 3 px corners (RadiusThumb), cropped to fill. Around it, outside its bounds and inside
+  the strip's 4 px seams:
+    Playhead   2 px Layer gap, 2 px Deep Amber Indicator ring: "where the video is now" (the canvas's playhead).
+    Selected   2 px Layer gap, 1 px Ink ring (the canvas's "selected for removal").
+    Hover      2 px Layer gap, 1 px Ink Secondary ring (.impeccable/design.json, Filmstrip).
+    Focus      the system's double ring, outside the playhead ring.
+    Pending    35 % opacity: not yet exported (#24 sets it).
+    Gap        a 2 px Ink Secondary bar in the seam before the thumbnail, 4 px taller than it at each end: photos are
+               probably missing there (FrameGaps). A neutral mark, not a status color: DESIGN.md keeps those for InfoBars.
+  A photo that cannot be read shows the Letterbox with a broken-picture glyph, as the preview's placeholder does; one
+  still loading shows the Track fill. The element is recycled by the strip's ItemsRepeater (FilmstripThumb.xaml.cs).
+-->
+<UserControl
+  x:Class="TenLapse.Filmstrip.FilmstripThumb"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  Background="Transparent"
+  FocusVisualMargin="-6"
+  IsTabStop="True"
+  UseSystemFocusVisuals="True">
+  <Grid x:Name="Root">
+    <Rectangle
+      x:Name="GapMarker"
+      Width="2"
+      Margin="-3,-4,0,-4"
+      HorizontalAlignment="Left"
+      Fill="{ThemeResource InkSecondaryBrush}"
+      RadiusX="1"
+      RadiusY="1"
+      Visibility="Collapsed" />
+    <Border x:Name="Ground" Background="{ThemeResource TrackBrush}" CornerRadius="{StaticResource RadiusThumb}" />
+    <Border
+      x:Name="Unreadable"
+      Background="{StaticResource LetterboxBrush}"
+      CornerRadius="{StaticResource RadiusThumb}"
+      Visibility="Collapsed" />
+    <Border x:Name="Picture" CornerRadius="{StaticResource RadiusThumb}">
+      <Border.Background>
+        <ImageBrush x:Name="PictureBrush" Stretch="UniformToFill" />
+      </Border.Background>
+    </Border>
+    <!-- Segoe Fluent Icons "Warning": the preview's placeholder says the file name; a thumbnail has no room (its name and tooltip do). -->
+    <FontIcon
+      x:Name="Placeholder"
+      HorizontalAlignment="Center"
+      VerticalAlignment="Center"
+      FontSize="12"
+      Foreground="{ThemeResource InkSecondaryBrush}"
+      Glyph="&#xE7BA;"
+      RequestedTheme="Dark"
+      Visibility="Collapsed" />
+    <Border
+      x:Name="HoverRing"
+      Margin="-3"
+      BorderBrush="{ThemeResource InkSecondaryBrush}"
+      BorderThickness="1"
+      CornerRadius="6"
+      Visibility="Collapsed" />
+    <Border
+      x:Name="SelectionRing"
+      Margin="-3"
+      BorderBrush="{ThemeResource InkBrush}"
+      BorderThickness="1"
+      CornerRadius="6"
+      Visibility="Collapsed" />
+    <Border
+      x:Name="PlayheadRing"
+      Margin="-4"
+      BorderBrush="{ThemeResource DeepAmberIndicatorBrush}"
+      BorderThickness="2"
+      CornerRadius="7"
+      Visibility="Collapsed" />
+  </Grid>
+</UserControl>
