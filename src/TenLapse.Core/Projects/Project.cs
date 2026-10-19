@@ -37,7 +37,12 @@ public enum ProjectChanges
 /// <summary>The kind of a <see cref="FrameChange"/>.</summary>
 public enum FrameChangeKind
 {
-    /// <summary><see cref="FrameChange.Count"/> frames were inserted, the first now at <see cref="FrameChange.Index"/>.</summary>
+    /// <summary>
+    /// <see cref="FrameChange.Count"/> frames were inserted, at the positions <see cref="FrameChange.Indices"/> (after the
+    /// change, ascending), the first at <see cref="FrameChange.Index"/>. An import's are contiguous; an undo of a removal
+    /// (#20, <see cref="FrameHistory"/>) puts frames back where each was, so its positions may be scattered. A consumer
+    /// inserts at each of the <see cref="FrameChange.Indices"/> in order, never a run from <see cref="FrameChange.Index"/>.
+    /// </summary>
     Added,
 
     /// <summary>The frames at <see cref="FrameChange.Indices"/> (positions before the change) were removed.</summary>
