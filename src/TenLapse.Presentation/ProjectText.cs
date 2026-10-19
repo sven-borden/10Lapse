@@ -560,11 +560,20 @@ public static class ProjectText
     /// <summary>One extension the Store sells, inside a list. {0} its Store name.</summary>
     public static string CodecListFee => "the {0} (a small fee)";
 
+    /// <summary>"Two", for how many extensions a list names.</summary>
+    public static string CodecCountTwo => "two";
+
+    /// <summary>"Several", for how many extensions a list names when it is more than two.</summary>
+    public static string CodecCountSeveral => "several";
+
+    /// <summary>Between the extensions of a list, in install order.</summary>
+    public static string CodecListSeparator => ", then ";
+
     /// <summary>The InfoBar that follows the first button of a list. {0} the next extension as <see cref="CodecListFree"/> or <see cref="CodecListFee"/>.</summary>
-    public static string CodecNextFormat => "Next, get {0}, then add the photos again.";
+    public static string CodecNextFormat => "Next, get {0}. When both are installed, restart 10Lapse and add the photos again.";
 
     /// <summary>When Windows could not open the Store page. {0} the extension's Store name, to search for.</summary>
-    public static string CodecStoreFallbackFormat => "Couldn't open the Microsoft Store. Search the Store for {0}, install it, then add the photos again.";
+    public static string CodecStoreFallbackFormat => "Couldn't open the Microsoft Store. Search the Store for {0}, install it, then restart 10Lapse and add the photos again.";
 
     /// <summary>The log context when opening the Store page threw.</summary>
     public static string CodecStoreOpenFailed => "Opening the Microsoft Store page of a photo extension failed.";
@@ -588,8 +597,8 @@ public static class ProjectText
             };
         }
 
-        var list = string.Join(", then ", needed.Select(CodecListed));
-        var words = needed.Count == 2 ? "two" : "several";
+        var list = string.Join(CodecListSeparator, needed.Select(CodecListed));
+        var words = needed.Count == 2 ? CodecCountTwo : CodecCountSeveral;
         return count == 1 ? Format(CodecNeedsOneSeveral, words, list) : Format(CodecNeedsManySeveral, number, words, list);
     }
 
