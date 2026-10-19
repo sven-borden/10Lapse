@@ -32,6 +32,12 @@ internal static partial class DebugLaunch
     /// </summary>
     public static string? SettingsFolder => Value("--settings-folder=");
 
+    /// <summary>
+    /// The encoder probe's cache file (<c>--encoder-cache=FILE</c>), or null for the app's own. A file that does not exist
+    /// makes the probe run cold, as on the first launch of a new build (#90).
+    /// </summary>
+    public static string? EncoderCacheFile => Value("--encoder-cache=");
+
     /// <summary>Applies the switches to a freshly built shell, on the UI thread.</summary>
     public static void Apply(ShellViewModel shell, IInfoBarService infoBars)
     {

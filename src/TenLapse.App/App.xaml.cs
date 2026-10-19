@@ -106,13 +106,13 @@ public partial class App : Application
 
         // The encoder probe (#9) starts now, in the background; the Output panel (#23) takes its answer when it comes
         // and nothing waits for it.
-        var encoders = new EncoderStartup(AppEnvironment.EncoderCacheFile());
+        var encoders = new EncoderStartup(EncoderCacheFile());
 
         // Copy diagnostics. The encoder section reads this session's probe result, else the cache #9's probe writes,
         // and never probes itself.
         var diagnostics = new DiagnosticsCopier(
             new DiagnosticsCollector(
-                [new AppDiagnostics(), new GraphicsDiagnostics(), new EncoderDiagnostics(AppEnvironment.EncoderCacheFile(), () => encoders.Loaded)],
+                [new AppDiagnostics(), new GraphicsDiagnostics(), new EncoderDiagnostics(EncoderCacheFile(), () => encoders.Loaded)],
                 _log,
                 redaction: DiagnosticsRedaction.ForCurrentUser(AppEnvironment.ShortProfileFolder())),
             new ClipboardService(),
@@ -200,6 +200,19 @@ public partial class App : Application
         }
 #endif
         return AppEnvironment.SettingsFile();
+    }
+
+    // Debug can point the encoder probe's cache elsewhere (--encoder-cache=FILE), so a launch test can make every launch
+    // probe cold, as the first launch of a new build does, without touching the user's cache (#90).
+    private static string EncoderCacheFile()
+    {
+#if DEBUG
+        if (Debugging.DebugLaunch.EncoderCacheFile is { } file)
+        {
+            return file;
+        }
+#endif
+        return AppEnvironment.EncoderCacheFile();
     }
 
     // Debug can point the proxy cache elsewhere (--cache-folder=PATH), so a test run leaves the user's cache alone.
