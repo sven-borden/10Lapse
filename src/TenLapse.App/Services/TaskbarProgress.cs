@@ -25,6 +25,9 @@ internal sealed unsafe class TaskbarProgress(Func<nint> window) : IDisposable
     private nint _taskbar;
     private bool _unavailable;
 
+    // Set by Dispose: a late call (an export that ended after the window closed) must not create the COM object again.
+    private bool _disposed;
+
     /// <summary>The TBPFLAG values.</summary>
     public enum State
     {
@@ -65,6 +68,7 @@ internal sealed unsafe class TaskbarProgress(Func<nint> window) : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
+        _disposed = true;
         if (_taskbar != 0)
         {
             var release = (delegate* unmanaged[Stdcall]<nint, uint>)(*(void***)_taskbar)[ReleaseSlot];
@@ -75,7 +79,7 @@ internal sealed unsafe class TaskbarProgress(Func<nint> window) : IDisposable
 
     private nint Taskbar()
     {
-        if (_taskbar != 0 || _unavailable)
+        if (_taskbar != 0 || _unavailable || _disposed)
         {
             return _taskbar;
         }

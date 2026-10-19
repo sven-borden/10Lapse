@@ -76,7 +76,10 @@ public sealed partial class MainWindow : Window
         // notification brings the window back.
         _taskbar = new TaskbarProgress(() => Win32Interop.GetWindowFromWindowId(AppWindow.Id));
         _exportFeedback = new WindowExportFeedback(_taskbar, notifications, () => !_active || IsMinimized, errors);
-        notifications.Invoked += (_, _) => DispatcherQueue.TryEnqueueGuarded(errors, Activate, ExportText.NotificationFailed);
+
+        // Invoked comes on a background thread, where Window.DispatcherQueue must not be read: the queue is taken here.
+        var queue = DispatcherQueue;
+        notifications.Invoked += (_, _) => queue.TryEnqueueGuarded(errors, Activate, ExportText.NotificationFailed);
 
         _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter, preview, exportServices(_exportFeedback));
         Content = _shell;
