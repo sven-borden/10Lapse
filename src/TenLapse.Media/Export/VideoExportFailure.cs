@@ -41,6 +41,23 @@ public enum VideoExportFailure
 
     /// <summary>Not enough system or video memory.</summary>
     OutOfMemory,
+
+    /// <summary>
+    /// A frame's photo could not be loaded: <see cref="VideoExportException.FrameIndex"/> and
+    /// <see cref="VideoExportException.SourcePath"/> say which; the inner exception is the source's own, a
+    /// <see cref="Decoding.PhotoDecodeException"/> (with its <see cref="SkipReason"/>) for photo files.
+    /// </summary>
+    FrameUnreadable,
+
+    /// <summary>Drawing a frame failed on the graphics device for a reason none of the other categories names.</summary>
+    DrawingFailed,
+
+    /// <summary>
+    /// The encoder could not open while an encoder call of an earlier export is still stuck in the driver (it
+    /// stalled and never returned): that call holds an encoder session, the device and a thread until the process
+    /// ends, and consumer GPUs allow only a few sessions. Restarting the app frees them.
+    /// </summary>
+    EncoderStuck,
 }
 
 /// <summary>An export failed for a reason the app can explain; <see cref="Failure"/> says which.</summary>
@@ -52,6 +69,18 @@ public sealed class VideoExportException : Exception
 
     /// <summary>What went wrong, for the message the app shows (#22).</summary>
     public VideoExportFailure Failure { get; }
+
+    /// <summary>The frame (0-based, in playback order) being loaded, drawn or encoded when it failed; null for a failure of the whole export.</summary>
+    public int? FrameIndex { get; init; }
+
+    /// <summary>The photo file of <see cref="FrameIndex"/>, when the source knows it.</summary>
+    public string? SourcePath { get; init; }
+
+    /// <summary>
+    /// What <c>ID3D11Device::GetDeviceRemovedReason</c> answered when the failure was classified as
+    /// <see cref="VideoExportFailure.GraphicsDeviceLost"/> (DXGI_ERROR_DEVICE_HUNG, _REMOVED, _RESET, DXGI_ERROR_DRIVER_INTERNAL_ERROR), for the log.
+    /// </summary>
+    public int? DeviceRemovedReason { get; init; }
 }
 
 /// <summary>
@@ -144,6 +173,20 @@ internal static class ExportFailures
         VideoExportFailure.NoGraphicsDevice => "No graphics device can run the export",
         VideoExportFailure.GraphicsDeviceLost => "The graphics driver reset during the export",
         VideoExportFailure.OutOfMemory => "There is not enough memory for the export",
+        VideoExportFailure.FrameUnreadable => "A frame's photo could not be loaded",
+        VideoExportFailure.DrawingFailed => "Drawing a frame failed",
+        VideoExportFailure.EncoderStuck => $"The {EncoderText.CodecName(format)} encoder could not open while an earlier export's encoder is still stuck",
         _ => $"The {EncoderText.CodecName(format)} encoder failed",
+    };
+
+    /// <summary>The DXGI name of a device removed reason, for messages: "DXGI_ERROR_DEVICE_HUNG", or the HRESULT in hex.</summary>
+    public static string DeviceRemovedName(int reason) => unchecked((uint)reason) switch
+    {
+        0x887A0005 => "DXGI_ERROR_DEVICE_REMOVED",
+        0x887A0006 => "DXGI_ERROR_DEVICE_HUNG",
+        0x887A0007 => "DXGI_ERROR_DEVICE_RESET",
+        0x887A0020 => "DXGI_ERROR_DRIVER_INTERNAL_ERROR",
+        0x887A0001 => "DXGI_ERROR_INVALID_CALL",
+        var other => $"0x{other:X8}",
     };
 }

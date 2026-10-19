@@ -1,3 +1,4 @@
+using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 using TenLapse.Media.Export;
 using TenLapse.Media.Inspection;
@@ -9,6 +10,7 @@ namespace TenLapse.Tests.Media;
 /// The #8 pipeline end to end at a small size: draw, fill, encode to H.264 MP4
 /// through IMFSinkWriter, read back with the Media Foundation source reader.
 /// </summary>
+[Collection(nameof(RealEncoderCollection))]
 public sealed class StreamingExportTests : IDisposable
 {
     private const int Frames = 60;
@@ -63,11 +65,12 @@ public sealed class StreamingExportTests : IDisposable
     [InlineData(60000, 1001, 300)]
     [InlineData(7, 3, 60)] // length mode: timescale 2333, up to 4,286 ticks late (frame 7)
     [InlineData(200, 9, 120)] // length mode: timescale 22222, up to 450 ticks late (frame 100)
-    [InlineData(3, 7, 12)] // length mode: timescale 428, up to 23,364 ticks late (frame 3)
-    public async Task EveryFrameLandsAtMostOneTimescaleUnitAfterItsStart(int numerator, int denominator, int frames)
+    [InlineData(3, 7, 30)] // length mode, typed as 9/7: timescale 1285
+    public async Task EveryFrameLandsWithinOneTimescaleUnitOfItsStart(int numerator, int denominator, int frames)
     {
-        // The MP4 sink's timescale is floor(rate x 1000). When that is not exact, each sample lands on that
-        // grid at or after FrameStart and less than one unit later; the error does not accumulate.
+        // The MP4 sink's timescale is floor(rate x 1000), of the nominal rate below 1 fps (3/7 is typed as 9/7:
+        // timescale 1285). When that is not exact, each sample lands on that grid within one unit of FrameStart;
+        // the error does not accumulate.
         SkipWithoutH264Encoder();
         var rate = new Fraction(numerator, denominator);
         var path = Path.Combine(_directory, $"{numerator}-{denominator}.mp4");
@@ -76,15 +79,42 @@ public sealed class StreamingExportTests : IDisposable
 
         var info = VideoFileReader.Read(path);
         Assert.Equal(frames, info.FrameCount);
-        var unit = TimescaleUnit(rate);
+        var unit = TimescaleUnit(SinkWriterEncoder.NominalFrameRate(rate));
+        var offsets = Enumerable.Range(0, frames).Select(i => info.SampleTimes[i] - FrameTiming.FrameStart(i, rate)).ToArray();
         for (var i = 0; i < frames; i++)
         {
-            var late = info.SampleTimes[i] - FrameTiming.FrameStart(i, rate);
-            Assert.True(late >= 0 && late <= unit, $"Frame {i} is {late} ticks late; one timescale unit is {unit} ticks.");
+            Assert.True(Math.Abs(offsets[i]) <= unit, $"Frame {i} is {offsets[i]} ticks off; one timescale unit is {unit} ticks.");
         }
 
         AssertFrameRate(info, rate);
         AssertDurations(info, rate);
+    }
+
+    [Theory]
+    [InlineData(VideoFormat.Mp4H264, 1, 2)]
+    [InlineData(VideoFormat.Mp4H264, 1, 5)]
+    [InlineData(VideoFormat.Mp4H264, 2, 1)]
+    [InlineData(VideoFormat.Mp4Hevc, 1, 2)]
+    public async Task BelowOneFpsTheFileGetsTheBitrateItAskedFor(VideoFormat format, int numerator, int denominator)
+    {
+        // NVENC's H.264 encoder, told the real rate below 1 fps, wrote about 1/80 of the bitrate (12.7 kbit/s of
+        // 1.0 Mbit/s at 1/2 fps). Noise takes every bit it is given, so the file shows what the encoder spent.
+        SkipWithoutGraphicsDevice();
+        Assert.SkipWhen(
+            format == VideoFormat.Mp4Hevc && TenLapse.Media.Encoding.EncoderCatalog.Find(VideoFormat.Mp4Hevc).Count == 0,
+            "No HEVC encoder is installed.");
+        var rate = new Fraction(numerator, denominator);
+        var size = new PixelSize(1280, 720);
+        var bitrate = ExportBitrate.For(size, rate, format, OutputQuality.High);
+        var path = Path.Combine(_directory, $"bitrate-{format}-{numerator}-{denominator}.mp4");
+        const int frames = 12;
+
+        await ExportOrSkipAsync(new NoisyFrames(frames, size.Width, size.Height), path, new VideoExportSettings(size.Width, size.Height, rate) { Format = format, Bitrate = bitrate });
+
+        var seconds = (double)FrameTiming.Duration(frames, rate) / FrameTiming.TicksPerSecond;
+        var measured = new FileInfo(path).Length * 8 / seconds;
+        TestContext.Current.TestOutputHelper?.WriteLine($"{format} at {rate}: asked {bitrate / 1000.0:0} kbit/s, wrote {measured / 1000.0:0} kbit/s ({measured / bitrate:P0})");
+        Assert.InRange(measured / bitrate, 0.7, 1.3);
     }
 
     [Fact]
@@ -112,51 +142,87 @@ public sealed class StreamingExportTests : IDisposable
     }
 
     [Fact]
-    public async Task AFailingFrameFailsTheExportWithItsOwnException()
+    public async Task AFailingFrameFailsTheExportWithItsIndexAndItsOwnException()
     {
         SkipWithoutH264Encoder();
+        var damaged = new InvalidDataException("Photo 10 is damaged.");
         var source = new NumberedFrames(Frames, 320, 180)
         {
             BeforeLoad = index =>
             {
                 if (index == 10)
                 {
-                    throw new InvalidDataException("Photo 10 is damaged.");
+                    throw damaged;
                 }
             },
         };
 
-        var exception = await Assert.ThrowsAsync<InvalidDataException>(() => VideoExporter.ExportAsync(
+        var exception = await Assert.ThrowsAsync<VideoExportException>(() => VideoExporter.ExportAsync(
             source,
             Path.Combine(_directory, "broken.mp4"),
             new VideoExportSettings(320, 180, new Fraction(30, 1)),
             cancellationToken: TestContext.Current.CancellationToken));
-        Assert.Equal("Photo 10 is damaged.", exception.Message);
+
+        Assert.Equal(VideoExportFailure.FrameUnreadable, exception.Failure);
+        Assert.Equal(10, exception.FrameIndex);
+        Assert.Same(damaged, exception.InnerException);
     }
 
     [Fact]
-    public async Task CancellingStopsTheExport()
+    public async Task ABugInAFrameSourceSurfacesAsItself()
     {
         SkipWithoutH264Encoder();
-        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        var source = new NumberedFrames(6000, 320, 180)
-        {
-            BeforeLoad = index =>
-            {
-                if (index == 20)
-                {
-                    cancellation.Cancel();
-                }
-            },
-        };
+        var bug = new ArgumentNullException("frame");
+        var source = new NumberedFrames(Frames, 320, 180) { BeforeLoad = index => { if (index == 3) throw bug; } };
 
-        var started = DateTime.UtcNow;
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => VideoExporter.ExportAsync(
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => VideoExporter.ExportAsync(
             source,
-            Path.Combine(_directory, "cancelled.mp4"),
+            Path.Combine(_directory, "bug.mp4"),
             new VideoExportSettings(320, 180, new Fraction(30, 1)),
-            cancellationToken: cancellation.Token));
-        Assert.InRange(DateTime.UtcNow - started, TimeSpan.Zero, TimeSpan.FromSeconds(10));
+            cancellationToken: TestContext.Current.CancellationToken));
+
+        Assert.Same(bug, exception);
+    }
+
+    [Fact]
+    public async Task CancellingStopsTheExportWithinASecondAndLeavesNoFile()
+    {
+        // Releasing an unfinished sink writer blocks about 5 s now and then (about 1 early cancel in 40 in #8):
+        // the export must return regardless, and the file goes once the writer lets go. Thirty rounds.
+        SkipWithoutH264Encoder();
+        var slowest = TimeSpan.Zero;
+        for (var round = 0; round < 30; round++)
+        {
+            using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            var cancelledAt = 0L;
+            var at = 5 + (round % 6 * 7);
+            var source = new NumberedFrames(6000, 320, 180)
+            {
+                BeforeLoad = index =>
+                {
+                    if (index == at)
+                    {
+                        Volatile.Write(ref cancelledAt, System.Diagnostics.Stopwatch.GetTimestamp());
+                        cancellation.Cancel();
+                    }
+                },
+            };
+            var path = Path.Combine(_directory, $"cancelled{round}.mp4");
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => VideoExporter.ExportAsync(
+                source,
+                path,
+                new VideoExportSettings(320, 180, new Fraction(30, 1)),
+                cancellationToken: cancellation.Token));
+            var took = System.Diagnostics.Stopwatch.GetElapsedTime(Volatile.Read(ref cancelledAt));
+            slowest = took > slowest ? took : slowest;
+
+            Assert.True(took < TimeSpan.FromSeconds(1), $"Round {round}: the cancel took {took.TotalMilliseconds:0} ms.");
+            await ExportCleanup.WhenDone(path).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+            Assert.False(File.Exists(path), $"Round {round}: the unfinished file is still there.");
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine($"slowest cancel of 30: {slowest.TotalMilliseconds:0} ms");
     }
 
     [Fact]

@@ -46,7 +46,7 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
         _width = settings.Width;
         _height = settings.Height;
         _format = settings.Format;
-        _nominalRate = NominalFrameRate(settings.Format, settings.FrameRate);
+        _nominalRate = NominalFrameRate(settings.FrameRate);
         try
         {
             PInvoke.MFCreateDXGIDeviceManager(out var token, out _manager).ThrowOnFailure();
@@ -446,18 +446,21 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
     }
 
     /// <summary>
-    /// The frame rate the media types carry: the real one, except HEVC below 1 fps, which gets the smallest whole
-    /// multiple of it that is at least 1 fps (1/10 says 1, 3/10 says 6/5). The HEVC Video Extensions' software
-    /// encoder kills the process with an access violation (not an exception: nothing can catch it) when its type
-    /// says less than 1 fps (seen at 1/2, 1/5 and 1/10 on 2.5.33.0), and the sink writer can fall back to that
-    /// encoder by itself. The rate in the type is only nominal: every sample carries its own time and duration from
-    /// <see cref="FrameTiming"/>, and the MP4 sink writes those. A whole multiple keeps them exact, because the sink
-    /// picks its timescale from the type's rate (1000 × the numerator): 1 fps would give milliseconds, which cannot
-    /// hold the 10/3 s frames of 3/10 fps.
+    /// The frame rate the media types carry: the real one, except below 1 fps, where it is the smallest whole
+    /// multiple of it that is at least 1 fps (1/10 says 1, 3/10 says 6/5). Both codecs need it. The HEVC Video
+    /// Extensions' software encoder kills the process with an access violation (not an exception: nothing can catch
+    /// it) when its type says less than 1 fps (seen at 1/2, 1/5 and 1/10 on 2.5.33.0), and the sink writer can fall
+    /// back to that encoder by itself. NVENC's H.264 encoder, given less than 1 fps, spent about 1/80 of the bitrate
+    /// (12.7 kbit/s of 1.0 Mbit/s at 1/2 fps, visibly blocky). The rate in the type is only nominal: every sample
+    /// carries its own time and duration from <see cref="FrameTiming"/>, and the MP4 sink writes those
+    /// (<see cref="DisableFrameRateConversion"/> keeps the video processor from repeating frames to fill the
+    /// nominal cadence). A whole multiple keeps the times exact, because the sink picks its timescale from the
+    /// type's rate (1000 × the numerator): 1 fps would give milliseconds, which cannot hold the 10/3 s frames of
+    /// 3/10 fps, while a whole multiple's timescale holds every time the real rate's does.
     /// </summary>
-    internal static Fraction NominalFrameRate(VideoFormat format, Fraction frameRate)
+    internal static Fraction NominalFrameRate(Fraction frameRate)
     {
-        if (format != VideoFormat.Mp4Hevc || frameRate >= _oneFps)
+        if (frameRate >= _oneFps)
         {
             return frameRate;
         }

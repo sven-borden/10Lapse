@@ -6,6 +6,8 @@ using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 using TenLapse.Media.Export;
 using TenLapse.Media.Inspection;
+using TenLapse.Presentation;
+using TenLapse.Services;
 using static TenLapse.Tests.Media.MediaSkips;
 
 namespace TenLapse.Tests.Media;
@@ -14,6 +16,7 @@ namespace TenLapse.Tests.Media;
 /// How an export fails: the category #22 turns into a sentence, the file it leaves (none), and bugs that must
 /// surface as themselves. A fake encode stage fails on cue; the folder cases run the real sink writer.
 /// </summary>
+[Collection(nameof(RealEncoderCollection))]
 public sealed class ExportFailureTests : IDisposable
 {
     private static readonly Fraction _rate = new(30, 1);
@@ -34,11 +37,53 @@ public sealed class ExportFailureTests : IDisposable
         var exception = await Assert.ThrowsAsync<VideoExportException>(
             () => ExportWithAsync(path, output => encoder = new FakeEncoder(output) { FailAt = 20, Failure = failure }));
 
+        await ExportCleanup.WhenDone(path);
         Assert.Equal(VideoExportFailure.EncoderFailed, exception.Failure);
         Assert.Same(failure, exception.InnerException);
         Assert.Equal(20, encoder!.Written);
         Assert.True(encoder.Disposed);
         Assert.False(File.Exists(path), "The incomplete file is still there.");
+    }
+
+    [Fact]
+    public async Task AnEncoderThatCannotOpenWhileAnotherIsStuckSaysToRestart()
+    {
+        SkipWithoutGraphicsDevice();
+        using var release = new ManualResetEventSlim();
+        var stalled = Path.Combine(_directory, "stalled.mp4");
+        var openFailure = new COMException("No encoder session left.", unchecked((int)0x80004005)); // E_FAIL
+        var settings = new VideoExportSettings(320, 180, _rate) { StallTimeout = TimeSpan.FromMilliseconds(300) };
+        try
+        {
+            // An export whose encoder stalls in its first write and does not return: one call stuck.
+            var stall = await Assert.ThrowsAsync<VideoExportException>(() => VideoExporter.ExportAsync(
+                new NumberedFrames(10, 320, 180),
+                stalled,
+                settings,
+                progress: null,
+                TestContext.Current.CancellationToken,
+                (output, _, _) => new FakeEncoder(output) { OnWrite = () => release.Wait() }));
+            Assert.Equal(VideoExportFailure.EncoderStalled, stall.Failure);
+            Assert.Equal(1, VideoExporter.StuckEncoderCalls);
+
+            // Another export whose encoder cannot open: restarting the app is what frees the stuck one.
+            var stuck = await Assert.ThrowsAsync<VideoExportException>(
+                () => ExportWithAsync(Path.Combine(_directory, "next.mp4"), _ => throw openFailure));
+            Assert.Equal(VideoExportFailure.EncoderStuck, stuck.Failure);
+            Assert.Same(openFailure, stuck.InnerException);
+            Assert.Equal(ProjectText.ExportFailedEncoderStuck, new VideoExportErrorMapper().Map(stuck)!.Text);
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        // Once the stuck call returns, an encoder that cannot open is an encoder failure again.
+        await ExportCleanup.WhenDone(stalled).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        Assert.Equal(0, VideoExporter.StuckEncoderCalls);
+        var failed = await Assert.ThrowsAsync<VideoExportException>(
+            () => ExportWithAsync(Path.Combine(_directory, "after.mp4"), _ => throw openFailure));
+        Assert.Equal(VideoExportFailure.EncoderFailed, failed.Failure);
     }
 
     [Theory]
@@ -55,6 +100,7 @@ public sealed class ExportFailureTests : IDisposable
         var exception = await Assert.ThrowsAsync<VideoExportException>(
             () => ExportWithAsync(path, output => new FakeEncoder(output) { FailAt = 5, Failure = failure }));
 
+        await ExportCleanup.WhenDone(path);
         Assert.Equal(expected, exception.Failure);
         Assert.Same(failure, exception.InnerException);
         Assert.False(File.Exists(path));
@@ -81,6 +127,7 @@ public sealed class ExportFailureTests : IDisposable
         var exception = await Assert.ThrowsAsync<VideoExportException>(
             () => ExportWithAsync(path, _ => throw new ArgumentException("Bad size.") { HResult = unchecked((int)0x80070057) }));
 
+        await ExportCleanup.WhenDone(path);
         Assert.Equal(VideoExportFailure.SettingsRejected, exception.Failure);
         Assert.False(File.Exists(path));
     }
@@ -200,6 +247,20 @@ public sealed class ExportFailureTests : IDisposable
         Assert.Equal(expected, ExportFailures.FromHResult(unchecked((int)hresult)));
 
     [Fact]
+    public void AWorkingDeviceHasNoRemovedReasonAndTheReasonsHaveTheirNames()
+    {
+        // A real driver reset (TDR) cannot be provoked here; the export asks GetDeviceRemovedReason on every
+        // frame-level failure and reports GraphicsDeviceLost with the reason when it is not S_OK.
+        SkipWithoutGraphicsDevice();
+        using var device = VideoDevice.Create();
+
+        Assert.Equal(0, device.RemovedReason());
+        Assert.Equal("DXGI_ERROR_DEVICE_HUNG", ExportFailures.DeviceRemovedName(unchecked((int)0x887A0006)));
+        Assert.Equal("DXGI_ERROR_DEVICE_RESET", ExportFailures.DeviceRemovedName(unchecked((int)0x887A0007)));
+        Assert.Equal("0x80004005", ExportFailures.DeviceRemovedName(unchecked((int)0x80004005)));
+    }
+
+    [Fact]
     public void AnInvalidArgumentRejectsTheSettingsOnlyDuringSetup()
     {
         Assert.Equal(VideoExportFailure.SettingsRejected, ExportFailures.FromHResult(unchecked((int)0x80070057), setup: true));
@@ -241,6 +302,7 @@ public sealed class ExportFailureTests : IDisposable
         var exception = await Assert.ThrowsAsync<VideoExportException>(
             () => ExportWithAsync(path, output => new FakeEncoder(output) { FailAt = 5, Failure = failure }, format: VideoFormat.Mp4Hevc));
 
+        await ExportCleanup.WhenDone(path);
         Assert.Equal(VideoExportFailure.EncoderFailed, exception.Failure);
         Assert.StartsWith("The HEVC encoder failed: ", exception.Message, StringComparison.Ordinal);
     }
@@ -277,8 +339,15 @@ public sealed class ExportFailureTests : IDisposable
 
         public VideoEncoderInfo? Encoder { get; } = new("Fake encoder", IsHardware: false);
 
+        /// <summary>Runs at the start of every <see cref="Write"/>.</summary>
+        public Action? OnWrite { get; init; }
+
+        /// <summary>Runs in <see cref="Finish"/>.</summary>
+        public Action? OnFinish { get; init; }
+
         public void Write(CanvasRenderTarget target, long time, long duration)
         {
+            OnWrite?.Invoke();
             if (Written == FailAt)
             {
                 throw Failure!;
@@ -288,7 +357,11 @@ public sealed class ExportFailureTests : IDisposable
             Written++;
         }
 
-        public void Finish() => Finished = true;
+        public void Finish()
+        {
+            OnFinish?.Invoke();
+            Finished = true;
+        }
 
         public void Dispose() => Disposed = true;
     }

@@ -118,6 +118,9 @@ public static class ProjectText
     /// <summary>Export: the encoder stopped taking frames.</summary>
     public static string ExportFailedEncoderStalled => "The video encoder stopped responding. Export again, and update your graphics driver if it keeps happening.";
 
+    /// <summary>Export: the encoder could not open while an earlier export's encoder call is still stuck.</summary>
+    public static string ExportFailedEncoderStuck => "An earlier export left the video encoder stuck. Restart 10Lapse, then export again.";
+
     /// <summary>Export: the output folder cannot be written to.</summary>
     public static string ExportFailedFolderNotWritable => "10Lapse can't save videos in that folder. Choose another folder, then export again.";
 
@@ -134,10 +137,50 @@ public static class ProjectText
     public static string ExportFailedNoGraphicsDevice => "This PC has no graphics device that can export video. Update your graphics driver, then export again.";
 
     /// <summary>Export: the driver reset or the GPU went away.</summary>
-    public static string ExportFailedGraphicsDeviceLost => "The graphics driver stopped during the export. Export again, and update your graphics driver if it keeps happening.";
+    public static string ExportFailedGraphicsDeviceLost => "The graphics driver reset during the export. Export again, and update your graphics driver if it keeps happening.";
 
     /// <summary>Export: not enough system or video memory.</summary>
     public static string ExportFailedOutOfMemory => "There isn't enough memory to export. Close some other apps or choose a lower resolution, then export again.";
+
+    /// <summary>Export: a frame's photo could not be loaded, when the app does not know which.</summary>
+    public static string ExportFailedPhotoUnreadable => "A photo in the project can't be read. Remove it or fix the file, then export again.";
+
+    /// <summary>Export: frame {0} (1-based), file name {1}, short reason {2} (<see cref="SkippedFileText.Reason"/>).</summary>
+    public static string ExportFailedPhotoUnreadableNamed => "Photo {0}, {1}, can't be read ({2}). Remove it from the project or fix the file, then export again.";
+
+    /// <summary>Export: frame {0} (1-based), file name {1}, no reason known.</summary>
+    public static string ExportFailedPhotoUnreadableNamedNoReason => "Photo {0}, {1}, can't be read. Remove it from the project or fix the file, then export again.";
+
+    /// <summary>Export: drawing a frame failed on the graphics device.</summary>
+    public static string ExportFailedDrawing => "10Lapse couldn't draw a frame of the video. Export again, and update your graphics driver if it keeps happening.";
+
+    /// <summary>
+    /// The sentence for a photo the export could not read: which frame (0-based <paramref name="frameIndex"/>, shown
+    /// 1-based), its file name and the reason when known.
+    /// </summary>
+    public static string ExportFailedPhoto(int frameIndex, string path, SkipReason? reason)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        var number = Count(frameIndex + 1);
+        var name = Path.GetFileName(path);
+        return reason is { } known
+            ? Format(ExportFailedPhotoUnreadableNamed, number, name, SkippedFileText.Reason(known))
+            : Format(ExportFailedPhotoUnreadableNamedNoReason, number, name);
+    }
+
+    /// <summary>Export finished beside the target: {0} the file asked for, {1} the file written ("Harbor (2).mp4").</summary>
+    public static string ExportSavedBesideFormat => "{0} is open in another app, so the video was saved as {1}.";
+
+    /// <summary>
+    /// The sentence for an export whose target another app held through the final move
+    /// (<c>ProjectExportResult.TargetInUse</c>): the video is under another name next to it.
+    /// </summary>
+    public static string ExportSavedBeside(string targetPath, string savedPath)
+    {
+        ArgumentNullException.ThrowIfNull(targetPath);
+        ArgumentNullException.ThrowIfNull(savedPath);
+        return Format(ExportSavedBesideFormat, Path.GetFileName(targetPath), Path.GetFileName(savedPath));
+    }
 
     /// <summary>The InfoBar action and the Settings button that copy the diagnostics.</summary>
     public static string CopyDiagnostics => "Copy diagnostics";

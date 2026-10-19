@@ -26,9 +26,16 @@ public sealed record PhotoDecodeOptions
 
     /// <summary>
     /// Shrinks during decode to the smallest size that still covers this box (a centred cover crop of it fills
-    /// the box exactly, as <see cref="Export.FrameFill"/> draws it): pass the output size. Null for full size.
+    /// the box exactly, as <see cref="Rendering.FrameRenderer"/> draws Fill): pass the output size. Null for full size.
     /// </summary>
     public PixelSize? CoverSize { get; init; }
+
+    /// <summary>
+    /// Shrinks during decode to the largest size that fits inside this box (the whole photo, letterboxed, as
+    /// <see cref="Rendering.FrameRenderer"/> draws Fit): pass the output size. Null for full size. Set this or
+    /// <see cref="CoverSize"/>, not both.
+    /// </summary>
+    public PixelSize? ContainSize { get; init; }
 
     /// <summary>
     /// The longest side the output may have, such as the device's largest bitmap or a proxy's 1280 px; wins over
@@ -38,6 +45,9 @@ public sealed record PhotoDecodeOptions
 
     /// <summary>The cover size for an output, as the export uses it.</summary>
     public static PhotoDecodeOptions Cover(PixelSize outputSize) => new() { CoverSize = outputSize };
+
+    /// <summary>The contain size for an output, as the export uses it for Fit.</summary>
+    public static PhotoDecodeOptions Contain(PixelSize outputSize) => new() { ContainSize = outputSize };
 }
 
 /// <summary>
@@ -209,7 +219,8 @@ public static class PhotoDecoder
 
     /// <summary>
     /// The factor a decode scales <paramref name="size"/> (oriented) by: the cover scale of
-    /// <see cref="PhotoDecodeOptions.CoverSize"/>, then <see cref="PhotoDecodeOptions.MaxSide"/>, never above 1.
+    /// <see cref="PhotoDecodeOptions.CoverSize"/> or the contain scale of <see cref="PhotoDecodeOptions.ContainSize"/>,
+    /// then <see cref="PhotoDecodeOptions.MaxSide"/>, never above 1.
     /// </summary>
     public static double Scale(PixelSize size, PhotoDecodeOptions options)
     {
@@ -218,6 +229,11 @@ public static class PhotoDecoder
         if (options.CoverSize is { } cover)
         {
             scale = Math.Min(scale, Math.Max((double)cover.Width / size.Width, (double)cover.Height / size.Height));
+        }
+
+        if (options.ContainSize is { } contain)
+        {
+            scale = Math.Min(scale, Math.Min((double)contain.Width / size.Width, (double)contain.Height / size.Height));
         }
 
         if (options.MaxSide is { } maxSide)
@@ -237,7 +253,7 @@ public static class PhotoDecoder
     /// A side scaled by <paramref name="scale"/> to cover <paramref name="coverSide"/>, the output's side it meets.
     /// The side that sets the cover scale comes out exactly <paramref name="coverSide"/>; the other is rounded to the
     /// nearest whole number with the parity of its cover side, never below it, so the centred crop
-    /// (<see cref="Export.FrameFill"/>) starts on a whole pixel and copies the pixels one to one: an odd margin
+    /// (<see cref="Rendering.FrameRenderer"/>) starts on a whole pixel and copies the pixels one to one: an odd margin
     /// would start it half a pixel in, and the drawing would resample every pixel, softening the frame
     /// (4288x2848 covering 3840x2160: 2550 rows, cropped from row 195, rather than 2551 from 195.5).
     /// </summary>
@@ -252,6 +268,34 @@ public static class PhotoDecoder
 
         var rounded = coverSide + (2 * (int)Math.Round((exact - coverSide) / 2));
         return Math.Min(Math.Max(rounded, coverSide), side);
+    }
+
+    /// <summary>
+    /// A side scaled by <paramref name="scale"/> to fit inside <paramref name="containSide"/>, the output's side it
+    /// meets. The side that sets the contain scale comes out exactly <paramref name="containSide"/>; the other is
+    /// the whole number within a pixel of the exact size that has the parity of its output side, never a whole pixel
+    /// above it, so the letterbox bars split evenly and the drawing (<see cref="Rendering.FrameRenderer"/>) copies
+    /// the pixels one to one.
+    /// </summary>
+    public static int ScaledToContain(int side, double scale, int containSide)
+    {
+        if (scale >= 1)
+        {
+            return side;
+        }
+
+        var exact = side * scale;
+        if (Math.Abs(exact - containSide) < 1e-6)
+        {
+            return containSide;
+        }
+
+        var floor = (int)Math.Floor(exact + 1e-6);
+        var sameParity = (floor - containSide) % 2 == 0;
+        var result = Math.Abs(exact - floor) < 1e-6
+            ? (sameParity ? floor : floor - 1) // whole already: keep it, or one less to match the parity
+            : (sameParity ? floor : floor + 1); // between floor and floor + 1: one of them has the parity
+        return Math.Clamp(result, 1, Math.Min(containSide, side));
     }
 
     // colourSource: the photo's bytes, for reading its embedded colour; null converts as WinRT does, at the source.
@@ -274,6 +318,13 @@ public static class PhotoDecoder
             (width, height) = (
                 Scaled(info.StoredSize.Width, scale, turned ? cover.Height : cover.Width),
                 Scaled(info.StoredSize.Height, scale, turned ? cover.Width : cover.Height));
+        }
+        else if (options.ContainSize is { } contain)
+        {
+            var turned = info.Orientation is >= 5 and <= 8;
+            (width, height) = (
+                ScaledToContain(info.StoredSize.Width, scale, turned ? contain.Height : contain.Width),
+                ScaledToContain(info.StoredSize.Height, scale, turned ? contain.Width : contain.Height));
         }
 
         if ((long)width * height > MaxDecodedPixels)

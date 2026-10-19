@@ -156,6 +156,12 @@ public sealed record ProjectSnapshot
 
     /// <summary>The rate these frames play and export at: <see cref="TimingSettings.EffectiveRate"/> for <see cref="Frames"/>.</summary>
     public PlaybackRate EffectiveRate => Timing.EffectiveRate(Frames.Length);
+
+    /// <summary>
+    /// The video's width and height in pixels, which the export writes and the preview draws: the resolution
+    /// (short side) and shape, with Match photos taking the most common photo size (<see cref="OutputSize.For(OutputResolution, FrameAspect, IEnumerable{Frame})"/>).
+    /// </summary>
+    public PixelSize VideoSize => OutputSize.For(Output.Resolution, FrameSettings.Aspect, Frames);
 }
 
 /// <summary>
