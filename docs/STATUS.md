@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #18 merged. Building: #20 filmstrip (Opus), #21 remember settings (Sonnet). PR #81 (#32) in review. Next: #24 export panel after #20.
+2026-10-19: in flight: PR #81 (#32) fix round, PR #82 (#20) and PR #83 (#21) in review, #84 (new bug: corrupt EXIF makes capture-time reading allocate ~15 GB) building. Next: #24 export panel after #82.
 
 ## Waves
 
@@ -33,14 +33,15 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 8 | #29 First launch drop zone | O | App empty state view | merged #75 |
 | 9 | #19 Preview with proxy cache | O | preview view and cache | merged #77 |
 | 9 | #23 Output panel | S | output inspector section | merged #76 |
-| 10 | #20 Filmstrip | O | filmstrip view | building |
+| 10 | #20 Filmstrip | O | filmstrip view | PR #82, in review |
 | 10 | #17 Timing panel | S | timing inspector section | merged #78 |
 | 11 | #24 Export panel and finished state | O | export panel | |
 | 11 | #18 Frame panel | S | frame inspector section | merged #80 |
-| 12 | #32 Golden render test | O | `tests/` golden | PR #81, in review |
+| 12 | #32 Golden render test | O | `tests/` golden | PR #81, fix round |
 | 12 | #25 Export while minimized, keep awake | S | export power request | |
-| 13 | #21 Remember settings | S | settings persistence | building |
+| 13 | #21 Remember settings | S | settings persistence | PR #83, in review |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
+| 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | building |
 | 14 | #31 Rating prompt | S | Store rating | |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | |
 | 15 | #36 Narrow window layout | S | shell visual states | |
