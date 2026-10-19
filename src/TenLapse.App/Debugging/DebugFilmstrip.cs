@@ -13,7 +13,7 @@ using TenLapse.Preview;
 namespace TenLapse.Debugging;
 
 /// <summary>
-/// The filmstrip's Debug switch (#20): <c>--filmstrip-bench [--filmstrip-bench-out=PATH] [--filmstrip-bench-seconds=S]</c>
+/// The filmstrip's Debug switches (#20): <c>--filmstrip-height=DIPS</c> sets the thumbnail height, and <c>--filmstrip-bench [--filmstrip-bench-out=PATH] [--filmstrip-bench-seconds=S]</c>
 /// with <c>--sample-frames=N</c> waits until the N photos are in, then scrolls the strip programmatically from the first
 /// thumbnail to the last at an even speed (20 s by default) and back in jumps of four views, and reports the private bytes
 /// along the way, the thumbnail loads (count and time by origin, cancelled), the UI thread's frame times
@@ -33,6 +33,11 @@ internal static partial class DebugLaunch
     public static void ApplyFilmstrip(FilmstripView strip, PreviewSession preview)
     {
         var expected = Value("--sample-frames=") is { } text && int.TryParse(text, out var count) ? Math.Min(count, MaxSampleFrames) : 0;
+        if (Value("--filmstrip-height=") is { } height && double.TryParse(height, CultureInfo.InvariantCulture, out var dips) && strip.ViewModel is { } viewModel)
+        {
+            viewModel.ThumbnailHeight = dips;
+        }
+
         if (Value("--filmstrip-remove=") is { } numbers)
         {
             var remove = numbers.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
