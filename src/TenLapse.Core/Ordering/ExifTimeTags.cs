@@ -25,8 +25,6 @@ internal readonly record struct ExifTimeTags(
     private const ushort ByteType = 1;
     private const ushort AsciiType = 2;
     private const ushort UndefinedType = 7;
-    private const ushort LongType = 4;
-    private const ushort IfdType = 13;
 
     // Byte 2 of the TIFF header: 42 for TIFF and the TIFF-based RAW formats; Olympus ORF writes "RO" or "RS" and
     // Panasonic RW2 0x55 in its place, with an otherwise standard layout.
@@ -41,6 +39,11 @@ internal readonly record struct ExifTimeTags(
     /// </summary>
     private const int MaxTextBytes = 64;
 
+    /// <summary>IFD entries read at once: 4 KB of entry table per read, so a 65,535-entry IFD takes 193 reads.</summary>
+    private const int EntriesPerRead = 341;
+
+    private const int EntryBytes = 12;
+
     /// <summary>
     /// Reads the time tags from a TIFF structure (an Exif block's "II*\0" or "MM\0*" header and the IFDs it points to):
     /// IFD0, the Exif IFD pointer in it, then the Exif IFD. With <paramref name="firstIfdIsExif"/>, IFD0 itself is read as
@@ -48,9 +51,10 @@ internal readonly record struct ExifTimeTags(
     /// at the TIFF header. Null when the structure is not TIFF or has no Exif IFD.
     /// </summary>
     /// <remarks>
-    /// Bounded: it reads the IFD entry tables (12 bytes per entry, at most 65,535 entries per IFD) and at most
-    /// <see cref="MaxTextBytes"/> per time tag, allocates only the six strings, and skips any value that does not fit
-    /// in the window, as a damaged count or offset would.
+    /// Bounded whatever the fields say: it reads the entry tables of two IFDs in blocks of <see cref="EntriesPerRead"/>
+    /// entries (at most 65,535 entries, so at most 193 reads, per IFD), remembers the last entry of each time tag, then
+    /// reads at most six values of at most <see cref="MaxTextBytes"/> each. It allocates only those six strings and
+    /// skips any value that does not fit in the window, as a damaged count or offset would.
     /// </remarks>
     public static ExifTimeTags? ReadTiff(ByteWindow tiff, bool firstIfdIsExif = false)
     {
@@ -100,21 +104,38 @@ internal readonly record struct ExifTimeTags(
         return ReadTimeTags(tiff, exifIfd, bigEndian);
     }
 
-    /// <summary>The Exif IFD's offset from IFD0's pointer tag, or -1.</summary>
+    /// <summary>
+    /// The Exif IFD's offset from IFD0's pointer tag, or -1. As in MetadataExtractor, the pointer may be any type whose
+    /// values are 4 bytes (LONG, SLONG, FLOAT, IFD); the first value is the offset, inside the entry when there is one
+    /// value and at the entry's (bounds-checked) offset when there are more. The caller bounds-checks the IFD it gives.
+    /// </summary>
     private static long FindExifIfd(ByteWindow tiff, long ifd, bool bigEndian)
     {
-        Span<byte> entry = stackalloc byte[12];
+        Span<byte> entries = stackalloc byte[EntriesPerRead * EntryBytes];
         var count = EntryCount(tiff, ifd, bigEndian);
-        for (var i = 0; i < count; i++)
+        for (var first = 0; first < count; first += EntriesPerRead)
         {
-            if (!tiff.TryRead(ifd + 2 + (i * 12L), entry))
+            var block = entries[..((int)Math.Min(EntriesPerRead, count - first) * EntryBytes)];
+            if (!tiff.TryRead(ifd + 2 + (first * (long)EntryBytes), block))
             {
                 return -1;
             }
 
-            if (Read16(entry, 0, bigEndian) == ExifIfdPointerTag && Read16(entry, 2, bigEndian) is LongType or IfdType)
+            for (var at = 0; at < block.Length; at += EntryBytes)
             {
-                return Read32(entry, 8, bigEndian);
+                var entry = block.Slice(at, EntryBytes);
+                var valueCount = Read32(entry, 4, bigEndian);
+                if (Read16(entry, 0, bigEndian) != ExifIfdPointerTag || !IsFourByteType(Read16(entry, 2, bigEndian)) || valueCount == 0)
+                {
+                    continue;
+                }
+
+                if (valueCount == 1)
+                {
+                    return Read32(entry, 8, bigEndian);
+                }
+
+                return tiff.TryReadUInt32(Read32(entry, 8, bigEndian), bigEndian, out var pointer) ? pointer : -1;
             }
         }
 
@@ -128,40 +149,51 @@ internal readonly record struct ExifTimeTags(
             return null;
         }
 
-        string? original = null, subSecOriginal = null, offsetOriginal = null;
-        string? digitized = null, subSecDigitized = null, offsetDigitized = null;
-        Span<byte> entry = stackalloc byte[12];
-        Span<byte> text = stackalloc byte[MaxTextBytes];
+        // The last entry of each of the six tags, in the order of TimeTags (a later duplicate replaces an earlier one,
+        // as MetadataExtractor did). Values are read once the table is done, so duplicates cost no reads.
+        Span<byte> last = stackalloc byte[TimeTags.Length * EntryBytes];
+        Span<bool> seen = stackalloc bool[TimeTags.Length];
+        Span<byte> entries = stackalloc byte[EntriesPerRead * EntryBytes];
         var count = EntryCount(tiff, ifd, bigEndian);
-        for (var i = 0; i < count; i++)
+        for (var first = 0; first < count; first += EntriesPerRead)
         {
-            if (!tiff.TryRead(ifd + 2 + (i * 12L), entry))
+            var block = entries[..((int)Math.Min(EntriesPerRead, count - first) * EntryBytes)];
+            if (!tiff.TryRead(ifd + 2 + (first * (long)EntryBytes), block))
             {
                 break;
             }
 
-            var tag = Read16(entry, 0, bigEndian);
-            if (tag is not (DateTimeOriginalTag or DateTimeDigitizedTag or OffsetTimeOriginalTag or OffsetTimeDigitizedTag
-                or SubSecTimeOriginalTag or SubSecTimeDigitizedTag))
+            for (var at = 0; at < block.Length; at += EntryBytes)
             {
-                continue;
-            }
-
-            // A later duplicate replaces an earlier one, as MetadataExtractor did.
-            var value = ReadText(tiff, entry, bigEndian, text);
-            switch (tag)
-            {
-                case DateTimeOriginalTag: original = value; break;
-                case DateTimeDigitizedTag: digitized = value; break;
-                case OffsetTimeOriginalTag: offsetOriginal = value; break;
-                case OffsetTimeDigitizedTag: offsetDigitized = value; break;
-                case SubSecTimeOriginalTag: subSecOriginal = value; break;
-                default: subSecDigitized = value; break;
+                var slot = TimeTags.IndexOf(Read16(block, at, bigEndian));
+                if (slot >= 0)
+                {
+                    block.Slice(at, EntryBytes).CopyTo(last.Slice(slot * EntryBytes, EntryBytes));
+                    seen[slot] = true;
+                }
             }
         }
 
-        return new ExifTimeTags(original, subSecOriginal, offsetOriginal, digitized, subSecDigitized, offsetDigitized);
+        Span<byte> text = stackalloc byte[MaxTextBytes];
+        return new ExifTimeTags(
+            ValueOf(0, tiff, last, seen, bigEndian, text),
+            ValueOf(1, tiff, last, seen, bigEndian, text),
+            ValueOf(2, tiff, last, seen, bigEndian, text),
+            ValueOf(3, tiff, last, seen, bigEndian, text),
+            ValueOf(4, tiff, last, seen, bigEndian, text),
+            ValueOf(5, tiff, last, seen, bigEndian, text));
     }
+
+    /// <summary>The text of the remembered entry in <paramref name="slot"/>, or null when the tag was not in the IFD.</summary>
+    private static string? ValueOf(int slot, ByteWindow tiff, ReadOnlySpan<byte> last, ReadOnlySpan<bool> seen, bool bigEndian, Span<byte> text) =>
+        seen[slot] ? ReadText(tiff, last.Slice(slot * EntryBytes, EntryBytes), bigEndian, text) : null;
+
+    /// <summary>The six tags, in the order of the record's parameters.</summary>
+    private static ReadOnlySpan<ushort> TimeTags =>
+        [DateTimeOriginalTag, SubSecTimeOriginalTag, OffsetTimeOriginalTag, DateTimeDigitizedTag, SubSecTimeDigitizedTag, OffsetTimeDigitizedTag];
+
+    /// <summary>LONG, SLONG, FLOAT and IFD: the TIFF types whose values are 4 bytes each.</summary>
+    private static bool IsFourByteType(ushort type) => type is 4 or 9 or 11 or 13;
 
     /// <summary>
     /// The entry's value as text, up to the first NUL. Null when the type is not one-byte text or the value does not

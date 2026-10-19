@@ -40,20 +40,24 @@ public readonly record struct CaptureTimeReading(DateTime Time, TimeSpan? UtcOff
 /// </para>
 /// <para>
 /// Bounded (#84): it reads the six time tags with its own walkers (<see cref="ExifContainers"/>) and checks every
-/// count and length against the bytes that are really there before it reads, so a damaged or hostile file costs at
-/// most about 2 MB (a HEIF meta box and a split Exif item), however large its fields claim to be. MetadataExtractor,
-/// used before, trusted ISO base media counts and allocated up to 15 GB on a two-byte corruption of a HEIC.
+/// count and length against the bytes that are really there before it reads. Whatever a damaged or hostile file's
+/// fields claim, a read tries at most four Exif blocks, makes a bounded number of stream reads, holds at most about
+/// 2 MB of pooled buffers live (a HEIF meta box and a split Exif item) and, once the pool is warm, allocates a few
+/// hundred bytes. MetadataExtractor, used before, trusted ISO base media counts and allocated up to 15 GB on a
+/// two-byte corruption of a HEIC.
 /// </para>
 /// <para>
 /// Formats are found by content, not by extension. JPEG, TIFF and the TIFF-based RAW formats (CR2, NEF, ARW, DNG,
-/// ORF, RW2, PEF) keep the time in an Exif IFD; PNG in an <c>eXIf</c> chunk; WebP in an <c>EXIF</c> chunk; HEIC, HEIF
-/// and AVIF in an Exif item of the ISO base media file; CR3 in Canon's <c>CMT2</c> box; RAF in its embedded JPEG.
+/// ORF, RW2, PEF) keep the time in an Exif IFD; PNG in an <c>eXIf</c> chunk or an ImageMagick "raw profile" text
+/// chunk; WebP in an <c>EXIF</c> chunk; HEIC, HEIF and AVIF in an Exif item of the ISO base media file; CR3 in
+/// Canon's <c>CMT2</c> box; RAF in its embedded JPEG. When a file has several Exif blocks, the first
+/// <c>DateTimeOriginal</c> in any of them wins over a <c>DateTimeDigitized</c>, as before.
 /// </para>
 /// <para>
-/// <b>Verified and not.</b> JPEG and HEIC are checked against real files (JPEG and HEIC encoded by Windows Imaging), and
-/// the TIFF layout behind DNG, ARW and NEF against hand-built containers. <b>Unverified:</b> real camera RAW (CR2, NEF, ARW, DNG,
-/// ORF, RW2, PEF), CR3, RAF, PNG and WebP follow their published layouts but no camera or app file has been tried; the first check is Sven's
-/// sample photos (#30). A format that does not yield a time gives null, which makes the default sort fall back to name order.
+/// <b>Verified.</b> Every format above was compared with exiftool and MetadataExtractor on 743 real files (#85), and
+/// small cuts of real files from the MetadataExtractor sample images and raw.pixls.us are tests
+/// (<c>tests/TenLapse.Tests/Ordering/Fixtures</c>). A format that does not yield a time gives null, which makes the
+/// default sort fall back to name order.
 /// </para>
 /// </remarks>
 public static class CaptureTimeReader
