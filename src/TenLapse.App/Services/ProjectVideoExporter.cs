@@ -25,14 +25,27 @@ internal sealed class ProjectVideoExporter : IVideoExporter
     /// <inheritdoc />
     public async Task<bool> CleanUpAsync(string path)
     {
-        await ExportCleanup.WhenDone(path).ConfigureAwait(false);
+        // The unfinished files there now, as the cancelled export ends: an export of the same file started after it
+        // writes a new unique name, which must not count as this one's leftover (#24 review, minor 7).
+        IReadOnlyList<string> left;
         try
         {
-            return ProjectExporter.PartialFilesOf(path).Count == 0;
+            left = ProjectExporter.PartialFilesOf(path);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             // The folder cannot be listed now (a drive that went away): nothing can be said, and the journal deletes the file later.
+            await ExportCleanup.WhenDone(path).ConfigureAwait(false);
+            return false;
+        }
+
+        await ExportCleanup.WhenDone(path).ConfigureAwait(false);
+        try
+        {
+            return !left.Any(File.Exists);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
             return false;
         }
     }
@@ -41,7 +54,7 @@ internal sealed class ProjectVideoExporter : IVideoExporter
     public Task WhenAllCleanedUp() => ExportCleanup.WhenAllDone();
 
     // Media's report in Presentation's words, on the same (worker) thread: the view model's Progress<T> posts it to the UI.
-    private sealed class Relay(IProgress<ExportStatus> target) : IProgress<ExportProgress>
+    internal sealed class Relay(IProgress<ExportStatus> target) : IProgress<ExportProgress>
     {
         public void Report(ExportProgress value) => target.Report(new ExportStatus(
             value.Stage switch

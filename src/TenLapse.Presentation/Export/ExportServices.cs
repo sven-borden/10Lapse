@@ -59,7 +59,9 @@ public interface IVideoExporter
 
     /// <summary>
     /// Completes when the clean-up of a cancelled or failed export of <paramref name="path"/> has finished, with true when
-    /// no unfinished file of it is left (false: the next launch deletes it). Never faults.
+    /// none of the unfinished files there when it was called is left (false: the next launch deletes them). Call it as
+    /// that export ends, before another export of the same file can start: a later export's file does not count. Never
+    /// faults.
     /// </summary>
     Task<bool> CleanUpAsync(string path);
 
@@ -76,6 +78,13 @@ public interface ISaveVideoPicker
     /// </summary>
     /// <returns>The full path chosen, or null when the user cancelled.</returns>
     Task<string?> PickVideoAsync(string suggestedName, string? startFolder);
+
+    /// <summary>
+    /// The export to <paramref name="path"/> was cancelled or failed: if this dialog itself created that file (an empty
+    /// one, in this session) and it is still empty, it is deleted, so no 0-byte video is left behind. Anything else is
+    /// left alone. Never throws.
+    /// </summary>
+    void Discard(string path);
 }
 
 /// <summary>Where the Save dialog opens: the folder of the last successful export, across launches (#21).</summary>

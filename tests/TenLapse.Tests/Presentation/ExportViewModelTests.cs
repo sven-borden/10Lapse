@@ -340,6 +340,7 @@ public sealed class ExportViewModelTests
         Assert.Equal("Export cancelled. The unfinished file was removed.", bar.Message);
         Assert.Equal("clear", app.Window.Calls[^1]);
         Assert.Null(app.Folders.ExportFolder);
+        Assert.Equal([@"C:\Videos\10Lapse\Harbor sunset.mp4"], app.Picker.Discarded);
     }
 
     [Fact]
@@ -378,6 +379,7 @@ public sealed class ExportViewModelTests
         Assert.Empty(app.InfoBars.Shown);
         Assert.Empty(app.Premieres);
         Assert.True(app.On(() => app.Project.IsDirty));
+        Assert.Equal([@"C:\Videos\10Lapse\Harbor sunset.mp4"], app.Picker.Discarded);
     }
 
     [Fact]

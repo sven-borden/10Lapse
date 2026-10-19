@@ -425,6 +425,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         {
             End(failed: true);
             State = ExportPanelState.Editing;
+            _services.Picker.Discard(path);
             Announced?.Invoke(this, ExportText.FailedAnnouncement);
             _services.Window.NotifyIfInBackground(ExportText.FailedNotification(fileName));
             RaiseEnded(ExportOutcome.Failed, null);
@@ -441,6 +442,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     private async Task SayCancelledAsync(string path)
     {
         var removed = await _services.Exporter.CleanUpAsync(path);
+        _services.Picker.Discard(path);
         if (!_closing && !_disposed)
         {
             _services.InfoBars.Show(InfoBarSeverity.Neutral, removed ? ExportText.Cancelled : ExportText.CancelledFileLeft);

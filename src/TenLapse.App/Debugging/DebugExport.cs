@@ -59,5 +59,10 @@ internal static class DebugExport
     private sealed class FixedPicker(string path) : ISaveVideoPicker
     {
         public Task<string?> PickVideoAsync(string suggestedName, string? startFolder) => Task.FromResult<string?>(path);
+
+        public void Discard(string path)
+        {
+            // This stand-in creates nothing.
+        }
     }
 }

@@ -111,12 +111,16 @@ internal sealed class FakeSavePicker : ISaveVideoPicker
     /// <summary>Runs while the dialog is open, before it answers (the user doing something else meanwhile).</summary>
     public Action? WhileOpen { get; set; }
 
+    public List<string> Discarded { get; } = [];
+
     public Task<string?> PickVideoAsync(string suggestedName, string? startFolder)
     {
         Asked.Add((suggestedName, startFolder));
         WhileOpen?.Invoke();
         return Task.FromResult(Answer);
     }
+
+    public void Discard(string path) => Discarded.Add(path);
 }
 
 internal sealed class FakeExportFolders : IExportFolderMemory
