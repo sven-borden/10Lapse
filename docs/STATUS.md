@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #21 merged. In flight: PR #82 (#20) fix round, PR #85 (#84 capture-time memory) in review. Next: #24 export panel after #82.
+2026-10-19: #20 merged. Building: #24 export panel (Opus). PR #85 (#84) fix round. Queued: #86 flaky test fix, #34 benchmark, #31 rating, #25 export while minimized.
 
 ## Waves
 
@@ -33,15 +33,16 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 8 | #29 First launch drop zone | O | App empty state view | merged #75 |
 | 9 | #19 Preview with proxy cache | O | preview view and cache | merged #77 |
 | 9 | #23 Output panel | S | output inspector section | merged #76 |
-| 10 | #20 Filmstrip | O | filmstrip view | PR #82, fix round |
+| 10 | #20 Filmstrip | O | filmstrip view | merged #82 |
 | 10 | #17 Timing panel | S | timing inspector section | merged #78 |
-| 11 | #24 Export panel and finished state | O | export panel | |
+| 11 | #24 Export panel and finished state | O | export panel | building |
 | 11 | #18 Frame panel | S | frame inspector section | merged #80 |
 | 12 | #32 Golden render test | O | `tests/` golden | merged #81 |
 | 12 | #25 Export while minimized, keep awake | S | export power request | |
 | 13 | #21 Remember settings | S | settings persistence | merged #83 |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
-| 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | PR #85, in review |
+| 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | PR #85, fix round |
+| 13 | #86 Flaky memory assertion (bug) | S | `tests/` | |
 | 14 | #31 Rating prompt | S | Store rating | |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | |
 | 15 | #36 Narrow window layout | S | shell visual states | |
@@ -270,3 +271,13 @@ Nothing blocks the build loop. Everything below waits until release is near
   ignored. Atomic unique-temp writes. *Reset to defaults* in a Settings
   *Defaults* section. The portrait-hint dismissal is not stored. PRIVACY.md
   updated (effective 2026-10-19). Debug `--settings-folder=`.
+- #20 PR #82: `Filmstrip/` (ItemsRepeater, `FilmstripViewModel` from project
+  deltas, `ThumbnailCache` 48 MB: proxy first, embedded EXIF only before a
+  proxy exists, then a small decode). `FrameHistory` undo (100 edits, removals
+  and reorders only; undo in a sorted mode re-sorts). User-removed frames do not
+  make gap markers. Edits pause playback and act on the grabbed frames. Delete
+  and Ctrl+Z only with the strip or nothing focused. Plain Space plays or
+  pauses everywhere; Shift+arrows extend the selection on thumbnails (DESIGN.md
+  updated: thumbnails are list items). Gap markers vanish in Manual order.
+  #24 uses `SetPending(snapshot, first)` / `ClearPending()` (dims the picture
+  only). Debug `--filmstrip-bench`, `--filmstrip-remove=`.
