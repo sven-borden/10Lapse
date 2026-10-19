@@ -72,6 +72,20 @@ public sealed class FirstLaunchViewModelTests
     }
 
     [Fact]
+    public void ADragEnterAloneVoidsAWaitingLeave()
+    {
+        // The pointer crosses from one element into another and no DragOver arrives within the grace.
+        var viewModel = new FirstLaunchViewModel();
+        viewModel.DragOver(acceptable: true);
+
+        var ticket = viewModel.DragLeft();
+        viewModel.DragEntered();
+        viewModel.ConfirmLeave(ticket);
+
+        Assert.True(viewModel.IsDragOver);
+    }
+
+    [Fact]
     public void ALeaveNothingFollowsEndsTheLook()
     {
         // Escape cancels a drag over the window: DragLeave fires inside it, and nothing after.

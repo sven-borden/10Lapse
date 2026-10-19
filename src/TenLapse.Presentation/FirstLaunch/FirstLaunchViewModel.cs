@@ -57,12 +57,18 @@ public sealed partial class FirstLaunchViewModel : ObservableObject
     /// </summary>
     public bool ShouldAnimate(bool animationsEnabled) => animationsEnabled && IsShown && IsWindowActive;
 
-    /// <summary>A drag moved over the window (DragEnter or DragOver); <paramref name="acceptable"/> is the shell's verdict on it.</summary>
+    /// <summary>
+    /// A drag moved over the window (DragOver); <paramref name="acceptable"/> is the shell's verdict on the look
+    /// (<see cref="DragVerdict.ShowsLook"/>: taken, and counted).
+    /// </summary>
     public void DragOver(bool acceptable)
     {
-        _dragActivity++;
+        DragEntered();
         IsDragOver = acceptable;
     }
+
+    /// <summary>A drag entered an element of the window: like any drag event, it voids a leave waiting in <see cref="ConfirmLeave"/>.</summary>
+    public void DragEntered() => _dragActivity++;
 
     /// <summary>The drag left an element but the pointer is still inside the window: a ticket for <see cref="ConfirmLeave"/>.</summary>
     public long DragLeft() => ++_dragActivity;

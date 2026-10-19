@@ -27,11 +27,12 @@ public sealed partial class ShellView : UserControl
     private readonly IErrorPresenter _presenter;
 
     // What the drag over the window holds, counted once per drag: the photo files, null while not known (still
-    // counting, or folders among them), 0 when nothing in it can be imported. DragEnter bubbles up from every child the
-    // pointer crosses, so the count is kept for the drag's DataView (by reference) until the drop or until the pointer
-    // leaves the window.
+    // counting, or folders among them), 0 when nothing in it can be imported; _countDone once the count has finished
+    // (or failed). DragEnter bubbles up from every child the pointer crosses, so the count is kept for the drag's
+    // DataView (by reference) until the drop or until the pointer leaves the window.
     private DataPackageView? _countedView;
     private int? _draggedPhotos;
+    private bool _countDone;
     private int _dragGeneration;
     private readonly long _emptyRegionVisibilityToken;
 
@@ -170,7 +171,15 @@ public sealed partial class ShellView : UserControl
     // caption can say "Add 120 photos"; until then, and when it holds folders, it says "Add photos". A drag with
     // nothing to import (no folder, no photo file) is refused, so the cursor says so before the drop. While Settings is
     // open every drop is refused, with a caption that says how to add the photos.
-    private async void OnDragEnter(object sender, DragEventArgs e) => await ErrorPath.GuardAsync(_presenter, () => CountDraggedAsync(e), ProjectText.DragCountFailed);
+    // Entering an element also voids a leave waiting for its grace (the pointer crossed from one element to another).
+    private async void OnDragEnter(object sender, DragEventArgs e) => await ErrorPath.GuardAsync(
+        _presenter,
+        () =>
+        {
+            FirstLaunch.ViewModel.DragEntered();
+            return CountDraggedAsync(e);
+        },
+        ProjectText.DragCountFailed);
 
     // DragLeave bubbles from the children too: only a pointer that has left the window ends this drag's count. A
     // leave inside the window is either the pointer crossing into another element (DragEnter and DragOver follow at
@@ -178,34 +187,36 @@ public sealed partial class ShellView : UserControl
     // moment before it goes (FirstLaunchViewModel, remarks).
     private async void OnDragLeave(object sender, DragEventArgs e) => await ErrorPath.GuardAsync(_presenter, () => LeaveAsync(e), ProjectText.DragLeaveFailed);
 
-    // The drop zone's drag-over look follows what the cursor says: shown while the window would take the drop.
-    private void OnDragOver(object sender, DragEventArgs e) => FirstLaunch.ViewModel.DragOver(Accept(e));
+    // The drop zone's drag-over look follows the cursor once the drag is counted: shown while the window would take
+    // the drop and knows it holds something to import (DragVerdict).
+    private void OnDragOver(object sender, DragEventArgs e) => FirstLaunch.ViewModel.DragOver(Accept(e).ShowsLook);
 
-    // Sets what a drop would do (the cursor's caption) and says whether the window takes it.
-    private bool Accept(DragEventArgs e)
+    // Sets what a drop would do (the cursor's caption) and returns the verdict on the drag.
+    private DragVerdict Accept(DragEventArgs e)
     {
-        if (ViewModel.IsSettingsOpen)
+        var verdict = DragVerdict.Of(ViewModel.IsSettingsOpen, e.DataView.Contains(StandardDataFormats.StorageItems), _countDone, _draggedPhotos);
+        if (verdict.SettingsOpen)
         {
             e.AcceptedOperation = DataPackageOperation.None;
             e.DragUIOverride.Caption = ProjectText.DragCaptionSettingsOpen;
             e.DragUIOverride.IsCaptionVisible = true;
             e.DragUIOverride.IsGlyphVisible = false;
             e.Handled = true;
-            return false;
         }
-
-        if (!e.DataView.Contains(StandardDataFormats.StorageItems) || _draggedPhotos == 0)
+        else if (!verdict.Accepts)
         {
             e.AcceptedOperation = DataPackageOperation.None;
-            return false;
+        }
+        else
+        {
+            e.AcceptedOperation = DataPackageOperation.Copy;
+            e.DragUIOverride.Caption = ProjectText.DragCaption(_draggedPhotos);
+            e.DragUIOverride.IsCaptionVisible = true;
+            e.DragUIOverride.IsGlyphVisible = true;
+            e.Handled = true;
         }
 
-        e.AcceptedOperation = DataPackageOperation.Copy;
-        e.DragUIOverride.Caption = ProjectText.DragCaption(_draggedPhotos);
-        e.DragUIOverride.IsCaptionVisible = true;
-        e.DragUIOverride.IsGlyphVisible = true;
-        e.Handled = true;
-        return true;
+        return verdict;
     }
 
     private async void OnDrop(object sender, DragEventArgs e) => await ErrorPath.GuardAsync(_presenter, () => DropAsync(e), ProjectText.ImportDropFailed);
@@ -240,10 +251,17 @@ public sealed partial class ShellView : UserControl
             if (generation == _dragGeneration)
             {
                 _draggedPhotos = count;
+                _countDone = true;
             }
         }
         catch (Exception exception)
         {
+            // Not known, then: the cursor keeps "Add photos", the look shows, and the drop finds out.
+            if (generation == _dragGeneration)
+            {
+                _countDone = true;
+            }
+
             _errors.Report(exception, ProjectText.DragCountFailed);
         }
     }
@@ -296,6 +314,7 @@ public sealed partial class ShellView : UserControl
         _dragGeneration++;
         _countedView = null;
         _draggedPhotos = null;
+        _countDone = false;
     }
 
     // Walks the panels down to the controls, skipping what is collapsed; a control's own parts are its business.
