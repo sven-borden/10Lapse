@@ -17,7 +17,7 @@ namespace TenLapse.Presentation;
 /// <c>Project.Output</c>, the user's preference; the effective output is never stored. The portrait hint's
 /// dismissal is not remembered: projects are not saved, so it lives and dies with the open project.
 /// </remarks>
-public sealed class RememberedSettings : IImportFolderMemory, IDisposable
+public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFolderMemory, IDisposable
 {
     /// <summary>How long after the last change the file is written.</summary>
     public static readonly TimeSpan DefaultDebounce = TimeSpan.FromMilliseconds(600);

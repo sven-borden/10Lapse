@@ -395,7 +395,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     /// <returns>How many frames were removed.</returns>
     public int Remove()
     {
-        if (Items.Count == 0)
+        if (Items.Count == 0 || !_shell.Edits.Allow())
         {
             return 0;
         }
@@ -435,6 +435,11 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     /// <returns>False when there was nothing to undo.</returns>
     public bool Undo()
     {
+        if (!_shell.Edits.Allow())
+        {
+            return false;
+        }
+
         var undone = _history.Undo();
         UpdateUndo();
         if (undone is null)
@@ -486,7 +491,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
 
         var current = Items.Select(item => item.Id).ToList();
         var order = FrameMoves.Move(current, moving.Select(item => item.Id).ToHashSet(), insertIndex);
-        if (order.SequenceEqual(current))
+        if (order.SequenceEqual(current) || !_shell.Edits.Allow())
         {
             return false;
         }
