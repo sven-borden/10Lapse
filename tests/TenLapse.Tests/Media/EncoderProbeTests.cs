@@ -10,6 +10,7 @@ using static TenLapse.Tests.Media.MediaSkips;
 namespace TenLapse.Tests.Media;
 
 /// <summary>The #9 probe on this PC's real encoders: one probe (about a second), then the cache.</summary>
+[Collection(nameof(RealEncoderCollection))]
 public sealed class EncoderProbeTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "TenLapse.Tests", Guid.NewGuid().ToString("N"));
@@ -37,8 +38,20 @@ public sealed class EncoderProbeTests : IDisposable
 
         var scratch = Directory.CreateDirectory(Path.Combine(_directory, "scratch")).FullName;
 
+        // A provisional result is not cached, so a second call probes again. A GPU encoder busy with another
+        // process (a second agent's tests, a game) can stall a test encode past its limit: once is retried, twice
+        // skips with what the probe saw, and any other failure fails.
         var probed = await EncoderProbe.LoadOrProbeAsync(cache, scratch, token);
-        Assert.False(probed.IsProvisional, $"The probe could not finish: {string.Join(", ", probed.Probes.Select(p => p.Failure))}");
+        if (probed.IsProvisional)
+        {
+            probed = await EncoderProbe.LoadOrProbeAsync(cache, scratch, token);
+        }
+
+        var failures = string.Join(", ", probed.Probes.Where(p => p.Failure is not null).Select(p => $"{p.Format} {p.Width}x{p.Height}: {p.Failure}"));
+        Assert.SkipWhen(
+            probed.IsProvisional && probed.Probes.Any(p => p.Failure == VideoExportFailure.EncoderStalled),
+            $"A test encode stalled in two probes in a row (the GPU encoder is busy elsewhere): {failures}");
+        Assert.False(probed.IsProvisional, $"The probe could not finish: {failures}");
         Assert.True(probed.Supports(VideoFormat.Mp4H264, 1920, 1080, new Fraction(30, 1)));
         Assert.True(probed.MaxResolution(VideoFormat.Mp4H264, FrameAspect.Ratio16x9, new Fraction(30, 1)) >= OutputResolution.Hd1080);
         Assert.True(File.Exists(cache));

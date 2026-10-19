@@ -9,6 +9,7 @@ using static TenLapse.Tests.Media.MediaSkips;
 namespace TenLapse.Tests.Media;
 
 /// <summary>The journal of unfinished export files: what a killed or hurried process leaves, the next launch deletes.</summary>
+[Collection(nameof(RealEncoderCollection))]
 public sealed class PartialFileJournalTests : IDisposable
 {
     private readonly PhotoFixtures _scratch = new();

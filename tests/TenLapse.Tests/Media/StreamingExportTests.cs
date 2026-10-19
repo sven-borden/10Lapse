@@ -10,6 +10,7 @@ namespace TenLapse.Tests.Media;
 /// The #8 pipeline end to end at a small size: draw, fill, encode to H.264 MP4
 /// through IMFSinkWriter, read back with the Media Foundation source reader.
 /// </summary>
+[Collection(nameof(RealEncoderCollection))]
 public sealed class StreamingExportTests : IDisposable
 {
     private const int Frames = 60;

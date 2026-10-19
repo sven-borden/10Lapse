@@ -17,6 +17,7 @@ namespace TenLapse.Tests.Media;
 /// The project export (#22) over the committed fixture photos: the snapshot's rate, size and fit; the partial file
 /// that becomes the video only when it is complete; cancel within a second; every failure with its sentence.
 /// </summary>
+[Collection(nameof(RealEncoderCollection))]
 public sealed class ProjectExportTests : IDisposable
 {
     private readonly PhotoFixtures _scratch = new();

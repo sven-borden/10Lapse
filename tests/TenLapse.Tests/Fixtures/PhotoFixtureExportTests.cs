@@ -9,6 +9,7 @@ using static TenLapse.Tests.Media.MediaSkips;
 namespace TenLapse.Tests.Fixtures;
 
 /// <summary>The fixture folder through the export: the good photos play, a broken one fails the export with its frame and reason.</summary>
+[Collection(nameof(Media.RealEncoderCollection))]
 public sealed class PhotoFixtureExportTests : IDisposable
 {
     private static readonly VideoExportSettings _small = new(320, 180, new Fraction(30, 1));

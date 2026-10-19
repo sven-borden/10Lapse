@@ -14,6 +14,7 @@ namespace TenLapse.Tests.Media;
 /// How an export fails: the category #22 turns into a sentence, the file it leaves (none), and bugs that must
 /// surface as themselves. A fake encode stage fails on cue; the folder cases run the real sink writer.
 /// </summary>
+[Collection(nameof(RealEncoderCollection))]
 public sealed class ExportFailureTests : IDisposable
 {
     private static readonly Fraction _rate = new(30, 1);
