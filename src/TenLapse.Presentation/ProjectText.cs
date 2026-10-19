@@ -258,6 +258,9 @@ public static class ProjectText
     /// <summary>Error context (log only): moving focus after opening or leaving Settings failed.</summary>
     public static string SettingsFocusFailed => "Moving focus after opening or leaving Settings failed.";
 
+    /// <summary>Error context (log only): putting focus on the drop zone's Choose folder at launch failed.</summary>
+    public static string FirstLaunchFocusFailed => "Putting focus on Choose folder at launch failed.";
+
     /// <summary>Log line for a cancellation, which is not an error. {0} the context.</summary>
     public static string LogCancelled => "Cancelled, not an error: {0}";
 
@@ -527,6 +530,89 @@ public static class ProjectText
     }
 
     // ---- End of the import block (#12). ----
+
+    // ---- First launch (#29): the drop zone and its small timelapse. ----
+
+    /// <summary>The drop zone's title at rest.</summary>
+    public static string FirstLaunchTitle => "Drop a folder of photos to make a timelapse";
+
+    /// <summary>The drop zone's title while photos are dragged over the window.</summary>
+    public static string FirstLaunchDropTitle => "Drop to start your timelapse";
+
+    /// <summary>
+    /// What a timelapse is, in one sentence after the lead: photos shot at an interval, played back as a clip
+    /// (Main.dc.html, the approved copy). {0} the product name, {1} the photo count ("300"), {2} the frame rate
+    /// ("30"), {3} the whole seconds of the clip ("10").
+    /// </summary>
+    public static string FirstLaunchExplanationFormat => "{0} plays your photos back as a video. Shoot one photo every few seconds, and {1} of them become a {3}-second clip at {2} frames per second.";
+
+    /// <summary>The privacy line under the actions.</summary>
+    public static string FirstLaunchPrivacy => "Your photos never leave this PC.";
+
+    /// <summary>The drop zone's accent button, the same command as <see cref="ChooseFolder"/>.</summary>
+    public static string FirstLaunchChooseFolder => "Choose folder";
+
+    /// <summary>The drop zone's standard button, the same command as <see cref="ChoosePhotos"/>.</summary>
+    public static string FirstLaunchChoosePhotos => "Choose photos";
+
+    /// <summary>A frame's place in a sequence. {0} the frame number, {1} the total, both zero-padded to four digits ("0312", "0742").</summary>
+    public static string FrameOfTotal => "Frame {0} of {1}";
+
+    /// <summary>A time code and the clip length. {0} the time code ("00:10.40"), {1} the length as a time code ("00:24.73").</summary>
+    public static string TimecodeOfTotal => "{0} / {1}";
+
+    /// <summary>Log-only context: drawing the first-launch timelapse failed (the drop zone stays usable without it).</summary>
+    public static string DaybreakDrawFailed => "Drawing the first-launch timelapse failed.";
+
+    /// <summary>Log-only context: advancing the first-launch timelapse failed.</summary>
+    public static string DaybreakTickFailed => "Advancing the first-launch timelapse failed.";
+
+    /// <summary>Log-only context: following a drag that left the window or one of its parts failed.</summary>
+    public static string DragLeaveFailed => "Following a drag leaving the window failed.";
+
+    /// <summary>Log-only context: showing or hiding the drop zone's drag-over look failed.</summary>
+    public static string DropZoneLookFailed => "Showing the drop zone's drag-over look failed.";
+
+    /// <summary>
+    /// The explanation sentence for <paramref name="photos"/> photos at <paramref name="rate"/>, its length taken from
+    /// <see cref="FrameTiming.Duration"/> so the example can never disagree with the app's own math. The example
+    /// must make a whole number of seconds at a whole frame rate ("300 of them become a 10-second clip at 30 frames per second").
+    /// </summary>
+    public static string FirstLaunchExplanation(int photos, Fraction rate)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(photos);
+        if (rate.Denominator != 1 || rate.Numerator <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(rate), rate, "The example needs a whole frame rate.");
+        }
+
+        var ticks = FrameTiming.Duration(photos, rate);
+        if (ticks % FrameTiming.TicksPerSecond != 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(photos), photos, "The example must make a whole number of seconds.");
+        }
+
+        return Format(FirstLaunchExplanationFormat, Product.Name, Count(photos), rate.Numerator, ticks / FrameTiming.TicksPerSecond);
+    }
+
+    /// <summary>
+    /// "Frame 0312 of 0742": <paramref name="number"/> (from 1) of <paramref name="total"/>, both zero-padded to four
+    /// digits or the total's width if wider, so the caption keeps its width (DESIGN.md, The Tabular Rule and its example).
+    /// </summary>
+    public static string FrameCaption(int number, int total)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(total);
+        ArgumentOutOfRangeException.ThrowIfLessThan(number, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(number, total);
+        var digits = "D" + Math.Max(4, total.ToString(CultureInfo.InvariantCulture).Length).ToString(CultureInfo.InvariantCulture);
+        return Format(FrameOfTotal, number.ToString(digits, CultureInfo.InvariantCulture), total.ToString(digits, CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>"00:10.40 / 00:24.73": the time at <paramref name="ticks"/> and the clip's <paramref name="lengthTicks"/>, as time codes.</summary>
+    public static string TimecodeCaption(long ticks, long lengthTicks) =>
+        Format(TimecodeOfTotal, TimingFormat.Timecode(ticks), TimingFormat.Timecode(lengthTicks));
+
+    // ---- End of the first-launch block (#29). ----
 
     // "5,000": grouped, invariant until #39 localizes numbers with the words.
     private static string Count(int count) => count.ToString("N0", CultureInfo.InvariantCulture);

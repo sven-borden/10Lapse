@@ -38,6 +38,21 @@ public static class TimingFormat
     }
 
     /// <summary>
+    /// A time code: "00:05.26", minutes and seconds with hundredths, both two digits; from an hour the hours lead
+    /// ("1:02:03.40"). The hundredths are cut, not rounded, so a frame's start never reads later than it is and
+    /// nothing carries ("00:59.99", never "01:00.00" before the minute).
+    /// </summary>
+    public static string Timecode(long ticks)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(ticks);
+
+        var hundredths = ticks / (FrameTiming.TicksPerSecond / 100);
+        var seconds = hundredths / 100;
+        var clock = $"{Two(seconds / 60 % 60)}:{Two(seconds % 60)}.{Two(hundredths % 100)}";
+        return seconds >= 3600 ? $"{Number(seconds / 3600)}:{clock}" : clock;
+    }
+
+    /// <summary>
     /// The frame-rate label for the readout: "30 fps", "29.97 fps" (up to two decimals, trailing
     /// zeros dropped) from 1 fps up, and the per-photo form "2 s per photo" below 1 fps.
     /// </summary>
@@ -109,4 +124,6 @@ public static class TimingFormat
         (value / unit) + ((value % unit) * 2 >= unit ? 1 : 0);
 
     private static string Number(long value) => value.ToString(CultureInfo.InvariantCulture);
+
+    private static string Two(long value) => value.ToString("D2", CultureInfo.InvariantCulture);
 }
