@@ -531,6 +531,87 @@ public static class ProjectText
 
     // ---- End of the import block (#12). ----
 
+    // ---- Photo extensions (#14): the InfoBars that send the user to the Microsoft Store. One block. ----
+
+    /// <summary>The button of an extension InfoBar. It opens the Store app; nothing is downloaded by 10Lapse.</summary>
+    public static string CodecGetFromStore => "Get it from the Store";
+
+    /// <summary>One photo needs one free extension. {0} its Store name ("HEIF Image Extensions").</summary>
+    public static string CodecNeedsOneFree => "This photo needs the free {0} from Microsoft.";
+
+    /// <summary>Several photos need one free extension. {0} the count, {1} its Store name.</summary>
+    public static string CodecNeedsManyFree => "These {0} photos need the free {1} from Microsoft.";
+
+    /// <summary>One photo needs one extension the Store sells (HEVC). {0} its Store name.</summary>
+    public static string CodecNeedsOneFee => "This photo needs the {0} from Microsoft, which costs a small fee.";
+
+    /// <summary>Several photos need one extension the Store sells. {0} the count, {1} its Store name.</summary>
+    public static string CodecNeedsManyFee => "These {0} photos need the {1} from Microsoft, which costs a small fee.";
+
+    /// <summary>One photo needs several extensions. {0} how many in words, {1} the list.</summary>
+    public static string CodecNeedsOneSeveral => "This photo needs {0} extensions from Microsoft: {1}.";
+
+    /// <summary>Several photos need several extensions. {0} the count, {1} how many in words, {2} the list ("the free HEIF Image Extensions, then the HEVC Video Extensions (a small fee)").</summary>
+    public static string CodecNeedsManySeveral => "These {0} photos need {1} extensions from Microsoft: {2}.";
+
+    /// <summary>One free extension inside a list. {0} its Store name.</summary>
+    public static string CodecListFree => "the free {0}";
+
+    /// <summary>One extension the Store sells, inside a list. {0} its Store name.</summary>
+    public static string CodecListFee => "the {0} (a small fee)";
+
+    /// <summary>The InfoBar that follows the first button of a list. {0} the next extension as <see cref="CodecListFree"/> or <see cref="CodecListFee"/>.</summary>
+    public static string CodecNextFormat => "Next, get {0}, then add the photos again.";
+
+    /// <summary>When Windows could not open the Store page. {0} the extension's Store name, to search for.</summary>
+    public static string CodecStoreFallbackFormat => "Couldn't open the Microsoft Store. Search the Store for {0}, install it, then add the photos again.";
+
+    /// <summary>The log context when opening the Store page threw.</summary>
+    public static string CodecStoreOpenFailed => "Opening the Microsoft Store page of a photo extension failed.";
+
+    /// <summary>The words of the InfoBar for <paramref name="count"/> photos that need <paramref name="needed"/>, in install order.</summary>
+    public static string CodecNeeded(int count, IReadOnlyList<PhotoCodecExtension> needed)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(count, 1);
+        ArgumentNullException.ThrowIfNull(needed);
+        ArgumentOutOfRangeException.ThrowIfZero(needed.Count);
+        var number = count.ToString("N0", CultureInfo.InvariantCulture);
+        if (needed.Count == 1)
+        {
+            var extension = needed[0];
+            return (count == 1, extension.HasFee) switch
+            {
+                (true, false) => Format(CodecNeedsOneFree, extension.Name),
+                (true, true) => Format(CodecNeedsOneFee, extension.Name),
+                (false, false) => Format(CodecNeedsManyFree, number, extension.Name),
+                (false, true) => Format(CodecNeedsManyFee, number, extension.Name),
+            };
+        }
+
+        var list = string.Join(", then ", needed.Select(CodecListed));
+        var words = needed.Count == 2 ? "two" : "several";
+        return count == 1 ? Format(CodecNeedsOneSeveral, words, list) : Format(CodecNeedsManySeveral, number, words, list);
+    }
+
+    /// <summary>The InfoBar raised after the button for an earlier extension of a list was pressed.</summary>
+    public static string CodecNext(PhotoCodecExtension next)
+    {
+        ArgumentNullException.ThrowIfNull(next);
+        return Format(CodecNextFormat, CodecListed(next));
+    }
+
+    /// <summary>The InfoBar for a Store page that would not open, naming the extension to search for.</summary>
+    public static string CodecStoreFallback(PhotoCodecExtension extension)
+    {
+        ArgumentNullException.ThrowIfNull(extension);
+        return Format(CodecStoreFallbackFormat, extension.Name);
+    }
+
+    private static string CodecListed(PhotoCodecExtension extension) =>
+        Format(extension.HasFee ? CodecListFee : CodecListFree, extension.Name);
+
+    // ---- End of the photo extensions block (#14). ----
+
     // ---- First launch (#29): the drop zone and its small timelapse. ----
 
     /// <summary>The drop zone's title at rest.</summary>

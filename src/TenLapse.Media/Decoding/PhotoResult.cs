@@ -54,7 +54,21 @@ public sealed record PhotoFailure
     public PhotoCodecExtension? MissingExtension { get; }
 
     /// <summary>The entry for the project's "couldn't read" list.</summary>
-    public SkippedFile ToSkippedFile() => new(Path, Reason, Detail);
+    public SkippedFile ToSkippedFile() => new(Path, Reason, Detail, MissingExtension is null ? null : NeededExtensions());
+
+    // The missing extension, then (when it is the decoder) the codec the format's images need inside it: a PC without
+    // the HEIF decoder may lack HEVC too, and a failure cannot tell, because the file never reached a decoder. The
+    // InfoBar asks the PC (#14).
+    private List<PhotoCodecExtension> NeededExtensions()
+    {
+        List<PhotoCodecExtension> needed = [MissingExtension!];
+        if (Format is { Codec: { } codec, Container: { } container } && container == MissingExtension)
+        {
+            needed.Add(codec);
+        }
+
+        return needed;
+    }
 }
 
 /// <summary>A photo read or decoded, or why not. Never both.</summary>

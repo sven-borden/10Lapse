@@ -44,6 +44,8 @@ public sealed partial class ImportViewModel : ObservableObject
     private readonly IDialogService _dialogs;
     private readonly IInfoBarService _infoBars;
     private readonly IErrorPresenter _errors;
+    private readonly ICodecExtensions _codecs;
+    private readonly CodecExtensionPrompts _extensionPrompts;
 
     // One import at a time: a second waits for its turn (the progress then shows it).
     private readonly SemaphoreSlim _turn = new(1, 1);
@@ -61,6 +63,7 @@ public sealed partial class ImportViewModel : ObservableObject
     /// <param name="ui">Runs the project changes on the UI thread.</param>
     /// <param name="dialogs">Asks what a drop onto a project with photos should do.</param>
     /// <param name="infoBars">Says what was skipped, found or stopped.</param>
+    /// <param name="codecs">Knows which photo extensions this PC has and opens their Store pages (#14).</param>
     /// <param name="errors">The error path for the commands and the imports.</param>
     public ImportViewModel(
         ShellViewModel shell,
@@ -70,6 +73,7 @@ public sealed partial class ImportViewModel : ObservableObject
         IUiDispatcher ui,
         IDialogService dialogs,
         IInfoBarService infoBars,
+        ICodecExtensions codecs,
         IErrorPresenter errors)
     {
         ArgumentNullException.ThrowIfNull(shell);
@@ -79,6 +83,7 @@ public sealed partial class ImportViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(ui);
         ArgumentNullException.ThrowIfNull(dialogs);
         ArgumentNullException.ThrowIfNull(infoBars);
+        ArgumentNullException.ThrowIfNull(codecs);
         ArgumentNullException.ThrowIfNull(errors);
         _shell = shell;
         _source = source;
@@ -88,6 +93,8 @@ public sealed partial class ImportViewModel : ObservableObject
         _dialogs = dialogs;
         _infoBars = infoBars;
         _errors = errors;
+        _codecs = codecs;
+        _extensionPrompts = new CodecExtensionPrompts(codecs, infoBars, errors);
         ProgressText = string.Empty;
         ChooseFolderCommand = errors.AsyncCommand(ChooseFolderAsync, ProjectText.ChooseFolderFailed);
         ChoosePhotosCommand = errors.AsyncCommand(ChoosePhotosAsync, ProjectText.ChoosePhotosFailed);
@@ -274,6 +281,8 @@ public sealed partial class ImportViewModel : ObservableObject
         var registration = token.Register(Release);
         try
         {
+            // The user may have installed an extension since the last import: ask Windows again, never reuse an answer.
+            _codecs.Refresh();
             await ImportAsync(run).ConfigureAwait(false);
         }
         catch (ObjectDisposedException) when (run.Target.IsClosed)
@@ -534,11 +543,17 @@ public sealed partial class ImportViewModel : ObservableObject
         }
     }
 
+    // Photos that need a Store extension get one InfoBar per missing extension (#14); the rest get the one list.
     private void ReportSkipped(List<SkippedFile> skipped)
     {
-        if (SkippedFilesInfoBar.Create(skipped) is { } request)
+        if (SkippedFilesInfoBar.Create(skipped.Where(file => !CodecExtensionPrompts.Covers(file))) is { } request)
         {
             _infoBars.Show(request);
+        }
+
+        if (skipped.Any(CodecExtensionPrompts.Covers))
+        {
+            _extensionPrompts.Show(skipped);
         }
     }
 

@@ -26,10 +26,13 @@ public sealed class ImportViewModelTests
         var reasons = PhotoFixtureCatalogue.All.Where(fixture => fixture.Reason is not null).ToDictionary(fixture => fixture.Name, fixture => fixture.Reason);
         Assert.All(project.SkippedFiles, file => Assert.Equal(reasons[Path.GetFileName(file.Path)], file.Reason));
 
-        var bar = Assert.Single(harness.InfoBars.Shown);
+        // On a PC without the HEIF decoder, text.heic needs the extension (#14) and has its own InfoBar instead of a line in the list.
+        var needsExtension = project.SkippedFiles.Count(file => file.Reason == SkipReason.NeedsExtension);
+        var bar = harness.InfoBars.Shown[0];
+        Assert.Equal(1 + (needsExtension > 0 ? 1 : 0), harness.InfoBars.Shown.Count);
         Assert.Equal(InfoBarSeverity.Caution, bar.Severity);
-        Assert.Equal("4 photos couldn't be read and were skipped.", bar.Message);
-        Assert.Equal(4, bar.Details.Count);
+        Assert.Equal(4 - needsExtension == 1 ? "1 photo couldn't be read and was skipped." : $"{4 - needsExtension} photos couldn't be read and were skipped.", bar.Message);
+        Assert.Equal(4 - needsExtension, bar.Details.Count);
 
         // Named after the folder; not every photo has a capture time, so the default sort is by name.
         Assert.Equal("Photos", project.Name);
@@ -46,7 +49,7 @@ public sealed class ImportViewModelTests
         var gate = source.HoldReadBatch(1);
         using var harness = ImportHarness.With(source);
         var dispatcher = new ClosingDispatcher(harness.Ui);
-        var import = harness.Ui.Run(() => new ImportViewModel(harness.Shell, source, harness.Picker, harness.Folders, dispatcher, harness.Dialogs, harness.InfoBars, harness.Errors));
+        var import = harness.Ui.Run(() => new ImportViewModel(harness.Shell, source, harness.Picker, harness.Folders, dispatcher, harness.Dialogs, harness.InfoBars, harness.Codecs, harness.Errors));
 
         var running = harness.Ui.Run(() => import.ImportAsync([@"C:\Scripted"]));
         await source.ReadBatchReached.Task.WaitAsync(TestContext.Current.CancellationToken);

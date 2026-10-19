@@ -117,7 +117,7 @@ internal sealed class ImportHarness : IDisposable
         (Shell, Import) = ui.Run(() =>
         {
             var shell = new ShellViewModel(Dialogs, Errors);
-            return (shell, new ImportViewModel(shell, source, Picker, Folders, ui, Dialogs, InfoBars, Errors));
+            return (shell, new ImportViewModel(shell, source, Picker, Folders, ui, Dialogs, InfoBars, Codecs, Errors));
         });
     }
 
@@ -130,6 +130,8 @@ internal sealed class ImportHarness : IDisposable
     public FakeErrorSink Errors { get; } = new();
 
     public FakeInfoBarService InfoBars { get; } = new();
+
+    public FakeCodecExtensions Codecs { get; } = new();
 
     public FakePhotoPicker Picker { get; } = new();
 

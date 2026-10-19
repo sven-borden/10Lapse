@@ -123,6 +123,13 @@ public partial class App : Application
         // the project on this (the UI) thread's queue. The pickers remember the last folder for the session; #21
         // passes an IImportFolderMemory that lasts across launches instead of SessionImportFolders.
         var ui = new DispatcherQueueUiDispatcher(DispatcherQueue.GetForCurrentThread(), logOnly);
+        ICodecExtensions codecs = new WindowsCodecExtensions();
+#if DEBUG
+        if (Debugging.DebugMissingCodecs.FromSwitches(Environment.GetCommandLineArgs()) is { } missingCodecs)
+        {
+            codecs = new Debugging.DebugMissingCodecs(codecs, missingCodecs);
+        }
+#endif
         var import = new ImportViewModel(
             shell,
             new PhotoImporter { Log = _log },
@@ -131,6 +138,7 @@ public partial class App : Application
             ui,
             dialogs,
             infoBars,
+            codecs,
             errors);
 
         // The Output panel (#23) offers only what the probe confirms; until then it says it is checking. A probe
@@ -152,6 +160,11 @@ public partial class App : Application
         _errors = errors;
 #if DEBUG
         errors.Guard(() => Debugging.DebugLaunch.Apply(shell, infoBars), "Applying the Debug switches failed.");
+        if (Debugging.DebugMissingCodecs.FromSwitches(Environment.GetCommandLineArgs()) is { } fakedMissing)
+        {
+            // --missing-codec: the InfoBars an import of 12 HEIC and 3 RAW photos would raise with those extensions missing.
+            errors.Guard(() => new CodecExtensionPrompts(codecs, infoBars, errors).Show(Debugging.DebugMissingCodecs.SampleSkips(fakedMissing)), "Showing the faked missing-codec InfoBars failed.");
+        }
 #endif
         return window;
     }

@@ -552,6 +552,57 @@ public sealed class PhotoDecoderTests : IDisposable
         }
     }
 
+    [Theory]
+    [MemberData(nameof(MissingComponents))]
+    public void TheSkippedFileCarriesTheExtensionsInInstallOrder(string name, string stage, uint hresult, bool decoderInstalled, string brand, string? expected)
+    {
+        // #14: a missing decoder adds the format's codec as a second candidate (the import asks the PC whether it has
+        // it); a missing codec, or a missing RAW decoder, is alone; a broken file carries none.
+        var header = brand switch { "heic" => _heicHeader, "avif" => _avifHeader, "mif1" => _plainHeifHeader, _ => null };
+        var exception = new COMException("Component missing.", unchecked((int)hresult));
+
+        var skipped = PhotoFailures.Classify(exception, @"C:\Photos\" + name, Enum.Parse<PhotoFailures.Stage>(stage), _ => decoderInstalled ? PhotoCodecs.Decoders[0] : null, header).ToSkippedFile();
+
+        var names = skipped.MissingExtensions.Select(extension => extension.Name).ToArray();
+        string[] expectedNames = (name.ToLowerInvariant(), expected) switch
+        {
+            (_, null) => [],
+            (var n, "HEIF Image Extensions") when n.EndsWith(".heic", StringComparison.Ordinal) => ["HEIF Image Extensions", "HEVC Video Extensions"],
+            (var n, "HEIF Image Extensions") when n.EndsWith(".avif", StringComparison.Ordinal) => ["HEIF Image Extensions", "AV1 Video Extension"],
+            (_, var only) => [only],
+        };
+        Assert.Equal(expectedNames, names);
+        Assert.Equal(expected is null ? SkipReason.UnsupportedFormat : SkipReason.NeedsExtension, skipped.Reason);
+    }
+
+    [Fact]
+    public void TheHeifDecoderOnThisPcIsFoundWhenItIsThereAndAnUnknownExtensionCountsAsInstalled()
+    {
+        // Asked of Windows each time: a refresh in between changes nothing about a PC that did not change.
+        var before = PhotoCodecs.IsInstalled(KnownPhotoFormats.HeifExtension);
+        PhotoCodecs.Refresh();
+        var after = PhotoCodecs.IsInstalled(KnownPhotoFormats.HeifExtension);
+
+        Assert.Equal(before, after);
+        Assert.Equal(PhotoCodecs.DecoderFor(".heic") is not null, after);
+        Assert.Equal(PhotoCodecs.DecoderFor(".cr2") is not null, PhotoCodecs.IsInstalled(KnownPhotoFormats.RawExtension));
+
+        // The AV1 codec cannot be told here, so it is never reported as missing.
+        Assert.True(PhotoCodecs.IsInstalled(KnownPhotoFormats.Av1Extension));
+    }
+
+    [Fact]
+    public void TheDecoderListIsReadAgainAfterARefreshSoAnInstallDuringTheSessionIsSeen()
+    {
+        var before = PhotoCodecs.Decoders;
+        PhotoCodecs.Refresh();
+
+        var after = PhotoCodecs.Decoders;
+
+        Assert.NotSame(before, after);
+        Assert.Equal(before.Select(d => d.CodecId), after.Select(d => d.CodecId));
+    }
+
     [Fact]
     public async Task AHeicWhoseCodecIsMissingNeedsTheCodecExtension()
     {
