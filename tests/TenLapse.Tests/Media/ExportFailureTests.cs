@@ -295,8 +295,15 @@ public sealed class ExportFailureTests : IDisposable
 
         public VideoEncoderInfo? Encoder { get; } = new("Fake encoder", IsHardware: false);
 
+        /// <summary>Runs at the start of every <see cref="Write"/>.</summary>
+        public Action? OnWrite { get; init; }
+
+        /// <summary>Runs in <see cref="Finish"/>.</summary>
+        public Action? OnFinish { get; init; }
+
         public void Write(CanvasRenderTarget target, long time, long duration)
         {
+            OnWrite?.Invoke();
             if (Written == FailAt)
             {
                 throw Failure!;
@@ -306,7 +313,11 @@ public sealed class ExportFailureTests : IDisposable
             Written++;
         }
 
-        public void Finish() => Finished = true;
+        public void Finish()
+        {
+            OnFinish?.Invoke();
+            Finished = true;
+        }
 
         public void Dispose() => Disposed = true;
     }

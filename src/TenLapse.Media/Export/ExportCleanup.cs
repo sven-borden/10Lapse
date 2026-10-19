@@ -64,15 +64,20 @@ public static class ExportCleanup
         }
     }
 
-    /// <summary>Deletes <paramref name="path"/> once every clean-up of it already running is done, reporting a failure.</summary>
-    internal static void DeleteWhenDone(string path)
+    /// <summary>
+    /// Deletes <paramref name="path"/> once every clean-up of it already running is done, reporting a failure;
+    /// the returned task completes when it has tried (it never faults).
+    /// </summary>
+    internal static Task DeleteWhenDone(string path)
     {
         var prior = WhenDone(path);
-        Track(path, prior.ContinueWith(
+        var deletion = prior.ContinueWith(
             _ => Try(path, "delete the unfinished file", () => DeleteIfThere(path)),
             CancellationToken.None,
             TaskContinuationOptions.None,
-            TaskScheduler.Default));
+            TaskScheduler.Default);
+        Track(path, deletion);
+        return deletion;
     }
 
     /// <summary>Deletes a file; one that is not there (or whose folder is gone) is fine.</summary>

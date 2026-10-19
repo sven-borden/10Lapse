@@ -52,7 +52,7 @@ public sealed class ProjectExportTests : IDisposable
         Assert.Equal((output, GoodPhotos.Count, size, rate), (result.Path, result.FrameCount, result.Size, result.Rate));
         Assert.Equal(FrameTiming.Duration(GoodPhotos.Count, rate), result.Duration);
         Assert.Equal(new FileInfo(output).Length, result.FileBytes);
-        Assert.False(File.Exists(ProjectExporter.PartialPathFor(output)));
+        Assert.Empty(ProjectExporter.PartialFilesOf(output));
         var info = VideoFileReader.Read(output);
         Assert.Equal((GoodPhotos.Count, size.Width, size.Height), (info.FrameCount, info.Width, info.Height));
         Assert.Equal(Enumerable.Range(0, GoodPhotos.Count).Select(i => FrameTiming.FrameStart(i, rate)), info.SampleTimes);
@@ -95,7 +95,6 @@ public sealed class ProjectExportTests : IDisposable
     {
         SkipWithoutH264Encoder();
         var output = _scratch.PathOf("replace.mp4");
-        var partial = ProjectExporter.PartialPathFor(output);
         await File.WriteAllTextAsync(output, "the previous video", TestContext.Current.CancellationToken);
         var snapshot = Snapshot(GoodPhotos);
 
@@ -104,9 +103,9 @@ public sealed class ProjectExportTests : IDisposable
             snapshot,
             output,
             options: new ProjectExportOptions { CreateEncoder = (path, _, _) => new ExportFailureTests.FakeEncoder(path) { FailAt = 3, Failure = new COMException("Broken.", unchecked((int)0x80004005)) } }));
-        await ExportCleanup.WhenDone(partial);
+        await ExportCleanup.WhenDone(output);
         Assert.Equal("the previous video", await File.ReadAllTextAsync(output, TestContext.Current.CancellationToken));
-        Assert.False(File.Exists(partial), "the partial file is left after a failure");
+        Assert.True(ProjectExporter.PartialFilesOf(output).Count == 0, "the partial file is left after a failure");
 
         // A cancel: the same.
         using (var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken))
@@ -115,28 +114,86 @@ public sealed class ProjectExportTests : IDisposable
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ProjectExporter.ExportAsync(Snapshot(ManyPhotos(60)), output, cancelAt, cancellation.Token));
         }
 
-        await ExportCleanup.WhenDone(partial);
+        await ExportCleanup.WhenDone(output);
         Assert.Equal("the previous video", await File.ReadAllTextAsync(output, TestContext.Current.CancellationToken));
-        Assert.False(File.Exists(partial), "the partial file is left after a cancel");
+        Assert.True(ProjectExporter.PartialFilesOf(output).Count == 0, "the partial file is left after a cancel");
 
         // Success: replaced.
         var result = await ExportOrSkipAsync(snapshot, output);
         Assert.Equal(GoodPhotos.Count, VideoFileReader.Read(output).FrameCount);
         Assert.Equal(result.FileBytes, new FileInfo(output).Length);
-        Assert.False(File.Exists(partial), "the partial file is left after success");
+        Assert.True(ProjectExporter.PartialFilesOf(output).Count == 0, "the partial file is left after success");
     }
 
     [Fact]
-    public async Task APartialFileLeftByACrashIsOverwritten()
+    public async Task APartialFileLeftByACrashDoesNotStopTheNextExport()
     {
         SkipWithoutH264Encoder();
         var output = _scratch.PathOf("stale.mp4");
-        await File.WriteAllTextAsync(ProjectExporter.PartialPathFor(output), "left by a crash", TestContext.Current.CancellationToken);
+        var stale = output + ".0badf00d" + ProjectExporter.PartialSuffix;
+        await File.WriteAllTextAsync(stale, "left by a crash", TestContext.Current.CancellationToken);
 
         await ExportOrSkipAsync(Snapshot(GoodPhotos), output);
 
+        // Every export has its own partial file; the one a crash left is the journal's to delete (PartialFileJournalTests).
         Assert.Equal(GoodPhotos.Count, VideoFileReader.Read(output).FrameCount);
-        Assert.False(File.Exists(ProjectExporter.PartialPathFor(output)));
+        Assert.Equal([stale], ProjectExporter.PartialFilesOf(output));
+    }
+
+    [Fact]
+    public async Task ThePartialFileIsHiddenWhileItIsWrittenAndTheVideoIsNot()
+    {
+        SkipWithoutGraphicsDevice();
+        var output = _scratch.PathOf("hidden.mp4");
+        bool? hiddenWhileWriting = null;
+
+        await ExportAsync(
+            Snapshot(GoodPhotos),
+            output,
+            options: new ProjectExportOptions
+            {
+                CreateEncoder = (path, _, _) => new ExportFailureTests.FakeEncoder(path)
+                {
+                    OnWrite = () => hiddenWhileWriting ??= File.GetAttributes(path).HasFlag(FileAttributes.Hidden),
+                },
+            });
+
+        Assert.True(hiddenWhileWriting);
+        Assert.False(File.GetAttributes(output).HasFlag(FileAttributes.Hidden));
+        Assert.Empty(ProjectExporter.PartialFilesOf(output));
+    }
+
+    [Fact]
+    public async Task AnExportRightAfterAStalledOneOfTheSameFileGoesAhead()
+    {
+        // The stalled export's encoder still holds its partial file; the next one writes its own and does not wait.
+        SkipWithoutGraphicsDevice();
+        var output = _scratch.PathOf("again.mp4");
+        await Assert.ThrowsAsync<VideoExportException>(() => ExportAsync(
+            Snapshot(GoodPhotos),
+            output,
+            options: new ProjectExportOptions
+            {
+                CreateEncoder = (path, _, _) => new StallingEncoder(path, 2, _release),
+                Tune = settings => settings with { StallTimeout = TimeSpan.FromSeconds(1) },
+            }));
+        Assert.Single(ProjectExporter.PartialFilesOf(output));
+
+        var clock = Stopwatch.StartNew();
+        var result = await ExportAsync(
+            Snapshot(GoodPhotos),
+            output,
+            options: new ProjectExportOptions { CreateEncoder = (path, _, _) => new ExportFailureTests.FakeEncoder(path) });
+
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(5), $"The second export took {clock.Elapsed.TotalSeconds:0.0} s.");
+        Assert.Equal(output, result.Path);
+        Assert.True(File.Exists(output));
+        Assert.Single(ProjectExporter.PartialFilesOf(output));
+
+        _release.Set();
+        await ExportCleanup.WhenDone(output).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        Assert.Empty(ProjectExporter.PartialFilesOf(output));
+        Assert.True(File.Exists(output), "the stalled export's clean-up deleted the newer video");
     }
 
     [Fact]
@@ -155,7 +212,7 @@ public sealed class ProjectExportTests : IDisposable
         Assert.Equal(VideoExportFailure.OutputFileInUse, exception.Failure);
         Assert.True(clock.Elapsed < TimeSpan.FromSeconds(5), $"it took {clock.Elapsed.TotalSeconds:0.0} s to say so");
         Assert.Equal("playing", await File.ReadAllTextAsync(output, TestContext.Current.CancellationToken));
-        Assert.False(File.Exists(ProjectExporter.PartialPathFor(output)));
+        Assert.Empty(ProjectExporter.PartialFilesOf(output));
     }
 
     [Fact]
@@ -183,7 +240,7 @@ public sealed class ProjectExportTests : IDisposable
             Snapshot(GoodPhotos),
             output,
             options: new ProjectExportOptions { CreateEncoder = (path, _, _) => new ExportFailureTests.FakeEncoder(path) { FailAt = 3, Failure = failure } }));
-        await ExportCleanup.WhenDone(ProjectExporter.PartialPathFor(output));
+        await ExportCleanup.WhenDone(output);
 
         Assert.Equal(expected, exception.Failure);
         Assert.Equal((3, GoodPhotos[3]), (exception.FrameIndex, exception.SourcePath));
@@ -191,7 +248,7 @@ public sealed class ProjectExportTests : IDisposable
         var message = new VideoExportErrorMapper().Map(exception)!;
         Assert.Equal(VideoExportErrorMapper.For(expected), message);
         Assert.False(File.Exists(output));
-        Assert.False(File.Exists(ProjectExporter.PartialPathFor(output)));
+        Assert.Empty(ProjectExporter.PartialFilesOf(output));
     }
 
     [Fact]
@@ -202,7 +259,7 @@ public sealed class ProjectExportTests : IDisposable
         var output = _scratch.PathOf("broken.mp4");
 
         var exception = await Assert.ThrowsAsync<VideoExportException>(() => ExportAsync(Snapshot([GoodPhotos[0], GoodPhotos[1], broken.Path, GoodPhotos[2]]), output));
-        await ExportCleanup.WhenDone(ProjectExporter.PartialPathFor(output));
+        await ExportCleanup.WhenDone(output);
 
         Assert.Equal(VideoExportFailure.FrameUnreadable, exception.Failure);
         Assert.Equal((2, broken.Path), (exception.FrameIndex, exception.SourcePath));
@@ -210,7 +267,7 @@ public sealed class ProjectExportTests : IDisposable
         Assert.Equal(ProjectText.ExportFailedPhoto(2, broken.Path, SkipReason.Truncated), text);
         Assert.StartsWith("Photo 3, truncated.jpg, can't be read (Damaged file: it ends early).", text, StringComparison.Ordinal);
         Assert.False(File.Exists(output));
-        Assert.False(File.Exists(ProjectExporter.PartialPathFor(output)));
+        Assert.Empty(ProjectExporter.PartialFilesOf(output));
     }
 
     [Theory]
@@ -239,8 +296,8 @@ public sealed class ProjectExportTests : IDisposable
 
         // The stuck call returns at last: the clean-up then releases everything and removes the partial file.
         _release.Set();
-        await ExportCleanup.WhenDone(ProjectExporter.PartialPathFor(output)).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
-        Assert.False(File.Exists(ProjectExporter.PartialPathFor(output)));
+        await ExportCleanup.WhenDone(output).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        Assert.Empty(ProjectExporter.PartialFilesOf(output));
     }
 
     [Fact]
@@ -269,9 +326,9 @@ public sealed class ProjectExportTests : IDisposable
             slowest = took > slowest ? took : slowest;
 
             Assert.True(took < TimeSpan.FromSeconds(1), $"Round {round}: the cancel took {took.TotalMilliseconds:0} ms.");
-            await ExportCleanup.WhenDone(ProjectExporter.PartialPathFor(output)).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+            await ExportCleanup.WhenDone(output).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
             Assert.False(File.Exists(output));
-            Assert.False(File.Exists(ProjectExporter.PartialPathFor(output)));
+            Assert.Empty(ProjectExporter.PartialFilesOf(output));
         }
 
         TestContext.Current.TestOutputHelper?.WriteLine($"slowest cancel of 10: {slowest.TotalMilliseconds:0} ms");

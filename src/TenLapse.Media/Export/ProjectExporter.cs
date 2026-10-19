@@ -29,12 +29,13 @@ public sealed record ProjectExportResult(
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Safe writing.</b> The video is written to <c>&lt;name&gt;.partial</c> next to the target (<see cref="PartialPathFor"/>;
-/// <c>Harbor.mp4.partial</c>) and moved over the target only once it is complete, so an existing file is replaced
-/// only by a finished video, atomically. A cancel or a failure deletes the partial file (in the background when the
-/// encoder is slow to let go: <see cref="ExportCleanup"/>). A partial file left by a crash is overwritten by the
-/// next export to the same name. The folder is checked before anything else: a folder that is missing or cannot be
-/// written to, or a target another app holds open, fails at once with its <see cref="VideoExportFailure"/>.
+/// <b>Safe writing.</b> Each export writes its own hidden unfinished file next to the target
+/// (<c>Harbor.mp4.1f3a9c0e.partial</c>, <see cref="PartialSuffix"/>) and moves it over the target only once it is
+/// complete, so an existing file is replaced only by a finished video, atomically. A cancel or a failure deletes the
+/// partial file (in the background when the encoder is slow to let go: <see cref="ExportCleanup.WhenDone"/> of the
+/// target). Because every export has its own partial file, an export never waits for, trips over or deletes another
+/// one's, even of the same target. The folder is checked before anything else: a folder that is missing or cannot
+/// be written to, or a target another app holds open, fails at once with its <see cref="VideoExportFailure"/>.
 /// </para>
 /// <para>
 /// May be called from any thread; it runs on the thread pool. Progress is reported from worker threads.
@@ -42,14 +43,22 @@ public sealed record ProjectExportResult(
 /// </remarks>
 public static class ProjectExporter
 {
-    /// <summary>How long an export waits for an earlier export's clean-up of the same partial file before it goes ahead.</summary>
-    internal static readonly TimeSpan EarlierCleanupWait = TimeSpan.FromSeconds(10);
+    /// <summary>The end of every unfinished file's name: <c>&lt;target name&gt;.&lt;8 hex digits&gt;.partial</c>.</summary>
+    public const string PartialSuffix = ".partial";
 
-    /// <summary>The unfinished file an export of <paramref name="outputPath"/> writes: the same path with <c>.partial</c> added.</summary>
-    public static string PartialPathFor(string outputPath)
+    /// <summary>A new unfinished file name for an export of <paramref name="target"/>, unique to that export.</summary>
+    internal static string NewPartialPath(string target) =>
+        $"{target}.{Guid.NewGuid().ToString("N")[..8]}{PartialSuffix}";
+
+    /// <summary>The unfinished files of exports of <paramref name="outputPath"/> in its folder now (running, or left behind).</summary>
+    public static IReadOnlyList<string> PartialFilesOf(string outputPath)
     {
         ArgumentException.ThrowIfNullOrEmpty(outputPath);
-        return Path.GetFullPath(outputPath) + ".partial";
+        var target = Path.GetFullPath(outputPath);
+        var folder = Path.GetDirectoryName(target);
+        return folder is not null && Directory.Exists(folder)
+            ? Directory.GetFiles(folder, $"{Path.GetFileName(target)}.*{PartialSuffix}")
+            : [];
     }
 
     /// <summary>
@@ -115,26 +124,28 @@ public static class ProjectExporter
         ProjectExportOptions options,
         CancellationToken cancellationToken)
     {
-        var partial = PartialPathFor(target);
-
-        // The previous export of this file may still be releasing its partial file (cancelled moments ago).
-        await ExportCleanup.WhenDone(partial)
-            .WaitAsync(EarlierCleanupWait, cancellationToken)
-            .ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
-        cancellationToken.ThrowIfCancellationRequested();
-
+        var partial = NewPartialPath(target);
         PrepareOutput(target, partial, settings.Format);
         try
         {
+            var createEncoder = options.CreateEncoder ?? (static (path, s, device) => new SinkWriterEncoder(path, s, device));
             var written = await VideoExporter.ExportAsync(
                 source,
                 partial,
                 settings,
                 tracker,
                 cancellationToken,
-                options.CreateEncoder ?? (static (path, s, device) => new SinkWriterEncoder(path, s, device))).ConfigureAwait(false);
+                (path, s, device) =>
+                {
+                    // Hidden once the encoder has it open: the sink writer creates its file with CREATE_ALWAYS,
+                    // which Windows refuses on an existing hidden file.
+                    var encoder = createEncoder(path, s, device);
+                    SetHidden(path, true);
+                    return encoder;
+                }).ConfigureAwait(false);
 
             tracker.Enter(ExportStage.Finishing);
+            SetHidden(partial, false);
             Replace(partial, target, settings.Format);
             return new ProjectExportResult(
                 target,
@@ -149,14 +160,15 @@ public static class ProjectExporter
         catch
         {
             // The exporter deletes the partial file once its encoder has opened it; one it never opened (the
-            // encoder failed to start) or one a failed move left is deleted here, after any clean-up still holding it.
-            ExportCleanup.DeleteWhenDone(partial);
+            // encoder failed to start) or one a failed move left is deleted here, after any clean-up still holding
+            // it. WhenDone(target) waits for it.
+            ExportCleanup.Track(target, ExportCleanup.DeleteWhenDone(partial));
             throw;
         }
     }
 
     // Fails early, before a long export, for what would otherwise fail at the end: a folder that is not there or
-    // cannot be written to, or a target another app has open. Creating the partial file overwrites a stale one.
+    // cannot be written to, or a target another app has open. The partial file's name is new, so this creates it.
     private static void PrepareOutput(string target, string partial, VideoFormat format)
     {
         var folder = Path.GetDirectoryName(target);
@@ -177,13 +189,28 @@ public static class ProjectExporter
                 }
             }
 
-            using (new FileStream(partial, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (new FileStream(partial, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
             throw ExportFailures.Classify(exception, VideoExportFailure.OutputFolderNotWritable, format);
+        }
+    }
+
+    // Hides the unfinished file from Explorer, and shows it again before it becomes the video. Best effort: a
+    // visible partial file is untidy, not wrong.
+    private static void SetHidden(string path, bool hidden)
+    {
+        try
+        {
+            var attributes = File.GetAttributes(path);
+            File.SetAttributes(path, hidden ? attributes | FileAttributes.Hidden : attributes & ~FileAttributes.Hidden);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            ExportCleanup.Report(new ExportCleanupFailure(path, hidden ? "hide the unfinished file" : "show the finished file", exception));
         }
     }
 
