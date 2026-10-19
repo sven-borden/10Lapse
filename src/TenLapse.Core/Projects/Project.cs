@@ -73,7 +73,7 @@ public sealed class FrameChange
     /// <summary>What happened.</summary>
     public FrameChangeKind Kind { get; }
 
-    /// <summary><see cref="FrameChangeKind.Added"/>: where the first new frame now sits. Otherwise -1.</summary>
+    /// <summary><see cref="FrameChangeKind.Added"/>: where the first new frame now sits (<c>Indices[0]</c>). Otherwise -1.</summary>
     public int Index { get; }
 
     /// <summary>How many frames were added, removed or updated; 0 for a reset.</summary>
@@ -81,7 +81,9 @@ public sealed class FrameChange
 
     /// <summary>
     /// <see cref="FrameChangeKind.Removed"/>: the removed frames' positions in the list before the change,
-    /// ascending. <see cref="FrameChangeKind.Added"/>: <c>Index</c> to <c>Index + Count - 1</c>.
+    /// ascending. <see cref="FrameChangeKind.Added"/>: the new frames' positions in the list after the change, ascending:
+    /// <c>Index</c> to <c>Index + Count - 1</c> for <see cref="Project.AddFrames"/> and <see cref="Project.InsertFrames"/>,
+    /// and possibly scattered when an undo puts removed frames back where each was (#20, <see cref="FrameHistory"/>).
     /// <see cref="FrameChangeKind.Updated"/>: the updated frames' positions, ascending. Empty for a reset.
     /// </summary>
     public ImmutableArray<int> Indices { get; }
@@ -94,6 +96,10 @@ public sealed class FrameChange
         var ids = frames.Select(frame => frame.Id).ToImmutableArray();
         return new(FrameChangeKind.Added, index, [.. Enumerable.Range(index, ids.Length)], ids);
     }
+
+    // Frames put back at scattered places in one change (FrameHistory's undo of a removal): still an Added delta.
+    internal static FrameChange Restored(ImmutableArray<int> indices, ImmutableArray<Guid> ids) =>
+        new(FrameChangeKind.Added, indices[0], indices, ids);
 
     internal static FrameChange Removed(ImmutableArray<int> indices, ImmutableArray<Guid> ids) =>
         new(FrameChangeKind.Removed, -1, indices, ids);
@@ -436,6 +442,79 @@ public sealed class Project
 
         Commit(next, changes, FrameChange.Removed(indices.MoveToImmutable(), removedIds.MoveToImmutable()));
         return doomed.Count;
+    }
+
+    /// <summary>
+    /// Puts frames back in one change (#20: <see cref="FrameHistory"/> undoes a removal): adds <paramref name="frames"/>
+    /// and leaves the frames in the order of <paramref name="order"/>, which lists every frame of the project and every
+    /// frame put back, once each. The frames already in the project keep their order among themselves, so the change is
+    /// one <see cref="FrameChangeKind.Added"/> delta whose <see cref="FrameChange.Indices"/> need not be contiguous. A
+    /// frame whose id or path is in the project already is left out (and its id in <paramref name="order"/> ignored), as
+    /// in <see cref="AddFrames"/>. An invalid order throws and changes nothing.
+    /// </summary>
+    /// <returns>How many frames were put back.</returns>
+    internal int RestoreFrames(IReadOnlyList<Frame> frames, IReadOnlyList<Guid> order)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(order);
+        var batch = Materialize(frames, nameof(frames));
+        var added = NewFrames(batch);
+        var addedById = added.ToDictionary(frame => frame.Id);
+        var leftOut = batch.Select(frame => frame.Id).Where(id => !addedById.ContainsKey(id)).ToHashSet();
+        var current = _state.Frames;
+        var currentById = current.ToDictionary(frame => frame.Id);
+        var next = ImmutableArray.CreateBuilder<Frame>(current.Length + added.Count);
+        var indices = ImmutableArray.CreateBuilder<int>(added.Count);
+        var ids = ImmutableArray.CreateBuilder<Guid>(added.Count);
+        var seen = new HashSet<Guid>();
+        var kept = 0;
+        foreach (var id in order)
+        {
+            if (!seen.Add(id))
+            {
+                throw new ArgumentException("The order lists a frame twice; nothing was changed.", nameof(order));
+            }
+
+            if (currentById.TryGetValue(id, out var frame))
+            {
+                if (current[kept].Id != id)
+                {
+                    throw new ArgumentException("The frames already in the project must keep their order; nothing was changed.", nameof(order));
+                }
+
+                kept++;
+                next.Add(frame);
+            }
+            else if (addedById.TryGetValue(id, out frame))
+            {
+                indices.Add(next.Count);
+                ids.Add(id);
+                next.Add(frame);
+            }
+            else if (!leftOut.Contains(id))
+            {
+                throw new ArgumentException($"The order lists {id}, which is neither in the project nor put back; nothing was changed.", nameof(order));
+            }
+        }
+
+        if (kept != current.Length || ids.Count != added.Count)
+        {
+            throw new ArgumentException("The order must list every frame of the project and every frame put back; nothing was changed.", nameof(order));
+        }
+
+        if (added.Count == 0)
+        {
+            return 0;
+        }
+
+        foreach (var frame in added)
+        {
+            _ids.Add(frame.Id);
+            _paths.Add(frame.SourcePath);
+        }
+
+        Commit(_state with { Frames = next.MoveToImmutable() }, ProjectChanges.Frames, FrameChange.Restored(indices.MoveToImmutable(), ids.MoveToImmutable()));
+        return added.Count;
     }
 
     /// <summary>

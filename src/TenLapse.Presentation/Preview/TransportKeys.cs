@@ -119,6 +119,9 @@ public enum FocusedControl
 
     /// <summary>An item of an open menu.</summary>
     MenuItem,
+
+    /// <summary>A thumbnail in the filmstrip (#20), a list whose arrows move the selection (see <c>FilmstripKeys</c>).</summary>
+    FilmstripItem,
 }
 
 /// <summary>
@@ -159,7 +162,7 @@ public static class TransportKeys
 
     /// <summary>
     /// Whose keys they are with <paramref name="control"/> focused: a text input keeps every key, a control that uses
-    /// the arrows keeps them (a slider, a list, a select list, a segmented control, a switch, a scroller, a menu), and
+    /// the arrows keeps them (a slider, a list, the filmstrip, a select list, a segmented control, a switch, a scroller, a menu), and
     /// anything else leaves them to the transport.
     /// </summary>
     public static KeyFocus Classify(FocusedControl control) => control switch
@@ -168,7 +171,7 @@ public static class TransportKeys
             or FocusedControl.NumberBox or FocusedControl.EditableComboBox => KeyFocus.TextInput,
         FocusedControl.ComboBox or FocusedControl.RangeBase or FocusedControl.ListViewBase or FocusedControl.ListBox
             or FocusedControl.Selector or FocusedControl.RadioButton or FocusedControl.RadioButtons or FocusedControl.ToggleSwitch
-            or FocusedControl.ScrollViewer or FocusedControl.MenuItem => KeyFocus.ArrowControl,
+            or FocusedControl.ScrollViewer or FocusedControl.MenuItem or FocusedControl.FilmstripItem => KeyFocus.ArrowControl,
         _ => KeyFocus.Free,
     };
 }

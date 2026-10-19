@@ -1,5 +1,6 @@
 using System.Globalization;
 using TenLapse.Core;
+using TenLapse.Core.Ordering;
 using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 using TenLapse.Presentation.Services;
@@ -839,6 +840,140 @@ public static class ProjectText
         Format(TimecodeOfTotal, TimingFormat.Timecode(ticks), TimingFormat.Timecode(lengthTicks));
 
     // ---- End of the first-launch block (#29). ----
+
+    // ---- Filmstrip (#20): thumbnails, selection, removal, undo, reorder and gap markers. One block so other issues' strings merge around it. ----
+
+    /// <summary>The filmstrip's name for Narrator: a list of the project's frames.</summary>
+    public static string FilmstripName => "Filmstrip";
+
+    /// <summary>A thumbnail's name for Narrator. {0} the frame number from 1, not padded ("312"), {1} the file name ("IMG_0312.JPG").</summary>
+    public static string FilmstripItemNameFormat => "Frame {0}, {1}";
+
+    /// <summary>The caption with several frames selected. {0} the frame caption ("Frame 0312 of 0742"), {1} how many are selected ("3").</summary>
+    public static string FilmstripCaptionSelectedFormat => "{0} · {1} selected";
+
+    /// <summary>The file caption with a capture time. {0} the file name, {1} the time the photo was taken ("19:26:05").</summary>
+    public static string FilmstripFileTimeFormat => "{0} · {1}";
+
+    /// <summary>A gap marker's text (tooltip and Narrator) for one number skipped.</summary>
+    public static string FilmstripGapMissingOne => "1 photo seems to be missing before this one: the file numbers skip one.";
+
+    /// <summary>A gap marker's text for several numbers skipped. {0} how many ("3").</summary>
+    public static string FilmstripGapMissingMany => "{0} photos seem to be missing before this one: the file numbers skip {0}.";
+
+    /// <summary>A gap marker's text for a long interval. {0} the interval ("2 min 10 s"), {1} the usual one ("5.0 s").</summary>
+    public static string FilmstripGapPause => "Photos may be missing before this one: it was taken {0} after the one before, where about {1} was usual.";
+
+    /// <summary>Narrator's state of the thumbnail at the playhead.</summary>
+    public static string FilmstripPlayheadStatus => "Shown in the preview";
+
+    /// <summary>The context menu's removal; Delete does the same. The photos stay on disk.</summary>
+    public static string FilmstripRemove => "Remove from project";
+
+    /// <summary>The context menu's undo; Ctrl+Z does the same.</summary>
+    public static string FilmstripUndo => "Undo";
+
+    /// <summary>The context menu's move one place earlier; Alt+Left does the same.</summary>
+    public static string FilmstripMoveEarlier => "Move earlier";
+
+    /// <summary>The context menu's move one place later; Alt+Right does the same.</summary>
+    public static string FilmstripMoveLater => "Move later";
+
+    /// <summary>The thumbnail size slider's name.</summary>
+    public static string FilmstripThumbnailSize => "Thumbnail size";
+
+    /// <summary>Narrator after removing one frame.</summary>
+    public static string FilmstripRemovedOne => "Removed 1 frame from the project. The photo stays on your PC. Ctrl+Z puts it back.";
+
+    /// <summary>Narrator after removing several frames. {0} how many ("3").</summary>
+    public static string FilmstripRemovedMany => "Removed {0} frames from the project. The photos stay on your PC. Ctrl+Z puts them back.";
+
+    /// <summary>Narrator after an undo put one frame back.</summary>
+    public static string FilmstripRestoredOne => "Put 1 frame back.";
+
+    /// <summary>Narrator after an undo put several frames back. {0} how many.</summary>
+    public static string FilmstripRestoredMany => "Put {0} frames back.";
+
+    /// <summary>Narrator after an undo of a move.</summary>
+    public static string FilmstripReorderUndone => "Put the frames back in their earlier order.";
+
+    /// <summary>Narrator when Ctrl+Z has nothing to undo.</summary>
+    public static string FilmstripNothingToUndo => "Nothing to undo.";
+
+    /// <summary>Narrator after moving one frame. {0} its number before, {1} its place now.</summary>
+    public static string FilmstripMovedOne => "Moved frame {0} to place {1}.";
+
+    /// <summary>Narrator after moving several frames. {0} how many, {1} the first one's place now.</summary>
+    public static string FilmstripMovedMany => "Moved {0} frames to place {1}.";
+
+    /// <summary>Log-only context: removing frames failed.</summary>
+    public static string FilmstripRemoveFailed => "Removing frames from the project failed.";
+
+    /// <summary>Log-only context: undoing failed.</summary>
+    public static string FilmstripUndoFailed => "Undoing the last filmstrip change failed.";
+
+    /// <summary>Log-only context: moving frames failed.</summary>
+    public static string FilmstripMoveFailed => "Moving frames in the filmstrip failed.";
+
+    /// <summary>Log-only context: a click, a key or Narrator selecting frames failed.</summary>
+    public static string FilmstripSelectFailed => "Selecting frames in the filmstrip failed.";
+
+    /// <summary>Log-only context: following the project's frames failed.</summary>
+    public static string FilmstripProjectFailed => "Following the project in the filmstrip failed.";
+
+    /// <summary>Log-only context: putting a thumbnail on screen failed.</summary>
+    public static string FilmstripThumbnailFailed => "Showing a filmstrip thumbnail failed.";
+
+    /// <summary>Log-only context: the thumbnail cache failed.</summary>
+    public static string FilmstripThumbnailsUnexpected => "The filmstrip's thumbnail cache failed.";
+
+    /// <summary>Log-only context: keeping the playhead in view or loading what is in view failed.</summary>
+    public static string FilmstripScrollFailed => "Following the playhead or the view in the filmstrip failed.";
+
+    /// <summary>"Frame 312, IMG_0312.JPG".</summary>
+    public static string FilmstripItemName(int number, string fileName) => Format(FilmstripItemNameFormat, number, fileName);
+
+    /// <summary>"Frame 0312 of 0742", with " · 3 selected" when more than one frame is selected; empty without frames.</summary>
+    public static string FilmstripCaption(int number, int total, int selected)
+    {
+        if (total <= 0)
+        {
+            return string.Empty;
+        }
+
+        var caption = FrameCaption(Math.Clamp(number, 1, total), total);
+        return selected > 1 ? Format(FilmstripCaptionSelectedFormat, caption, Count(selected)) : caption;
+    }
+
+    /// <summary>"IMG_0312.JPG · 19:26:05", or the name alone when the capture time is not known.</summary>
+    public static string FilmstripFileCaption(string fileName, DateTime? captureTime) =>
+        captureTime is { } time ? Format(FilmstripFileTimeFormat, fileName, time.ToString("HH:mm:ss", CultureInfo.InvariantCulture)) : fileName;
+
+    /// <summary>What a gap marker says.</summary>
+    public static string FilmstripGap(FrameGap gap)
+    {
+        ArgumentNullException.ThrowIfNull(gap);
+        if (gap.Kinds.HasFlag(FrameGapKinds.Numbering) && gap.MissingFrames > 0)
+        {
+            return gap.MissingFrames == 1 ? FilmstripGapMissingOne : Format(FilmstripGapMissingMany, Count(gap.MissingFrames));
+        }
+
+        return gap.Interval is { } interval && gap.TypicalInterval is { } typical
+            ? Format(FilmstripGapPause, TimingFormat.Duration(interval.Ticks), TimingFormat.Duration(typical.Ticks))
+            : FilmstripGapMissingOne;
+    }
+
+    /// <summary>What Narrator hears after a removal of <paramref name="count"/> frames.</summary>
+    public static string FilmstripRemoved(int count) => count == 1 ? FilmstripRemovedOne : Format(FilmstripRemovedMany, Count(count));
+
+    /// <summary>What Narrator hears after an undo put <paramref name="count"/> frames back.</summary>
+    public static string FilmstripRestored(int count) => count == 1 ? FilmstripRestoredOne : Format(FilmstripRestoredMany, Count(count));
+
+    /// <summary>What Narrator hears after a move: the frame's old number (one frame) or the count, and its place now (from 1).</summary>
+    public static string FilmstripMoved(int count, int oldNumber, int newPlace) =>
+        count == 1 ? Format(FilmstripMovedOne, oldNumber, newPlace) : Format(FilmstripMovedMany, Count(count), newPlace);
+
+    // ---- End of the filmstrip block (#20). ----
 
     // "5,000": grouped, invariant until #39 localizes numbers with the words.
     private static string Count(int count, CultureInfo? culture = null) => count.ToString("N0", culture ?? CultureInfo.InvariantCulture);

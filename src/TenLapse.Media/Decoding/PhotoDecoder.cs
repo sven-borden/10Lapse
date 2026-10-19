@@ -392,7 +392,7 @@ public static class PhotoDecoder
     }
 
     // Best effort: PNG, BMP and GIF have no orientation property, and their decoders say so by throwing.
-    private static async Task<int> OrientationAsync(BitmapDecoder decoder, CancellationToken cancellationToken)
+    internal static async Task<int> OrientationAsync(BitmapDecoder decoder, CancellationToken cancellationToken)
     {
         try
         {
@@ -412,7 +412,7 @@ public static class PhotoDecoder
     /// Any form of path opens: long, <c>\\?\</c>, UNC, forward slashes, <c>.</c> and <c>..</c> segments, or
     /// relative to the current folder.
     /// </summary>
-    private static SafeFileHandle OpenFile(string path) =>
+    internal static SafeFileHandle OpenFile(string path) =>
         File.OpenHandle(Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, FileOptions.RandomAccess);
 
     /// <summary>
@@ -479,6 +479,6 @@ public static class PhotoDecoder
     private static PhotoFailure Truncated(string path) =>
         PhotoFailures.Found(path, SkipReason.Truncated, "Open: the file ends before its image does (no end marker where its format puts one).");
 
-    private static bool IsCancellation(Exception exception, CancellationToken cancellationToken) =>
+    internal static bool IsCancellation(Exception exception, CancellationToken cancellationToken) =>
         exception is OperationCanceledException && cancellationToken.IsCancellationRequested;
 }
