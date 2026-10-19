@@ -4,7 +4,7 @@ Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Running: PR #73 fix round (#12). Paused after it (Sven, 2026-10-19). Next on resume: the PR #74 fix round (#22), findings in the PR comment, then #29.
+Paused (Sven, 2026-10-19). Nothing running. Next on resume: the PR #74 fix round (#22) from the review comment on the PR, then #29 first launch and #19 preview.
 
 ## Waves
 
@@ -27,7 +27,7 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | merged #70 |
 | 6 | #26 One error path | O | App startup, `Core/Diagnostics` | merged #69 |
 | 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | merged #71 |
-| 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | PR #73, fix round |
+| 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | merged #73 |
 | 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | merged #72 |
 | 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | PR #74, reviewed, fix round pending |
 | 8 | #29 First launch drop zone | O | App empty state view | |
@@ -156,6 +156,16 @@ own waves once 3.0 ships.
   `AppEnvironment.EncoderCacheFile()`.
 - 2026-10-18 (#13 review): RAW+JPEG pairs with the same base name in one
   folder import once, keeping the JPEG (#12).
+- 2026-10-19 (#12): `IPhotoImportSource` lives in Core; Media's
+  `PhotoImporter` implements it; Presentation's `ImportViewModel` drives it.
+  Import fills in two phases (list, then read metadata with 8 readers). OneDrive
+  online-only files are not read silently: one question per import ("N photos
+  are only in OneDrive. Download them now? About X GB."), default *Skip them*
+  (`SkipReason.CloudOnly`). Junctions and symlinks are not followed (cloud
+  reparse folders are). A RAW is dropped only when a readable non-RAW twin
+  exists. Folders that will not open get their own InfoBar, not a skipped
+  photo. `ApplyDefaultSort` only on a project that was empty and unsorted by
+  the user during the import. Drops are refused while Settings is open.
 
 ## Merged
 
@@ -241,3 +251,10 @@ own waves once 3.0 ships.
   numbering; `Project` extensions `ApplySort`, `ApplyDefaultSort` (empty
   project only), `Resort` (keeps Manual order), `ReorderManually`). New
   `Frame.CaptureUtcOffset`. RAW and CR3 capture times are unverified until #30.
+- #12 PR #73: import from *Add photos* (*Choose folder…*, *Choose photos…*,
+  *Include subfolders*), and drops on the window (asks to add or start new on
+  a non-empty project). 5,000 photos: first frames about 0.1 s, done about
+  1.9 s, UI steps under 30 ms. `Project.RemoveFramesAndSkip` (one commit),
+  `ProjectViewModel.RemoveResource`, `IDialogService.ChooseAsync`,
+  `IUiDispatcher`, `IPhotoPicker`, `IImportFolderMemory` (session only; #21
+  persists it). The import progress sits in the command bar with Cancel.
