@@ -42,9 +42,8 @@ param(
     # Keep the generated photos (a later run with the same -Folder reuses them).
     [switch]$Keep,
     [switch]$SkipBuild,
-    # Leave steps out: import, noembedded, export, preview, filmstrip.
-    [ValidateSet('import', 'noembedded', 'export', 'preview', 'filmstrip')]
-    [string[]]$Skip = @(),
+    # Leave steps out, comma separated (pwsh -File passes one string): import, noembedded, export, preview, filmstrip.
+    [string]$SkipSteps = '',
     # How many times the 1,000-photo import is measured (the median counts).
     [int]$Runs = 3,
     # The release the results belong to.
@@ -65,6 +64,8 @@ $megapixels = $width * $height / 1e6
 $firstCount = [Math]::Min(1000, $Photos)
 $sampleFrames = if ($Full) { 1000 } else { 300 }
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$Skip = @($SkipSteps -split '[,; ]+' | Where-Object { $_ })
+foreach ($step in $Skip) { if ($step -notin 'import', 'noembedded', 'export', 'preview', 'filmstrip') { throw "-SkipSteps: unknown step '$step'." } }
 
 $root = Split-Path -Parent $PSScriptRoot
 $data = Join-Path $Folder '10Lapse-bench-data'
