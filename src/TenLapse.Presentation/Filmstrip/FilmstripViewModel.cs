@@ -25,8 +25,14 @@ public readonly record struct FilmstripKeyResult(bool Handled, int Focus);
 /// <b>Selection.</b> A click selects the frame alone and shows it; Ctrl+click adds or takes out one frame, Shift+click
 /// selects from the anchor (the last frame clicked without Shift) to the clicked one, Ctrl+Shift+click adds that range.
 /// The selection is never empty while there are frames: with nothing else selected it is the frame at the playhead, and
-/// a selection of that one frame follows the playhead (playing, stepping, scrubbing), so Delete always removes what the
-/// preview shows unless the user picked other frames. A selection of several frames stays where it is.
+/// a selection of that one frame follows the playhead (playing, stepping, scrubbing), so Delete removes what the preview
+/// shows unless the user picked other frames. A selection of several frames stays where it is.
+/// </para>
+/// <para>
+/// <b>Edits while playing.</b> Every edit pauses the video first: Delete, Alt+arrows, a drag (which also takes its frames
+/// when it starts and stops the selection following the playhead until the drop) and the context menu. A key pressed on a
+/// focused thumbnail acts from the focus: when the selection only followed the video away from the frame the user had
+/// picked, the focused frame is what Delete removes or Alt+arrow moves (#82 review, M1).
 /// </para>
 /// <para>
 /// <b>Undo.</b> <see cref="FrameHistory"/> records removals and reorders made here; Ctrl+Z undoes the latest as one

@@ -34,16 +34,18 @@ namespace TenLapse.Filmstrip;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Pointer.</b> A press on a thumbnail focuses it; a release without moving is a click (with the modifiers held at the
-/// press). Moving 6 DIPs with the button down starts a drag of the selection (or of the pressed frame, when it is not
-/// selected): an Ink bar shows the seam the frames will land in, the strip scrolls when the pointer nears an end, and the
-/// release moves them there (<see cref="FilmstripViewModel.MoveTo"/>); Escape or a lost capture cancels. Touch scrolls
-/// the strip instead of dragging, and a tap is a click. Thumbnails sit on a fixed stride, so hits are arithmetic.
+/// <b>Pointer.</b> The rules are <see cref="FilmstripPointer"/>'s (tested in Presentation); this view feeds it positions
+/// and draws. A press on a thumbnail focuses it; a release without moving is a click (with the modifiers held at the
+/// press). Moving 6 DIPs with the button down starts a drag, which pauses the video and takes the selection (or the
+/// pressed frame, when it is not selected): an Ink bar shows the seam the frames will land in, the strip scrolls when the
+/// pointer nears an end, and the release moves them there; Escape or a lost capture cancels, and the pointer is let go.
+/// Touch scrolls the strip instead of dragging, and a tap is a click. Thumbnails sit on a fixed stride, so hits are
+/// arithmetic. A right-click or the context menu pauses the video first.
 /// </para>
 /// <para>
 /// <b>Keys.</b> Keys pressed on a thumbnail go to <see cref="FilmstripKeys"/> first (arrows select, Alt+arrows move, and
-/// so on); what the strip does not take (plain Space) goes on to the transport. Delete and Ctrl+Z also work from anywhere
-/// in the window but a text input, through a handler on the shell's root.
+/// so on); what the strip does not take (plain Space) goes on to the transport. Delete and Ctrl+Z also work with nothing
+/// focused (after a click on the stage), through a handler on the shell's root, and never behind another focused control.
 /// </para>
 /// <para>
 /// <b>Playhead.</b> When the playhead moves to a thumbnail out of view, the strip scrolls to it, as long as the user had
