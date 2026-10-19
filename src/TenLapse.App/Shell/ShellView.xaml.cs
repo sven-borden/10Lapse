@@ -140,8 +140,11 @@ public sealed partial class ShellView : UserControl
         TitleBarRightInset.Width = new GridLength(Math.Max(0, right));
     }
 
-    /// <summary>Paints the Mica token behind the shell where the system has no Mica backdrop.</summary>
-    public void ShowMicaFallback() => MicaFallback.Visibility = Visibility.Visible;
+    /// <summary>
+    /// Shows or hides the flat Mica token behind the shell: shown where the system has no Mica, and while the tinted
+    /// Mica backdrop cannot connect; hidden again when it connects (#90).
+    /// </summary>
+    public void SetMicaFallback(bool visible) => MicaFallback.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
 
     /// <summary>
     /// Dims the title texts while the window is inactive, and stops the first-launch timelapse (motion spec,

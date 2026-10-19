@@ -665,6 +665,19 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Stops a running export without asking, as the window closes after its close check failed (#90). The unfinished
+    /// file goes as with any cancel, or at the next launch.
+    /// </summary>
+    public void CancelForClose()
+    {
+        if (IsExporting)
+        {
+            _closing = true;
+            ExportCommand.Cancel();
+        }
+    }
+
     private void Premiere()
     {
         if (IsFinished && VideoPath.Length > 0)

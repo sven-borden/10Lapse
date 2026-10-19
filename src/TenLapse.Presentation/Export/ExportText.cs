@@ -197,6 +197,12 @@ public static class ExportText
     /// <summary>Log: the close check failed.</summary>
     public static string CloseFailed => "Stopping the export to close the window failed.";
 
+    /// <summary>Log: checking for a running export as the window closed failed; the window closes anyway (#90).</summary>
+    public static string CloseCheckFailed => "Checking for a running export as the window closed failed; the window closes, and a running export is stopped.";
+
+    /// <summary>Log: stopping the export after that failed check failed too.</summary>
+    public static string CloseStopFailed => "Stopping the export as the window closed failed.";
+
     /// <summary>Log: the export panel could not swap or move focus.</summary>
     public static string PanelFailed => "Showing the export panel failed.";
 

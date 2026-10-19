@@ -3,8 +3,9 @@ using System.Text.RegularExpressions;
 namespace TenLapse.Tests.Code;
 
 /// <summary>
-/// The callbacks the window framework calls outside XAML's error routing (#90): an <c>AppWindow.Changed</c> handler
-/// (an exception from it leaves no trace at all) and a <c>SystemBackdrop</c>'s overrides (the first connection runs
+/// The callbacks the window framework calls outside XAML's error routing (#90): the handlers of the
+/// <c>AppWindow</c> events <c>Changed</c>, <c>Closing</c> and <c>Destroying</c> (an exception from a <c>Changed</c>
+/// handler leaves no trace at all), named or lambdas, and a <c>SystemBackdrop</c>'s overrides (the first connection runs
 /// inside the window's <c>SystemBackdrop</c> setter, so a throw fails the start-up; the later calls have no managed
 /// caller). Their bodies must be one <c>RunLogged</c> call, after the <c>base</c> call for an override.
 /// </summary>
@@ -17,7 +18,7 @@ public sealed partial class ErrorPathRuleTests
             .SelectMany(file => FrameworkCallbackViolations(File.ReadAllText(file)).Select(hit => $"{Relative(file)}: {hit}"))
             .ToList();
 
-        Assert.True(offenders.Count == 0, "AppWindow.Changed handlers and SystemBackdrop overrides must be one RunLogged call:\n" + string.Join('\n', offenders));
+        Assert.True(offenders.Count == 0, "AppWindow event handlers and SystemBackdrop overrides must be one RunLogged call:\n" + string.Join('\n', offenders));
     }
 
     [Theory]
@@ -26,12 +27,25 @@ public sealed partial class ErrorPathRuleTests
     [InlineData("protected override void OnTargetConnected(ICompositionSupportsSystemBackdrop target, XamlRoot root) { base.OnTargetConnected(target, root); _controller.AddSystemBackdropTarget(target); }")]
     [InlineData("protected override void OnDefaultSystemBackdropConfigurationChanged(ICompositionSupportsSystemBackdrop target, XamlRoot root) { Tint(); }")]
     [InlineData("protected override void OnTargetDisconnected(ICompositionSupportsSystemBackdrop target) { _errors.RunLogged(Release, Context); Tint(); }")]
+    [InlineData("private void OnClosing(AppWindow sender, AppWindowClosingEventArgs args) { if (_busy) { args.Cancel = true; } }")]
+    [InlineData("AppWindow.Changed += (sender, args) => ApplyMinimumSize(Scale);")]
+    [InlineData("AppWindow.Closing += (_, args) => { args.Cancel = Busy; };")]
+    [InlineData("window.AppWindow.Destroying += (_, _) => Release();")]
+    [InlineData("AppWindow.Changed += args => Follow(args);")]
+    [InlineData("AppWindow.Closing += delegate { Release(); };")]
+    [InlineData("AppWindow.Destroying += OnDestroying; private void OnDestroying(AppWindow sender, object args) { Release(); }")]
+    [InlineData("AppWindow.Destroying += OnDestroyingElsewhere;")]
     public void TheScannerFlagsAnUnguardedFrameworkCallback(string source) => Assert.NotEmpty(FrameworkCallbackViolations(source));
 
     [Theory]
     [InlineData("private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args) => _errors.RunLogged(() => Follow(sender, args), ProjectText.WindowChangeFailed);")]
     [InlineData("protected override void OnTargetConnected(ICompositionSupportsSystemBackdrop target, XamlRoot root) { base.OnTargetConnected(target, root); _errors.RunLogged(() => Connect(target, root), ProjectText.BackdropFailed); }")]
     [InlineData("protected override void OnDefaultSystemBackdropConfigurationChanged(ICompositionSupportsSystemBackdrop target, XamlRoot root)\n{\n    // A comment.\n    base.OnDefaultSystemBackdropConfigurationChanged(target, root);\n    _errors.RunLogged(Tint, ProjectText.BackdropFailed);\n}")]
+    [InlineData("private void OnClosing(AppWindow sender, AppWindowClosingEventArgs args) =>\n    _errors.RunLogged(() => args.Cancel = !_gate.Closing(), ExportText.CloseCheckFailed);")]
+    [InlineData("AppWindow.Changed += (sender, args) => _errors.RunLogged(() => ApplyMinimumSize(Scale), ProjectText.WindowChangeFailed);")]
+    [InlineData("AppWindow.Destroying += (_, _) => { _errors.RunLogged(Release, Context); };")]
+    [InlineData("AppWindow.Destroying += OnDestroying; private void OnDestroying(AppWindow sender, object args) => _errors.RunLogged(Release, Context);")]
+    [InlineData("AppWindow.Changed -= OnAppWindowChanged; AppWindow.Closing -= (_, _) => Release();")]
     public void TheScannerAllowsARunLoggedFrameworkCallback(string source) => Assert.Empty(FrameworkCallbackViolations(source));
 
     private static IEnumerable<string> FrameworkCallbackViolations(string source)
@@ -39,24 +53,59 @@ public sealed partial class ErrorPathRuleTests
         var code = WithoutComments(source);
         foreach (Match method in FrameworkCallback().Matches(code))
         {
-            var body = Body(code, method.Index + method.Length).Trim();
-            if (BaseCall().Match(body) is { Success: true } baseCall)
-            {
-                body = body[baseCall.Length..].Trim();
-            }
-
-            var call = RunLoggedCall().Match(body);
-            var close = call.Success ? Closing(body, call.Index + call.Length - 1) : -1;
-            if (close < 0 || body[(close + 1)..].Trim() != ";")
+            if (!IsOneRunLoggedCall(Body(code, method.Index + method.Length)))
             {
                 yield return Line(method.Value);
             }
         }
+
+        // A subscription: a lambda's body is checked here, a named handler's where it is declared in the same file (a
+        // Destroying handler's arguments are a bare object, so no signature gives it away). Anything else is flagged.
+        foreach (Match subscription in AppWindowSubscription().Matches(code))
+        {
+            var rest = code[(subscription.Index + subscription.Length)..];
+            var lambda = LambdaHead().Match(rest);
+            var handler = HandlerName().Match(rest);
+            var declaration = handler.Success ? Regex.Match(code, $@"\bvoid\s+{handler.Groups[1].Value}\s*\([^)]*\)") : Match.Empty;
+            var ok = lambda.Success
+                ? IsOneRunLoggedCall(Body(rest, lambda.Length))
+                : declaration.Success && IsOneRunLoggedCall(Body(code, declaration.Index + declaration.Length));
+            if (!ok)
+            {
+                yield return Line(subscription.Value + rest[..Math.Min(rest.Length, 40)].Split('\n')[0]);
+            }
+        }
     }
 
-    // A handler taking AppWindowChangedEventArgs, or one of the SystemBackdrop overrides.
-    [GeneratedRegex(@"\bvoid\s+\w+\s*\([^)]*\bAppWindowChangedEventArgs\s+\w+\s*\)|\boverride\s+void\s+(?:OnTargetConnected|OnTargetDisconnected|OnDefaultSystemBackdropConfigurationChanged)\s*\([^)]*\)")]
+    // A body that is one RunLogged call, after a base call (for an override) if there is one.
+    private static bool IsOneRunLoggedCall(string body)
+    {
+        body = body.Trim();
+        if (BaseCall().Match(body) is { Success: true } baseCall)
+        {
+            body = body[baseCall.Length..].Trim();
+        }
+
+        var call = RunLoggedCall().Match(body);
+        var close = call.Success ? Closing(body, call.Index + call.Length - 1) : -1;
+        return close >= 0 && body[(close + 1)..].Trim() == ";";
+    }
+
+    // A handler taking AppWindowChangedEventArgs or AppWindowClosingEventArgs, or one of the SystemBackdrop overrides.
+    [GeneratedRegex(@"\bvoid\s+\w+\s*\([^)]*\bAppWindow(?:Changed|Closing)EventArgs\s+\w+\s*\)|\boverride\s+void\s+(?:OnTargetConnected|OnTargetDisconnected|OnDefaultSystemBackdropConfigurationChanged)\s*\([^)]*\)")]
     private static partial Regex FrameworkCallback();
+
+    // A handler added to one of AppWindow's events (a removal is not a handler).
+    [GeneratedRegex(@"\bAppWindow\s*\.\s*(?:Changed|Closing|Destroying)\s*\+=\s*")]
+    private static partial Regex AppWindowSubscription();
+
+    // A lambda's parameters, up to its arrow: "(sender, args) " or "args ".
+    [GeneratedRegex(@"^(?:\([^()]*\)|\w+)\s*(?==>)")]
+    private static partial Regex LambdaHead();
+
+    // A method group: "OnClosing;".
+    [GeneratedRegex(@"^(\w+)\s*;")]
+    private static partial Regex HandlerName();
 
     [GeneratedRegex(@"^base\.\w+\s*\([^;]*\)\s*;")]
     private static partial Regex BaseCall();

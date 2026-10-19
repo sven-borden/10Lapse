@@ -29,14 +29,15 @@ public sealed partial class MainWindow : Window
     private readonly TintedMicaBackdrop? _backdrop;
     private readonly IErrorSink _errors;
     private readonly StartupTrace _startup;
-    private readonly IErrorPresenter _presenter;
     private readonly TaskbarProgress _taskbar;
     private readonly WindowExportFeedback _exportFeedback;
+    private readonly WindowCloseGate _closeGate;
 
-    // The window is the active one (for the export's notification, #24), and the close was asked about or approved.
+    // Taken on the UI thread: background-thread callbacks must not read Window.DispatcherQueue.
+    private readonly Microsoft.UI.Dispatching.DispatcherQueue _queue;
+
+    // The window is the active one (for the export's notification, #24).
     private bool _active = true;
-    private bool _closeAsked;
-    private bool _closeApproved;
 
     // Kept as a field: its events stop when nothing holds it.
     private readonly UISettings _uiSettings = new();
@@ -73,7 +74,6 @@ public sealed partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(startup);
         ViewModel = viewModel;
         _errors = errors;
-        _presenter = presenter;
         _startup = startup;
         InitializeComponent();
 
@@ -83,12 +83,13 @@ public sealed partial class MainWindow : Window
         _exportFeedback = new WindowExportFeedback(_taskbar, notifications, () => !_active || IsMinimized, errors);
 
         // Invoked comes on a background thread, where Window.DispatcherQueue must not be read: the queue is taken here.
-        var queue = DispatcherQueue;
-        notifications.Invoked += (_, _) => queue.TryEnqueueGuarded(errors, Activate, ExportText.NotificationFailed);
+        _queue = DispatcherQueue;
+        notifications.Invoked += (_, _) => _queue.TryEnqueueGuarded(errors, Activate, ExportText.NotificationFailed);
 
         _startup.Phase("building the shell");
         _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter, preview, exportServices(_exportFeedback));
         Content = _shell;
+        _closeGate = new WindowCloseGate(() => _shell.Export.MayCloseNow, _shell.Export.PrepareToCloseAsync, _shell.Export.CancelForClose, Close, presenter);
         _startup.Phase("setting the title bar and the backdrop");
 
         // Window is not a DependencyObject, so its Title cannot take a binding: follow the view model by hand.
@@ -101,12 +102,12 @@ public sealed partial class MainWindow : Window
         {
             // XAML connects the backdrop inside this setter and again whenever the window's target comes back; a Mica
             // failure falls back to the flat color the shell paints where Mica is not supported (#90).
-            _backdrop = new TintedMicaBackdrop(errors, _shell.ShowMicaFallback);
+            _backdrop = new TintedMicaBackdrop(errors, _shell.SetMicaFallback);
             SystemBackdrop = _backdrop;
         }
         else
         {
-            _shell.ShowMicaFallback();
+            _shell.SetMicaFallback(true);
         }
 
         _startup.Phase("sizing the window");
@@ -199,41 +200,11 @@ public sealed partial class MainWindow : Window
 
     private bool IsMinimized => AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized };
 
-    // Closing during an export asks first (#24): "Stop the export and close?". On yes the export stops and its unfinished
-    // file goes (waited for at most ExportViewModel.CloseLimit), then the window closes. A cancelled export still removing
-    // its file is waited for the same way. Otherwise the window closes at once.
-    private void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
-    {
-        if (_closeApproved || _shell.Export.MayCloseNow)
-        {
-            return;
-        }
-
-        args.Cancel = true;
-        if (_closeAsked)
-        {
-            return;
-        }
-
-        _closeAsked = true;
-        _ = _presenter.GuardAsync(CloseAfterExportAsync, ExportText.CloseFailed);
-    }
-
-    private async Task CloseAfterExportAsync()
-    {
-        try
-        {
-            if (await _shell.Export.PrepareToCloseAsync())
-            {
-                _closeApproved = true;
-                Close();
-            }
-        }
-        finally
-        {
-            _closeAsked = false;
-        }
-    }
+    // Closing during an export asks first (#24, WindowCloseGate). AppWindow.Closing is raised by the window's message
+    // handling, not by XAML, so the answer runs inside RunLogged (#90); Cancel is set only once the gate has answered,
+    // so a failure lets the window close (the gate itself never throws, and stops a running export when its check fails).
+    private void OnClosing(AppWindow sender, AppWindowClosingEventArgs args) =>
+        _errors.RunLogged(() => args.Cancel = !_closeGate.Closing(), ExportText.CloseCheckFailed);
 
     // A minimum size measured while maximized waits for the window to be restored. Minimized or hidden, the preview
     // pauses (and plays on when the window shows again): nothing should decode and draw unseen.
@@ -257,7 +228,7 @@ public sealed partial class MainWindow : Window
 
     // Raised on a background thread.
     private void OnColorValuesChanged(UISettings sender, object args) =>
-        DispatcherQueue.TryEnqueueGuarded(_errors, RefreshSystemColors, ProjectText.SystemColorsFailed);
+        _queue.TryEnqueueGuarded(_errors, RefreshSystemColors, ProjectText.SystemColorsFailed);
 
     // What follows the theme by hand: the caption buttons, the shell's shadows and the Mica tint.
     private void RefreshSystemColors()

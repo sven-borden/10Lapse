@@ -28,18 +28,19 @@ internal sealed class TintedMicaBackdrop : SystemBackdrop
     private const float DarkLuminosityOpacity = 1f;
 
     private readonly IErrorSink _errors;
-    private readonly Action _failed;
+    private readonly Action<bool> _fallback;
     private MicaController? _controller;
     private SystemBackdropConfiguration? _configuration;
 
     /// <param name="errors">Logs a failure of the overrides XAML calls (log only: they run outside its error routing).</param>
-    /// <param name="failed">Shows the flat fallback when Mica cannot be connected (UI thread).</param>
-    public TintedMicaBackdrop(IErrorSink errors, Action failed)
+    /// <param name="fallback">Shows (true) the flat fallback when Mica cannot be connected, and hides it (false) when a later
+    /// connection works (UI thread).</param>
+    public TintedMicaBackdrop(IErrorSink errors, Action<bool> fallback)
     {
         ArgumentNullException.ThrowIfNull(errors);
-        ArgumentNullException.ThrowIfNull(failed);
+        ArgumentNullException.ThrowIfNull(fallback);
         _errors = errors;
-        _failed = failed;
+        _fallback = fallback;
     }
 
     // XAML calls the three overrides itself: the first connection inside the window's SystemBackdrop setter, where a
@@ -64,7 +65,8 @@ internal sealed class TintedMicaBackdrop : SystemBackdrop
         _errors.RunLogged(() => Release(disconnectedTarget), ProjectText.BackdropFailed);
     }
 
-    // A connection that fails lets go of what it made and shows the flat fallback; RunLogged logs the failure.
+    // A connection that fails lets go of what it made and shows the flat fallback; RunLogged logs the failure. One that
+    // works (XAML connects again whenever the window's target comes back) hides the fallback again.
     private void Connect(ICompositionSupportsSystemBackdrop target, XamlRoot xamlRoot)
     {
         try
@@ -74,13 +76,14 @@ internal sealed class TintedMicaBackdrop : SystemBackdrop
             Tint();
             _controller.AddSystemBackdropTarget(target);
             _controller.SetSystemBackdropConfiguration(_configuration);
+            _fallback(false);
         }
         catch (Exception)
         {
             _controller?.Dispose();
             _controller = null;
             _configuration = null;
-            _failed();
+            _fallback(true);
             throw;
         }
     }
