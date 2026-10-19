@@ -29,7 +29,8 @@ public sealed class FrameImageCacheTests
         var large = proxy.Succeed();
 
         Eventually(() => Quality(cache, frames[50]) == FrameImageQuality.Proxy);
-        Assert.True(small!.IsDisposed);
+        // The replaced small image is freed after the cache's lock is released, so it can trail the new quality.
+        Eventually(() => small!.IsDisposed);
         Assert.False(large!.IsDisposed);
 
         // Then the neighbours, small first.
