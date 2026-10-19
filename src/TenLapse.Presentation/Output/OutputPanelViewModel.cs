@@ -15,21 +15,18 @@ namespace TenLapse.Presentation;
 /// it runs on the UI thread, the one thread that may change a <see cref="Project"/>.
 /// </summary>
 /// <remarks>
-/// Stored settings that are no longer offered (the project came from a PC that could do 4K; the frame rate went
-/// up; the HEVC extension was removed) are replaced when the panel notices, by the largest size still offered or
-/// by H.264, and <see cref="Notice"/> says so: nothing unsupported is ever left selected for #24 to export.
-/// The stored value is the preference and the selected one is what this PC can do now. On a real answer the
-/// replacement is written to the project. On a provisional one (the conservative fallback, while the probe is
-/// slow or after it failed) it is only shown, never written, so a late real answer brings 4K or HEVC back and
-/// clears the notice, and the fallback never marks a project as changed.
+/// <see cref="Project.Output"/> is the user's preference and changes only when the user picks something here (or
+/// presses <see cref="UseSelected"/>). What the lists show as selected, and what an export must use, is the
+/// <see cref="EffectiveOutput"/>: the preference made to fit the current shape, rate and capabilities by
+/// <see cref="OutputPlan"/> (a format that is not offered becomes H.264, a resolution that is not offered becomes the
+/// largest offered one not above it), with <see cref="Notice"/> naming each replacement and why. Nothing is ever
+/// written for a replacement, on a real answer or a provisional one, so when the shape or the capabilities change
+/// back, the preference returns by itself and the notice goes.
 /// </remarks>
 public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
 {
-    // A correction writes the project, which raises Changed and so refreshes again; this many passes always settles it.
+    // Publishing can make a ComboBox push a value back, which refreshes again; this many passes always settles it.
     private const int MaxPasses = 4;
-
-    private static readonly OutputResolution[] _resolutions = [.. Enum.GetValues<OutputResolution>().OrderBy(resolution => (int)resolution)];
-    private static readonly VideoFormat[] _formats = [VideoFormat.Mp4H264, VideoFormat.Mp4Hevc];
 
     private static readonly OutputOption<OutputQuality>[] _qualities =
         [.. Enum.GetValues<OutputQuality>().Select(quality => new OutputOption<OutputQuality>(quality, OutputText.QualityOption(quality)))];
@@ -46,8 +43,7 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
     private string _estimatedSize = string.Empty;
     private string _note = string.Empty;
     private string _notice = string.Empty;
-    private bool _provisional;
-    private bool _selectionMatchesProject = true;
+    private OutputPlan? _plan;
     private bool _refreshing;
     private bool _again;
     private bool _disposed;
@@ -82,7 +78,7 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
     /// <summary>Standard, High and Maximum (always the same three).</summary>
     public IReadOnlyList<OutputOption<OutputQuality>> Qualities => _qualities;
 
-    /// <summary>The project's resolution when it is offered; null while pending or when nothing is offered. Setting it edits the project.</summary>
+    /// <summary>The resolution shown as selected (the effective one); null while pending or when nothing is offered. Setting it stores the pick as the project's resolution.</summary>
     public OutputOption<OutputResolution>? SelectedResolution
     {
         get => _selectedResolution;
@@ -95,7 +91,7 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>The project's format when it is offered. Setting it edits the project.</summary>
+    /// <summary>The format shown as selected (the effective one). Setting it stores the pick as the project's format.</summary>
     public OutputOption<VideoFormat>? SelectedFormat
     {
         get => _selectedFormat;
@@ -108,7 +104,7 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>The project's quality. Setting it edits the project.</summary>
+    /// <summary>The project's quality. Setting it stores the pick.</summary>
     public OutputOption<OutputQuality>? SelectedQuality
     {
         get => _selectedQuality;
@@ -160,8 +156,9 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
     public bool HasNote => _note.Length > 0;
 
     /// <summary>
-    /// What the panel changed on its own, in words ("4K can't be exported on this PC with these settings, so 1440p
-    /// is selected."); empty until it does, and again after the user picks a value.
+    /// What the panel shows in place of the stored choice, and why ("4K isn't available for this shape on this PC, so
+    /// 1440p is selected."); empty when the stored choice is what is selected. It goes by itself when the shape or
+    /// the capabilities allow the stored choice again, or when the user stores the shown one.
     /// </summary>
     public string Notice
     {
@@ -171,6 +168,7 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
             if (SetProperty(ref _notice, value))
             {
                 OnPropertyChanged(nameof(HasNotice));
+                OnPropertyChanged(nameof(HasReplacement));
             }
         }
     }
@@ -178,33 +176,53 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
     /// <summary>True when <see cref="Notice"/> has something to show.</summary>
     public bool HasNotice => _notice.Length > 0;
 
+    /// <summary>True while the selected settings differ from the stored ones, so <see cref="UseSelected"/> has something to store.</summary>
+    public bool HasReplacement => _plan?.IsReplacing == true;
+
     /// <summary>
-    /// True when the project's own output settings are confirmed exportable here: an answer has arrived (even a
-    /// provisional one), the resolution and format are offered, and the project holds exactly what is selected.
-    /// It says nothing about frames: #24 must also require at least one. It is false while a stored setting this PC
-    /// cannot do is only replaced on screen (a provisional answer), because the project still holds the original;
-    /// picking another value in the list stores it. #24 should still export from the snapshot.
+    /// The settings an export must use: the stored preference made to fit this PC, the frame shape and the rate
+    /// (see <see cref="OutputPlan"/>). Null while the probe is pending and when nothing is offered. #24 exports with
+    /// this, never with <see cref="Project.Output"/>, and hides Export when it is null (<see cref="CanExport"/>).
     /// </summary>
-    public bool CanExport => _capabilities is not null && _selectedResolution is not null && _selectedFormat is not null && _selectionMatchesProject;
+    public OutputSettings? EffectiveOutput => _plan?.Effective;
+
+    /// <summary>
+    /// True when Match photos gives a shape no offered size can encode (a 10:1 panorama) although a fixed shape
+    /// would export: the Frame panel says so and suggests a fixed shape.
+    /// </summary>
+    public bool ShapeCannotBeExported => _plan?.ShapeLimits == true;
+
+    /// <summary>
+    /// Stores the selected settings as the project's choice, for a user who wants the replacement to stay. It is the
+    /// way to pick the entry that is already displayed, which a ComboBox does not report. Does nothing without a replacement.
+    /// </summary>
+    public void UseSelected()
+    {
+        if (_plan is { Effective: { } effective } plan && plan.IsReplacing)
+        {
+            Choose(_ => effective);
+        }
+    }
+
+    /// <summary>
+    /// True when something can be exported: an answer has arrived (even a provisional one) and a format and a
+    /// resolution are offered, so <see cref="EffectiveOutput"/> exists. It says nothing about frames: #24 must also
+    /// require at least one.
+    /// </summary>
+    public bool CanExport => _plan?.Effective is not null;
 
     /// <summary>
     /// Hands over what the startup probe found (or <see cref="ConservativeOutputCapabilities"/> when it failed). Call
     /// it on the UI thread; a later call replaces the earlier answer. The lists appear in one step, and a stored
-    /// setting this PC cannot do is replaced (see <see cref="Notice"/>).
+    /// setting this PC cannot do is shown replaced (see <see cref="Notice"/>), never written: that holds for the
+    /// conservative stand-in (the probe is slow or failed) and the real answer alike, so a later answer brings the
+    /// stored setting back.
     /// </summary>
     /// <param name="capabilities">What this PC can encode.</param>
-    /// <param name="provisional">
-    /// True for a stand-in (the conservative fallback while the probe is slow, or after it failed): the panel shows
-    /// what it would replace but writes nothing to the project, so the real answer can restore the stored setting.
-    /// </param>
-    public void SetCapabilities(IOutputCapabilities capabilities, bool provisional = false)
+    public void SetCapabilities(IOutputCapabilities capabilities)
     {
         ArgumentNullException.ThrowIfNull(capabilities);
         _capabilities = capabilities;
-        _provisional = provisional;
-
-        // A new answer is judged afresh: the notice of the earlier one returns only if it still applies.
-        Notice = string.Empty;
         OnPropertyChanged(nameof(IsPending));
         OnPropertyChanged(nameof(IsSettled));
         OnPropertyChanged(nameof(Status));
@@ -238,15 +256,13 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
         _project.Changed -= OnProjectChanged;
         _project = e.Current.Model;
         _project.Changed += OnProjectChanged;
-        Notice = string.Empty;
         Refresh();
     }
 
-    // The user picked a value: write it to the project, say nothing more about earlier corrections. A closed project
-    // (the window is going away) takes no edits.
+    // The user picked a value: write it to the project; change gets the stored preference, so what the user did not
+    // touch stays as it was. A closed project (the window is going away) takes no edits.
     private void Choose(Func<OutputSettings, OutputSettings> change)
     {
-        Notice = string.Empty;
         _errors.Guard(
             () =>
             {
@@ -280,8 +296,8 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
                     for (var pass = 0; pass < MaxPasses; pass++)
                     {
                         _again = false;
-                        var corrected = Update();
-                        if (!corrected && !_again)
+                        Update();
+                        if (!_again)
                         {
                             break;
                         }
@@ -295,81 +311,26 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
         }
     }
 
-    // One pass: reads the project, replaces what is not offered (true when it wrote the project), publishes the rest.
-    private bool Update()
+    // One pass: reads the project and publishes what it and this PC allow. Writes nothing.
+    private void Update()
     {
         var snapshot = _project.Snapshot;
-        var output = snapshot.Output;
         if (_capabilities is not { } capabilities)
         {
-            Publish(snapshot, output, [], [], capabilities: null);
-            return false;
+            Publish(snapshot, plan: null, capabilities: null);
+            return;
         }
 
-        var shape = Shape(snapshot);
-        var formats = _formats.Where(capabilities.IsAvailable).ToList();
-        var corrected = output;
-        var notices = new List<string>();
-        if (formats.Count > 0 && !formats.Contains(output.Format))
-        {
-            var replacement = formats.Contains(VideoFormat.Mp4H264) ? VideoFormat.Mp4H264 : formats[0];
-            notices.Add(string.Format(CultureInfo.CurrentCulture, OutputText.FormatReplaced, OutputText.CodecName(output.Format), OutputText.CodecName(replacement)));
-            corrected = corrected with { Format = replacement };
-        }
-
-        var offered = _resolutions.Where(resolution => capabilities.Supports(corrected.Format, resolution, shape.Aspect, shape.Rate, shape.PhotoSize)).ToList();
-        if (offered.Count > 0 && !offered.Contains(corrected.Resolution))
-        {
-            var replacement = offered[^1];
-            notices.Add(string.Format(CultureInfo.CurrentCulture, OutputText.ResolutionReplaced, OutputText.ResolutionName(corrected.Resolution), OutputText.ResolutionName(replacement)));
-            corrected = corrected with { Resolution = replacement };
-        }
-
-        if (corrected != output)
-        {
-            if (_provisional)
-            {
-                // Shown, not stored: the project keeps its preference until a real answer says what is possible.
-                Notice = string.Join(' ', notices);
-            }
-            else if (!_project.IsClosed)
-            {
-                Notice = string.Join(' ', notices);
-                _project.Output = corrected;
-                return true;
-            }
-        }
-        else if (_provisional)
-        {
-            Notice = string.Empty;
-        }
-
-        Publish(snapshot, corrected, formats, offered, capabilities);
-        return false;
+        Publish(snapshot, OutputPlan.Resolve(snapshot, capabilities), capabilities);
     }
 
-    // Match photos takes the shape of the most common photo; with no sizes read yet it is 16:9, as the video is.
-    private static (FrameAspect Aspect, PixelSize? PhotoSize, Fraction Rate) Shape(ProjectSnapshot snapshot)
+    private void Publish(ProjectSnapshot snapshot, OutputPlan? plan, IOutputCapabilities? capabilities)
     {
-        var aspect = snapshot.FrameSettings.Aspect;
-        PixelSize? photo = null;
-        if (aspect == FrameAspect.MatchPhotos)
-        {
-            photo = OutputSize.MostCommonPhotoSize(snapshot.Frames);
-            if (photo is null)
-            {
-                aspect = FrameAspect.Ratio16x9;
-            }
-        }
-
-        return (aspect, photo, snapshot.EffectiveRate.Rate);
-    }
-
-    // output: what to show, which is the project's own unless a provisional answer replaced something.
-    private void Publish(ProjectSnapshot snapshot, OutputSettings output, List<VideoFormat> formats, List<OutputResolution> resolutions, IOutputCapabilities? capabilities)
-    {
-        _selectionMatchesProject = output == snapshot.Output;
-        var shape = Shape(snapshot);
+        _plan = plan;
+        var output = plan?.Effective ?? snapshot.Output;
+        var shape = OutputPlan.ShapeOf(snapshot);
+        var formats = plan?.Formats ?? [];
+        var resolutions = plan?.Resolutions ?? [];
 
         // A list is replaced only when its entries differ, so the open dropdown and the selection do not flicker.
         var resolutionOptions = resolutions
@@ -392,9 +353,13 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
         Select(ref _selectedResolution, _resolutionOptions.FirstOrDefault(option => option.Value == output.Resolution), nameof(SelectedResolution));
         Select(ref _selectedFormat, _formatOptions.FirstOrDefault(option => option.Value == output.Format), nameof(SelectedFormat));
         Select(ref _selectedQuality, _qualities.First(option => option.Value == output.Quality), nameof(SelectedQuality));
+        Notice = plan?.Notice ?? string.Empty;
+        OnPropertyChanged(nameof(HasReplacement));
         OnPropertyChanged(nameof(CanExport));
+        OnPropertyChanged(nameof(EffectiveOutput));
+        OnPropertyChanged(nameof(ShapeCannotBeExported));
 
-        if (capabilities is null)
+        if (capabilities is null || plan is null)
         {
             EstimatedSize = string.Empty;
             Note = string.Empty;
@@ -405,8 +370,9 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
         var allFast = resolutions.All(resolution => capabilities.UsesHardware(output.Format, resolution, shape.Aspect, shape.Rate, shape.PhotoSize));
         Note = offersEverything && allFast ? string.Empty : capabilities.Summary(output.Format, shape.Aspect, shape.Rate, shape.PhotoSize);
 
-        EstimatedSize = snapshot.Frames.Length > 0 && _selectedResolution is not null && _selectedFormat is not null
-            ? OutputText.Estimate(ExportBitrate.EstimateBytes(snapshot.Frames.Length, shape.Rate, snapshot.VideoSize, output.Format, output.Quality))
+        // The estimate is for the video the effective settings make, not the stored ones.
+        EstimatedSize = snapshot.Frames.Length > 0 && plan.Effective is { } effective
+            ? OutputText.Estimate(ExportBitrate.EstimateBytes(snapshot.Frames.Length, shape.Rate, OutputSize.For(effective.Resolution, shape.Aspect, shape.PhotoSize), effective.Format, effective.Quality))
             : string.Empty;
     }
 
