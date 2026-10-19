@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #31 merged. In flight: PR #91 (#90 start-up hardening) in review, #36 narrow layout building. Then #35 motion, #39 strings, #38 accessibility (each alone).
+2026-10-19: in flight: PR #91 (#90 start-up hardening, crash not reproduced) fix round, PR #94 (#36 narrow layout) in review, #37 icon assets building. Then #35 motion, #39 strings, #38 accessibility (each alone).
 
 ## Waves
 
@@ -43,11 +43,11 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
 | 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | merged #85 |
 | 13 | #86 Flaky memory assertion (bug) | S | `tests/` | merged #87 |
-| 13 | #90 Start-up crash 0xC000027B (bug) | O | App start-up | building |
+| 13 | #90 Start-up crash 0xC000027B (bug) | O | App start-up | PR #91, fix round |
 | 14 | #31 Rating prompt | S | Store rating | merged #93 |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | merged #89 |
-| 15 | #36 Narrow window layout | S | shell visual states | |
-| 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | |
+| 15 | #36 Narrow window layout | S | shell visual states | PR #94, in review |
+| 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | building |
 | 16 | #35 Motion system | O | every view, alone | |
 | 17 | #39 Strings to resource files | S | every view, alone | |
 | 18 | #38 Accessibility pass | O | every view, alone | |
