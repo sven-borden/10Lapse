@@ -219,10 +219,12 @@ Nothing blocks the build loop. Everything below waits until release is near
   Daybreak loop via `DaybreakPlayback`, `DragVerdict`). Launch focus uses
   `FocusState.Pointer` (#38 to confirm). Debug `--drag-over`, `--reduce-motion`.
 - #23 PR #76: `Shell/OutputPanel` + `OutputPanelViewModel`. Unsupported sizes
-  hidden; HEVC only when available; probe at launch. A provisional answer
-  never writes the project. `CanExport` = settings supported: #24 must also
-  require frames and let Export use the displayed values under a provisional
-  replacement. `ExportBitrate` is in `Core.Projects`.
+  hidden; HEVC only when available; probe at launch. `Project.Output` is the
+  user's preference and only a user pick writes it (#80): `OutputPanelViewModel.
+  EffectiveOutput` (`OutputPlan.Resolve`) is what is shown and what #24 must
+  export with, size included (`OutputSize.For(effective.Resolution, ...)`, not
+  `snapshot.VideoSize`). `CanExport` = an effective output exists; #24 must also
+  require frames. `ExportBitrate` is in `Core.Projects`.
 - #17 PR #78: `Shell/TimingPanel`, `Shell/SegmentedControl`; inspector is a
   scrolling stack; `ShellView` owns and disposes the panel view models.
   Separator rules: dot or comma is decimal; one separator + three digits is
