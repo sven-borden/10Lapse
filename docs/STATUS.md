@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #84 merged. Building: #24 export panel (Opus), #86 flaky test (Sonnet). Queued: #34 benchmark, #31 rating, #25 export while minimized, then #36.
+2026-10-19: #86 merged. Building: #24 export panel (Opus), #34 benchmark (Sonnet). Queued: #31 rating and #25 export while minimized (after #24), then #36 narrow layout.
 
 ## Waves
 
@@ -42,9 +42,9 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 13 | #21 Remember settings | S | settings persistence | merged #83 |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
 | 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | merged #85 |
-| 13 | #86 Flaky memory assertion (bug) | S | `tests/` | building |
+| 13 | #86 Flaky memory assertion (bug) | S | `tests/` | merged #87 |
 | 14 | #31 Rating prompt | S | Store rating | |
-| 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | |
+| 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | building |
 | 15 | #36 Narrow window layout | S | shell visual states | |
 | 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | |
 | 16 | #35 Motion system | O | every view, alone | |
@@ -118,32 +118,21 @@ Nothing blocks the build loop. Everything below waits until release is near
   D3D surfaces, 8 GB on CPU buffers). Four pipeline requirements for #22 are
   on #22: cancel under 1 s, decode at the output size, frame-level failure
   context, encode-stage stall guard.
-- 2026-10-18 (#16): `Project` is single-writer (the creating thread) and
-  publishes an immutable `ProjectSnapshot` with a `Version`; readers on any
-  thread take the snapshot. A replaced project is closed: mutations throw
-  `ObjectDisposedException`, which an import treats as cancelled. Errors that
-  must not crash go to `IErrorSink` (Presentation; #26 replaces the Trace
-  implementation). Timing keeps each mode's own input; `EffectiveRate(count)`
-  clamps and says so. `OutputResolution` is the short side. Defaults: 30 fps,
-  16:9 Fill, 1080p H.264 High, capture-time sort. User-visible text in
-  `ProjectText` as whole format strings.
-- 2026-10-18 (#28): the shell is `Shell/ShellView` (a UserControl; adaptive
-  states go on `ShellRoot`). Title bar is custom elements with `SetTitleBar`
-  (caption buttons 32 px in the 40 px strip); title and command bar are one
-  drag region with passthrough for controls. Mica is tinted with the `Mica`
-  token (0.9 light, 0.95 dark) so it reads neutral, not blue. InfoBars go
-  through `IInfoBarService` (`InfoBarQueue`: thread-safe, at most 5 waiting,
-  identical requests coalesce, optional detail list behind View list), with
-  UIA announcements. `FlyoutShadow` is disposable; overlays must dispose it.
-  `AccessibilitySettings.HighContrastChanged` crashes unpackaged; use
-  `UISettings.ColorValuesChanged`. Ctrl+N goes on `ShellRoot`.
+- 2026-10-18 (#16): `Project` is single-writer and publishes an immutable
+  `ProjectSnapshot`; readers on any thread use the snapshot. A replaced project
+  is closed (mutations throw `ObjectDisposedException`). `OutputResolution` is
+  the short side. Defaults: 30 fps, 16:9 Fill, 1080p H.264 High, capture-time
+  sort. User-visible text lives in `ProjectText` as whole format strings.
+- 2026-10-18 (#28): `Shell/ShellView`, adaptive states on `ShellRoot`, custom
+  title bar with one drag region. Mica tinted with the `Mica` token. InfoBars
+  through `InfoBarQueue` (thread-safe, 5 waiting, coalesced, one action or a
+  detail list). `AccessibilitySettings.HighContrastChanged` crashes
+  unpackaged; use `UISettings.ColorValuesChanged`.
 - 2026-10-18 (#9 review): HEVC is offered only when an HEVC encoder works and
   an HEVC decoder is present, so Windows can play the file.
-- 2026-10-18 (#9): the probe tests 30, 60 and 120 fps; a cold probe takes
-  about 3.5 s in the background (H.264 4K120 refusals cost about 550 ms each),
-  a cached load about 0.25 s. It runs once per adapter, driver, OS build,
-  codec versions and Media build. #23 must never block on it; if the cold time
-  matters, #23 can move 120 fps to an on-demand probe.
+- 2026-10-18 (#9): the encoder probe tests 30, 60 and 120 fps (cold about
+  4 s in the background, cached about 0.25 s), once per adapter, driver, OS
+  build, codec versions and Media build.
 - 2026-10-18 (#26): commands are built only with `errors.AsyncCommand(...)`,
   `errors.Command(...)` or `GuardCancellableAsync` (a rule test bans raw
   `[RelayCommand]`/`RelayCommand` and unguarded `async void`). Every
@@ -284,3 +273,5 @@ Nothing blocks the build loop. Everything below waits until release is near
   against the bytes; worst read about 0.5 ms and a few KB. Matches the old
   reader on 1,289+ real files. Real fixtures (MetadataExtractor samples,
   raw.pixls.us CC0) with licences in `tests/.../Ordering/Fixtures/README.md`.
+- #86 PR #87: no process-wide memory deltas in tests (parallel classes skew
+  them); count saves and changes instead.
