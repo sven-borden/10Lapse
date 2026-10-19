@@ -72,6 +72,7 @@ public sealed partial class FilmstripView : UserControl
     private ThumbnailCache<SoftwareBitmap>? _thumbnails;
     private PreviewSession? _preview;
     private IErrorPresenter? _errors;
+    private bool _focusPlayheadAfterMenu;
     private IErrorSink? _log;
     private UIElement? _keyRoot;
     private Func<bool>? _canEdit;
@@ -128,6 +129,7 @@ public sealed partial class FilmstripView : UserControl
         ListHost.PointerCanceled += (_, _) => Guarded(CancelPress);
         ListHost.PointerCaptureLost += (_, _) => Guarded(CancelPress);
         StripMenu.Opening += OnStripMenuOpening;
+        StripMenu.Closed += OnStripMenuClosed;
     }
 
     /// <summary>How a UI Automation client changes the selection.</summary>
@@ -934,6 +936,33 @@ public sealed partial class FilmstripView : UserControl
         if (ViewModel is { } viewModel)
         {
             _errors?.Guard(() => viewModel.PrepareContextMenu(null), ProjectText.FilmstripSelectFailed);
+        }
+    }
+
+    // The menu's Remove from project (#38): the menu gives the focus back to the thumbnail it opened on, which the removal
+    // may have taken away, so once it has closed the focus goes to the frame the preview shows now, as Delete does.
+    private void OnMenuRemoveClick(object sender, RoutedEventArgs e) => _focusPlayheadAfterMenu = true;
+
+    private void OnStripMenuClosed(object? sender, object e)
+    {
+        if (!_focusPlayheadAfterMenu)
+        {
+            return;
+        }
+
+        _focusPlayheadAfterMenu = false;
+        if (_dispatcher is { } dispatcher && _errors is { } errors)
+        {
+            dispatcher.TryEnqueueGuarded(
+                errors,
+                () =>
+                {
+                    if (ViewModel is { PlayheadIndex: >= 0 } viewModel)
+                    {
+                        FocusIndex(viewModel.PlayheadIndex);
+                    }
+                },
+                ProjectText.FilmstripSelectFailed);
         }
     }
 

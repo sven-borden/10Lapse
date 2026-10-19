@@ -199,7 +199,8 @@ try {
     # The close question first (it only comes while the export runs; a finished export just closes the app), then the
     # panel: a fast GPU encoder can finish 400 frames in seconds.
     if (Find-Id $app 'CancelButton' 240) {
-        $app.Window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
+        $windowPattern = $null
+        if ($app.Window.TryGetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern, [ref]$windowPattern)) { $windowPattern.Close() }
         $keep = Find-Id $app 'CloseButton' 5
         if ($keep) {
             $line = & $scanner $app.Process.Id $results 'close-question' 2>&1 | Select-Object -Last 1
@@ -228,7 +229,7 @@ finally { Stop-App $app; Keep-FocusLog 'export' }
 Write-Host 'Run: shortcuts'
 $export2 = Join-Path $base 'a11y-keys.mp4'
 Remove-Item $export2 -ErrorAction SilentlyContinue
-$app = Start-App ((Common 'keys') + '--sample-frames=60' + "--export-to=$export2" + '--export-wait' + '--shortcut-after=ctrl+o@8,ctrl+n@14,ctrl+e@22,ctrl+n@36,ctrl+e@40,ctrl+o@48')
+$app = Start-App ((Common 'keys') + '--sample-frames=400' + '--output=2160' + "--export-to=$export2" + '--export-wait' + '--shortcut-after=ctrl+o@8,ctrl+n@14,ctrl+e@22,ctrl+n@36,ctrl+e@39,ctrl+o@48')
 function Wait-Until($app, [double]$second) {
     $left = $second - ((Get-Date) - $app.Process.StartTime).TotalSeconds
     if ($left -gt 0) { Start-Sleep -Milliseconds ([int]($left * 1000)) }
@@ -258,8 +259,8 @@ try {
         Invoke-Element (Find-Id $app 'CloseButton' 2)
     }
     else { Skip 'new-project-question' 'no question appeared' }
-    # Ctrl+E at 22 s, the finished state, Ctrl+N at 36 s, Ctrl+E at 40 s on the Empty screen.
-    Wait-Until $app 38
+    # Ctrl+E at 22 s, the finished state, Ctrl+N at 36 s, Ctrl+E at 39 s on the Empty screen, then Settings.
+    Wait-Until $app 41
     if (Find-Id $app 'ChooseFolderButton' 5) { $summary.Add('ctrl+n after the export: the Empty screen') }
     Invoke-Element (Find-Id $app 'SettingsButton' 2)
     # Ctrl+O at 48 s on the Settings page.

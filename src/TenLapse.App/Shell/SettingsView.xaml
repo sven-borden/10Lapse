@@ -15,7 +15,8 @@
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:presentation="using:TenLapse.Presentation"
-  xmlns:rating="using:TenLapse.Presentation.Rating">
+  xmlns:rating="using:TenLapse.Presentation.Rating"
+  xmlns:shell="using:TenLapse.Shell">
 
   <UserControl.Resources>
     <!-- Settings card (DESIGN.md, Cards and InfoBars): Card fill, Divider border, 6 px corners, 12 x 16 padding, 68 px tall at least. -->
@@ -50,7 +51,11 @@
     BorderBrush="{ThemeResource DividerBrush}"
     BorderThickness="0,1,0,0">
     <ScrollViewer HorizontalScrollMode="Disabled" VerticalScrollBarVisibility="Auto">
-      <Grid Padding="{StaticResource PaddingSettingsPage}">
+      <!-- The page is the window's main landmark while it shows (#38). -->
+      <shell:Region
+        Padding="{StaticResource PaddingSettingsPage}"
+        AutomationProperties.LandmarkType="Main"
+        AutomationProperties.Name="{x:Bind presentation:ProjectText.SettingsTitle}">
         <StackPanel MaxWidth="{StaticResource SettingsPageMaxWidth}" Spacing="{StaticResource SettingsCardSpacing}">
           <TextBlock
             Margin="{StaticResource SettingsTitleMargin}"
@@ -158,7 +163,7 @@
             </StackPanel>
           </Grid>
         </StackPanel>
-      </Grid>
+      </shell:Region>
     </ScrollViewer>
   </Border>
 </UserControl>

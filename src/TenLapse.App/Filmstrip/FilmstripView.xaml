@@ -52,6 +52,8 @@
       <local:FilmstripList.ContextFlyout>
         <MenuFlyout x:Name="StripMenu">
           <MenuFlyoutItem
+            AutomationProperties.AcceleratorKey="{x:Bind presentation:ProjectText.FilmstripRemoveKeys}"
+            Click="OnMenuRemoveClick"
             Command="{x:Bind ViewModel.RemoveCommand, Mode=OneWay}"
             KeyboardAcceleratorTextOverride="{x:Bind presentation:ProjectText.FilmstripRemoveKeys}"
             Text="{x:Bind presentation:ProjectText.FilmstripRemove}">
@@ -61,15 +63,18 @@
             </MenuFlyoutItem.Icon>
           </MenuFlyoutItem>
           <MenuFlyoutItem
+            AutomationProperties.AcceleratorKey="{x:Bind presentation:ProjectText.FilmstripMoveEarlierKeys}"
             Command="{x:Bind ViewModel.MoveEarlierCommand, Mode=OneWay}"
             KeyboardAcceleratorTextOverride="{x:Bind presentation:ProjectText.FilmstripMoveEarlierKeys}"
             Text="{x:Bind presentation:ProjectText.FilmstripMoveEarlier}" />
           <MenuFlyoutItem
+            AutomationProperties.AcceleratorKey="{x:Bind presentation:ProjectText.FilmstripMoveLaterKeys}"
             Command="{x:Bind ViewModel.MoveLaterCommand, Mode=OneWay}"
             KeyboardAcceleratorTextOverride="{x:Bind presentation:ProjectText.FilmstripMoveLaterKeys}"
             Text="{x:Bind presentation:ProjectText.FilmstripMoveLater}" />
           <MenuFlyoutSeparator />
           <MenuFlyoutItem
+            AutomationProperties.AcceleratorKey="{x:Bind presentation:ProjectText.FilmstripUndoKeys}"
             Command="{x:Bind ViewModel.UndoCommand, Mode=OneWay}"
             KeyboardAcceleratorTextOverride="{x:Bind presentation:ProjectText.FilmstripUndoKeys}"
             Text="{x:Bind ViewModel.UndoText, Mode=OneWay}">
