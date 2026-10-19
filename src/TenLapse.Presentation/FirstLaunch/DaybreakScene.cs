@@ -33,7 +33,34 @@ public sealed record DaybreakPalette(
     Color GlowDusk,
     Color Star,
     Color Light,
-    Color LightPale);
+    Color LightPale)
+{
+    private static readonly string[] _zenithNames = ["Day", "Golden", "Amber", "Rose", "Dusk", "BlueHour", "Night"];
+    private static readonly string[] _horizonNames = ["Daylight", "Golden", "Amber", "Rose", "Dusk", "BlueHour", "Night"];
+
+    /// <summary>
+    /// The palette from the color tokens at the root of Themes/Colors.xaml: <paramref name="token"/> returns the
+    /// color for a key such as "DaybreakStarColor". The horizon is the brand ramp (DaylightColor to NightColor), the
+    /// rest are the Daybreak* tokens. The App reads them with ThemeTokens.FixedColor; tests from the file itself.
+    /// </summary>
+    public static DaybreakPalette FromTokens(Func<string, Color> token)
+    {
+        ArgumentNullException.ThrowIfNull(token);
+        return new DaybreakPalette(
+            Zenith: [.. _zenithNames.Select(name => token($"DaybreakZenith{name}Color"))],
+            Horizon: [.. _horizonNames.Select(name => token($"{name}Color"))],
+            LandDay: token("DaybreakLandDayColor"),
+            LandNight: token("DaybreakLandNightColor"),
+            DeepWater: token("DaybreakDeepWaterColor"),
+            SunDay: token("DaybreakSunDayColor"),
+            SunDusk: token("DaybreakSunDuskColor"),
+            GlowDay: token("DaybreakGlowDayColor"),
+            GlowDusk: token("DaybreakGlowDuskColor"),
+            Star: token("DaybreakStarColor"),
+            Light: token("DaybreakLightColor"),
+            LightPale: token("DaybreakLightPaleColor"));
+    }
+}
 
 /// <summary>
 /// The harbor at one moment from day (0) to night (1): every color and the few numbers that move. Positions are

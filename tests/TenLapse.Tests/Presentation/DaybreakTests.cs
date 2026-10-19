@@ -9,10 +9,14 @@ namespace TenLapse.Tests.Presentation;
 public sealed class DaybreakTests
 {
     [Fact]
-    public void TheLoopIsTwentySecondsAtThirtyFramesPerSecond()
+    public void TheLastFrameEndsExactlyWhereTheLoopStartsAgain()
     {
-        Assert.Equal(20 * FrameTiming.TicksPerSecond, Daybreak.LengthTicks);
-        Assert.Equal(new Fraction(30, 1), Daybreak.Rate);
+        // No gap and no overlap at the seam: the frame after the last would start at the loop's length.
+        var length = TimeSpan.FromTicks(Daybreak.LengthTicks);
+
+        Assert.Equal(Daybreak.LengthTicks, FrameTiming.FrameStart(Daybreak.FrameCount, Daybreak.Rate));
+        Assert.Equal(Daybreak.FrameCount - 1, Daybreak.FrameAt(length - TimeSpan.FromTicks(1)));
+        Assert.Equal(0, Daybreak.FrameAt(length));
     }
 
     [Fact]
@@ -181,38 +185,50 @@ public sealed class DaybreakTests
     }
 
     [Fact]
-    public void ThePaletteComesFromTheColorTokens()
+    public void ThePaletteTakesEachPartFromItsOwnColorToken()
     {
-        // The App builds the palette from these keys (FirstLaunchView.LoadPalette); they must exist with these values.
-        var palette = Palette();
+        // Each key gets a color of its own, so the palette shows which key filled which part.
+        var keys = new List<string>();
+        var palette = DaybreakPalette.FromTokens(key =>
+        {
+            keys.Add(key);
+            return Color.FromArgb(keys.Count, 0, 0);
+        });
+        string Key(Color color) => keys[color.R - 1];
 
-        Assert.Equal(7, palette.Zenith.Length);
-        Assert.Equal("#C4E0F3", Hex(palette.Horizon[0]));  // DESIGN.md daylight
-        Assert.Equal("#10162E", Hex(palette.Horizon[^1])); // DESIGN.md night
-        Assert.Equal("#5E9BD6", Hex(palette.Zenith[0]));
+        Assert.Equal(keys.Count, keys.Distinct().Count());
+        Assert.Equal(
+            ["DaybreakZenithDayColor", "DaybreakZenithGoldenColor", "DaybreakZenithAmberColor", "DaybreakZenithRoseColor", "DaybreakZenithDuskColor", "DaybreakZenithBlueHourColor", "DaybreakZenithNightColor"],
+            palette.Zenith.Select(Key));
+        Assert.Equal(
+            ["DaylightColor", "GoldenColor", "AmberColor", "RoseColor", "DuskColor", "BlueHourColor", "NightColor"], // the brand ramp
+            palette.Horizon.Select(Key));
+        Assert.Equal(
+            ["DaybreakLandDayColor", "DaybreakLandNightColor", "DaybreakDeepWaterColor", "DaybreakSunDayColor", "DaybreakSunDuskColor", "DaybreakGlowDayColor", "DaybreakGlowDuskColor", "DaybreakStarColor", "DaybreakLightColor", "DaybreakLightPaleColor"],
+            new[] { palette.LandDay, palette.LandNight, palette.DeepWater, palette.SunDay, palette.SunDusk, palette.GlowDay, palette.GlowDusk, palette.Star, palette.Light, palette.LightPale }.Select(Key));
     }
 
-    /// <summary>The palette as the App reads it, from the root of Themes/Colors.xaml.</summary>
+    [Fact]
+    public void EveryPaletteKeyIsAColorAtTheRootOfTheTokenDictionary()
+    {
+        // Not tied to a theme: ThemeTokens.FixedColor reads the root, so a themed or missing key would throw in the App.
+        var root = DesignFiles.RootEntries(DesignFiles.LoadTheme("Colors.xaml"));
+        var keys = new List<string>();
+        DaybreakPalette.FromTokens(key =>
+        {
+            keys.Add(key);
+            return Color.Black;
+        });
+
+        Assert.All(keys, key => Assert.True(root.TryGetValue(key, out var entry) && entry.Name.LocalName == "Color", $"{key} is not a root Color"));
+    }
+
+    /// <summary>The palette as the App builds it (<see cref="DaybreakPalette.FromTokens"/>), from the root of Themes/Colors.xaml.</summary>
     internal static DaybreakPalette Palette()
     {
         var root = DesignFiles.RootEntries(DesignFiles.LoadTheme("Colors.xaml"));
-        Color Token(string key) => Color.FromArgb(int.Parse(root[key].Value.Trim().TrimStart('#'), NumberStyles.HexNumber, CultureInfo.InvariantCulture) | unchecked((int)0xFF000000));
-
-        string[] zenith = ["Day", "Golden", "Amber", "Rose", "Dusk", "BlueHour", "Night"];
-        string[] horizon = ["Daylight", "Golden", "Amber", "Rose", "Dusk", "BlueHour", "Night"];
-        return new DaybreakPalette(
-            Zenith: [.. zenith.Select(name => Token($"DaybreakZenith{name}Color"))],
-            Horizon: [.. horizon.Select(name => Token($"{name}Color"))],
-            LandDay: Token("DaybreakLandDayColor"),
-            LandNight: Token("DaybreakLandNightColor"),
-            DeepWater: Token("DaybreakDeepWaterColor"),
-            SunDay: Token("DaybreakSunDayColor"),
-            SunDusk: Token("DaybreakSunDuskColor"),
-            GlowDay: Token("DaybreakGlowDayColor"),
-            GlowDusk: Token("DaybreakGlowDuskColor"),
-            Star: Token("DaybreakStarColor"),
-            Light: Token("DaybreakLightColor"),
-            LightPale: Token("DaybreakLightPaleColor"));
+        return DaybreakPalette.FromTokens(key =>
+            Color.FromArgb(int.Parse(root[key].Value.Trim().TrimStart('#'), NumberStyles.HexNumber, CultureInfo.InvariantCulture) | unchecked((int)0xFF000000)));
     }
 
     private static string Hex(Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";

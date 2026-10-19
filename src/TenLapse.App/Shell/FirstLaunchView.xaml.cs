@@ -383,28 +383,10 @@ public sealed partial class FirstLaunchView : UserControl
     }
 
     // The harbor's colors from the token dictionaries (Themes/Colors.xaml): the brand ramp and the Daybreak* tokens.
-    private static DaybreakPalette LoadPalette()
-    {
-        static DrawingColor Token(string key)
+    private static DaybreakPalette LoadPalette() =>
+        DaybreakPalette.FromTokens(key =>
         {
             var color = ThemeTokens.FixedColor(key);
             return DrawingColor.FromArgb(color.A, color.R, color.G, color.B);
-        }
-
-        string[] zenith = ["Day", "Golden", "Amber", "Rose", "Dusk", "BlueHour", "Night"];
-        string[] horizon = ["Daylight", "Golden", "Amber", "Rose", "Dusk", "BlueHour", "Night"];
-        return new DaybreakPalette(
-            Zenith: [.. zenith.Select(name => Token($"DaybreakZenith{name}Color"))],
-            Horizon: [.. horizon.Select(name => Token($"{name}Color"))],
-            LandDay: Token("DaybreakLandDayColor"),
-            LandNight: Token("DaybreakLandNightColor"),
-            DeepWater: Token("DaybreakDeepWaterColor"),
-            SunDay: Token("DaybreakSunDayColor"),
-            SunDusk: Token("DaybreakSunDuskColor"),
-            GlowDay: Token("DaybreakGlowDayColor"),
-            GlowDusk: Token("DaybreakGlowDuskColor"),
-            Star: Token("DaybreakStarColor"),
-            Light: Token("DaybreakLightColor"),
-            LightPale: Token("DaybreakLightPaleColor"));
-    }
+        });
 }
