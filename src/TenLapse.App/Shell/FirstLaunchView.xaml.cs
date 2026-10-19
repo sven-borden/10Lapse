@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using TenLapse.Presentation;
 using TenLapse.Presentation.FirstLaunch;
+using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using TenLapse.Themes;
@@ -47,6 +48,7 @@ public sealed partial class FirstLaunchView : UserControl
     private bool _regionVisible = true;
     private int _frame = -1;
     private int _thumb = -1;
+    private DaybreakMode _loggedMode = DaybreakMode.Hidden;
 
     /// <summary>A drop zone at rest; the shell calls <see cref="Attach"/> before it loads.</summary>
     public FirstLaunchView()
@@ -119,12 +121,8 @@ public sealed partial class FirstLaunchView : UserControl
         StripCanvas.RemoveFromVisualTree();
     }
 
-    private static bool AnimationsEnabled =>
-#if DEBUG
-        MotionTokens.AnimationsEnabled && !Debugging.DebugLaunch.ReduceMotion;
-#else
-        MotionTokens.AnimationsEnabled;
-#endif
+    // The one decision (MotionTokens), polled at every update and every tick.
+    private static bool AnimationsEnabled => MotionTokens.AnimationsEnabled;
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
@@ -195,6 +193,14 @@ public sealed partial class FirstLaunchView : UserControl
             HighContrast: ThemeTokens.IsHighContrast));
 
         Arrange(_playback.TakesPlace ? _layout : FirstLaunchLayout.TextsAlone);
+
+        // The motion log hears when the loop starts, or stands at the still frame because animations are off.
+        if (mode != _loggedMode && (mode == DaybreakMode.Run || (mode == DaybreakMode.Still && !AnimationsEnabled)))
+        {
+            MotionTokens.Plan(MotionCatalogue.Daybreak);
+        }
+
+        _loggedMode = mode;
         if (mode == DaybreakMode.Run)
         {
             _timer.Start();
@@ -354,39 +360,43 @@ public sealed partial class FirstLaunchView : UserControl
     private void ShowDragLook()
     {
         var over = ViewModel.IsDragOver;
-        var animations = AnimationsEnabled;
+        var look = MotionTokens.Plan(over ? MotionCatalogue.DragLookIn : MotionCatalogue.DragLookOut);
         var fromOpacity = DragOverLook.Opacity;
         var fromY = DaybreakLift.Y;
         var toOpacity = over ? 1.0 : 0.0;
-        var toY = over && animations ? LiftDistance : 0;
+
+        // With animations off Daybreak stays put; settling back from a lift always goes to rest.
+        var lifts = over && look.AnimationsEnabled;
+        var toY = lifts ? LiftDistance : 0;
 
         _dragStoryboard?.Stop();
+        _dragStoryboard = null;
         DragOverLook.Opacity = toOpacity;
         DaybreakLift.Y = toY;
 
-        var fade = animations ? MotionTokens.Control : over ? MotionTokens.ReducedFadeIn : MotionTokens.ReducedFadeOut;
         var storyboard = new Storyboard();
-        storyboard.Children.Add(Ease(DragOverLook, "Opacity", fromOpacity, toOpacity, fade));
-        if (fromY != toY)
+        if (look.Animates && fromOpacity != toOpacity)
         {
-            storyboard.Children.Add(Ease(DaybreakLift, "Y", fromY, toY, animations ? MotionTokens.Reveal : MotionTokens.ReducedFadeOut));
+            storyboard.Children.Add(Ease(DragOverLook, "Opacity", fromOpacity, toOpacity, look));
         }
 
-        _dragStoryboard = storyboard;
-        storyboard.Begin();
+        if (fromY != toY && MotionTokens.Plan(MotionCatalogue.DragLift) is { Animates: true } lift)
+        {
+            storyboard.Children.Add(Ease(DaybreakLift, "Y", fromY, toY, lift));
+        }
+
+        if (storyboard.Children.Count > 0)
+        {
+            _dragStoryboard = storyboard;
+            storyboard.Begin();
+        }
     }
 
-    private static DoubleAnimationUsingKeyFrames Ease(DependencyObject target, string property, double from, double to, TimeSpan duration)
+    private static DoubleAnimationUsingKeyFrames Ease(DependencyObject target, string property, double from, double to, MotionStep step)
     {
-        var (first, second) = MotionTokens.Enter;
         var animation = new DoubleAnimationUsingKeyFrames();
         animation.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.Zero), Value = from });
-        animation.KeyFrames.Add(new SplineDoubleKeyFrame
-        {
-            KeyTime = KeyTime.FromTimeSpan(duration),
-            Value = to,
-            KeySpline = new KeySpline { ControlPoint1 = new(first.X, first.Y), ControlPoint2 = new(second.X, second.Y) },
-        });
+        animation.KeyFrames.Add(MotionTokens.KeyFrame(to, step.Duration, step.Easing));
         Storyboard.SetTarget(animation, target);
         Storyboard.SetTargetProperty(animation, property);
         return animation;

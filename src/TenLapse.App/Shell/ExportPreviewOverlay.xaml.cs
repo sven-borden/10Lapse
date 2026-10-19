@@ -3,6 +3,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using TenLapse.Presentation.Export;
+using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Preview;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
@@ -28,8 +29,6 @@ namespace TenLapse.Shell;
 /// </remarks>
 public sealed partial class ExportPreviewOverlay : UserControl
 {
-    private static readonly TimeSpan _premiereDelay = TimeSpan.FromMilliseconds(1100);
-
     private ExportViewModel? _export;
     private PlayerViewModel? _player;
     private IErrorPresenter? _errors;
@@ -134,7 +133,7 @@ public sealed partial class ExportPreviewOverlay : UserControl
         var ticket = ++_premiere;
         if (wait)
         {
-            await Task.Delay(_premiereDelay);
+            await Task.Delay(Themes.MotionTokens.Plan(MotionCatalogue.FinishedPremiere).Duration);
         }
 
         if (ticket != _premiere || _export is not { IsFinished: true } || _player is not { } player)

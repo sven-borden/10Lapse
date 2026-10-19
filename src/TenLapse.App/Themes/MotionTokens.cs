@@ -1,77 +1,124 @@
 using System.Numerics;
 using Microsoft.UI.Composition;
+using Microsoft.UI.Xaml.Media.Animation;
+using TenLapse.Presentation.Motion;
 using Windows.UI.ViewManagement;
 
 namespace TenLapse.Themes;
 
 /// <summary>
-/// The motion tokens of DESIGN.md for code: durations, easings for Composition animations, and the one
-/// reduced-motion check. The same values exist as XAML resources in Themes/Motion.xaml for Storyboards.
+/// The motion tokens for code, and the one place that decides whether the app animates. The values are
+/// <see cref="MotionSpec"/>'s (Presentation, tested against DESIGN.md, the motion spec and Themes/Motion.xaml); this class
+/// adds the reduced-motion decision, the motion log and the Composition and Storyboard forms of the curves.
 /// </summary>
+/// <remarks>
+/// Every animation starts with <see cref="Plan"/>: it reads <see cref="AnimationsEnabled"/> at that moment (Windows has no
+/// change event for it, so it is polled at each start, never cached), writes the step to the Debug motion log, and returns
+/// what to animate. A rule test (tests/TenLapse.Tests/Design/MotionRuleTests.cs) fails on a duration or a curve written
+/// anywhere but the token files.
+/// </remarks>
 public static class MotionTokens
 {
     /// <summary>Press and hover color, linear.</summary>
-    public static readonly TimeSpan Tap = TimeSpan.FromMilliseconds(83);
+    public static TimeSpan Tap => MotionSpec.Tap;
 
     /// <summary>Toggles, exits and focus, with the Move easing.</summary>
-    public static readonly TimeSpan Control = TimeSpan.FromMilliseconds(167);
+    public static TimeSpan Control => MotionSpec.Control;
 
     /// <summary>InfoBars, the readout and the segment pill, with the Enter easing.</summary>
-    public static readonly TimeSpan Reveal = TimeSpan.FromMilliseconds(250);
+    public static TimeSpan Reveal => MotionSpec.Reveal;
 
     /// <summary>Screens, panels, thumbnails and the gate, with the Enter easing.</summary>
-    public static readonly TimeSpan Scene = TimeSpan.FromMilliseconds(400);
+    public static TimeSpan Scene => MotionSpec.Scene;
 
     /// <summary>The preview developing on arrival, with the Enter easing.</summary>
-    public static readonly TimeSpan Cinema = TimeSpan.FromMilliseconds(700);
+    public static TimeSpan Cinema => MotionSpec.Cinema;
 
     /// <summary>The theme change crossfades colors over this long, linear.</summary>
-    public static readonly TimeSpan ThemeCrossfade = TimeSpan.FromMilliseconds(250);
+    public static TimeSpan ThemeCrossfade => MotionSpec.ThemeCrossfade;
 
     /// <summary>With animations off, things arriving fade in over this long instead of moving.</summary>
-    public static readonly TimeSpan ReducedFadeIn = TimeSpan.FromMilliseconds(150);
+    public static TimeSpan ReducedFadeIn => MotionSpec.ReducedFadeIn;
 
     /// <summary>With animations off, things leaving fade out over this long instead of moving.</summary>
-    public static readonly TimeSpan ReducedFadeOut = TimeSpan.FromMilliseconds(90);
-
-    /// <summary>Enter, for things arriving: cubic-bezier(0.16, 1, 0.3, 1).</summary>
-    public static readonly (Vector2 ControlPoint1, Vector2 ControlPoint2) Enter = (new Vector2(0.16f, 1f), new Vector2(0.3f, 1f));
-
-    /// <summary>Exit, for things leaving: cubic-bezier(0.7, 0, 0.84, 0).</summary>
-    public static readonly (Vector2 ControlPoint1, Vector2 ControlPoint2) Exit = (new Vector2(0.7f, 0f), new Vector2(0.84f, 0f));
-
-    /// <summary>Move, for pills, knobs and the gate: cubic-bezier(0.65, 0, 0.35, 1).</summary>
-    public static readonly (Vector2 ControlPoint1, Vector2 ControlPoint2) Move = (new Vector2(0.65f, 0f), new Vector2(0.35f, 1f));
+    public static TimeSpan ReducedFadeOut => MotionSpec.ReducedFadeOut;
 
     private static readonly UISettings _settings = new();
 
     /// <summary>
-    /// Whether the user wants animation (Windows Settings, Accessibility, Visual effects, Animation effects).
-    /// Read it each time an animation starts. When false, movement becomes a short fade or nothing.
-    /// It is polled at each animation start, not observed: an animation already running when the user flips
-    /// the Windows setting finishes as it began, and the next one follows the new value.
+    /// Whether the app animates: Windows Settings, Accessibility, Visual effects, Animation effects (and, in Debug, no
+    /// <c>--reduce-motion</c>). Read it each time an animation starts; when false, movement becomes a short fade or nothing.
+    /// It is polled at each start, not observed: an animation already running when the user flips the Windows setting
+    /// finishes as it began, and the next one follows the new value. Never <c>AccessibilitySettings</c>, which crashes the
+    /// unpackaged app (docs/STATUS.md, #28).
     /// </summary>
-    public static bool AnimationsEnabled => _settings.AnimationsEnabled;
+    public static bool AnimationsEnabled => _settings.AnimationsEnabled && !ReduceMotionSwitch;
 
-    /// <summary>A new Enter easing for arrivals.</summary>
-    public static CubicBezierEasingFunction CreateEnter(Compositor compositor) => CreateBezier(compositor, Enter);
+    /// <summary>Debug <c>--reduce-motion</c> acts as Windows' animation setting off.</summary>
+    internal static bool ReduceMotionSwitch =>
+#if DEBUG
+        Debugging.DebugLaunch.ReduceMotion;
+#else
+        false;
+#endif
 
-    /// <summary>A new Exit easing for departures.</summary>
-    public static CubicBezierEasingFunction CreateExit(Compositor compositor) => CreateBezier(compositor, Exit);
-
-    /// <summary>A new Move easing for pills, knobs and the gate.</summary>
-    public static CubicBezierEasingFunction CreateMove(Compositor compositor) => CreateBezier(compositor, Move);
-
-    /// <summary>A new linear easing for playback and progress.</summary>
-    public static LinearEasingFunction CreateLinear(Compositor compositor)
+    /// <summary>
+    /// What <paramref name="transition"/> does now: the spec's timing with animations on, the reduced fade or nothing with
+    /// them off. The <paramref name="index"/>-th of a cascade starts its stagger later. Written to the Debug motion log
+    /// (<c>--motion-log</c>). Any thread.
+    /// </summary>
+    public static MotionStep Plan(MotionTransition transition, int index = 0)
     {
-        ArgumentNullException.ThrowIfNull(compositor);
-        return compositor.CreateLinearEasingFunction();
+        ArgumentNullException.ThrowIfNull(transition);
+        var step = transition.Plan(AnimationsEnabled, index);
+#if DEBUG
+        Debugging.DebugMotion.Record(step);
+#endif
+        return step;
     }
 
-    private static CubicBezierEasingFunction CreateBezier(Compositor compositor, (Vector2 ControlPoint1, Vector2 ControlPoint2) curve)
+    /// <summary>A new Composition easing for <paramref name="easing"/>.</summary>
+    public static CompositionEasingFunction CreateEasing(Compositor compositor, MotionEasing easing)
     {
         ArgumentNullException.ThrowIfNull(compositor);
-        return compositor.CreateCubicBezierEasingFunction(curve.ControlPoint1, curve.ControlPoint2);
+        if (easing == MotionEasing.Linear)
+        {
+            return compositor.CreateLinearEasingFunction();
+        }
+
+        var (x1, y1, x2, y2) = MotionSpec.Curve(easing);
+        return compositor.CreateCubicBezierEasingFunction(new Vector2(x1, y1), new Vector2(x2, y2));
+    }
+
+    /// <summary>A new Enter easing for arrivals.</summary>
+    public static CompositionEasingFunction CreateEnter(Compositor compositor) => CreateEasing(compositor, MotionEasing.Enter);
+
+    /// <summary>A new Exit easing for departures.</summary>
+    public static CompositionEasingFunction CreateExit(Compositor compositor) => CreateEasing(compositor, MotionEasing.Exit);
+
+    /// <summary>A new Move easing for pills, knobs and the gate.</summary>
+    public static CompositionEasingFunction CreateMove(Compositor compositor) => CreateEasing(compositor, MotionEasing.Move);
+
+    /// <summary>A new linear easing for playback, progress and the reduced fades.</summary>
+    public static CompositionEasingFunction CreateLinear(Compositor compositor) => CreateEasing(compositor, MotionEasing.Linear);
+
+    /// <summary>
+    /// The key frame that ends a Storyboard animation at <paramref name="value"/> after <paramref name="duration"/>, on
+    /// <paramref name="easing"/> (a straight line for Linear).
+    /// </summary>
+    public static DoubleKeyFrame KeyFrame(double value, TimeSpan duration, MotionEasing easing)
+    {
+        if (easing == MotionEasing.Linear)
+        {
+            return new LinearDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(duration), Value = value };
+        }
+
+        var (x1, y1, x2, y2) = MotionSpec.Curve(easing);
+        return new SplineDoubleKeyFrame
+        {
+            KeyTime = KeyTime.FromTimeSpan(duration),
+            Value = value,
+            KeySpline = new KeySpline { ControlPoint1 = new(x1, y1), ControlPoint2 = new(x2, y2) },
+        };
     }
 }

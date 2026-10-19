@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Export;
 using TenLapse.Presentation.FirstLaunch;
+using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using TenLapse.Themes;
@@ -286,8 +287,13 @@ public sealed partial class ShellView : UserControl
 
         // The canvas's exportOpacity: the Export button stays in the command bar, disabled and at 0.6, outside the
         // inspector; the change fades over 167 ms (at once with animations off).
-        ExportButton.OpacityTransition = MotionTokens.AnimationsEnabled && !ExportPanel.ReduceMotionSwitch ? new ScalarTransition { Duration = MotionTokens.Control } : null;
-        ExportButton.Opacity = Export.IsEditing ? 1 : DimmedExportOpacity;
+        var opacity = Export.IsEditing ? 1 : DimmedExportOpacity;
+        if (ExportButton.Opacity != opacity)
+        {
+            var dim = MotionTokens.Plan(MotionCatalogue.ExportButtonDim);
+            ExportButton.OpacityTransition = dim.Animates ? new ScalarTransition { Duration = dim.Duration } : null;
+            ExportButton.Opacity = opacity;
+        }
 
         switch (Export.State)
         {

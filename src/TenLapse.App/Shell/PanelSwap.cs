@@ -4,6 +4,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Hosting;
 using TenLapse.Presentation.Export;
+using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using TenLapse.Themes;
@@ -65,19 +66,23 @@ internal sealed class PanelSwap
         }
 
         Settle(next, Visibility.Collapsed);
-        var animate = MotionTokens.AnimationsEnabled && !ExportPanel.ReduceMotionSwitch;
         if (leaving.Visibility != Visibility.Visible)
         {
-            Enter(next, animate, generation, arrived);
+            Enter(next, generation, arrived);
+            return;
+        }
+
+        var step = MotionTokens.Plan(MotionCatalogue.PanelOut);
+        if (!step.Animates)
+        {
+            Settle(leaving, Visibility.Collapsed);
+            Enter(next, generation, arrived);
             return;
         }
 
         var visual = ElementCompositionPreview.GetElementVisual(leaving);
-        var compositor = visual.Compositor;
-        var easing = animate ? (CompositionEasingFunction)MotionTokens.CreateExit(compositor) : MotionTokens.CreateLinear(compositor);
-        var duration = animate ? MotionTokens.Control : MotionTokens.ReducedFadeOut;
-        var batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
-        Animate(visual, 0f, animate ? OutTravel : 0f, duration, easing, animate);
+        var batch = visual.Compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+        Animate(visual, 0f, OutTravel, step);
         batch.End();
         batch.Completed += (_, _) => _dispatcher.TryEnqueueGuarded(
             _log,
@@ -89,20 +94,22 @@ internal sealed class PanelSwap
                 }
 
                 Settle(leaving, Visibility.Collapsed);
-                Enter(next, animate, generation, arrived);
+                Enter(next, generation, arrived);
             },
             ExportText.PanelFailed);
     }
 
-    private void Enter(UIElement next, bool animate, int generation, Action? arrived)
+    private void Enter(UIElement next, int generation, Action? arrived)
     {
+        var step = MotionTokens.Plan(MotionCatalogue.PanelIn);
         var visual = ElementCompositionPreview.GetElementVisual(next);
-        var compositor = visual.Compositor;
-        visual.Opacity = 0f;
-        visual.Properties.InsertVector3("Translation", new Vector3(animate ? InTravel : 0f, 0, 0));
+        visual.Opacity = step.Animates ? 0f : 1f;
+        visual.Properties.InsertVector3("Translation", new Vector3(step.Moves ? InTravel : 0f, 0, 0));
         next.Visibility = Visibility.Visible;
-        var easing = animate ? (CompositionEasingFunction)MotionTokens.CreateEnter(compositor) : MotionTokens.CreateLinear(compositor);
-        Animate(visual, 1f, 0f, animate ? MotionTokens.Scene : MotionTokens.ReducedFadeIn, easing, animate);
+        if (step.Animates)
+        {
+            Animate(visual, 1f, 0f, step);
+        }
 
         // Focus once the part has a layout (it was collapsed until now).
         if (arrived is not null)
@@ -120,18 +127,20 @@ internal sealed class PanelSwap
         }
     }
 
-    private static void Animate(Visual visual, float opacity, float x, TimeSpan duration, CompositionEasingFunction easing, bool moves)
+    // The opacity to its end, and with a move the translation along X too, on the step's timing.
+    private static void Animate(Visual visual, float opacity, float x, MotionStep step)
     {
         var compositor = visual.Compositor;
+        var easing = MotionTokens.CreateEasing(compositor, step.Easing);
         var fade = compositor.CreateScalarKeyFrameAnimation();
         fade.InsertKeyFrame(1f, opacity, easing);
-        fade.Duration = duration;
+        fade.Duration = step.Duration;
         visual.StartAnimation(nameof(Visual.Opacity), fade);
-        if (moves)
+        if (step.Moves)
         {
             var move = compositor.CreateVector3KeyFrameAnimation();
             move.InsertKeyFrame(1f, new Vector3(x, 0, 0), easing);
-            move.Duration = duration;
+            move.Duration = step.Duration;
             visual.StartAnimation("Translation", move);
         }
     }

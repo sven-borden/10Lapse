@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
+using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using TenLapse.Themes;
@@ -25,6 +26,7 @@ namespace TenLapse.Shell;
 internal sealed class InfoBarPresenter
 {
     private const float Travel = -8f;
+    private const float DetailsTravel = -4f;
 
     private readonly InfoBarQueue _queue;
     private readonly FrameworkElement _layer;
@@ -65,6 +67,7 @@ internal sealed class InfoBarPresenter
             ?? throw new InvalidOperationException("The InfoBar presenter must be created on the UI thread.");
 
         ElementCompositionPreview.SetIsTranslationEnabled(layer, true);
+        ElementCompositionPreview.SetIsTranslationEnabled(details, true);
         _visual = ElementCompositionPreview.GetElementVisual(layer);
         _compositor = _visual.Compositor;
         _layer.Visibility = Visibility.Collapsed;
@@ -197,17 +200,11 @@ internal sealed class InfoBarPresenter
         _layer.IsHitTestVisible = true;
         Announce(ticket.Request);
 
-        _visual.Opacity = 0f;
+        var step = MotionTokens.Plan(MotionCatalogue.InfoBarIn);
+        _visual.Opacity = step.Animates ? 0f : 1f;
         _layer.Visibility = Visibility.Visible;
-        var animate = MotionTokens.AnimationsEnabled;
-        _visual.Properties.InsertVector3("Translation", new Vector3(0, animate ? Travel : 0, 0));
-        Animate(
-            toOpacity: 1f,
-            toY: 0f,
-            duration: animate ? MotionTokens.Reveal : MotionTokens.ReducedFadeIn,
-            easing: animate ? MotionTokens.CreateEnter(_compositor) : MotionTokens.CreateLinear(_compositor),
-            moves: animate,
-            completed: null);
+        _visual.Properties.InsertVector3("Translation", new Vector3(0, step.Moves ? Travel : 0, 0));
+        Animate(_visual, toOpacity: 1f, toY: 0f, step, completed: null);
     }
 
     private void Leave()
@@ -217,13 +214,11 @@ internal sealed class InfoBarPresenter
         // What is leaving takes no more presses (its buttons check the ticket too, for the keyboard).
         _layer.IsHitTestVisible = false;
         ReturnFocus();
-        var animate = MotionTokens.AnimationsEnabled;
         Animate(
+            _visual,
             toOpacity: 0f,
             toY: Travel,
-            duration: animate ? MotionTokens.Control : MotionTokens.ReducedFadeOut,
-            easing: animate ? MotionTokens.CreateExit(_compositor) : MotionTokens.CreateLinear(_compositor),
-            moves: animate,
+            MotionTokens.Plan(MotionCatalogue.InfoBarOut),
             completed: () =>
             {
                 _bar.IsOpen = false;
@@ -236,38 +231,77 @@ internal sealed class InfoBarPresenter
             });
     }
 
-    private void Animate(float toOpacity, float toY, TimeSpan duration, CompositionEasingFunction easing, bool moves, Action? completed)
+    // The detail list opens under the bar from -4 px (250 ms Enter; a fade with animations off) and closes at once, as the
+    // canvas does.
+    private void ShowDetails(bool open)
     {
-        var generation = ++_generation;
-        var batch = _compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+        var visual = ElementCompositionPreview.GetElementVisual(_details);
+        visual.StopAnimation(nameof(Visual.Opacity));
+        visual.StopAnimation("Translation");
+        visual.Opacity = 1f;
+        visual.Properties.InsertVector3("Translation", Vector3.Zero);
+        _details.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+        if (!open)
+        {
+            return;
+        }
 
+        var step = MotionTokens.Plan(MotionCatalogue.InfoBarDetails);
+        if (step.Animates)
+        {
+            visual.Opacity = 0f;
+            visual.Properties.InsertVector3("Translation", new Vector3(0, step.Moves ? DetailsTravel : 0, 0));
+            Animate(visual, toOpacity: 1f, toY: 0f, step, completed: null, own: false);
+        }
+    }
+
+    // Animates the layer (own: its generation decides whether the completion still counts) or the detail list. A step
+    // that animates nothing ends at once, on the same path.
+    private void Animate(Visual visual, float toOpacity, float toY, MotionStep step, Action? completed, bool own = true)
+    {
+        var generation = own ? ++_generation : _generation;
+        if (!step.Animates)
+        {
+            visual.StopAnimation(nameof(Visual.Opacity));
+            visual.StopAnimation("Translation");
+            visual.Opacity = toOpacity;
+            visual.Properties.InsertVector3("Translation", new Vector3(0, step.Moves ? toY : 0, 0));
+            if (completed is not null)
+            {
+                _dispatcher.TryEnqueueGuarded(_errors, () => Complete(generation, completed), ProjectText.InfoBarSyncFailed);
+            }
+
+            return;
+        }
+
+        var batch = _compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+        var easing = MotionTokens.CreateEasing(_compositor, step.Easing);
         var opacity = _compositor.CreateScalarKeyFrameAnimation();
         opacity.InsertKeyFrame(1f, toOpacity, easing);
-        opacity.Duration = duration;
-        _visual.StartAnimation(nameof(Visual.Opacity), opacity);
+        opacity.Duration = step.Duration;
+        visual.StartAnimation(nameof(Visual.Opacity), opacity);
 
-        if (moves)
+        if (step.Moves)
         {
             var translation = _compositor.CreateVector3KeyFrameAnimation();
             translation.InsertKeyFrame(1f, new Vector3(0, toY, 0), easing);
-            translation.Duration = duration;
-            _visual.StartAnimation("Translation", translation);
+            translation.Duration = step.Duration;
+            visual.StartAnimation("Translation", translation);
         }
 
         batch.End();
         if (completed is not null)
         {
             // Completed may arrive off the UI thread; a newer animation makes this one's ending moot.
-            batch.Completed += (_, _) => _dispatcher.TryEnqueueGuarded(
-                _errors,
-                () =>
-                {
-                    if (generation == _generation)
-                    {
-                        completed();
-                    }
-                },
-                ProjectText.InfoBarSyncFailed);
+            batch.Completed += (_, _) => _dispatcher.TryEnqueueGuarded(_errors, () => Complete(generation, completed), ProjectText.InfoBarSyncFailed);
+        }
+    }
+
+    private void Complete(int generation, Action completed)
+    {
+        if (generation == _generation)
+        {
+            completed();
         }
     }
 
@@ -294,15 +328,17 @@ internal sealed class InfoBarPresenter
         if (request.HasDetails)
         {
             var toggle = new Button { Content = ProjectText.InfoBarShowDetails };
-            toggle.Click += (_, _) =>
-            {
-                if (IsLive(ticket))
+            toggle.Click += (_, _) => _errors.RunLogged(
+                () =>
                 {
-                    _detailsOpen = !_detailsOpen;
-                    _details.Visibility = _detailsOpen ? Visibility.Visible : Visibility.Collapsed;
-                    toggle.Content = _detailsOpen ? ProjectText.InfoBarHideDetails : ProjectText.InfoBarShowDetails;
-                }
-            };
+                    if (IsLive(ticket))
+                    {
+                        _detailsOpen = !_detailsOpen;
+                        ShowDetails(_detailsOpen);
+                        toggle.Content = _detailsOpen ? ProjectText.InfoBarHideDetails : ProjectText.InfoBarShowDetails;
+                    }
+                },
+                ProjectText.InfoBarSyncFailed);
             _bar.ActionButton = toggle;
         }
         else if (request.ActionLabel is { } label)
