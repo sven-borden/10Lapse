@@ -45,6 +45,34 @@ public sealed class TimingPanelViewModelTests
     }
 
     [Fact]
+    public void ANewSpeedIsARetimeButNewPhotosAreNot()
+    {
+        // The motion spec's Retime animates the readout and the bar for a new speed only (#35).
+        var shell = Shell();
+        var panel = Panel(shell);
+        var retimes = 0;
+        var fractionWhenRetimed = -1.0;
+        panel.Retimed += (_, _) =>
+        {
+            retimes++;
+            fractionWhenRetimed = panel.LengthFraction;
+        };
+
+        panel.SelectedPresetIndex = 0;
+        Assert.Equal(1, retimes);
+        Assert.Equal(panel.LengthFraction, fractionWhenRetimed);
+
+        shell.CurrentProject.Model.AddFrames(TestFrames.Folder("b", 10));
+        Assert.Equal(1, retimes);
+
+        panel.SelectedPresetIndex = 0;
+        Assert.Equal(1, retimes);
+
+        panel.SelectedModeIndex = 2;
+        Assert.Equal(2, retimes);
+    }
+
+    [Fact]
     public void ThePresetsAreTheSixFramesPerSecondOfTheIssueAndPickingOneWritesTheProject()
     {
         var shell = Shell();

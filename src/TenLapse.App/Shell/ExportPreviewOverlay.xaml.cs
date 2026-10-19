@@ -3,9 +3,11 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using TenLapse.Presentation.Export;
+using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Preview;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
+using Windows.Foundation;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage;
@@ -28,8 +30,6 @@ namespace TenLapse.Shell;
 /// </remarks>
 public sealed partial class ExportPreviewOverlay : UserControl
 {
-    private static readonly TimeSpan _premiereDelay = TimeSpan.FromMilliseconds(1100);
-
     private ExportViewModel? _export;
     private PlayerViewModel? _player;
     private IErrorPresenter? _errors;
@@ -62,6 +62,12 @@ public sealed partial class ExportPreviewOverlay : UserControl
     }
 
     /// <summary>Stops the video and lets go of everything (the window closes).</summary>
+    /// <summary>Where the premiere's video is, while it plays (the theme crossfade leaves it out of its picture); else null.</summary>
+    internal PhotoArea? PhotoOnScreen() =>
+        _playing && Video.Visibility == Visibility.Visible && Video.ActualWidth > 0 && Video.ActualHeight > 0
+            ? new PhotoArea(Video, new Rect(0, 0, Video.ActualWidth, Video.ActualHeight), 0f)
+            : null;
+
     internal void Detach()
     {
         if (_export is { } export)
@@ -134,7 +140,7 @@ public sealed partial class ExportPreviewOverlay : UserControl
         var ticket = ++_premiere;
         if (wait)
         {
-            await Task.Delay(_premiereDelay);
+            await Task.Delay(Themes.MotionTokens.Plan(MotionCatalogue.FinishedPremiere).Duration);
         }
 
         if (ticket != _premiere || _export is not { IsFinished: true } || _player is not { } player)

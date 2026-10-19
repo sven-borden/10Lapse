@@ -1,8 +1,12 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Numerics;
+using Microsoft.UI.Composition;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -12,6 +16,7 @@ using TenLapse.Core.Projects;
 using TenLapse.Media.Preview;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Filmstrip;
+using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Services;
 using TenLapse.Preview;
 using TenLapse.Services;
@@ -77,6 +82,12 @@ public sealed partial class FilmstripView : UserControl
     private int _lastPlayhead = -1;
     private XamlRoot? _scaleRoot;
     private double _scale;
+
+    // The arrival cascade: when it began (Stopwatch ticks, 0 when none runs) and the first index it showed.
+    private long _arrivalStart;
+    private int _arrivalFirst = int.MaxValue;
+    private readonly HashSet<Guid> _cascaded = [];
+    private readonly HashSet<FilmstripThumb> _animated = [];
 
     // A press that may become a click or a drag (the rules are FilmstripPointer's, tested in Presentation).
     private FilmstripPointer? _pointer;
@@ -312,8 +323,95 @@ public sealed partial class FilmstripView : UserControl
                 thumb.Bind(item, viewModel.ThumbnailWidth, viewModel.ThumbnailHeight);
                 _realized[item.Id] = thumb;
                 ShowThumbnail(thumb);
+                Cascade(thumb, args.Index);
                 ScheduleWant();
             });
+    }
+
+    // ---- The arrival cascade (motion spec, Arrival) ----
+
+    /// <summary>
+    /// The photos landed on the Empty screen: the thumbnails in view rise 8 px into place, 400 ms Enter, 18 ms apart from
+    /// 220 ms (a fade with animations off). Thumbnails shown for the first time within the cascade's window join it in
+    /// their place; later ones (scrolled to) appear at rest.
+    /// </summary>
+    internal void BeginArrival()
+    {
+        _arrivalStart = Stopwatch.GetTimestamp();
+        _arrivalFirst = int.MaxValue;
+        _cascaded.Clear();
+        foreach (var thumb in RealizedThumbs().ToList())
+        {
+            Cascade(thumb, thumb.Item!.Number - 1);
+        }
+    }
+
+    private void Cascade(FilmstripThumb thumb, int index)
+    {
+        if (_arrivalStart == 0)
+        {
+            return;
+        }
+
+        var elapsed = Stopwatch.GetElapsedTime(_arrivalStart);
+        if (elapsed > MotionSpec.ThumbnailCascadeWindow)
+        {
+            _arrivalStart = 0;
+            return;
+        }
+
+        // Each photo joins once: a thumbnail realized again during the cascade (the strip relaid out) appears at rest.
+        if (thumb.Item is not { } item || !_cascaded.Add(item.Id))
+        {
+            return;
+        }
+
+        _arrivalFirst = Math.Min(_arrivalFirst, index);
+        var step = MotionTokens.Plan(MotionCatalogue.ArrivalFilmstrip, Math.Max(0, index - _arrivalFirst));
+        if (!step.Animates)
+        {
+            return;
+        }
+
+        ElementCompositionPreview.SetIsTranslationEnabled(thumb, true);
+        _animated.Add(thumb);
+        var visual = ElementCompositionPreview.GetElementVisual(thumb);
+        var compositor = visual.Compositor;
+        var easing = MotionTokens.CreateEasing(compositor, step.Easing);
+        var delay = step.Delay > elapsed ? step.Delay - elapsed : TimeSpan.Zero;
+        var fade = compositor.CreateScalarKeyFrameAnimation();
+        fade.InsertKeyFrame(0f, 0f);
+        fade.InsertKeyFrame(1f, 1f, easing);
+        fade.Duration = step.Duration;
+        fade.DelayTime = delay;
+        fade.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
+        visual.StartAnimation(nameof(Visual.Opacity), fade);
+        if (step.Moves)
+        {
+            var rise = compositor.CreateVector3KeyFrameAnimation();
+            rise.InsertKeyFrame(0f, new Vector3(0, MotionSpec.ThumbnailRise, 0));
+            rise.InsertKeyFrame(1f, Vector3.Zero, easing);
+            rise.Duration = step.Duration;
+            rise.DelayTime = delay;
+            rise.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
+            visual.StartAnimation("Translation", rise);
+        }
+    }
+
+    // A recycled thumbnail starts at rest, whatever its last cascade left running. Only one the cascade animated has a
+    // Translation to stop (asking a visual that never had one throws).
+    private void Settle(FilmstripThumb thumb)
+    {
+        if (!_animated.Remove(thumb))
+        {
+            return;
+        }
+
+        var visual = ElementCompositionPreview.GetElementVisual(thumb);
+        visual.StopAnimation(nameof(Visual.Opacity));
+        visual.StopAnimation("Translation");
+        visual.Opacity = 1f;
+        visual.Properties.InsertVector3("Translation", Vector3.Zero);
     }
 
     private void OnElementClearing(ItemsRepeater sender, ItemsRepeaterElementClearingEventArgs args)
@@ -332,6 +430,7 @@ public sealed partial class FilmstripView : UserControl
                 }
 
                 thumb.Unbind();
+                Settle(thumb);
                 ScheduleWant();
             });
     }

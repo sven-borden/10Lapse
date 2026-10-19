@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using TenLapse.Core.Preview;
 using TenLapse.Presentation.Export;
+using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Services;
 using TenLapse.Themes;
 using Windows.Graphics.Imaging;
@@ -76,39 +77,54 @@ public sealed partial class ExportPanel : UserControl
         PlayButton.Focus(FocusState.Programmatic);
         _arrival?.Stop();
         _arrival = null;
-        var animate = MotionTokens.AnimationsEnabled && !ReduceMotionSwitch;
-        if (!animate)
+        FinishedHeading.Opacity = 1;
+        FinishedHeading.RenderTransform = null;
+        _arrival = new Storyboard();
+
+        // The check: drawn at once with animations off.
+        var check = MotionTokens.Plan(MotionCatalogue.FinishedCheck);
+        if (check.Moves)
+        {
+            CheckStroke.StrokeDashOffset = CheckDash;
+            var draw = new DoubleAnimationUsingKeyFrames { EnableDependentAnimation = true, BeginTime = check.Delay };
+            draw.KeyFrames.Add(MotionTokens.KeyFrame(0, check.Duration, check.Easing));
+            Storyboard.SetTarget(draw, CheckStroke);
+            Storyboard.SetTargetProperty(draw, nameof(Microsoft.UI.Xaml.Shapes.Shape.StrokeDashOffset));
+            _arrival.Children.Add(draw);
+        }
+        else
         {
             CheckStroke.StrokeDashOffset = 0;
-            return;
         }
 
-        CheckStroke.StrokeDashOffset = CheckDash;
-        var draw = new DoubleAnimationUsingKeyFrames { EnableDependentAnimation = true, BeginTime = TimeSpan.FromMilliseconds(200) };
-        draw.KeyFrames.Add(new SplineDoubleKeyFrame
+        // The title rises 6 px and fades in (the canvas's ent: opacity and movement together); with animations off it only
+        // fades in.
+        var title = MotionTokens.Plan(MotionCatalogue.FinishedTitle);
+        if (title.Moves)
         {
-            KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(500)),
-            Value = 0,
-            KeySpline = new KeySpline { ControlPoint1 = new(0.16, 1), ControlPoint2 = new(0.3, 1) },
-        });
-        Storyboard.SetTarget(draw, CheckStroke);
-        Storyboard.SetTargetProperty(draw, nameof(Microsoft.UI.Xaml.Shapes.Shape.StrokeDashOffset));
+            var shift = new Microsoft.UI.Xaml.Media.TranslateTransform { Y = MotionSpec.TitleRise };
+            FinishedHeading.RenderTransform = shift;
+            var rise = new DoubleAnimationUsingKeyFrames { BeginTime = title.Delay };
+            rise.KeyFrames.Add(MotionTokens.KeyFrame(0, title.Duration, title.Easing));
+            Storyboard.SetTarget(rise, shift);
+            Storyboard.SetTargetProperty(rise, nameof(Microsoft.UI.Xaml.Media.TranslateTransform.Y));
+            _arrival.Children.Add(rise);
+        }
 
-        var rise = new DoubleAnimationUsingKeyFrames();
-        FinishedHeading.RenderTransform = new Microsoft.UI.Xaml.Media.TranslateTransform { Y = 6 };
-        rise.KeyFrames.Add(new SplineDoubleKeyFrame
+        if (title.Animates)
         {
-            KeyTime = KeyTime.FromTimeSpan(MotionTokens.Scene),
-            Value = 0,
-            KeySpline = new KeySpline { ControlPoint1 = new(0.16, 1), ControlPoint2 = new(0.3, 1) },
-        });
-        Storyboard.SetTarget(rise, FinishedHeading.RenderTransform);
-        Storyboard.SetTargetProperty(rise, "Y");
+            var fade = new DoubleAnimationUsingKeyFrames { BeginTime = title.Delay, FillBehavior = FillBehavior.Stop };
+            fade.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.Zero), Value = 0 });
+            fade.KeyFrames.Add(MotionTokens.KeyFrame(1, title.Duration, title.Easing));
+            Storyboard.SetTarget(fade, FinishedHeading);
+            Storyboard.SetTargetProperty(fade, nameof(UIElement.Opacity));
+            _arrival.Children.Add(fade);
+        }
 
-        _arrival = new Storyboard();
-        _arrival.Children.Add(draw);
-        _arrival.Children.Add(rise);
-        _arrival.Begin();
+        if (_arrival.Children.Count > 0)
+        {
+            _arrival.Begin();
+        }
     }
 
     /// <summary>The finished part left: the animation lets go of its end values, and the check is undrawn for next time.</summary>
@@ -117,18 +133,12 @@ public sealed partial class ExportPanel : UserControl
         _arrival?.Stop();
         _arrival = null;
         CheckStroke.StrokeDashOffset = CheckDash;
+        FinishedHeading.RenderTransform = null;
+        FinishedHeading.Opacity = 1;
     }
 
     // The stroke's dash in units of its thickness (28 px / 3 px), as in ExportPanel.xaml.
     private const double CheckDash = 9.34;
-
-    /// <summary>Debug <c>--reduce-motion</c> acts as Windows' animation setting off.</summary>
-    internal static bool ReduceMotionSwitch =>
-#if DEBUG
-        Debugging.DebugLaunch.ReduceMotion;
-#else
-        false;
-#endif
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

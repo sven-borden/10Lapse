@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using TenLapse.Core.Preview;
 using TenLapse.Presentation.Export;
+using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Services;
 using TenLapse.Themes;
 using Windows.Foundation;
@@ -67,7 +68,9 @@ public sealed partial class FilmGate : UserControl
 
     private IErrorSink Log => _log ?? NoLog.Instance;
 
-    private static bool Animate => MotionTokens.AnimationsEnabled && !ExportPanel.ReduceMotionSwitch;
+    // Whether the strip glides (motion spec, Gate): planned as each export starts, and again when the Windows setting has
+    // flipped since (polled at each report, the start of each glide).
+    private bool Animate { get; set; } = true;
 
     /// <summary>Takes the filmstrip's thumbnail cache (null: the samples show the Track fill).</summary>
     internal void Attach(ThumbnailCache<SoftwareBitmap>? thumbnails, IErrorSink log)
@@ -106,6 +109,12 @@ public sealed partial class FilmGate : UserControl
         if (_ended || frames != _frames)
         {
             Start(frames, progress);
+            Animate = MotionTokens.Plan(MotionCatalogue.GateStrip).Moves;
+            MotionTokens.Plan(MotionCatalogue.GateSample);
+        }
+        else if (MotionTokens.AnimationsEnabled != Animate)
+        {
+            Animate = MotionTokens.Plan(MotionCatalogue.GateStrip).Moves;
         }
 
         var now = _clock.Elapsed;
@@ -172,7 +181,7 @@ public sealed partial class FilmGate : UserControl
         if (_timer is null)
         {
             _timer = DispatcherQueue.CreateTimer();
-            _timer.Interval = TimeSpan.FromMilliseconds(16);
+            _timer.Interval = MotionSpec.HandDrivenTick;
             _timer.IsRepeating = true;
             _timer.Tick += OnTick;
         }
@@ -247,7 +256,7 @@ public sealed partial class FilmGate : UserControl
     // One sample: the Track fill, and the frame's picture over it once the cache has it; its strength fades linearly.
     private sealed class Slot
     {
-        private static readonly TimeSpan _fade = MotionTokens.Control;
+        private static readonly TimeSpan _fade = MotionCatalogue.GateSample.Duration;
 
         private readonly Border _picture;
         private readonly ImageBrush _brush = new() { Stretch = Stretch.UniformToFill };

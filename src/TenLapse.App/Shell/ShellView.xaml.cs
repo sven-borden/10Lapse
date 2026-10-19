@@ -1,11 +1,15 @@
 using System.ComponentModel;
+using System.Numerics;
+using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Export;
 using TenLapse.Presentation.FirstLaunch;
+using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using TenLapse.Themes;
@@ -42,6 +46,7 @@ public sealed partial class ShellView : UserControl
     private readonly FramePanelViewModel _frame;
     private readonly Presentation.Filmstrip.FilmstripViewModel _filmstrip;
     private readonly PanelSwap _inspectorSwap;
+    private readonly ScreenMotion? _screens;
 
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
@@ -65,6 +70,10 @@ public sealed partial class ShellView : UserControl
         Import = import;
         _errors = errors;
         _presenter = presenter;
+
+        // Before InitializeComponent, so this handler runs before x:Bind's: the screen change's animations are in place
+        // when the visual states switch the screens (ScreenMotion).
+        ViewModel.PropertyChanged += OnScreenMayChange;
         Layout = new ShellLayout(
             ThemeTokens.Number("InspectorDockMinWindowWidth"),
             ThemeTokens.Number("NarrowPanelHeight"),
@@ -122,8 +131,22 @@ public sealed partial class ShellView : UserControl
         FilmstripRegion.SizeChanged += OnPanelHeightInputsChanged;
         Layout.PropertyChanged += OnLayoutPropertyChanged;
 #if DEBUG
-        Debugging.DebugExport.AutoStart(Export, viewModel, errors);
+        Debugging.DebugExport.AutoStart(Export, viewModel, errors, () => Import.IsImporting);
 #endif
+
+        // The screen changes and the arrival choreography (#35). Nothing animates on launch: they go live after the first
+        // layout.
+        _screens = new ScreenMotion(viewModel, EmptyRegion, [EditingSurface, StageRegion, InspectorPane], SettingsPage, DispatcherQueue, errors, Arrive);
+#if DEBUG
+        var followsWindows = !Gallery.GalleryLaunch.ThemeGiven;
+#else
+        var followsWindows = true;
+#endif
+        ThemeFade = new ThemeCrossfade(this, ShellRoot, ThemeSnapshot, DispatcherQueue, errors, followsWindows, PhotosOnScreen);
+#if DEBUG
+        Debugging.DebugMotion.Apply(this, import, infoBars, errors);
+#endif
+        Loaded += (_, _) => _errors.RunLogged(() => DispatcherQueue.TryEnqueueGuarded(_errors, _screens.GoLive, ProjectText.MotionFailed), ProjectText.MotionFailed);
 
         // The shell leaves the tree only when the window closes; the shadow goes with it.
         Unloaded += (_, _) => _infoBarShadow.Dispose();
@@ -137,6 +160,9 @@ public sealed partial class ShellView : UserControl
 
     /// <summary>The export's view model (#24), for x:Bind and for the window's close check.</summary>
     public ExportViewModel Export { get; }
+
+    /// <summary>The theme crossfade (#35): the shell follows Windows' light or dark mode through it.</summary>
+    internal ThemeCrossfade ThemeFade { get; }
 
     /// <summary>The responsive layout (#36): narrow or docked, the tab and the sections it shows, for x:Bind.</summary>
     public ShellLayout Layout { get; }
@@ -214,6 +240,7 @@ public sealed partial class ShellView : UserControl
     /// </summary>
     public void RefreshTheme()
     {
+        ThemeFade.Follow();
         _infoBarShadow.Recolor();
         FirstLaunch.RefreshTheme();
     }
@@ -252,6 +279,7 @@ public sealed partial class ShellView : UserControl
         }
 
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        ViewModel.PropertyChanged -= OnScreenMayChange;
         EmptyRegion.UnregisterPropertyChangedCallback(VisibilityProperty, _emptyRegionVisibilityToken);
         FirstLaunch.Detach();
         ShellRoot.RemoveHandler(PointerPressedEvent, new PointerEventHandler(OnShellPointerPressed));
@@ -261,6 +289,80 @@ public sealed partial class ShellView : UserControl
         _frame.Dispose();
         Filmstrip.Detach();
         _filmstrip.Dispose();
+    }
+
+    // The photos on screen, which the theme crossfade's picture leaves out: the preview's gate, and the premiere's video.
+    private IEnumerable<PhotoArea> PhotosOnScreen()
+    {
+        if (PreviewSurface.PhotoOnScreen() is { } preview)
+        {
+            yield return preview;
+        }
+
+        if (ExportOverlay.PhotoOnScreen() is { } premiere)
+        {
+            yield return premiere;
+        }
+    }
+
+    // Any of the three properties that pick the screen: the screen change's animations are chosen now (ScreenMotion).
+    private void OnScreenMayChange(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(ShellViewModel.ShowsEmpty) or nameof(ShellViewModel.ShowsEditing) or nameof(ShellViewModel.IsSettingsOpen))
+        {
+            _errors.RunLogged(() => _screens?.Prepare(), ProjectText.MotionFailed);
+        }
+    }
+
+    // The photos landed on the Empty screen (motion spec, Arrival): the first frame develops, the thumbnails file into the
+    // strip, and the inspector's sections slide in from 16 px, 60 ms apart from 160 ms (in the narrow layout, the one its
+    // tab shows). Each ends at rest, whatever interrupts it.
+    private void Arrive()
+    {
+        PreviewSurface.Develop();
+        Filmstrip.BeginArrival();
+        var index = 0;
+        foreach (var section in new UIElement[] { TimingSection, FrameSection, OutputSection }.Where(section => section.Visibility == Visibility.Visible))
+        {
+            Reveal(section, MotionTokens.Plan(MotionCatalogue.ArrivalInspector, index++));
+        }
+    }
+
+    private static void Reveal(UIElement section, MotionStep step)
+    {
+        ElementCompositionPreview.SetIsTranslationEnabled(section, true);
+        var visual = ElementCompositionPreview.GetElementVisual(section);
+        var compositor = visual.Compositor;
+        visual.StopAnimation(nameof(Visual.Opacity));
+        visual.StopAnimation("Translation");
+        visual.Opacity = 1f;
+        visual.Properties.InsertVector3("Translation", Vector3.Zero);
+        if (!step.Animates)
+        {
+            return;
+        }
+
+        var easing = MotionTokens.CreateEasing(compositor, step.Easing);
+        var fade = compositor.CreateScalarKeyFrameAnimation();
+        fade.InsertKeyFrame(0f, 0f);
+        fade.InsertKeyFrame(1f, 1f, easing);
+        Time(fade, step);
+        visual.StartAnimation(nameof(Visual.Opacity), fade);
+        if (step.Moves)
+        {
+            var slide = compositor.CreateVector3KeyFrameAnimation();
+            slide.InsertKeyFrame(0f, new Vector3(MotionSpec.SectionSlide, 0, 0));
+            slide.InsertKeyFrame(1f, Vector3.Zero, easing);
+            Time(slide, step);
+            visual.StartAnimation("Translation", slide);
+        }
+    }
+
+    private static void Time(KeyFrameAnimation animation, MotionStep step)
+    {
+        animation.Duration = step.Duration;
+        animation.DelayTime = step.Delay;
+        animation.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
     }
 
     // Opening Settings puts focus on Back, leaving it puts focus back on the Settings button, so the keyboard and a
@@ -285,9 +387,14 @@ public sealed partial class ShellView : UserControl
         }
 
         // The canvas's exportOpacity: the Export button stays in the command bar, disabled and at 0.6, outside the
-        // inspector; the change fades over 167 ms (at once with animations off).
-        ExportButton.OpacityTransition = MotionTokens.AnimationsEnabled && !ExportPanel.ReduceMotionSwitch ? new ScalarTransition { Duration = MotionTokens.Control } : null;
-        ExportButton.Opacity = Export.IsEditing ? 1 : DimmedExportOpacity;
+        // inspector; the change fades over 167 ms (a fade, the same with animations off).
+        var opacity = Export.IsEditing ? 1 : DimmedExportOpacity;
+        if (ExportButton.Opacity != opacity)
+        {
+            var dim = MotionTokens.Plan(MotionCatalogue.ExportButtonDim);
+            ExportButton.OpacityTransition = dim.Animates ? new ScalarTransition { Duration = dim.Duration } : null;
+            ExportButton.Opacity = opacity;
+        }
 
         switch (Export.State)
         {

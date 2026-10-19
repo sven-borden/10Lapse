@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Windows.Foundation;
 using Windows.System;
+using TenLapse.Presentation.Motion;
 using TenLapse.Themes;
 
 namespace TenLapse.Shell;
@@ -154,16 +155,9 @@ public sealed partial class SegmentedControl : UserControl
         var width = Inner.ActualWidth / _buttons.Count;
         Pill.Width = width;
         Pill.Height = Inner.ActualHeight;
-        MovePill(selected * width, animate && _pillPlaced && IsLoaded && AnimationsEnabled);
+        MovePill(selected * width, animate && _pillPlaced && IsLoaded);
         _pillPlaced = true;
     }
-
-    private static bool AnimationsEnabled =>
-#if DEBUG
-        MotionTokens.AnimationsEnabled && !Debugging.DebugLaunch.ReduceMotion;
-#else
-        MotionTokens.AnimationsEnabled;
-#endif
 
     private void MovePill(double x, bool animate)
     {
@@ -180,19 +174,16 @@ public sealed partial class SegmentedControl : UserControl
             return;
         }
 
-        // 250 ms Move (DESIGN.md, Segmented control).
+        // 250 ms Move (DESIGN.md, Segmented control); at once with animations off.
+        var step = MotionTokens.Plan(MotionCatalogue.SegmentPill);
+        if (!step.Animates)
+        {
+            return;
+        }
+
         var slide = new DoubleAnimationUsingKeyFrames { FillBehavior = FillBehavior.Stop };
         slide.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = TimeSpan.Zero, Value = from });
-        slide.KeyFrames.Add(new SplineDoubleKeyFrame
-        {
-            KeyTime = MotionTokens.Reveal,
-            Value = x,
-            KeySpline = new KeySpline
-            {
-                ControlPoint1 = new Point(MotionTokens.Move.ControlPoint1.X, MotionTokens.Move.ControlPoint1.Y),
-                ControlPoint2 = new Point(MotionTokens.Move.ControlPoint2.X, MotionTokens.Move.ControlPoint2.Y),
-            },
-        });
+        slide.KeyFrames.Add(MotionTokens.KeyFrame(x, step.Duration, step.Easing));
         Storyboard.SetTarget(slide, PillShift);
         Storyboard.SetTargetProperty(slide, nameof(TranslateTransform.X));
         _slide = new Storyboard();

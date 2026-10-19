@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Motion tokens from DESIGN.md (Overview, Motion tokens) and docs/design/canvas/motion/Motion.dc.html.
-  Nothing here animates anything: #35 builds the transitions on these.
+  Motion tokens from DESIGN.md (Overview, Motion tokens) and docs/design/canvas/motion/Motion.dc.html, for Storyboards and
+  templates. The source for code is TenLapse.Presentation.Motion.MotionSpec (with MotionCatalogue, every transition and its
+  reduced-motion fallback); tests keep this file, MotionSpec and .impeccable/design.json equal, and a rule test fails on a
+  duration or curve written outside the token files.
 
   Durations: Tap 83 (press and hover color, linear), Control 167 (toggles, exits, focus, Move),
   Reveal 250 (InfoBars, readout, segment pill, Enter), Scene 400 (screens, panels, thumbnails, gate, Enter),
@@ -11,9 +13,9 @@
   playback and progress (Storyboards are linear without an easing function).
 
   In a Storyboard: <SplineDoubleKeyFrame KeyTime="0:0:0.250" Value="0" KeySpline="{StaticResource MotionEnterKeySpline}" />
-  and Duration="{StaticResource MotionRevealDuration}". From code and Composition animations use
-  TenLapse.Themes.MotionTokens, which also holds the AnimationsEnabled check. With animations off,
-  movement becomes the short fade (MotionReducedFadeInDuration / MotionReducedFadeOutDuration) or nothing.
+  and Duration="{StaticResource MotionRevealDuration}". From code start every animation with
+  TenLapse.Themes.MotionTokens.Plan, which decides with the Windows setting and logs it. With animations off, movement
+  becomes the short fade (MotionReducedFadeInDuration / MotionReducedFadeOutDuration) or nothing.
 -->
 <ResourceDictionary
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -33,5 +35,12 @@
   <KeySpline x:Key="MotionEnterKeySpline" ControlPoint1="0.16,1" ControlPoint2="0.3,1" />
   <KeySpline x:Key="MotionExitKeySpline" ControlPoint1="0.7,0" ControlPoint2="0.84,0" />
   <KeySpline x:Key="MotionMoveKeySpline" ControlPoint1="0.65,0" ControlPoint2="0.35,1" />
+
+  <!--
+    Press and hover color in a template (ExportButtonStyle's background): Tap, linear. A BrushTransition takes a TimeSpan,
+    which XAML has no resource type for, so the transition itself is the token. A color change, not movement, so it stays
+    with animations off.
+  -->
+  <BrushTransition x:Key="MotionTapBrushTransition" Duration="0:0:0.083" />
 
 </ResourceDictionary>

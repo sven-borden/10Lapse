@@ -52,12 +52,12 @@ internal sealed class TintedMicaBackdrop : SystemBackdrop
         _errors.RunLogged(() => Connect(connectedTarget, xamlRoot), ProjectText.BackdropFailed);
     }
 
-    protected override void OnDefaultSystemBackdropConfigurationChanged(ICompositionSupportsSystemBackdrop target, XamlRoot xamlRoot)
-    {
-        // The theme or high contrast changed: the default configuration has followed it, the tint follows here.
-        base.OnDefaultSystemBackdropConfigurationChanged(target, xamlRoot);
+    // The theme or high contrast changed: the default configuration, which this backdrop's own MicaController was given,
+    // has followed it already; the tint follows here. The base method is not called: it is for a backdrop that leaves its
+    // controller to XAML, and it throws E_INVALIDARG ("target") whenever the shell's own theme changes (#35's crossfade
+    // switches it, not Windows), which would log an error on every theme change.
+    protected override void OnDefaultSystemBackdropConfigurationChanged(ICompositionSupportsSystemBackdrop target, XamlRoot xamlRoot) =>
         _errors.RunLogged(Tint, ProjectText.BackdropFailed);
-    }
 
     protected override void OnTargetDisconnected(ICompositionSupportsSystemBackdrop disconnectedTarget)
     {

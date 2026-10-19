@@ -792,6 +792,36 @@
         "name": "stagger-section",
         "value": "60ms",
         "purpose": "Inspector sections on arrival, from 160ms."
+      },
+      {
+        "name": "duration-theme-crossfade",
+        "value": "250ms",
+        "purpose": "Colors crossfade when Windows changes mode; linear."
+      },
+      {
+        "name": "duration-reduced-fade-in",
+        "value": "150ms",
+        "purpose": "With animations off, things arriving fade in instead of moving; linear."
+      },
+      {
+        "name": "duration-reduced-fade-out",
+        "value": "90ms",
+        "purpose": "With animations off, things leaving fade out instead of moving; linear."
+      },
+      {
+        "name": "duration-check-draw",
+        "value": "500ms",
+        "purpose": "The finished check's stroke draws, Enter, after delay-check."
+      },
+      {
+        "name": "delay-check",
+        "value": "200ms",
+        "purpose": "The finished check starts drawing."
+      },
+      {
+        "name": "delay-premiere",
+        "value": "1100ms",
+        "purpose": "The finished video premieres in the preview."
       }
     ],
     "breakpoints": [

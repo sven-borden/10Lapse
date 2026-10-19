@@ -23,8 +23,11 @@ internal static class DebugExport
     /// <summary>The Save dialog, or a stand-in that answers <see cref="Target"/> when the switch is given.</summary>
     public static ISaveVideoPicker Picker(ISaveVideoPicker picker) => Target is { Length: > 0 } target ? new FixedPicker(Path.GetFullPath(target)) : picker;
 
-    /// <summary>With <c>--export-to</c>, starts one export once the project is ready for it.</summary>
-    public static void AutoStart(ExportViewModel export, ShellViewModel shell, IErrorSink log)
+    /// <summary>
+    /// With <c>--export-to</c>, starts one export once the project is ready for it: enough frames, and no import running
+    /// (an import the Debug <c>--motion-import</c> started, say).
+    /// </summary>
+    public static void AutoStart(ExportViewModel export, ShellViewModel shell, IErrorSink log, Func<bool> importing)
     {
         if (Target is not { Length: > 0 })
         {
@@ -38,7 +41,7 @@ internal static class DebugExport
         timer.Tick += (sender, _) => log.RunLogged(
             () =>
             {
-                if (!export.CanStartExport || shell.CurrentProject.FrameCount < wanted)
+                if (!export.CanStartExport || shell.CurrentProject.FrameCount < wanted || importing())
                 {
                     return;
                 }
