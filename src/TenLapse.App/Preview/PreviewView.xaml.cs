@@ -47,10 +47,10 @@ public sealed partial class PreviewView : UserControl
         }
     }
 
-    /// <summary>Stops drawing (the window closes).</summary>
     /// <summary>The photos landed: the first frame develops (motion spec, Arrival). Nothing when the preview is not running.</summary>
     internal void Develop() => _loop?.Develop();
 
+    /// <summary>Stops drawing (the window closes).</summary>
     internal void Detach()
     {
         Stop();
