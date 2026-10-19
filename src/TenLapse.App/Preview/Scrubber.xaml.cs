@@ -26,6 +26,7 @@ public sealed partial class Scrubber : UserControl
     private bool _resumeAfterDrag;
     private bool _pointerOver;
     private int _announcedFrame = -1;
+    private int _announcedCount;
 
     public Scrubber()
     {
@@ -90,10 +91,28 @@ public sealed partial class Scrubber : UserControl
         KnobOffset.X = fraction * travel;
         Played.Width = fraction * travel;
 
+        if (!AutomationPeer.ListenerExists(AutomationEvents.PropertyChanged)
+            || FrameworkElementAutomationPeer.FromElement(this) is not { } peer)
+        {
+            return;
+        }
+
+        // The range follows the clip (photos arriving or removed, even while playing): a client never reads a value
+        // past the maximum it knows.
+        if (player.FrameCount != _announcedCount)
+        {
+            var count = player.FrameCount;
+            var (minimumBefore, maximumBefore) = (_announcedCount > 0 ? 1.0 : 0.0, (double)_announcedCount);
+            _announcedCount = count;
+            peer.RaisePropertyChangedEvent(RangeValuePatternIdentifiers.MaximumProperty, maximumBefore, (double)count);
+            if (minimumBefore != (count > 0 ? 1.0 : 0.0))
+            {
+                peer.RaisePropertyChangedEvent(RangeValuePatternIdentifiers.MinimumProperty, minimumBefore, count > 0 ? 1.0 : 0.0);
+            }
+        }
+
         // Narrator hears the value change only while paused: playback would read out every frame.
-        if (!player.IsPlaying && player.CurrentFrame != _announcedFrame
-            && AutomationPeer.ListenerExists(AutomationEvents.PropertyChanged)
-            && FrameworkElementAutomationPeer.FromElement(this) is { } peer)
+        if (!player.IsPlaying && player.CurrentFrame != _announcedFrame)
         {
             var before = _announcedFrame + 1.0;
             _announcedFrame = player.CurrentFrame;

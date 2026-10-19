@@ -19,17 +19,24 @@ public sealed class PlayerViewModelTests
 
         player.Seek(30);
         player.Play();
-        _now += 1000;
+        _now += 500;
+        player.Tick();
+
+        // Narrator's names follow at most once a second while playing: half a second in, they are where playback started.
+        Assert.Equal(45, player.CurrentFrame);
+        Assert.Equal("0046 / 0090", player.CounterText);
+        Assert.Equal("Frame 31 of 90", player.CounterName);
+        Assert.Equal("Time 00:01.00 of 00:03.00", player.TimecodeName);
+
+        _now += 500;
         player.Tick();
 
         Assert.True(player.IsPlaying);
         Assert.Equal(60, player.CurrentFrame);
         Assert.Equal("0061 / 0090", player.CounterText);
         Assert.Equal("00:02.00 / 00:03.00", player.TimecodeText);
-
-        // Narrator's names stay where playback started: they change only while paused.
-        Assert.Equal("Frame 31 of 90", player.CounterName);
-        Assert.Equal("Time 00:01.00 of 00:03.00", player.TimecodeName);
+        Assert.Equal("Frame 61 of 90", player.CounterName);
+        Assert.Equal("Time 00:02.00 of 00:03.00", player.TimecodeName);
 
         _now += 1000;
         player.Tick();
@@ -124,6 +131,91 @@ public sealed class PlayerViewModelTests
         Assert.Equal(69, player.CurrentFrame);
         Assert.Equal(69, player.State.Frame);
         Assert.Equal("0070 / 0070", player.CounterText);
+    }
+
+    [Fact]
+    public void RemovingFramesBeforeThePlayheadKeepsItOnTheSamePhotoWhilePaused()
+    {
+        var (shell, player) = Player(400);
+        var project = shell.CurrentProject.Model;
+        player.Seek(300);
+        var photo = project.Frames[300].Id;
+
+        project.RemoveFrames(project.Frames.Take(10).Select(frame => frame.Id));
+
+        Assert.Equal(290, player.CurrentFrame);
+        Assert.Equal(photo, player.State.Snapshot.Frames[player.State.Frame].Id);
+        Assert.Equal("Frame 291 of 390", player.CounterName);
+
+        // A reorder too: the photo moves, the playhead with it.
+        project.ReorderFrames([.. project.Frames.Reverse().Select(frame => frame.Id)]);
+        Assert.Equal(99, player.CurrentFrame);
+        Assert.Equal(photo, player.State.Snapshot.Frames[player.State.Frame].Id);
+    }
+
+    [Fact]
+    public void RemovingFramesBeforeThePlayheadKeepsItOnTheSamePhotoWhilePlayingAtThePace()
+    {
+        var (shell, player) = Player(400);
+        var project = shell.CurrentProject.Model;
+        player.Seek(300);
+        player.Play();
+
+        // 510 ms in: frame 315, which began at 500 ms.
+        _now = 510;
+        var photo = project.Frames[315].Id;
+        project.RemoveFrames(project.Frames.Take(10).Select(frame => frame.Id));
+        player.Tick();
+
+        Assert.True(player.IsPlaying);
+        Assert.Equal(305, player.CurrentFrame);
+        Assert.Equal(photo, player.State.Snapshot.Frames[305].Id);
+
+        // A second after that frame began, thirty frames on.
+        _now = 1500;
+        player.Tick();
+        Assert.Equal(335, player.CurrentFrame);
+    }
+
+    [Fact]
+    public void WhenThePhotoOnScreenIsRemovedThePlayheadKeepsItsPlace()
+    {
+        var (shell, player) = Player(90);
+        var project = shell.CurrentProject.Model;
+        player.Seek(50);
+        var next = project.Frames[51].Id;
+
+        project.RemoveFrames([project.Frames[50].Id]);
+
+        Assert.Equal(50, player.CurrentFrame);
+        Assert.Equal(next, player.State.Snapshot.Frames[50].Id);
+    }
+
+    [Fact]
+    public void AHiddenWindowPausesAndPlaysOnWhenItShowsAgain()
+    {
+        var (_, player) = Player(90);
+        player.Play();
+        _now = 500;
+
+        player.SetWindowShown(false);
+        Assert.False(player.IsPlaying);
+        Assert.Equal(15, player.CurrentFrame);
+        player.Play();
+        Assert.False(player.IsPlaying);
+
+        _now = 5000;
+        player.SetWindowShown(true);
+        Assert.True(player.IsPlaying);
+        _now = 5500;
+        player.Tick();
+        Assert.Equal(30, player.CurrentFrame);
+
+        // Paused before it was hidden: still paused when it shows.
+        player.Pause();
+        player.SetWindowShown(false);
+        player.SetWindowShown(true);
+        Assert.False(player.IsPlaying);
     }
 
     [Fact]

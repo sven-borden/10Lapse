@@ -35,8 +35,10 @@ public sealed record PlayerState(ProjectSnapshot Snapshot, int Frame, PlaybackCl
 /// <remarks>
 /// Every time comes from a <see cref="PlaybackClock"/> and <see cref="FrameTiming"/>: the counter follows the clock on
 /// each UI frame (<see cref="Tick"/>), and the render thread asks the same clock, so they agree. A change of the
-/// project while playing re-anchors the clock at the moment the frame on screen began, so playback keeps its pace.
-/// The counter and time code names Narrator reads change only while paused, so playback does not flood it.
+/// project while playing re-anchors the clock at the moment the frame on screen began, so playback keeps its pace, and
+/// the playhead stays on the same photo when frames before it come or go. The counter and time code names Narrator
+/// reads follow at most once a second while playing, so playback does not flood it. A minimized or hidden window
+/// pauses playback and plays on when it shows again (<see cref="SetWindowShown"/>).
 /// </remarks>
 public sealed partial class PlayerViewModel : ObservableObject, IDisposable
 {
@@ -49,6 +51,9 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
     private PlayerState _state;
     private long _version;
     private bool _disposed;
+    private bool _windowShown = true;
+    private bool _resumeWhenShown;
+    private long _namesUpdatedAt;
 
     /// <summary>Follows <paramref name="shell"/>'s current project. On the UI thread.</summary>
     /// <param name="shell">The shell, for its project, New project and the Settings page.</param>
@@ -103,11 +108,11 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string TimecodeText { get; private set; }
 
-    /// <summary>"Frame 312 of 742" for Narrator; changes only while paused.</summary>
+    /// <summary>"Frame 312 of 742" for Narrator; while playing it follows at most once a second.</summary>
     [ObservableProperty]
     public partial string CounterName { get; private set; }
 
-    /// <summary>"Time 00:10.40 of 00:24.73" for Narrator; changes only while paused.</summary>
+    /// <summary>"Time 00:10.40 of 00:24.73" for Narrator; while playing it follows at most once a second.</summary>
     [ObservableProperty]
     public partial string TimecodeName { get; private set; }
 
@@ -132,7 +137,7 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
     /// <summary>Plays from the frame on screen, looping, at the project's effective rate.</summary>
     public void Play()
     {
-        if (_disposed || IsPlaying || FrameCount == 0 || _shell.IsSettingsOpen)
+        if (_disposed || IsPlaying || FrameCount == 0 || _shell.IsSettingsOpen || !_windowShown)
         {
             return;
         }
@@ -146,6 +151,7 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
     /// <summary>Stops on the frame the clock has reached.</summary>
     public void Pause()
     {
+        _resumeWhenShown = false;
         if (!IsPlaying)
         {
             return;
@@ -193,6 +199,34 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
         CurrentFrame = frame;
         UpdateTexts();
         Publish();
+    }
+
+    /// <summary>
+    /// The window was minimized or hidden (false), or shows again (true). Hiding pauses playback, as the first-launch
+    /// timelapse stops in the background, so nothing decodes and draws unseen; showing plays on when hiding paused it.
+    /// </summary>
+    public void SetWindowShown(bool shown)
+    {
+        if (_disposed || shown == _windowShown)
+        {
+            return;
+        }
+
+        if (!shown)
+        {
+            var playing = IsPlaying;
+            Pause();
+            _resumeWhenShown = playing;
+            _windowShown = false;
+            return;
+        }
+
+        _windowShown = true;
+        if (_resumeWhenShown)
+        {
+            _resumeWhenShown = false;
+            Play();
+        }
     }
 
     /// <summary>Pauses and moves <paramref name="frames"/> frames (negative is back), stopping at the ends.</summary>
@@ -304,7 +338,9 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
         }
     }
 
-    // A change of the project: playing on from the frame on screen, at its pace, when the clip still has it.
+    // A change of the project: playing on from the frame on screen, at its pace. The playhead stays on the same photo
+    // when it is still in the clip (frames before it removed, added or moved, review m7); when it left, the index
+    // stays, clamped to the clip.
     private void Follow(ProjectSnapshot snapshot)
     {
         if (_disposed)
@@ -312,19 +348,47 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
             return;
         }
 
+        var before = State.Snapshot.Frames;
         if (_clock is { } clock)
         {
             var now = _now();
             var reading = clock.Read(now);
-            Load(snapshot, reading.Frame, playing: true, frameBegan: clock.TimestampAt(reading.OccurrenceStart));
+            var frame = Place(before, reading.Frame, snapshot);
+            Load(snapshot, frame, playing: true, frameBegan: clock.TimestampAt(reading.OccurrenceStart), moved: frame != reading.Frame);
         }
         else
         {
-            Load(snapshot, CurrentFrame, playing: false);
+            Load(snapshot, Place(before, CurrentFrame, snapshot), playing: false);
         }
     }
 
-    private void Load(ProjectSnapshot snapshot, int frame, bool playing, long? frameBegan = null)
+    // Where the photo at index in before sits in snapshot; the index itself when it is not there.
+    private static int Place(System.Collections.Immutable.ImmutableArray<Frame> before, int index, ProjectSnapshot snapshot)
+    {
+        if (index < 0 || index >= before.Length)
+        {
+            return index;
+        }
+
+        var id = before[index].Id;
+        var frames = snapshot.Frames;
+        if (index < frames.Length && frames[index].Id == id)
+        {
+            return index;
+        }
+
+        for (var i = 0; i < frames.Length; i++)
+        {
+            if (frames[i].Id == id)
+            {
+                return i;
+            }
+        }
+
+        return index;
+    }
+
+    private void Load(ProjectSnapshot snapshot, int frame, bool playing, long? frameBegan = null, bool moved = false)
     {
         var count = snapshot.Frames.Length;
         FrameCount = count;
@@ -341,7 +405,7 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
 
             // The same clip at the same rate keeps its clock (an import filling in sizes, a rename); anything else is
             // anchored where the frame on screen began, so the change does not stretch or shorten that frame.
-            if (previous is null || previous.Rate != rate || previous.FrameCount != count)
+            if (previous is null || moved || previous.Rate != rate || previous.FrameCount != count)
             {
                 _clock = new PlaybackClock(rate, count, frame, frameBegan ?? _now(), _frequency);
             }
@@ -370,8 +434,13 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
         var length = FrameTiming.Duration(count, rate);
         CounterText = ProjectText.PreviewCounter(CurrentFrame + 1, count);
         TimecodeText = ProjectText.TimecodeCaption(start, length);
-        if (!IsPlaying)
+
+        // Narrator's names: always while paused; while playing at most once a second, so they are never far behind
+        // (a name change on text that has no focus is not read out, so this costs nothing in speech).
+        var now = _now();
+        if (!IsPlaying || now - _namesUpdatedAt >= _frequency)
         {
+            _namesUpdatedAt = now;
             CounterName = ProjectText.PreviewCounterName(CurrentFrame + 1, count);
             TimecodeName = ProjectText.PreviewTimecodeName(start, length);
         }
