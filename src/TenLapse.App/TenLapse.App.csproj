@@ -47,6 +47,9 @@
   <ItemGroup>
     <Content Include="Assets\*.png" />
     <Content Include="Assets\*.ico" />
+    <!-- The SVG sources and their README are for the asset generator (tools/TenLapse.Spike), not for the package. -->
+    <Content Remove="Assets\Source\**" />
+    <None Remove="Assets\Source\**" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
