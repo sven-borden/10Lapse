@@ -100,4 +100,15 @@ public sealed class ProjectTextTests
         Assert.Equal((headline, detail), parts);
         Assert.Equal(ProjectText.TimingReadout(count, timing), $"{parts.Headline} {parts.Detail}");
     }
+
+    [Fact]
+    public void TheReadoutPartsTakeACultureAndStayInvariantWithoutOne()
+    {
+        var timing = TimingSettings.PerSecond(new Fraction(30000, 1001));
+        var german = System.Globalization.CultureInfo.GetCultureInfo("de-DE");
+
+        Assert.Equal(("1.234 photos → 41,2 s", "at 29,97 fps"), ProjectText.TimingReadoutParts(1234, timing, german));
+        Assert.Equal(("1,234 photos → 41.2 s", "at 29.97 fps"), ProjectText.TimingReadoutParts(1234, timing));
+        Assert.Equal(("1 photo → 0,5 s", "at 0,5 s per photo"), ProjectText.TimingReadoutParts(1, TimingSettings.PerPhoto(new Fraction(1, 2)), german));
+    }
 }

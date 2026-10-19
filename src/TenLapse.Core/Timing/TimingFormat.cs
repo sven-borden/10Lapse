@@ -17,14 +17,16 @@ public static class TimingFormat
     /// Each unit is rounded half up and carries into the next one, so 59.95 s reads "1 min 0 s",
     /// never "60.0 s", and 3599.5 s reads "1 h 00 min".
     /// </summary>
-    public static string Duration(long ticks)
+    /// <param name="ticks">The length in 100 ns ticks.</param>
+    /// <param name="culture">The culture whose decimal separator is used; the invariant culture (a dot) when null.</param>
+    public static string Duration(long ticks, CultureInfo? culture = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(ticks);
 
         var tenths = DivideRounded(ticks, TicksPerTenth);
         if (tenths < 600)
         {
-            return $"{Number(tenths / 10)}.{Number(tenths % 10)} {TimingWords.Second}";
+            return $"{Number(tenths / 10)}{Separator(culture)}{Number(tenths % 10)} {TimingWords.Second}";
         }
 
         var seconds = DivideRounded(ticks, FrameTiming.TicksPerSecond);
@@ -56,12 +58,14 @@ public static class TimingFormat
     /// The frame-rate label for the readout: "30 fps", "29.97 fps" (up to two decimals, trailing
     /// zeros dropped) from 1 fps up, and the per-photo form "2 s per photo" below 1 fps.
     /// </summary>
-    public static string FrameRate(Fraction rate)
+    /// <param name="rate">A positive rate.</param>
+    /// <param name="culture">The culture whose decimal separator is used; the invariant culture (a dot) when null.</param>
+    public static string FrameRate(Fraction rate, CultureInfo? culture = null)
     {
         RequirePositive(rate);
         return rate >= new Fraction(1, 1)
-            ? $"{Hundredths(rate.Numerator, rate.Denominator)} {TimingWords.FramesPerSecond}"
-            : SecondsPerPhoto(rate);
+            ? $"{Localized(Hundredths(rate.Numerator, rate.Denominator), culture)} {TimingWords.FramesPerSecond}"
+            : SecondsPerPhoto(rate, culture);
     }
 
     /// <summary>
@@ -75,9 +79,7 @@ public static class TimingFormat
     public static string Decimal(Fraction value, CultureInfo? culture = null)
     {
         RequirePositive(value);
-        var text = Hundredths(value.Numerator, value.Denominator);
-        var separator = culture?.NumberFormat.NumberDecimalSeparator ?? ".";
-        return separator == "." ? text : text.Replace(".", separator, StringComparison.Ordinal);
+        return Localized(Hundredths(value.Numerator, value.Denominator), culture);
     }
 
     /// <summary>
@@ -86,13 +88,15 @@ public static class TimingFormat
     /// "0.0333 s per photo" and 29.97 fps "0.0334 s per photo" instead of both "0.03".
     /// Trailing zeros are dropped.
     /// </summary>
-    public static string SecondsPerPhoto(Fraction rate)
+    /// <param name="rate">A positive rate.</param>
+    /// <param name="culture">The culture whose decimal separator is used; the invariant culture (a dot) when null.</param>
+    public static string SecondsPerPhoto(Fraction rate, CultureInfo? culture = null)
     {
         RequirePositive(rate);
         var seconds = rate.Denominator * 10 >= rate.Numerator
             ? Hundredths(rate.Denominator, rate.Numerator)
             : ThreeSignificant(rate.Denominator, rate.Numerator);
-        return $"{seconds} {TimingWords.Second} {TimingWords.PerPhoto}";
+        return $"{Localized(seconds, culture)} {TimingWords.Second} {TimingWords.PerPhoto}";
     }
 
     /// <summary><c>numerator / denominator</c> (below 0.1) rounded half up to three significant figures, trailing zeros dropped.</summary>
@@ -111,6 +115,15 @@ public static class TimingFormat
         var digits = ((long)scaled).ToString(CultureInfo.InvariantCulture).PadLeft(decimals + 1, '0');
         var text = $"{digits[..^decimals]}.{digits[^decimals..]}".TrimEnd('0');
         return text.EndsWith('.') ? text[..^1] : text;
+    }
+
+    private static string Separator(CultureInfo? culture) => culture?.NumberFormat.NumberDecimalSeparator ?? ".";
+
+    // Swaps the invariant dot of a formatted number for the culture's decimal separator.
+    private static string Localized(string text, CultureInfo? culture)
+    {
+        var separator = Separator(culture);
+        return separator == "." ? text : text.Replace(".", separator, StringComparison.Ordinal);
     }
 
     private static void RequirePositive(Fraction rate)
