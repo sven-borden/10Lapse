@@ -206,4 +206,8 @@
     <value>Exporting {0}</value>
     <comment>What powercfg /requests shows next to 10Lapse while a video is written. {0} the file name ("Harbor sunset.mp4").</comment>
   </data>
+  <data name="ExportKeys" xml:space="preserve">
+    <value>Control+E</value>
+    <comment>The Export button's shortcut as a screen reader names it (its accelerator key).</comment>
+  </data>
 </root>

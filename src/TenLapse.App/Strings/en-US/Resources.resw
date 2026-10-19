@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The package's own strings (#39), which Windows reads from resources.pri, not the app: Package.appxmanifest names
+  them as ms-resource:Key. The app's text is in the .resx files of Core, Media and Presentation (TextResources); the
+  XAML binds to their text classes, so nothing here is for x:Uid.
+
+  English (en-US) is the package's default language. A translation is a copy of this folder named after the language
+  (Strings/de-DE/Resources.resw); its folder also tells the Store the package speaks that language. DisplayName stays
+  the literal reserved Store name 10Lapse in the manifest.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppDescription" xml:space="preserve">
+    <value>Turn a folder of photos into a timelapse video.</value>
+    <comment>The app's description in the package manifest (Start and the Store read it).</comment>
+  </data>
+</root>

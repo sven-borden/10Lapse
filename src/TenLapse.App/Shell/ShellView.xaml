@@ -435,7 +435,7 @@
           x:Name="ExportButton"
           Height="{StaticResource ControlHeight}"
           Padding="{StaticResource PaddingButtonAccent}"
-          AutomationProperties.AcceleratorKey="Control+E"
+          AutomationProperties.AcceleratorKey="{x:Bind export:ExportText.ExportKeys}"
           AutomationProperties.Name="{x:Bind Export.ExportButtonText, Mode=OneWay}"
           Command="{x:Bind Export.ExportCommand}"
           IsEnabled="{x:Bind Export.CanStartExport, Mode=OneWay}"

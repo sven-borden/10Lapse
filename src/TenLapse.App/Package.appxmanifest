@@ -3,7 +3,9 @@
   The Store identity of the 10Lapse listing (product 9NBN2XH6S4D8), identical to
   the 2.1.1 UWP package so 3.0 installs as an update. Name, Publisher,
   PublisherDisplayName and the Application Id must not change. Capabilities:
-  runFullTrust and nothing else (CLAUDE.md, invariants).
+  runFullTrust and nothing else (CLAUDE.md, invariants). Both DisplayNames stay the
+  literal reserved Store name 10Lapse; the description is ms-resource:AppDescription in
+  Strings/en-US/Resources.resw (#39), so a translation is a new .resw.
 -->
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
@@ -36,7 +38,7 @@
     <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
       <uap:VisualElements
         DisplayName="10Lapse"
-        Description="Turn a folder of photos into a timelapse video."
+        Description="ms-resource:AppDescription"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
