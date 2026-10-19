@@ -38,6 +38,10 @@ public sealed partial class ExportPanel : UserControl
     /// <summary>The finished state's part, which the shell swaps in.</summary>
     internal UIElement Finished => FinishedScroll;
 
+    /// <summary>The narrow layout (#36): the head and the details of each part side by side, or stacked.</summary>
+    internal void SetNarrow(bool narrow) =>
+        VisualStateManager.GoToState(this, narrow ? "Narrow" : "Wide", useTransitions: false);
+
     /// <summary>Connects the panel to its view model and to the filmstrip's thumbnails, which the film gate shows.</summary>
     internal void Attach(ExportViewModel viewModel, ThumbnailCache<SoftwareBitmap>? thumbnails, IErrorSink log)
     {

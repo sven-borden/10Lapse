@@ -11,6 +11,10 @@
   the notice add lines when they appear). The code-behind raises screen reader notifications for the pending state,
   the lists appearing and the notice, since a Collapsed to Visible flip does not raise a live region event.
   No amber here: the selects take their colors from the control overrides (ControlOverrides.xaml).
+
+  Narrow (#36; the canvas's repeat(3, 1fr)): the three selects stand in one row, 12 px apart, and the bottom divider goes,
+  because the section is alone under its tab. ShellView calls SetNarrow. The three blocks always sit in a 3-column grid:
+  wide, each spans all three columns on its own row; narrow, each takes one column of row 0.
 -->
 <UserControl
   x:Class="TenLapse.Shell.OutputPanel"
@@ -29,9 +33,29 @@
   </UserControl.Resources>
 
   <Border
+    x:Name="Section"
     Padding="0,16,0,16"
     BorderBrush="{ThemeResource DividerBrush}"
     BorderThickness="0,0,0,1">
+    <VisualStateManager.VisualStateGroups>
+      <VisualStateGroup x:Name="LayoutStates">
+        <VisualState x:Name="Wide" />
+        <VisualState x:Name="Narrow">
+          <VisualState.Setters>
+            <Setter Target="Section.BorderThickness" Value="0" />
+            <Setter Target="PendingBlock.MinHeight" Value="82" />
+            <Setter Target="SelectGrid.RowSpacing" Value="0" />
+            <Setter Target="ResolutionBlock.(Grid.ColumnSpan)" Value="1" />
+            <Setter Target="FormatBlock.(Grid.ColumnSpan)" Value="1" />
+            <Setter Target="FormatBlock.(Grid.Row)" Value="0" />
+            <Setter Target="FormatBlock.(Grid.Column)" Value="1" />
+            <Setter Target="QualityBlock.(Grid.ColumnSpan)" Value="1" />
+            <Setter Target="QualityBlock.(Grid.Row)" Value="0" />
+            <Setter Target="QualityBlock.(Grid.Column)" Value="2" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
     <StackPanel Spacing="{StaticResource SpacingMd}">
       <TextBlock
         AutomationProperties.HeadingLevel="Level2"
@@ -55,45 +79,57 @@
         x:Name="Lists"
         Spacing="{StaticResource SpacingMd}"
         Visibility="{x:Bind ViewModel.IsSettled, Mode=OneWay}">
-        <StackPanel Spacing="6">
-          <TextBlock
-            x:Name="ResolutionLabel"
-            Foreground="{ThemeResource InkSecondaryBrush}"
-            Style="{StaticResource CaptionTextStyle}"
-            Text="{x:Bind presentation:OutputText.ResolutionLabel}" />
-          <ComboBox
-            x:Name="ResolutionList"
-            AutomationProperties.Name="{x:Bind presentation:OutputText.ResolutionLabel}"
-            ItemsSource="{x:Bind ViewModel.Resolutions, Mode=OneWay}"
-            SelectedItem="{x:Bind ViewModel.SelectedResolution, Mode=TwoWay}"
-            Style="{StaticResource OutputSelectStyle}" />
-        </StackPanel>
-        <StackPanel Spacing="6">
-          <TextBlock
-            x:Name="FormatLabel"
-            Foreground="{ThemeResource InkSecondaryBrush}"
-            Style="{StaticResource CaptionTextStyle}"
-            Text="{x:Bind presentation:OutputText.FormatLabel}" />
-          <ComboBox
-            x:Name="FormatList"
-            AutomationProperties.Name="{x:Bind presentation:OutputText.FormatLabel}"
-            ItemsSource="{x:Bind ViewModel.Formats, Mode=OneWay}"
-            SelectedItem="{x:Bind ViewModel.SelectedFormat, Mode=TwoWay}"
-            Style="{StaticResource OutputSelectStyle}" />
-        </StackPanel>
-        <StackPanel Spacing="6">
-          <TextBlock
-            x:Name="QualityLabel"
-            Foreground="{ThemeResource InkSecondaryBrush}"
-            Style="{StaticResource CaptionTextStyle}"
-            Text="{x:Bind presentation:OutputText.QualityLabel}" />
-          <ComboBox
-            x:Name="QualityList"
-            AutomationProperties.Name="{x:Bind presentation:OutputText.QualityLabel}"
-            ItemsSource="{x:Bind ViewModel.Qualities}"
-            SelectedItem="{x:Bind ViewModel.SelectedQuality, Mode=TwoWay}"
-            Style="{StaticResource OutputSelectStyle}" />
-        </StackPanel>
+        <Grid x:Name="SelectGrid" ColumnSpacing="{StaticResource SpacingMd}" RowSpacing="{StaticResource SpacingMd}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+          <StackPanel x:Name="ResolutionBlock" Grid.ColumnSpan="3" Spacing="6">
+            <TextBlock
+              x:Name="ResolutionLabel"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind presentation:OutputText.ResolutionLabel}" />
+            <ComboBox
+              x:Name="ResolutionList"
+              AutomationProperties.Name="{x:Bind presentation:OutputText.ResolutionLabel}"
+              ItemsSource="{x:Bind ViewModel.Resolutions, Mode=OneWay}"
+              SelectedItem="{x:Bind ViewModel.SelectedResolution, Mode=TwoWay}"
+              Style="{StaticResource OutputSelectStyle}" />
+          </StackPanel>
+          <StackPanel x:Name="FormatBlock" Grid.Row="1" Grid.ColumnSpan="3" Spacing="6">
+            <TextBlock
+              x:Name="FormatLabel"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind presentation:OutputText.FormatLabel}" />
+            <ComboBox
+              x:Name="FormatList"
+              AutomationProperties.Name="{x:Bind presentation:OutputText.FormatLabel}"
+              ItemsSource="{x:Bind ViewModel.Formats, Mode=OneWay}"
+              SelectedItem="{x:Bind ViewModel.SelectedFormat, Mode=TwoWay}"
+              Style="{StaticResource OutputSelectStyle}" />
+          </StackPanel>
+          <StackPanel x:Name="QualityBlock" Grid.Row="2" Grid.ColumnSpan="3" Spacing="6">
+            <TextBlock
+              x:Name="QualityLabel"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind presentation:OutputText.QualityLabel}" />
+            <ComboBox
+              x:Name="QualityList"
+              AutomationProperties.Name="{x:Bind presentation:OutputText.QualityLabel}"
+              ItemsSource="{x:Bind ViewModel.Qualities}"
+              SelectedItem="{x:Bind ViewModel.SelectedQuality, Mode=TwoWay}"
+              Style="{StaticResource OutputSelectStyle}" />
+          </StackPanel>
+        </Grid>
 
         <!-- "About 180 MB": empty without photos. No automation name of its own: a screen reader reads the text itself. -->
         <TextBlock
