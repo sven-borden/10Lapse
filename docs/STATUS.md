@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. In flight: PR #103 (#39 strings) fix round, with #104 allocation flake beside it (`tests/` Ordering). Then #38 accessibility (alone).
+2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. In flight: #104 allocation flake (`tests/` Ordering), then #38 accessibility (alone), the last 3.0 code issue.
 
 ## Waves
 
@@ -17,7 +17,7 @@ Waves 0 to 16 are done; every issue in them is under Merged below. #90
 
 | Wave | Issue | Model | Area | Status |
 |---|---|---|---|---|
-| 17 | #39 Strings to resource files | O | every view (Opus: resw/resx split) | PR #103, fix round |
+| 17 | #39 Strings to resource files | O | every view (Opus: resw/resx split) | merged #103 |
 | 17 | #104 Flaky allocation count (bug) | S | `tests/` Ordering | in progress |
 | 17 | #101 Flaky timing lower bound (bug) | S | `tests/` timing asserts | merged #102 |
 | 18 | #38 Accessibility pass | O | every view, alone | |
@@ -137,6 +137,22 @@ Nothing blocks the build loop. Everything below waits until release is near
   no schema bump. *Send feedback* opens GitHub issues, *Rate 10Lapse* the Store.
 - 2026-10-19 (#2): same listing confirmed from the acquisitions and usage
   numbers Sven posted on #2 (#2 closed).
+- 2026-10-19 (#39, PR #103): all app text is in `.resx` files (Presentation,
+  Media, Core) read through `Core/Text/TextResources` behind the text classes
+  (key = property name; a missing key throws). No `x:Uid`: XAML binds the text
+  classes. Only the manifest description is `ms-resource:AppDescription`
+  (`App/Strings/en-US/Resources.resw`); `DisplayName` stays the literal
+  `10Lapse`. Log lines, error contexts (`…Context`, summary "Error context:"),
+  *Copy diagnostics* and Debug text stay English in code. `StringRuleTests`
+  bans literals in XAML, App and Presentation code. Debug `--pseudo-loc`,
+  `scripts/pseudo-check.ps1`. **The first translation** adds `X.<lang>.resx`
+  beside each `.resx` and `App/Strings/<lang>/Resources.resw` (without it the
+  Store and the manifest stay EN-US), and changes code: set
+  `DefaultThreadCurrentUICulture` from `ApplicationLanguages.Languages[0]`
+  when packaged (tests pin en-US), CLDR plurals instead of `count == 1`,
+  culture-aware `ProjectText.Count`/`Format`/sizes, format strings for the
+  pieces glued in code (`TimingFormat` number + unit, readout headline +
+  detail), invariant "fps"/"s" accepted when typed, and length limits.
 - 2026-10-19 (#35, PR #100): every timing and distance lives in
   `Presentation/Motion/MotionSpec.cs`, every transition in `MotionCatalogue`;
   animate only through `MotionTokens.Plan` (the one reduced-motion decision;
@@ -245,3 +261,6 @@ Details are in each PR's "What the next issues should know".
   are generous. The "cancel within 1 s" bounds stay (product promise). If a
   timing test flakes again, look first at `ImportPerformanceTests` (UI
   round-trip ceilings) and the `EncoderProbeTests` cached-load ratio.
+- #39 PR #103: strings in `.resx` and `TextResources`, `StringRuleTests`,
+  `--pseudo-loc` and `scripts/pseudo-check.ps1`; Frame segments end in an
+  ellipsis if too long, the export time-left line wraps to two lines.
