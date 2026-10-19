@@ -206,10 +206,10 @@ public static class ProjectText
     /// <summary>The Success InfoBar after Copy diagnostics.</summary>
     public static string DiagnosticsCopied => _strings.Get();
 
-    /// <summary>The first line of the diagnostics text (English, like the log it carries). {0} the product name.</summary>
+    /// <summary>Diagnostics text: its first line (English, like the log it carries). {0} the product name.</summary>
     public static string DiagnosticsHeading => "{0} diagnostics";
 
-    /// <summary>The heading of the log section of the diagnostics. {0} the number of lines ("200").</summary>
+    /// <summary>Diagnostics text: the heading of its log section. {0} the number of lines ("200").</summary>
     public static string DiagnosticsLogSection => "Last {0} log lines";
 
     /// <summary>The message box shown when the window cannot be created at startup. {0} the log folder.</summary>

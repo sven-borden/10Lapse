@@ -7,10 +7,16 @@ namespace TenLapse.Tests.Code;
 /// <summary>
 /// Every user-visible string comes from the resource files (#39), so a translation is only new files. The XAML binds
 /// its text to the text classes (<c>ProjectText</c>, <c>ExportText</c>, ...), which read <c>Strings/*.resx</c> through
-/// <c>TextResources</c>. These tests fail on a literal user-visible string in a XAML text attribute or in the App's
-/// code, and on a literal sentence in a text class whose summary does not say it is for the log. Allowed anywhere:
-/// text without letters (numbers, glyphs, punctuation) and the brand name. The Debug-only token gallery and the
-/// Debugging folder are not checked.
+/// <c>TextResources</c>. These tests fail on a literal user-visible string in a XAML text attribute, in the App's or
+/// Presentation's code, and on a literal sentence in a text class whose summary does not start by saying it is for the
+/// log. Allowed anywhere: text without letters once its <c>{0}</c> placeholders are left out (numbers, glyphs,
+/// punctuation) and the brand name. The Debug-only token gallery and the Debugging folder are not checked.
+/// <para>
+/// Not scanned, by design: log lines and error contexts (<c>_log.Info("…")</c>, <c>_errors.Report(exception, "…")</c>)
+/// and a <c>SkippedFile</c>'s message, which is for the log only (its constructor says so; the list shows the
+/// reason's text from <c>SkippedFileText</c>). <c>ImportViewModel</c>'s "Only in OneDrive; not downloaded." is such
+/// a message.
+/// </para>
 /// </summary>
 public sealed partial class StringRuleTests
 {
@@ -43,9 +49,9 @@ public sealed partial class StringRuleTests
     }
 
     [Fact]
-    public void NoAppCodeSetsALiteralUserVisibleString()
+    public void NoAppOrPresentationCodeSetsALiteralUserVisibleString()
     {
-        var offenders = AppFiles("*.cs")
+        var offenders = CodeFiles()
             .SelectMany(file => CodeViolations(File.ReadAllText(file)).Select(hit => $"{Relative(file)}: {hit}"))
             .ToList();
 
@@ -56,7 +62,7 @@ public sealed partial class StringRuleTests
     public void ATextClassKeepsOnlyLogLinesAsLiterals()
     {
         var textClasses = SourceFiles("*.cs")
-            .Where(file => File.ReadAllText(file) is var source && (source.Contains("TextResources _strings", StringComparison.Ordinal) || source.Contains("CoreText.Strings.Get()", StringComparison.Ordinal)))
+            .Where(file => IsTextClass(File.ReadAllText(file)))
             .ToList();
         Assert.True(textClasses.Count >= 9, "The text classes were not found: " + string.Join(", ", textClasses.Select(Relative)));
 
@@ -96,6 +102,8 @@ public sealed partial class StringRuleTests
     [InlineData("<TextBlock>Drop photos here</TextBlock>")]
     [InlineData("<Button><Button.Content>Play</Button.Content></Button>")]
     [InlineData("<Style TargetType=\"TextBlock\"><Setter Property=\"Text\" Value=\"Loading\" /></Style>")]
+    [InlineData("<TextBlock Text=\"{}{0} photos\" />")]
+    [InlineData("<TextBlock Text=\"{Photos} left\" />")]
     public void TheXamlScannerFlagsALiteral(string element) => Assert.NotEmpty(XamlViolations(Wrap(element)));
 
     [Theory]
@@ -107,6 +115,9 @@ public sealed partial class StringRuleTests
     [InlineData("<TextBlock Text=\"10Lapse\" />")]
     [InlineData("<Grid x:Name=\"Content\"><x:Double x:Key=\"Size\">16</x:Double></Grid>")]
     [InlineData("<Button Content=\"{x:Null}\" />")]
+    [InlineData("<TextBlock Text=\"{Binding Name}\" />")]
+    [InlineData("<TextBlock Text=\"{StaticResource AppName}\" />")]
+    [InlineData("<Button ToolTipService.ToolTip=\"{ThemeResource Hint}\" />")]
     public void TheXamlScannerAllowsBindingsGlyphsAndNumbers(string element) => Assert.Empty(XamlViolations(Wrap(element)));
 
     [Theory]
@@ -120,6 +131,14 @@ public sealed partial class StringRuleTests
     [InlineData("peer.RaiseNotificationEvent(AutomationNotificationKind.Other, AutomationNotificationProcessing.MostRecent, \"Export done\", \"Export\");")]
     [InlineData("new AppNotificationBuilder().AddText(\"Your video is ready\");")]
     [InlineData("picker.FileTypeChoices.Add(\"MP4 video\", [\".mp4\"]);")]
+    [InlineData("label.Text = \"{0} is ready.\";")]
+    [InlineData("label.Text = $\"{count} photos\";")]
+    [InlineData("var request = new InfoBarRequest(InfoBarSeverity.Warning, \"Export failed.\");")]
+    [InlineData("var request = new InfoBarRequest(\n    InfoBarSeverity.Warning,\n    ProjectText.Format(\"{0} is ready.\", name));")]
+    [InlineData("_infoBars.Show(InfoBarSeverity.Error, \"Saving failed.\");")]
+    [InlineData("_infoBars.ShowWithDetails(InfoBarSeverity.Warning, ProjectText.Skipped, [new InfoBarDetail(name, \"Damaged\")]);")]
+    [InlineData("var question = new Confirmation(\"Discard changes?\", ProjectText.DiscardMessage, ProjectText.Discard, ProjectText.Cancel);")]
+    [InlineData("var question = new Choice(ProjectText.A, ProjectText.B, \"Save\", ProjectText.C, ProjectText.Cancel);")]
     public void TheCodeScannerFlagsALiteral(string source) => Assert.NotEmpty(CodeViolations(source));
 
     [Theory]
@@ -132,12 +151,20 @@ public sealed partial class StringRuleTests
     [InlineData("// label.Text = \"Add photos\"; in a comment")]
     [InlineData("report.Add(\"App version\", AppVersion());")]
     [InlineData("_log.Info(\"Started.\");")]
+    [InlineData("_errors.Report(exception, \"Saving failed.\");")]
+    [InlineData("label.Text = $\"{ProjectText.Done} {ProjectText.Saved}\";")]
+    [InlineData("var request = new InfoBarRequest(InfoBarSeverity.Warning, ProjectText.ExportFailed) { Id = \"export\" };")]
+    [InlineData("_infoBars.Show(InfoBarSeverity.Error, ProjectText.Format(ProjectText.SaveFailed, \"{0:N0}\"));")]
     public void TheCodeScannerAllowsTextClassesAndTheLog(string source) => Assert.Empty(CodeViolations(source));
 
     [Theory]
     [InlineData("/// <summary>The button.</summary>\npublic static string AddPhotos => \"Add photos\";")]
     [InlineData("/// <summary>The bar.</summary>\npublic const string Ready = \"Ready.\";")]
     [InlineData("/// <summary>The reason.</summary>\npublic static string Reason(string name) => $\"Exporting {name}\";")]
+    [InlineData("/// <summary>The InfoBar when a video is done.</summary>\npublic static string Ready => \"{0} is ready.\";")]
+    [InlineData("/// <summary>The count.</summary>\npublic static string Photos(int count) => $\"{count} photos\";")]
+    [InlineData("/// <summary>The InfoBar when startup failed; it names the log folder.</summary>\npublic static string StartupFailed => \"10Lapse could not start. See the log folder.\";")]
+    [InlineData("/// <summary>\n/// The Critical InfoBar, and the error context it is reported with.\n/// </summary>\npublic static string ActionFailed => \"That couldn't be done.\";")]
     public void TheTextClassScannerFlagsAVisibleLiteral(string source) => Assert.NotEmpty(TextClassViolations(source));
 
     [Theory]
@@ -145,7 +172,11 @@ public sealed partial class StringRuleTests
     [InlineData("/// <summary>Error context: the import failed.</summary>\npublic static string ImportFailed => \"Importing photos failed.\";")]
     [InlineData("/// <summary>Log line: the prompt was due.</summary>\npublic static string Postponed => \"Rating prompt: postponed.\";")]
     [InlineData("/// <summary>Log-only context: drawing failed.</summary>\npublic static string DrawFailed => \"Drawing failed.\";")]
-    [InlineData("/// <summary>The first line of the diagnostics text (English, like the log it carries).</summary>\npublic static string Heading => \"{0} diagnostics\";")]
+    [InlineData("/// <summary>Diagnostics text: the first line (English, like the log it carries).</summary>\npublic static string Heading => \"{0} diagnostics\";")]
+    [InlineData("/// <summary>\n/// Error context: an InfoBar's action threw.\n/// </summary>\npublic static string ActionFailedContext => \"An InfoBar's action failed.\";")]
+    [InlineData("/// <summary>Log context: the import.</summary>\npublic static string Import => \"Import\";")]
+    [InlineData("/// <summary>The log context of a save.</summary>\npublic static string Save => \"Save\";")]
+    [InlineData("/// <summary>The glyphs between parts.</summary>\npublic static string Join => \"{0} \\u00B7 {1}\";")]
     public void TheTextClassScannerAllowsResourcesAndLogLines(string source) => Assert.Empty(TextClassViolations(source));
 
     private static IEnumerable<string> XamlViolations(string xaml)
@@ -155,7 +186,7 @@ public sealed partial class StringRuleTests
         {
             foreach (var attribute in element.Attributes().Where(attribute => _textProperties.Contains(attribute.Name.LocalName) && attribute.Name.Namespace == XNamespace.None))
             {
-                if (IsVisibleLiteral(attribute.Value))
+                if (IsVisibleXamlLiteral(attribute.Value))
                 {
                     yield return $"{element.Name.LocalName} {attribute.Name.LocalName}=\"{attribute.Value}\"";
                 }
@@ -163,14 +194,14 @@ public sealed partial class StringRuleTests
 
             if (element.Name.LocalName == "Setter"
                 && _textProperties.Contains((string?)element.Attribute("Property") ?? string.Empty)
-                && IsVisibleLiteral((string?)element.Attribute("Value") ?? string.Empty))
+                && IsVisibleXamlLiteral((string?)element.Attribute("Value") ?? string.Empty))
             {
                 yield return $"Setter {element.Attribute("Property")!.Value}=\"{element.Attribute("Value")!.Value}\"";
             }
 
             if (!_valueElements.Contains(element.Name.LocalName))
             {
-                foreach (var text in element.Nodes().OfType<XText>().Where(text => IsVisibleLiteral(text.Value.Trim())))
+                foreach (var text in element.Nodes().OfType<XText>().Where(text => IsVisibleXamlLiteral(text.Value.Trim())))
                 {
                     yield return $"{element.Name.LocalName} text \"{text.Value.Trim()}\"";
                 }
@@ -178,45 +209,90 @@ public sealed partial class StringRuleTests
         }
     }
 
+    // The source without its comment lines, scanned whole so that a call split over several lines is still seen.
     private static IEnumerable<string> CodeViolations(string source)
     {
-        foreach (var line in source.Split('\n').Select(line => line.Trim()).Where(line => !line.StartsWith("//", StringComparison.Ordinal)))
+        var code = string.Join('\n', source.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n')
+            .Select(line => line.Trim())
+            .Where(line => !line.StartsWith("//", StringComparison.Ordinal)));
+        foreach (var regex in new[] { PropertyLiteral(), AutomationLiteral(), ToolTipLiteral(), NotificationLiteral(), ToastLiteral(), FileTypeLiteral() })
         {
-            foreach (var regex in new[] { PropertyLiteral(), AutomationLiteral(), ToolTipLiteral(), NotificationLiteral(), ToastLiteral(), FileTypeLiteral() })
+            foreach (Match match in regex.Matches(code))
             {
-                foreach (Match match in regex.Matches(line))
+                if (IsVisibleCodeLiteral(Regex.Unescape(match.Groups["value"].Value)))
                 {
-                    if (IsVisibleLiteral(Regex.Unescape(match.Groups["value"].Value)))
-                    {
-                        yield return line;
-                    }
+                    yield return LineAt(code, match.Index);
                 }
             }
         }
+
+        // Every literal among the arguments of an InfoBar, a dialog or a detail line.
+        foreach (Match call in MessageCall().Matches(code))
+        {
+            foreach (Match literal in StringLiteral().Matches(call.Groups["args"].Value))
+            {
+                if (IsVisibleCodeLiteral(Regex.Unescape(literal.Groups["value"].Value)))
+                {
+                    yield return LineAt(code, call.Index);
+                }
+            }
+        }
+    }
+
+    private static string LineAt(string code, int index)
+    {
+        var start = index == 0 ? 0 : code.LastIndexOf('\n', index - 1) + 1;
+        var end = code.IndexOf('\n', index);
+        return code[start..(end < 0 ? code.Length : end)];
     }
 
     private static IEnumerable<string> TextClassViolations(string source)
     {
         foreach (Match match in TextClassLiteral().Matches(source.Replace("\r\n", "\n", StringComparison.Ordinal)))
         {
-            var summary = match.Groups["doc"].Value;
-            if (IsVisibleLiteral(match.Groups["value"].Value) && !LogSummary().IsMatch(summary))
+            if (IsVisibleCodeLiteral(Regex.Unescape(match.Groups["value"].Value)) && !LogSummary().IsMatch(SummaryText(match.Groups["doc"].Value)))
             {
                 yield return match.Groups["name"].Value;
             }
         }
     }
 
-    // Words: at least one letter, and not the brand name. A markup extension ({x:Bind ...}) is not a literal.
-    private static bool IsVisibleLiteral(string value) =>
-        value.Length > 0 && !value.StartsWith('{') && value != Brand && value.Any(char.IsLetter);
+    // Words: at least one letter besides the brand name. Only a real markup extension ({x:Bind ...}) is not a literal;
+    // "{}{0} photos" (XAML's escape for a leading brace) is.
+    private static bool IsVisibleXamlLiteral(string value) =>
+        !MarkupExtension().IsMatch(value) && HasWords(value);
+
+    // Words once the placeholders ({0}, {1:N0}, {count}) are left out: "{0} is ready." and $"{count} photos" are sentences.
+    private static bool IsVisibleCodeLiteral(string value) => HasWords(Placeholder().Replace(value, string.Empty));
+
+    private static bool HasWords(string value) => value.Replace(Brand, string.Empty, StringComparison.Ordinal).Any(char.IsLetter);
+
+    // The summary's text, without the /// and the tags around it.
+    private static string SummaryText(string doc)
+    {
+        var text = string.Join(' ', doc.Split('\n')
+            .Select(line => line.Trim())
+            .Where(line => line.StartsWith("///", StringComparison.Ordinal))
+            .Select(line => line[3..].Trim()));
+        var start = text.IndexOf("<summary>", StringComparison.Ordinal);
+        return (start < 0 ? text : text[(start + "<summary>".Length)..]).Trim();
+    }
 
     // Every App source except the Debug-only token gallery and the Debugging switches (removed from Release builds).
     private static IEnumerable<string> AppFiles(string pattern) =>
-        SourceFiles(pattern)
-            .Where(file => Relative(file).StartsWith(Path.Combine("src", "TenLapse.App") + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+        ProjectFiles("TenLapse.App", pattern)
             .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}Gallery{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
                 && !file.Contains($"{Path.DirectorySeparatorChar}Debugging{Path.DirectorySeparatorChar}", StringComparison.Ordinal));
+
+    // The App's code and Presentation's, except the text classes, which the text class test checks.
+    private static IEnumerable<string> CodeFiles() =>
+        AppFiles("*.cs").Concat(ProjectFiles("TenLapse.Presentation", "*.cs").Where(file => !IsTextClass(File.ReadAllText(file))));
+
+    private static IEnumerable<string> ProjectFiles(string project, string pattern) =>
+        SourceFiles(pattern).Where(file => Relative(file).StartsWith(Path.Combine("src", project) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsTextClass(string source) =>
+        source.Contains("TextResources _strings", StringComparison.Ordinal) || source.Contains("CoreText.Strings.Get()", StringComparison.Ordinal);
 
     private static IEnumerable<string> SourceFiles(string pattern) =>
         Directory.EnumerateFiles(Path.Combine(DesignFiles.Root, "src"), pattern, SearchOption.AllDirectories)
@@ -245,6 +321,20 @@ public sealed partial class StringRuleTests
     [GeneratedRegex(@"\b(?:AddText|SetAttributionText|AppNotificationButton)\(\s*\$?@?""(?<value>(?:[^""\\]|\\.)*)""")]
     private static partial Regex ToastLiteral();
 
+    // new InfoBarRequest(…), new Confirmation(…), new Choice(…), new InfoBarDetail(…), Show(InfoBarSeverity.…, …): the
+    // argument list, with one level of nested calls.
+    [GeneratedRegex(@"(?:\b(?:InfoBarRequest|Confirmation|Choice|InfoBarDetail)|\bShow(?:WithDetails)?(?=\(\s*InfoBarSeverity\.))\((?<args>(?:[^;()""]|""(?:[^""\\]|\\.)*""|\((?:[^;()""]|""(?:[^""\\]|\\.)*"")*\))*)\)")]
+    private static partial Regex MessageCall();
+
+    [GeneratedRegex(@"\$?@?""(?<value>(?:[^""\\]|\\.)*)""")]
+    private static partial Regex StringLiteral();
+
+    [GeneratedRegex(@"\{[^{}]*\}")]
+    private static partial Regex Placeholder();
+
+    [GeneratedRegex(@"^\{(?:x:Bind|x:Null|Binding|StaticResource|ThemeResource|TemplateBinding|CustomResource)\b")]
+    private static partial Regex MarkupExtension();
+
     [GeneratedRegex(@"\bFileTypeChoices\.Add\(\s*\$?@?""(?<value>(?:[^""\\]|\\.)*)""")]
     private static partial Regex FileTypeLiteral();
 
@@ -252,6 +342,7 @@ public sealed partial class StringRuleTests
     [GeneratedRegex(@"(?<doc>(?:^[ \t]*///.*\n)*)^[ \t]*public (?:static|const) string (?<name>\w+)(?:\([^)]*\))?\s*(?:=>|=)\s*(?:string\.Create\([^,]+,\s*)?\$?@?""(?<value>(?:[^""\\]|\\.)*)""", RegexOptions.Multiline)]
     private static partial Regex TextClassLiteral();
 
-    [GeneratedRegex(@"(?i)error context|log[- ]only|\blog\b|log line|log context|diagnostics text")]
+    // The summary's first words: "Error context: …", "Log line: …", "Log-only context: …", "Diagnostics text: …".
+    [GeneratedRegex(@"^(?:Error context|Log(?:-only)?(?: line| context)?\b|The log context|Diagnostics text)")]
     private static partial Regex LogSummary();
 }
