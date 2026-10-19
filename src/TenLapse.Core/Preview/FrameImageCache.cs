@@ -154,6 +154,7 @@ public sealed class FrameImageCache<TImage> : IDisposable
         }
 
         var dispose = new List<TImage>();
+        CancellationTokenSource? cancelled = null;
         lock (_gate)
         {
             if (_disposed || frames == _frames)
@@ -169,8 +170,7 @@ public sealed class FrameImageCache<TImage> : IDisposable
 
             if (!_indexOf.Keys.Any(indexOf.ContainsKey))
             {
-                _projectCancel.Cancel();
-                _projectCancel.Dispose();
+                cancelled = _projectCancel;
                 _projectCancel = new CancellationTokenSource();
             }
 
@@ -189,6 +189,7 @@ public sealed class FrameImageCache<TImage> : IDisposable
             }
         }
 
+        CancelQuietly(cancelled);
         DisposeAll(dispose);
         Guard(() => _source.FramesChanged(frames));
         Wake();
@@ -199,7 +200,8 @@ public sealed class FrameImageCache<TImage> : IDisposable
     {
         lock (_gate)
         {
-            index = Math.Clamp(index, 0, Math.Max(0, _frames.Length - 1));
+            // Before the frames arrive the index is kept as given; SetFrames clamps it.
+            index = _frames.IsEmpty ? Math.Max(0, index) : Math.Clamp(index, 0, _frames.Length - 1);
             lookahead = Math.Max(0, lookahead);
             if (_disposed || (index == _focus && playing == _playing && lookahead == _lookahead))
             {
@@ -270,16 +272,27 @@ public sealed class FrameImageCache<TImage> : IDisposable
             }
 
             _disposed = true;
-            _projectCancel.Cancel();
             foreach (var entry in _entries.Values.ToList())
             {
                 Evict(entry, dispose);
             }
         }
 
-        _disposing.Cancel();
+        CancelQuietly(_projectCancel);
+        _ = _disposing.CancelAsync();
         DisposeAll(dispose);
         Wake();
+    }
+
+    // Cancels on the thread pool, never inline: a cancellation's continuations would otherwise run the workers' code on
+    // the caller's thread (the UI or render thread). The source is not disposed: loads in flight still hold its token,
+    // and it has no timer to release.
+    private static void CancelQuietly(CancellationTokenSource? source)
+    {
+        if (source is not null)
+        {
+            _ = source.CancelAsync();
+        }
     }
 
     /// <summary>For the tests: completes when every worker has stopped after <see cref="Dispose"/>.</summary>
@@ -401,6 +414,12 @@ public sealed class FrameImageCache<TImage> : IDisposable
                 want = FrameImageQuality.Proxy;
             }
             else
+            {
+                continue;
+            }
+
+            // The background pass is building this proxy right now: load it once it is there, not a second build.
+            if (want == FrameImageQuality.Proxy && _building.Contains(frame.Id))
             {
                 continue;
             }

@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Text;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Brushes;
+using Microsoft.Graphics.Canvas.Effects;
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -61,7 +62,7 @@ internal static partial class DebugLaunch
         var dispatcher = DispatcherQueue.GetForCurrentThread();
         var (width, height) = SampleSize();
         var root = Value("--sample-folder=") ?? Path.Combine(Path.GetTempPath(), "10Lapse debug samples");
-        var folder = Path.Combine(root, string.Create(CultureInfo.InvariantCulture, $"Harbor sunset {width}x{height}"));
+        var folder = Path.Combine(root, string.Create(CultureInfo.InvariantCulture, $"Harbor sunset grain {width}x{height}"));
 
         // The brand's day-to-night ramp is for the sample sequence (DESIGN.md, Brand ramp); read on the UI thread.
         var ramp = new[] { "DaylightColor", "GoldenColor", "AmberColor", "RoseColor", "DuskColor", "BlueHourColor", "NightColor" }
@@ -146,6 +147,20 @@ internal static partial class DebugLaunch
             var sunY = height * (0.25f + (0.55f * t));
             session.FillCircle(width * 0.63f, sunY, height * 0.06f, Along(ramp, 0.2f + (0.3f * t)));
             session.FillRectangle(0, horizon, width, height - horizon, land);
+
+            // Fine grain over everything, different in every frame, so the files weigh and decode like photos rather
+            // than like flat gradients.
+            using (var grain = new TurbulenceEffect
+            {
+                Size = new Vector2(width, height),
+                Frequency = new Vector2(0.08f),
+                Octaves = 4,
+                Seed = index,
+            })
+            using (session.CreateLayer(0.18f))
+            {
+                session.DrawImage(grain);
+            }
             session.FillRectangle(0, height - (height * 0.02f), width * t, height * 0.02f, ramp[0]);
 
             using var format = new CanvasTextFormat { FontFamily = "Segoe UI Variable Display", FontSize = height * 0.12f };

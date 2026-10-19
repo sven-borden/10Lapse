@@ -5,7 +5,6 @@ using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.Graphics.Canvas.UI.Xaml;
-using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using TenLapse.Core.Preview;
 using TenLapse.Core.Projects;
@@ -21,9 +20,10 @@ using Windows.UI;
 namespace TenLapse.Preview;
 
 /// <summary>The colors the render thread draws with, read from the tokens on the UI thread.</summary>
+/// <param name="Ground">Around the gate: the Layer the stage sits on (drawn, not left transparent, so the corners blend the same everywhere).</param>
 /// <param name="Gate">The gate behind a frame that has no picture yet, or cannot be read (Letterbox).</param>
 /// <param name="Text">The placeholder's text on the gate.</param>
-internal readonly record struct PreviewColors(Color Gate, Color Text);
+internal readonly record struct PreviewColors(Color Ground, Color Gate, Color Text);
 
 /// <summary>
 /// The preview's render thread (#19): draws the frame the player says belongs on screen into a swap chain, through
@@ -248,7 +248,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         {
             if (resized || changes != _drawnChanges || _shownVersion != state.Version)
             {
-                using (chain.CreateDrawingSession(Colors.Transparent))
+                using (chain.CreateDrawingSession(colors.Ground))
                 {
                 }
 
@@ -347,7 +347,7 @@ internal sealed class PreviewRenderLoop : IDisposable
     {
         var video = snapshot.VideoSize;
         var size = chain.Size;
-        using var session = chain.CreateDrawingSession(Colors.Transparent);
+        using var session = chain.CreateDrawingSession(colors.Ground);
         var gate = GateRect(size, video);
         if (gate.Width < 1 || gate.Height < 1)
         {

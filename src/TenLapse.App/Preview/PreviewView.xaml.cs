@@ -2,8 +2,11 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
+using TenLapse.Presentation;
+using TenLapse.Services;
 using TenLapse.Themes;
 using Windows.Foundation;
+using Windows.UI.ViewManagement;
 
 namespace TenLapse.Preview;
 
@@ -13,6 +16,9 @@ namespace TenLapse.Preview;
 /// </summary>
 public sealed partial class PreviewView : UserControl
 {
+    // Kept as a field: its events stop when nothing holds it. High contrast and the Windows colors change through it,
+    // not always through the element's theme.
+    private readonly UISettings _uiSettings = new();
     private PreviewSession? _session;
     private PreviewRenderLoop? _loop;
 
@@ -25,6 +31,7 @@ public sealed partial class PreviewView : UserControl
         SizeChanged += (_, _) => Resize();
         Panel.CompositionScaleChanged += (_, _) => Resize();
         ActualThemeChanged += (_, _) => RefreshColors();
+        _uiSettings.ColorValuesChanged += OnColorValuesChanged;
     }
 
     /// <summary>Draws for <paramref name="session"/> from now on.</summary>
@@ -56,8 +63,9 @@ public sealed partial class PreviewView : UserControl
         // On the gate (dark Letterbox) the placeholder's text is the dark theme's Ink Secondary; high contrast uses
         // the system's window and text colors.
         var colors = ThemeTokens.IsHighContrast
-            ? new PreviewColors(ThemeTokens.Color("CardColor", this), ThemeTokens.Color("InkColor", this))
+            ? new PreviewColors(ThemeTokens.Color("LayerColor", this), ThemeTokens.Color("CardColor", this), ThemeTokens.Color("InkColor", this))
             : new PreviewColors(
+                ThemeTokens.Color("LayerColor", this),
                 (Windows.UI.Color)Application.Current.Resources["LetterboxColor"],
                 ThemeTokens.Color("InkSecondaryColor", ElementTheme.Dark));
         _loop.SetColors(colors);
@@ -85,6 +93,15 @@ public sealed partial class PreviewView : UserControl
 
         _loop?.Dispose();
         _loop = null;
+    }
+
+    // Raised on a background thread.
+    private void OnColorValuesChanged(UISettings sender, object args)
+    {
+        if (_session is { } session)
+        {
+            DispatcherQueue.TryEnqueueGuarded(session.Log, RefreshColors, ProjectText.SystemColorsFailed);
+        }
     }
 
     private void Resize() => _loop?.Resize(new Size(ActualWidth, ActualHeight), Panel.CompositionScaleX);
