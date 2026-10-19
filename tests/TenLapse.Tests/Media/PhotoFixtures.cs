@@ -91,11 +91,7 @@ internal sealed class PhotoFixtures : IDisposable
         }
 
         var path = PathOf(name);
-        using var file = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
-        using var stream = file.AsRandomAccessStream();
-        var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
-        encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)width, (uint)height, 96, 96, pixels);
-        await encoder.FlushAsync();
+        await new Golden.GoldenImage(pixels, width, height).SavePngAsync(path);
         return path;
     }
 

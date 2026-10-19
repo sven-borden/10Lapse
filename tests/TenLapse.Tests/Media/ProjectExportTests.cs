@@ -9,6 +9,7 @@ using TenLapse.Media.Inspection;
 using TenLapse.Presentation;
 using TenLapse.Services;
 using TenLapse.Tests.Fixtures;
+using TenLapse.Tests.Golden;
 using static TenLapse.Tests.Media.MediaSkips;
 
 namespace TenLapse.Tests.Media;
@@ -429,16 +430,8 @@ public sealed class ProjectExportTests : IDisposable
         IEnumerable<string> paths,
         FrameAspect aspect = FrameAspect.Ratio16x9,
         FitMode fit = FitMode.Fill,
-        TimingSettings? timing = null)
-    {
-        var project = new Project(
-            timing ?? TimingSettings.PerSecond(new Fraction(30, 1)),
-            new FrameSettings(aspect, fit),
-            new OutputSettings(OutputResolution.Hd720, VideoFormat.Mp4H264, OutputQuality.Standard),
-            SortMode.Manual);
-        project.AddFrames(paths.Select(path => new Frame(path, new FileInfo(path).Exists ? new FileInfo(path).Length : 0, DateTime.UtcNow)));
-        return project.Snapshot;
-    }
+        TimingSettings? timing = null) =>
+        GoldenExport.Snapshot(paths.Select(path => GoldenExport.FrameOf(path)), timing ?? TimingSettings.PerSecond(new Fraction(30, 1)), aspect, fit, quality: OutputQuality.Standard);
 
     // Distinct copies of one fixture: a project holds each file once.
     private IEnumerable<string> ManyPhotos(int count)
@@ -458,19 +451,6 @@ public sealed class ProjectExportTests : IDisposable
 
     private static Task<ProjectExportResult> ExportAsync(ProjectSnapshot snapshot, string output, IProgress<ExportProgress>? progress = null, ProjectExportOptions? options = null) =>
         ProjectExporter.ExportAsync(snapshot, output, progress, TestContext.Current.CancellationToken, options ?? new ProjectExportOptions());
-
-    private static async Task<ProjectExportResult> ExportOrSkipAsync(ProjectSnapshot snapshot, string output, IProgress<ExportProgress>? progress = null)
-    {
-        try
-        {
-            return await ExportAsync(snapshot, output, progress);
-        }
-        catch (VideoExportException exception) when (exception.Failure is VideoExportFailure.EncoderUnavailable or VideoExportFailure.NoGraphicsDevice)
-        {
-            Assert.Skip($"The export cannot run here ({exception.Message}).");
-            throw;
-        }
-    }
 
     private static (int X, int Y)[] Points(params (int X, int Y)[] points) => points;
 
