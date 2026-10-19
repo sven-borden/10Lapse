@@ -225,7 +225,10 @@ internal static class DebugFocusWalk
         // Back where it was: a control takes it again; with nothing focused before, the walk leaves the last stop.
         if (start is Control control)
         {
-            control.Focus(FocusState.Programmatic);
+            if (!control.Focus(FocusState.Programmatic))
+            {
+                text.AppendLine("  (focus not restored: the control no longer takes it)");
+            }
         }
         else
         {

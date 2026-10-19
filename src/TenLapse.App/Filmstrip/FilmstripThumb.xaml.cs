@@ -43,6 +43,8 @@ public sealed partial class FilmstripThumb : UserControl
     /// <summary>The item shown; null while the element waits for reuse.</summary>
     internal FilmstripItem? Item { get; private set; }
 
+    private int _lastNumber = -1;
+
     /// <summary>The strip, for the automation patterns.</summary>
     internal FilmstripView? Strip { get; set; }
 
@@ -200,7 +202,17 @@ public sealed partial class FilmstripThumb : UserControl
 
         protected override string GetClassNameCore() => nameof(FilmstripThumb);
 
-        protected override int GetPositionInSetCore() => owner.Item?.Number ?? -1;
+        // The last number it showed while the repeater takes it back: a scan that listed it a moment before still gets a
+        // place in the set, not -1 (#38).
+        protected override int GetPositionInSetCore()
+        {
+            if (owner.Item is { } item)
+            {
+                owner._lastNumber = item.Number;
+            }
+
+            return owner._lastNumber;
+        }
 
         protected override int GetSizeOfSetCore() => owner.Strip?.ItemCount ?? -1;
     }
