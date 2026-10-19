@@ -40,6 +40,33 @@ public sealed class ImportViewModelTests
     }
 
     [Fact]
+    public async Task ClosingTheWindowMidImportIsACancellationNotAnError()
+    {
+        var source = new ScriptedImportSource([ScriptedImportSource.Photo("IMG_1.jpg"), ScriptedImportSource.Photo("IMG_2.jpg"), ScriptedImportSource.Photo("IMG_3.jpg")]);
+        var gate = source.HoldReadBatch(1);
+        using var harness = ImportHarness.With(source);
+        var dispatcher = new ClosingDispatcher(harness.Ui);
+        var import = harness.Ui.Run(() => new ImportViewModel(harness.Shell, source, harness.Picker, harness.Folders, dispatcher, harness.Dialogs, harness.InfoBars, harness.Errors));
+
+        var running = harness.Ui.Run(() => import.ImportAsync([@"C:\Scripted"]));
+        await source.ReadBatchReached.Task.WaitAsync(TestContext.Current.CancellationToken);
+
+        // What the shell's Detach does as the window closes: Cancel, then the dispatcher takes no more work.
+        dispatcher.Closed = true;
+        await harness.Ui.InvokeAsync(() =>
+        {
+            import.CancelCommand.Execute(null);
+            return true;
+        });
+        gate.SetResult();
+        await running.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        await import.WhenIdleAsync();
+
+        Assert.DoesNotContain(harness.Errors.Reported, reported => reported.Context == ProjectText.ImportUiStepFailed);
+        Assert.Empty(harness.RealFailures());
+    }
+
+    [Fact]
     public async Task AFinishedImportIsNoLongerHeldByItsProject()
     {
         using var harness = ImportHarness.With(new ScriptedImportSource([ScriptedImportSource.Photo("a.jpg")]));
@@ -469,6 +496,14 @@ public sealed class ImportViewModelTests
         Assert.Equal("Add 1,200 photos", ProjectText.DragCaption(1200));
         Assert.Equal("Adding 1,240 of 5,000 photos…", ProjectText.ImportReadingProgress(1240, 5000));
         Assert.Equal("Found 5,000 photos…", ProjectText.ImportListingProgress(5000));
+    }
+
+    // The window's dispatcher as it shuts down: once closed, work is never run and the task is cancelled.
+    private sealed class ClosingDispatcher(UiThread inner) : IUiDispatcher
+    {
+        public volatile bool Closed;
+
+        public Task<T> InvokeAsync<T>(Func<T> work) => Closed ? Task.FromCanceled<T>(new CancellationToken(canceled: true)) : inner.InvokeAsync(work);
     }
 
     private sealed class RecordingSource : IPhotoImportSource

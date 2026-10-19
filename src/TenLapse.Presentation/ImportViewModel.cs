@@ -608,6 +608,12 @@ public sealed partial class ImportViewModel : ObservableObject
                 ProgressPercent = 0;
             }).ConfigureAwait(false);
         }
+        catch (OperationCanceledException exception)
+        {
+            // The window is closing and its dispatcher takes no more work: there is no progress left to hide. Not an
+            // error: the error path logs a cancellation as such (the log has no level below Info) and shows nothing.
+            _errors.Show(exception, ProjectText.ImportUiStepFailed);
+        }
         catch (Exception exception)
         {
             _errors.Report(exception, ProjectText.ImportUiStepFailed);
