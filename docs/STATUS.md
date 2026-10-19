@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. In flight: PR #103 (#39 strings) review, with #104 allocation flake beside it (`tests/` Ordering). Then #38 accessibility (alone).
+2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. In flight: PR #103 (#39 strings) fix round, with #104 allocation flake beside it (`tests/` Ordering). Then #38 accessibility (alone).
 
 ## Waves
 
@@ -17,7 +17,7 @@ Waves 0 to 16 are done; every issue in them is under Merged below. #90
 
 | Wave | Issue | Model | Area | Status |
 |---|---|---|---|---|
-| 17 | #39 Strings to resource files | O | every view (Opus: resw/resx split) | PR #103, review |
+| 17 | #39 Strings to resource files | O | every view (Opus: resw/resx split) | PR #103, fix round |
 | 17 | #104 Flaky allocation count (bug) | S | `tests/` Ordering | in progress |
 | 17 | #101 Flaky timing lower bound (bug) | S | `tests/` timing asserts | merged #102 |
 | 18 | #38 Accessibility pass | O | every view, alone | |
