@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Paused (Sven, 2026-10-19). Nothing running. Next on resume: the PR #74 fix round (#22) from the review comment on the PR, then #29 first launch and #19 preview.
+Wave 8 running (2026-10-19): the PR #74 fix round (#22, Opus fixer) and #29 first launch (Opus) in parallel. Next: #19 preview and #23 output panel.
 
 ## Waves
 
