@@ -1,6 +1,7 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using TenLapse.Core.Diagnostics;
+using TenLapse.Core.Settings;
 using TenLapse.Media.Import;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Services;
@@ -116,12 +117,14 @@ public partial class App : Application
         // The error path: every command goes through it. Mappers word the failures of libraries Presentation
         // cannot see.
         var errors = new ErrorPresenter(_log, infoBars, [new VideoExportErrorMapper()], diagnostics.CopyAsync);
-        var shell = new ShellViewModel(dialogs, errors);
-        var settings = new SettingsViewModel(errors, diagnostics);
+        // The remembered settings (#21): a small file read now, on this thread, before the window; a new project starts
+        // from them, the pickers open in the last folder, and the file is written a moment after each change.
+        var remembered = new RememberedSettings(new JsonFileSettingsStore(SettingsFile()), errors, _log);
+        var shell = new ShellViewModel(dialogs, errors, remembered.CreateProject);
+        var settings = new SettingsViewModel(errors, diagnostics, remembered, infoBars);
 
         // Import (#12): Media's PhotoImporter does the file work behind Core's IPhotoImportSource; the batches reach
-        // the project on this (the UI) thread's queue. The pickers remember the last folder for the session; #21
-        // passes an IImportFolderMemory that lasts across launches instead of SessionImportFolders.
+        // the project on this (the UI) thread's queue. The pickers remember the last folder across launches (#21).
         var ui = new DispatcherQueueUiDispatcher(DispatcherQueue.GetForCurrentThread(), logOnly);
         ICodecExtensions codecs = new WindowsCodecExtensions();
 #if DEBUG
@@ -134,7 +137,7 @@ public partial class App : Application
             shell,
             new PhotoImporter { Log = _log },
             new PhotoPickerService(() => window!.AppWindow.Id),
-            new SessionImportFolders(),
+            remembered,
             ui,
             dialogs,
             infoBars,
@@ -166,6 +169,11 @@ public partial class App : Application
 #if DEBUG
         errors.Guard(() => Debugging.DebugLaunch.ApplyPreview(preview, window, _log), "Applying the preview's Debug switches failed.");
         errors.Guard(() => Debugging.DebugLaunch.Apply(shell, infoBars), "Applying the Debug switches failed.");
+#endif
+        // After the Debug switches, so only the user's own changes are remembered. The last change is written as the window closes.
+        errors.Guard(() => remembered.Attach(shell), ProjectText.SettingsAttachFailed);
+        window.Closed += (_, _) => remembered.Dispose();
+#if DEBUG
         if (Debugging.DebugMissingCodecs.FromSwitches(Environment.GetCommandLineArgs()) is { } fakedMissing)
         {
             // --missing-codec: the InfoBars an import of 12 HEIC and 3 RAW photos would raise with those extensions missing.
@@ -173,6 +181,18 @@ public partial class App : Application
         }
 #endif
         return window;
+    }
+
+    // Debug can point the remembered settings elsewhere (--settings-folder=PATH), so a test run leaves the user's alone.
+    private static string SettingsFile()
+    {
+#if DEBUG
+        if (Debugging.DebugLaunch.SettingsFolder is { } folder)
+        {
+            return Path.Combine(folder, "settings.json");
+        }
+#endif
+        return AppEnvironment.SettingsFile();
     }
 
     // Debug can point the proxy cache elsewhere (--cache-folder=PATH), so a test run leaves the user's cache alone.

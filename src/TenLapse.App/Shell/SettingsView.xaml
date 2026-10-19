@@ -60,6 +60,36 @@
           <TextBlock
             AutomationProperties.HeadingLevel="Level2"
             Style="{StaticResource SettingsSectionHeadingStyle}"
+            Text="{x:Bind presentation:ProjectText.SettingsDefaultsSection}" />
+          <Grid Style="{StaticResource SettingsCardStyle}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <!-- Segoe Fluent Icons "Undo". -->
+            <FontIcon Glyph="&#xE7A7;" Style="{StaticResource SettingsCardIconStyle}" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock
+                Style="{StaticResource BodyTextStyle}"
+                Text="{x:Bind presentation:ProjectText.ResetCardTitle}" />
+              <TextBlock
+                Style="{StaticResource CaptionSecondaryTextStyle}"
+                Text="{x:Bind presentation:ProjectText.ResetCardCaption}"
+                TextWrapping="Wrap" />
+            </StackPanel>
+            <Button
+              Grid.Column="2"
+              Height="{StaticResource ControlHeight}"
+              Padding="{StaticResource PaddingButtonStandard}"
+              VerticalAlignment="Center"
+              Command="{x:Bind ViewModel.ResetToDefaultsCommand}"
+              Content="{x:Bind presentation:ProjectText.ResetButton}" />
+          </Grid>
+
+          <TextBlock
+            AutomationProperties.HeadingLevel="Level2"
+            Style="{StaticResource SettingsLaterSectionHeadingStyle}"
             Text="{x:Bind presentation:ProjectText.SettingsAboutSection}" />
           <Grid Style="{StaticResource SettingsCardStyle}">
             <Grid.ColumnDefinitions>
