@@ -65,7 +65,7 @@ public sealed class StreamingExportTests : IDisposable
     [InlineData(7, 3, 60)] // length mode: timescale 2333, up to 4,286 ticks late (frame 7)
     [InlineData(200, 9, 120)] // length mode: timescale 22222, up to 450 ticks late (frame 100)
     [InlineData(3, 7, 30)] // length mode, typed as 9/7: timescale 1285
-    public async Task EveryFrameLandsAtMostOneTimescaleUnitAfterItsStart(int numerator, int denominator, int frames)
+    public async Task EveryFrameLandsWithinOneTimescaleUnitOfItsStart(int numerator, int denominator, int frames)
     {
         // The MP4 sink's timescale is floor(rate x 1000), of the nominal rate below 1 fps (3/7 is typed as 9/7:
         // timescale 1285). When that is not exact, each sample lands on that grid within one unit of FrameStart;
