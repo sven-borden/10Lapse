@@ -2,7 +2,7 @@
   <!-- Plain net10.0: no UI or Windows types, so the model and timing code stay portable and fast to test. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <!-- The Strings/*.resx files are English, the neutral language (#39): no satellite lookup for English. -->
+    <!-- The Strings/*.resx files are English, the neutral language (#39): English reads them from this assembly. For a regional English such as en-US, ResourceManager looks for a satellite once, finds none and remembers it. -->
     <NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
   <ItemGroup>
