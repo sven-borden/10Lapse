@@ -41,6 +41,12 @@ public enum SkipReason
 
     /// <summary>An online-only cloud file (OneDrive files on demand) that could not be downloaded: offline, or the sync app is not running.</summary>
     CloudFileOffline,
+
+    /// <summary>
+    /// An online-only OneDrive file (files on demand) the user chose not to download when the import asked (#12): it was
+    /// never opened, so nothing was downloaded.
+    /// </summary>
+    CloudOnly,
 }
 
 /// <summary>A file import could not use, kept so the user can see which and why.</summary>

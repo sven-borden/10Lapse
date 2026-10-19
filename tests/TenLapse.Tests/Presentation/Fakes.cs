@@ -14,6 +14,17 @@ internal sealed class FakeDialogService(bool answer = true) : IDialogService
         Asked.Add(confirmation);
         return Task.FromResult(Answer);
     }
+
+    /// <summary>The answer to every <see cref="Choice"/>.</summary>
+    public ChoiceResult Choice { get; set; } = ChoiceResult.Primary;
+
+    public List<Choice> Chosen { get; } = [];
+
+    public Task<ChoiceResult> ChooseAsync(Choice choice)
+    {
+        Chosen.Add(choice);
+        return Task.FromResult(Choice);
+    }
 }
 
 /// <summary>
@@ -131,6 +142,8 @@ internal sealed class PendingDialogService : IDialogService
     }
 
     public void Answer(bool confirmed) => _pending!.SetResult(confirmed);
+
+    public Task<ChoiceResult> ChooseAsync(Choice choice) => throw new NotSupportedException("Only yes-or-no questions wait here.");
 }
 
 /// <summary>Stands in for #19's proxy cache: holds proxies until disposed.</summary>

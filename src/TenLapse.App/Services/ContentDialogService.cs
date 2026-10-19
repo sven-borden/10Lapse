@@ -22,6 +22,15 @@ public sealed class ContentDialogService(Func<XamlRoot?> xamlRoot) : IDialogServ
         return _queue.RunAsync(() => WaitForOpenDialogsAsync(root), () => ShowAsync(confirmation, root));
     }
 
+    /// <inheritdoc />
+    public Task<ChoiceResult> ChooseAsync(Choice choice)
+    {
+        ArgumentNullException.ThrowIfNull(choice);
+
+        var root = xamlRoot() ?? throw new InvalidOperationException("The window has no XAML root yet, so the dialog cannot be shown.");
+        return _queue.RunAsync(() => WaitForOpenDialogsAsync(root), () => ShowAsync(choice, root));
+    }
+
     // While the queue holds the turn none of its own dialogs is open, so any open ContentDialog belongs to
     // someone else: wait until its popup closes, then look again.
     private static async Task WaitForOpenDialogsAsync(XamlRoot root)
@@ -47,15 +56,37 @@ public sealed class ContentDialogService(Func<XamlRoot?> xamlRoot) : IDialogServ
 
     private static async Task<bool> ShowAsync(Confirmation confirmation, XamlRoot root)
     {
+        var dialog = Dialog(root, confirmation.Title, confirmation.Message);
+        dialog.PrimaryButtonText = confirmation.ConfirmText;
+        dialog.CloseButtonText = confirmation.CancelText;
+        // Going ahead loses work, so Enter must not do it.
+        dialog.DefaultButton = ContentDialogButton.Close;
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+    }
+
+    private static async Task<ChoiceResult> ShowAsync(Choice choice, XamlRoot root)
+    {
+        var dialog = Dialog(root, choice.Title, choice.Message);
+        dialog.PrimaryButtonText = choice.PrimaryText;
+        dialog.SecondaryButtonText = choice.SecondaryText;
+        dialog.CloseButtonText = choice.CancelText;
+        // The primary choice loses nothing (Choice's contract), so Enter may take it.
+        dialog.DefaultButton = ContentDialogButton.Primary;
+        return await dialog.ShowAsync() switch
+        {
+            ContentDialogResult.Primary => ChoiceResult.Primary,
+            ContentDialogResult.Secondary => ChoiceResult.Secondary,
+            _ => ChoiceResult.Cancel,
+        };
+    }
+
+    private static ContentDialog Dialog(XamlRoot root, string title, string message)
+    {
         var dialog = new ContentDialog
         {
             XamlRoot = root,
-            Title = confirmation.Title,
-            Content = confirmation.Message,
-            PrimaryButtonText = confirmation.ConfirmText,
-            CloseButtonText = confirmation.CancelText,
-            // Going ahead loses work, so Enter must not do it.
-            DefaultButton = ContentDialogButton.Close,
+            Title = title,
+            Content = message,
         };
 
         // A dialog built in code does not pick up the Fluent style or the window's theme by itself.
@@ -69,6 +100,6 @@ public sealed class ContentDialogService(Func<XamlRoot?> xamlRoot) : IDialogServ
             dialog.RequestedTheme = content.ActualTheme;
         }
 
-        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+        return dialog;
     }
 }
