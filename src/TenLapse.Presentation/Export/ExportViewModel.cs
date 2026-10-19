@@ -55,6 +55,12 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     /// <summary>How long a close waits for a cancelled export to remove its unfinished file before the window goes anyway.</summary>
     public static readonly TimeSpan CloseLimit = TimeSpan.FromSeconds(2);
 
+    /// <summary>
+    /// After the user moves the preview during an export (a scrub, a step, a click in the strip), how long the preview stays
+    /// where they put it before it follows the frame being written again.
+    /// </summary>
+    public static readonly TimeSpan UserSeekPause = TimeSpan.FromSeconds(3);
+
     private readonly ShellViewModel _shell;
     private readonly OutputPanelViewModel _output;
     private readonly PlayerViewModel _player;
@@ -71,6 +77,10 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     private int _announcedTenth;
     private bool _closing;
     private bool _disposed;
+
+    // The export moving the preview itself (so its own seeks are not taken for the user's), and when the user last did.
+    private bool _seeking;
+    private TimeSpan? _userSeekAt;
 
     /// <param name="shell">The current project, its edit gate and whether the Editing state shows.</param>
     /// <param name="output">The effective output and whether it can be exported (#23).</param>
@@ -129,6 +139,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         _output.PropertyChanged += OnOutputPropertyChanged;
         _shell.Edits.Refused += OnEditRefused;
         _shell.ProjectReplaced += OnProjectReplaced;
+        _player.PropertyChanged += OnPlayerPropertyChanged;
     }
 
     /// <summary>Raised as an export starts, after the Save dialog (#25 takes its power request here).</summary>
@@ -332,6 +343,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         _output.PropertyChanged -= OnOutputPropertyChanged;
         _shell.Edits.Refused -= OnEditRefused;
         _shell.ProjectReplaced -= OnProjectReplaced;
+        _player.PropertyChanged -= OnPlayerPropertyChanged;
         if (IsExporting)
         {
             _closing = true;
@@ -444,8 +456,11 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         _shell.Edits.Close();
         State = ExportPanelState.Exporting;
 
+        _seeking = true;
         _player.Pause();
-        _player.Seek(0);
+        _seeking = false;
+        _userSeekAt = null;
+        SeekPreview(0);
         _filmstrip.SetPending(snapshot.Frames, 0);
         _services.Window.ShowProgress(null);
         Announced?.Invoke(this, ExportText.Started(fileName));
@@ -480,11 +495,12 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         _appliedAt = now;
         Show(status);
 
-        // The preview shows the frame being written, unless the user is playing it; the strip dims what is still to come.
+        // The preview shows the frame being written, unless the user is playing it or has just moved it (each seek also
+        // decodes a frame beside the export); the strip dims what is still to come.
         var writing = Math.Clamp(status.Frame, 0, Math.Max(0, status.FrameCount - 1));
-        if (!_player.IsPlaying)
+        if (!_player.IsPlaying && (_userSeekAt is not { } moved || now - moved >= UserSeekPause))
         {
-            _player.Seek(writing);
+            SeekPreview(writing);
         }
 
         _filmstrip.SetPending(ExportFrames, status.Frame);
@@ -559,6 +575,28 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     }
 
     private void RaiseEnded(ExportOutcome outcome, ExportedVideo? video) => Ended?.Invoke(this, new ExportEndedEventArgs(outcome, video));
+
+    private void SeekPreview(int frame)
+    {
+        _seeking = true;
+        try
+        {
+            _player.Seek(frame);
+        }
+        finally
+        {
+            _seeking = false;
+        }
+    }
+
+    // A frame change the export did not make is the user's (the transport, the keys, a click in the strip).
+    private void OnPlayerPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (!_seeking && IsExporting && e.PropertyName is nameof(PlayerViewModel.CurrentFrame) or nameof(PlayerViewModel.IsPlaying))
+        {
+            _userSeekAt = _clock();
+        }
+    }
 
     private void Cancel()
     {

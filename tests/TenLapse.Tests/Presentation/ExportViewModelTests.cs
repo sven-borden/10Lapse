@@ -185,6 +185,28 @@ public sealed class ExportViewModelTests
     }
 
     [Fact]
+    public void AfterTheUserMovesThePreviewItStaysThereForAFewSeconds()
+    {
+        using var app = new ExportHarness(capabilities: _everything);
+        app.StartExport();
+        app.Now = TimeSpan.FromSeconds(1);
+        app.Report(ExportPhase.Encoding, 10);
+        Assert.Equal(10, app.On(() => app.Player.CurrentFrame));
+
+        // The user steps the preview to frame 50; the next reports leave it there.
+        app.On(() => app.Player.Seek(50));
+        app.Now = TimeSpan.FromSeconds(2);
+        app.Report(ExportPhase.Encoding, 20);
+        Assert.Equal(50, app.On(() => app.Player.CurrentFrame));
+        Assert.Equal(20, app.On(() => app.Export.CurrentFrame));
+
+        // A few seconds later it follows the export again.
+        app.Now = TimeSpan.FromSeconds(1) + ExportViewModel.UserSeekPause;
+        app.Report(ExportPhase.Encoding, 40);
+        Assert.Equal(40, app.On(() => app.Player.CurrentFrame));
+    }
+
+    [Fact]
     public void ASuccessfulExportShowsTheFinishedStateFromTheResultAndTheRealFileSize()
     {
         using var app = new ExportHarness(capabilities: _everything);
