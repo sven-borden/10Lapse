@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #32 merged. In flight: PR #82 (#20) in review, PR #83 (#21) fix round, #84 (capture-time memory bug) building. Next: #24 export panel after #82.
+2026-10-19: #21 merged. In flight: PR #82 (#20) fix round, PR #85 (#84 capture-time memory) in review. Next: #24 export panel after #82.
 
 ## Waves
 
@@ -33,15 +33,15 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 8 | #29 First launch drop zone | O | App empty state view | merged #75 |
 | 9 | #19 Preview with proxy cache | O | preview view and cache | merged #77 |
 | 9 | #23 Output panel | S | output inspector section | merged #76 |
-| 10 | #20 Filmstrip | O | filmstrip view | PR #82, in review |
+| 10 | #20 Filmstrip | O | filmstrip view | PR #82, fix round |
 | 10 | #17 Timing panel | S | timing inspector section | merged #78 |
 | 11 | #24 Export panel and finished state | O | export panel | |
 | 11 | #18 Frame panel | S | frame inspector section | merged #80 |
 | 12 | #32 Golden render test | O | `tests/` golden | merged #81 |
 | 12 | #25 Export while minimized, keep awake | S | export power request | |
-| 13 | #21 Remember settings | S | settings persistence | PR #83, fix round |
+| 13 | #21 Remember settings | S | settings persistence | merged #83 |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
-| 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | building |
+| 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | PR #85, in review |
 | 14 | #31 Rating prompt | S | Store rating | |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | |
 | 15 | #36 Narrow window layout | S | shell visual states | |
@@ -262,3 +262,11 @@ Nothing blocks the build loop. Everything below waits until release is near
   accepted, noted on #41). `MediaSkips.CannotRunHere` skips only when no
   encoder is listed or no device works. `TENLAPSE_GOLDEN_SOFTWARE=1` forces
   the software encoder.
+- #21 PR #83: `Core/Settings` (`UserSettings`, versioned `settings.json` in
+  LocalState or `%LOCALAPPDATA%\10Lapse`, `SettingsLocation`), `RememberedSettings`
+  (new projects start from it, 600 ms debounce, bounded flush on close, stores
+  the output preference never the effective one, import and export folders).
+  Loading never throws: bad fields fall back one by one, files over 256 KB are
+  ignored. Atomic unique-temp writes. *Reset to defaults* in a Settings
+  *Defaults* section. The portrait-hint dismissal is not stored. PRIVACY.md
+  updated (effective 2026-10-19). Debug `--settings-folder=`.
