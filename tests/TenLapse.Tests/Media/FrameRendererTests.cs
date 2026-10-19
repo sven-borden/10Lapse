@@ -194,6 +194,39 @@ public sealed class FrameRendererTests
         Assert.Equal((160u, 100u), (fill.SizeInPixels.Width, fill.SizeInPixels.Height));
     }
 
+    [Theory]
+    [InlineData("orientation-1.jpg")]
+    [InlineData("orientation-6.jpg")]
+    [InlineData("orientation-8.jpg")]
+    public async Task AFitPhotoTurnedByExifIsCopiedOneToOne(string name)
+    {
+        // The contain decode turns the photo first, then sizes it for the frame as shown (64x96 in 64x36: 24x36;
+        // 96x64: 54x36), so drawing it is a plain copy into the contain rectangle.
+        SkipWithoutGraphicsDevice();
+        using var device = VideoDevice.Create();
+        var output = new PixelSize(64, 36);
+
+        using var photo = await new PhotoFileSource([PhotoFixtureCatalogue.Get(name).Path], FitMode.Fit).LoadAsync(0, device.Canvas, output, TestContext.Current.CancellationToken);
+        var size = new PixelSize((int)photo.SizeInPixels.Width, (int)photo.SizeInPixels.Height);
+        var frame = Draw(device.Canvas, photo, FitMode.Fit, output);
+        var decoded = photo.GetPixelBytes();
+
+        var place = FrameRenderer.ContainRect(size, output);
+        Assert.Equal((size.Width, size.Height), ((int)place.Width, (int)place.Height));
+        var worst = 0;
+        for (var y = 0; y < size.Height; y++)
+        {
+            for (var x = 0; x < size.Width; x++)
+            {
+                var drawn = Pixel(frame, output.Width, (int)place.X + x, (int)place.Y + y);
+                var source = Pixel(decoded, size.Width, x, y);
+                worst = Math.Max(worst, Math.Max(Math.Abs(drawn.B - source.B), Math.Max(Math.Abs(drawn.G - source.G), Math.Abs(drawn.R - source.R))));
+            }
+        }
+
+        Assert.True(worst <= 1, $"{name}: a drawn pixel is {worst} levels off its decoded pixel.");
+    }
+
     private static CanvasRenderTarget Solid(CanvasDevice device, int width, int height, Color colour)
     {
         var target = new CanvasRenderTarget(device, width, height, 96f);
