@@ -259,8 +259,10 @@ public sealed class ShellLayoutTests
     [Fact]
     public void TheSmallestWindowsBodyHoldsThePanelsMinimumAndTheStage()
     {
-        // 480 high, minus the 40 px title bar and the 48 px command bar.
-        var body = 480 - 40 - 48;
+        // The smallest window, minus the title bar and the command bar (both read from the tokens).
+        var tokens = DesignFiles.RootEntries(DesignFiles.LoadTheme("Layout.xaml"));
+        double Number(string key) => double.Parse(tokens[key].Value, CultureInfo.InvariantCulture);
+        var body = Number("MinWindowHeight") - Number("TitleBarHeight") - Number("CommandBarHeight");
         var layout = Layout();
 
         var panel = layout.PanelHeight(body, StageChrome);
