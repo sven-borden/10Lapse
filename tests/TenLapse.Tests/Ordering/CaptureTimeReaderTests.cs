@@ -170,6 +170,20 @@ public static class CaptureTimeReaderTests
                 { "heif, one extent", ExifFiles.Heif(tags) },
                 { "heif, two extents", ExifFiles.Heif(tags, ExifFiles.HeifExif.TwoExtents) },
                 { "heif, item in idat", ExifFiles.Heif(tags, ExifFiles.HeifExif.InIdat) },
+                { "heif, iloc version 2", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 2)) },
+                { "heif, iloc version 2, three extents", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 2, Extents: 3)) },
+                { "heif, extent index fields", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 1, IndexSize: 4, Extents: 2)) },
+                { "heif, 8-byte index fields", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 2, IndexSize: 8)) },
+                { "heif, 8-byte offsets and lengths", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 1, OffsetSize: 8, LengthSize: 8)) },
+                { "heif, 4-byte base offset", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(BaseOffsetSize: 4)) },
+                { "heif, 8-byte base offset, two extents", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 1, OffsetSize: 8, LengthSize: 8, BaseOffsetSize: 8, Extents: 2)) },
+                { "heif, two extents in idat", ExifFiles.Heif(tags, new ExifFiles.HeifIloc(Version: 1, Extents: 2, InIdat: true)) },
+                { "png, raw profile in tEXt", ExifFiles.PngRawProfile(tags, ExifFiles.PngText.Plain) },
+                { "png, raw profile in zTXt", ExifFiles.PngRawProfile(tags, ExifFiles.PngText.Compressed) },
+                { "png, raw profile in iTXt", ExifFiles.PngRawProfile(tags, ExifFiles.PngText.International) },
+                { "png, raw profile in compressed iTXt", ExifFiles.PngRawProfile(tags, ExifFiles.PngText.InternationalCompressed) },
+                { "png, APP1 raw profile in zTXt", ExifFiles.PngRawProfile(tags, ExifFiles.PngText.Compressed, "Raw profile type APP1") },
+                { "raf", ExifFiles.Raf(ExifFiles.Jpeg(tags, paddingBytes: 1000)) },
             };
         }
     }
@@ -261,14 +275,19 @@ public static class CaptureTimeReaderTests
     }
 
     /// <summary>
-    /// What one read of a small file may allocate: the six tag strings, a HEIF meta box or split Exif item no larger
-    /// than the file, and the reader's own small objects. MetadataExtractor allocated up to 15 GB on these (#84).
+    /// What one read may allocate: the six tag strings and the reader's own small objects. Its buffers (the 64 KB
+    /// block buffer, a HEIF meta box, a split Exif item) come from the shared array pool, so they are not counted once
+    /// the pool holds them. MetadataExtractor allocated up to 15 GB on these files (#84).
     /// </summary>
-    private const long AllocationLimitPerRead = 64 * 1024;
+    internal const long AllocationLimitPerRead = 64 * 1024;
 
-    /// <summary>Reads <paramref name="file"/> and returns what the read allocated on this thread.</summary>
-    private static long AllocatedByRead(byte[] file, out CaptureTimeReading? reading)
+    /// <summary>
+    /// Reads <paramref name="file"/> twice and returns what the second read allocated on this thread: the first fills
+    /// the array pool (and the JIT), so the second shows what every later read of such a file costs.
+    /// </summary>
+    internal static long AllocatedByRead(byte[] file, out CaptureTimeReading? reading)
     {
+        _ = CaptureTimeReader.Read(new MemoryStream(file));
         var stream = new MemoryStream(file);
         var before = GC.GetAllocatedBytesForCurrentThread();
         reading = CaptureTimeReader.Read(stream);
@@ -339,6 +358,10 @@ public static class CaptureTimeReaderTests
                 { "cr3 CMT2 of 2 GB", Patch(ExifFiles.Cr3(tags), "CMT2"u8, -4, [0x7F, 0xFF, 0xFF, 0xF0]), false },
                 { "jpeg APP1 of 64 KB in a short file", Patch(ExifFiles.Jpeg(tags), [0xFF, 0xE1], 2, [0xFF, 0xFF]), false },
                 { "tiff Exif IFD of 65,535 entries", Patch(ExifFiles.RawTiff(tags), [0x69, 0x87, 0x04, 0x00], 16, [0xFF, 0xFF]), true },
+                { "heif one Exif item named 4 times, 16 extents of 64 KB", ExifFiles.HeifRepeatedExifItem(names: 4, extents: 16, extentBytes: 64 * 1024), false },
+                { "png zTXt raw profile inflating to 64 MB", PngDeflateBomb(), false },
+                { "png zTXt raw profile with damaged deflate data", Patch(ExifFiles.PngRawProfile(tags, ExifFiles.PngText.Compressed), "zTXt"u8, 30, [0xFF, 0xFF, 0xFF, 0xFF]), false },
+                { "png raw profile declaring 999,999,999 bytes", ExifFiles.PngWithText(ExifFiles.PngText.Plain, "Raw profile type exif", "\nexif\n999999999\n4578"u8.ToArray()), false },
             };
         }
     }
@@ -379,6 +402,16 @@ public static class CaptureTimeReaderTests
         byte[] free = [.. BigEndianBytes((uint)padding + 8), .. "free"u8, .. new byte[padding]];
         return [.. heif[..meta], .. BigEndianBytes((uint)(metaSize + free.Length)), .. heif[(meta + 4)..(meta + metaSize)], .. free, .. heif[(meta + metaSize)..]];
     }
+
+    /// <summary>A PNG whose <c>zTXt</c> raw profile inflates to 16 MB of hex zeros (about 16 KB deflated).</summary>
+    private static byte[] PngDeflateBomb()
+    {
+        var text = new byte[16 * 1024 * 1024];
+        Array.Fill(text, (byte)'0');
+        "\nexif\n 99999999\n"u8.CopyTo(text);
+        return ExifFiles.PngWithText(ExifFiles.PngText.Compressed, "Raw profile type exif", text);
+    }
+
     /// <summary>A copy of <paramref name="file"/> with <paramref name="value"/> written at the first <paramref name="anchor"/> plus <paramref name="delta"/>.</summary>
     private static byte[] Patch(byte[] file, ReadOnlySpan<byte> anchor, int delta, byte[] value)
     {
@@ -495,42 +528,6 @@ public static class CaptureTimeReaderTests
         {
             return null;
         }
-    }
-
-    private sealed class CountingStream(Stream inner) : Stream
-    {
-        public long BytesRead { get; private set; }
-
-        public override bool CanRead => inner.CanRead;
-
-        public override bool CanSeek => inner.CanSeek;
-
-        public override bool CanWrite => false;
-
-        public override long Length => inner.Length;
-
-        public override long Position
-        {
-            get => inner.Position;
-            set => inner.Position = value;
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            var read = inner.Read(buffer, offset, count);
-            BytesRead += read;
-            return read;
-        }
-
-        public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
-
-        public override void Flush()
-        {
-        }
-
-        public override void SetLength(long value) => throw new NotSupportedException();
-
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 
     private sealed class NonSeekableStream(byte[] bytes) : Stream
