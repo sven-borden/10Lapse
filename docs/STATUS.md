@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #100 merged (#35 motion). In flight: #39 strings, with #101 flaky timing test beside it (test code only). Then #38 accessibility (alone).
+2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. In flight: PR #103 (#39 strings) review, with #104 allocation flake beside it (`tests/` Ordering). Then #38 accessibility (alone).
 
 ## Waves
 
@@ -12,47 +12,14 @@ Each wave runs at most two issues at once, only when they touch disjoint
 areas. A wave starts when everything it depends on is merged. Model: **O** is
 Opus 5.5, **S** is Sonnet 5.5.
 
+Waves 0 to 16 are done; every issue in them is under Merged below. #90
+(start-up crash) stays open after its hardening in PR #91.
+
 | Wave | Issue | Model | Area | Status |
 |---|---|---|---|---|
-| 0 | #1 Toolchain | orchestrator | machine | done |
-| 1 | #3 Tag legacy, new solution layout, gate script | O | repo root, all projects | merged #61 |
-| 1 | #6 Privacy policy and README | S | `README.md`, `PRIVACY.md` | merged #60 |
-| 2 | #4 Package identity and MSIX | S | `src/TenLapse.App` manifest, packaging props | merged #62 |
-| 2 | #10 Exact frame timing | S | `TenLapse.Core/Timing` | merged #63 |
-| 3 | #8 Spike: streaming encode | O | `TenLapse.Media`, a spike harness | merged #65 |
-| 3 | #27 Design tokens and theme resources | S | `TenLapse.App/Themes` | merged #64 |
-| 4 | #9 Spike: encoder capabilities | O | `TenLapse.Media/Encoding` | merged #68 |
-| 4 | #16 Project model and view models | O | `TenLapse.Core/Projects`, new `TenLapse.Presentation` | merged #66 |
-| 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | merged #67 |
-| 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | merged #70 |
-| 6 | #26 One error path | O | App startup, `Core/Diagnostics` | merged #69 |
-| 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | merged #71 |
-| 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | merged #73 |
-| 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | merged #72 |
-| 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | merged #74 |
-| 8 | #29 First launch drop zone | O | App empty state view | merged #75 |
-| 9 | #19 Preview with proxy cache | O | preview view and cache | merged #77 |
-| 9 | #23 Output panel | S | output inspector section | merged #76 |
-| 10 | #20 Filmstrip | O | filmstrip view | merged #82 |
-| 10 | #17 Timing panel | S | timing inspector section | merged #78 |
-| 11 | #24 Export panel and finished state | O | export panel | merged #88 |
-| 11 | #18 Frame panel | S | frame inspector section | merged #80 |
-| 12 | #32 Golden render test | O | `tests/` golden | merged #81 |
-| 12 | #25 Export while minimized, keep awake | S | export power request | merged #92 |
-| 13 | #21 Remember settings | S | settings persistence | merged #83 |
-| 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
-| 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | merged #85 |
-| 13 | #86 Flaky memory assertion (bug) | S | `tests/` | merged #87 |
-| 13 | #90 Start-up crash 0xC000027B (bug) | O | App start-up | merged #91, issue open |
-| 14 | #31 Rating prompt | S | Store rating | merged #93 |
-| 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | merged #89 |
-| 15 | #36 Narrow window layout | S | shell visual states | merged #94 |
-| 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | merged #95 |
-| 16 | #35 Motion system | O | every view | merged #100 |
-| 16 | #96 Minimum Windows 11 | S | build props, manifest, README | merged #97 |
-| 16 | #98 Flaky cache test (bug) | S | `tests/` Preview | merged #99 |
-| 17 | #39 Strings to resource files | O | every view (Opus: resw/resx split) | in progress |
-| 17 | #101 Flaky timing lower bound (bug) | S | `tests/` timing asserts | in progress |
+| 17 | #39 Strings to resource files | O | every view (Opus: resw/resx split) | PR #103, review |
+| 17 | #104 Flaky allocation count (bug) | S | `tests/` Ordering | in progress |
+| 17 | #101 Flaky timing lower bound (bug) | S | `tests/` timing asserts | merged #102 |
 | 18 | #38 Accessibility pass | O | every view, alone | |
 
 After wave 18, 3.0 is code-complete. Milestones 4 (private beta) and 5
@@ -273,3 +240,8 @@ Details are in each PR's "What the next issues should know".
   arrival develop and cascade, retime and reframe, InfoBar hold);
   `scripts/motion-check.ps1`; Debug `--motion-log`, `--motion-import=`,
   `--theme-flip-after=`, `--motion-infobar-after=`.
+- #101 PR #102: no elapsed-time floor within a timer tick (about 15.6 ms) of a
+  real timeout; a timeout is proved by its effect (state, log line), ceilings
+  are generous. The "cancel within 1 s" bounds stay (product promise). If a
+  timing test flakes again, look first at `ImportPerformanceTests` (UI
+  round-trip ceilings) and the `EncoderProbeTests` cached-load ratio.
