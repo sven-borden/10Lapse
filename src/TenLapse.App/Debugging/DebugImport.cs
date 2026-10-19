@@ -52,12 +52,12 @@ internal static class ImportBench
         var report = new StringBuilder();
         try
         {
-            await WaitAsync(() => strip.IsLoaded && strip.ViewModel is not null && strip.Thumbnails is not null && strip.ActualWidth > 0, TimeSpan.FromMinutes(2));
+            await WaitAsync(() => strip.ViewModel is not null && strip.Thumbnails is not null && window.Content?.XamlRoot is not null, TimeSpan.FromMinutes(2));
             await Task.Delay(delay);
             var thumbnails = strip.Thumbnails!;
             var project = shell.CurrentProject.Model;
             var baseline = PrivateBytes();
-            Line(report, $"Import bench: {folder}; window {strip.XamlRoot.Content.ActualSize.X:0} DIPs wide at scale {strip.XamlRoot.RasterizationScale:0.##}; thumbnails {strip.ViewModel!.ThumbnailWidth}x{strip.ViewModel.ThumbnailHeight} DIPs; private bytes before {Mb(baseline):0} MB.");
+            Line(report, $"Import bench: {folder}; window {window.Content.XamlRoot.Size.Width:0} x {window.Content.XamlRoot.Size.Height:0} DIPs at scale {window.Content.XamlRoot.RasterizationScale:0.##}; thumbnails {strip.ViewModel!.ThumbnailWidth}x{strip.ViewModel.ThumbnailHeight} DIPs; private bytes before {Mb(baseline):0} MB.");
 
             var loads = new ConcurrentQueue<(ThumbnailOrigin Origin, double Milliseconds, double At)>();
             var clock = new Stopwatch();

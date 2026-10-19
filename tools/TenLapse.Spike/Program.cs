@@ -257,9 +257,38 @@ static async Task<int> ExportProjectAsync(Options options)
             Console.WriteLine($"  {report.Stage} {report.Frame} / {report.FrameCount}, {report.FramesPerSecond:0.0} fps, {report.TimeLeft?.TotalSeconds:0} s left");
         }
     });
+    // Sampled every 100 ms: what the process holds before the export (the runtime, Windows App SDK, the project's 5,000
+    // frames), and its highest working set, private bytes and managed heap during it.
+    process.Refresh();
+    var baselinePrivate = process.PrivateMemorySize64;
+    var maxPrivate = baselinePrivate;
+    var maxWorkingSet = process.WorkingSet64;
+    long maxManaged = 0;
+    using var stopSampling = new CancellationTokenSource();
+    var sampler = Task.Run(async () =>
+    {
+        using var self = Process.GetCurrentProcess();
+        while (!stopSampling.IsCancellationRequested)
+        {
+            self.Refresh();
+            maxPrivate = Math.Max(maxPrivate, self.PrivateMemorySize64);
+            maxWorkingSet = Math.Max(maxWorkingSet, self.WorkingSet64);
+            maxManaged = Math.Max(maxManaged, GC.GetTotalMemory(false));
+            try
+            {
+                await Task.Delay(100, stopSampling.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                // The export ended.
+            }
+        }
+    });
     var clock = Stopwatch.StartNew();
     var result = await ProjectExporter.ExportAsync(snapshot, output, progress);
     var wall = clock.Elapsed;
+    await stopSampling.CancelAsync();
+    await sampler;
     process.Refresh();
     Console.WriteLine($"result: {result.FrameCount} frames in {wall.TotalSeconds:0.00} s = {result.FrameCount / wall.TotalSeconds:0.0} fps; peak working set " +
         $"{process.PeakWorkingSet64 / 1048576.0:0} MB; file {result.FileBytes / 1e6:0.0} MB; {reports} progress reports; encoder {result.Encoder?.Name}");
@@ -269,6 +298,7 @@ static async Task<int> ExportProjectAsync(Options options)
         CultureInfo.InvariantCulture,
         $"BENCH export frames={result.FrameCount} seconds={wall.TotalSeconds:0.00} fps={result.FrameCount / wall.TotalSeconds:0.0} " +
         $"peakWorkingSetMB={process.PeakWorkingSet64 / 1048576.0:0} peakPrivateMB={process.PeakPagedMemorySize64 / 1048576.0:0} " +
+        $"baselinePrivateMB={baselinePrivate / 1048576.0:0} sampledPrivateMB={maxPrivate / 1048576.0:0} sampledWorkingSetMB={maxWorkingSet / 1048576.0:0} peakManagedMB={maxManaged / 1048576.0:0} " +
         $"fileMB={result.FileBytes / 1e6:0} encoder={result.Encoder?.Name.Replace(' ', '_')} hardware={result.Encoder?.IsHardware} width={settings.Width} height={settings.Height}"));
     return 0;
 }
