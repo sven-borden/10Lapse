@@ -201,6 +201,9 @@ internal sealed class ThemeCrossfade
         fade.Duration = step.Duration;
         visual.StartAnimation(nameof(Microsoft.UI.Composition.Visual.Opacity), fade);
         batch.End();
+
+        // The fade starts once the capture is done, later than the plan: an InfoBar waits for its real end.
+        MotionTokens.Quiet.Hold(step);
         batch.Completed += (_, _) => _dispatcher.TryEnqueueGuarded(_log, () => Clear(generation), ProjectText.MotionFailed);
     }
 

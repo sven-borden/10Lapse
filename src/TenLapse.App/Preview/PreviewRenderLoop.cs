@@ -111,6 +111,7 @@ internal sealed class PreviewRenderLoop : IDisposable
     private MotionStep? _develop;
     private long _developStart;
     private long _developDeadline;
+    private bool _developWaited;
     private Reframe? _reframe;
     private Rect _shownGate;
     private Rect _shownPhoto;
@@ -287,6 +288,7 @@ internal sealed class PreviewRenderLoop : IDisposable
             {
                 _develop = asked;
                 _developStart = _developAskedAt;
+                _developWaited = false;
                 _developDeadline = _developAskedAt + (long)(DevelopPatience.TotalSeconds * Stopwatch.Frequency);
                 _developAsked = null;
                 developTaken = true;
@@ -589,7 +591,15 @@ internal sealed class PreviewRenderLoop : IDisposable
             }
 
             _developStart = now;
+            _developWaited = true;
             return (0f, 0f, 1f);
+        }
+
+        if (_developWaited)
+        {
+            // The clock starts now, on the first picture: an InfoBar waits for the develop's real end.
+            _developWaited = false;
+            MotionTokens.Quiet.Hold(develop);
         }
 
         var since = Stopwatch.GetElapsedTime(_developStart, now) - develop.Delay;
