@@ -12,6 +12,7 @@
     The settings, sample photos, proxy cache and encoder cache are the test's own (Debug switches), so the user's
     are never touched. -Load starts a CPU burner (pwsh) and/or a GPU encode loop (TenLapse.Spike), and stops them
     at the end; nothing the script did not start is stopped. Results: results.csv in -Out, one row per launch.
+    -Out keeps the sample photos and caches for the next run; delete it when done.
 
 .EXAMPLE
     pwsh -File scripts/launch-test.ps1 -Count 100 -Load both -ColdProbe
@@ -152,6 +153,9 @@ finally {
     }
 
     Remove-Item (Join-Path $data 'gpu-load.mp4') -ErrorAction SilentlyContinue
+
+    # A copy is often still locked for a moment after its app exits (a scan, the loader); what was left goes now.
+    Remove-Item -Recurse -Force (Join-Path $data 'fresh\*') -ErrorAction SilentlyContinue
 }
 
 Write-Host "$Count launches ($Load load, $SampleFrames sample frames, cold probe $([bool]$ColdProbe), fresh copy $([bool]$FreshCopy)): $crashes ended with a non-zero code. Results: $results"
