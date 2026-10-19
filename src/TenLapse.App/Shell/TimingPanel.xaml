@@ -78,7 +78,7 @@
       </StackPanel>
 
       <!-- The readout, always visible: "742 photos → 24.7 s" and under it "at 30 fps". The screen reader reads both lines in order. -->
-      <StackPanel Padding="0,4,0,0" Spacing="2">
+      <StackPanel x:Name="ReadoutPanel" Padding="0,4,0,0" Spacing="2">
         <TextBlock
           x:Name="HeadlineText"
           Style="{StaticResource SubtitleTabularTextStyle}"

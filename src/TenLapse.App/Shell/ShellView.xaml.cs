@@ -137,6 +137,10 @@ public sealed partial class ShellView : UserControl
         // The screen changes and the arrival choreography (#35). Nothing animates on launch: they go live after the first
         // layout.
         _screens = new ScreenMotion(viewModel, EmptyRegion, [EditingSurface, StageRegion, InspectorPane], SettingsPage, DispatcherQueue, errors, Arrive);
+        ThemeFade = new ThemeCrossfade(this, ShellRoot, ThemeSnapshot, DispatcherQueue, errors, follows: !Gallery.GalleryLaunch.ThemeGiven);
+#if DEBUG
+        Debugging.DebugMotion.Apply(this, import, errors);
+#endif
         Loaded += (_, _) => _errors.RunLogged(() => DispatcherQueue.TryEnqueueGuarded(_errors, _screens.GoLive, ProjectText.MotionFailed), ProjectText.MotionFailed);
 
         // The shell leaves the tree only when the window closes; the shadow goes with it.
@@ -151,6 +155,9 @@ public sealed partial class ShellView : UserControl
 
     /// <summary>The export's view model (#24), for x:Bind and for the window's close check.</summary>
     public ExportViewModel Export { get; }
+
+    /// <summary>The theme crossfade (#35): the shell follows Windows' light or dark mode through it.</summary>
+    internal ThemeCrossfade ThemeFade { get; }
 
     /// <summary>The responsive layout (#36): narrow or docked, the tab and the sections it shows, for x:Bind.</summary>
     public ShellLayout Layout { get; }
@@ -228,6 +235,7 @@ public sealed partial class ShellView : UserControl
     /// </summary>
     public void RefreshTheme()
     {
+        ThemeFade.Follow();
         _infoBarShadow.Recolor();
         FirstLaunch.RefreshTheme();
     }

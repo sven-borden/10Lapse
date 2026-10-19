@@ -50,6 +50,8 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
     private bool _noticeAppeared;
     private bool _editing;
     private bool _disposed;
+    private object? _shownTiming;
+    private int _shownCount = -1;
 
     /// <summary>Follows the shell's current project, also across <c>New project</c>.</summary>
     /// <param name="shell">The shell whose <see cref="ShellViewModel.CurrentProject"/> the panel edits.</param>
@@ -70,6 +72,12 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
 
     /// <summary>Raised on the UI thread after the user changed the speed or typed something the panel refused or corrected: the sentence a screen reader should say (the message, then the readout).</summary>
     public event EventHandler<string>? Announced;
+
+    /// <summary>
+    /// Raised after the readout changed because the speed changed (motion spec, Retime: the new length rises into place and
+    /// the bar follows), not because photos came or went. Never for the first readout or a new project.
+    /// </summary>
+    public event EventHandler? Retimed;
 
     private CultureInfo Culture => _culture ?? CultureInfo.CurrentCulture;
 
@@ -373,8 +381,17 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
                     OnPropertyChanged(nameof(Readout));
                 }
 
+                var retimed = readoutChanged && _shownTiming is not null && count == _shownCount && !Equals(_shownTiming, timing);
+                _shownTiming = timing;
+                _shownCount = count;
                 var rate = timing.EffectiveRate(count);
                 SetProperty(ref _lengthFraction, Math.Min(1, (double)FrameTiming.Duration(count, rate.Rate) / FrameTiming.TicksPerSecond / BarSeconds), nameof(LengthFraction));
+
+                // After the bar's new length, so the view animates from the length it showed to this one.
+                if (retimed)
+                {
+                    Retimed?.Invoke(this, EventArgs.Empty);
+                }
                 var hadNotice = _notice.Length > 0;
                 Notice = count > 0 && timing.Mode == SpeedMode.Length ? NoticeFor(rate, timing, count, culture) : string.Empty;
                 if (!hadNotice && _notice.Length > 0)

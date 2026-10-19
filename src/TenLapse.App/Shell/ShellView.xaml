@@ -630,5 +630,14 @@
         </InfoBar>
       </Grid>
     </Grid>
+
+    <!-- The theme crossfade (#35, ThemeCrossfade.cs): the old look, over everything, fading out; never takes input. -->
+    <Image
+      x:Name="ThemeSnapshot"
+      Grid.RowSpan="3"
+      AutomationProperties.AccessibilityView="Raw"
+      IsHitTestVisible="False"
+      Stretch="Fill"
+      Visibility="Collapsed" />
   </Grid>
 </UserControl>
