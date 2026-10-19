@@ -149,6 +149,51 @@ internal sealed class FakeExportWindow : IExportWindow
     public void NotifyIfInBackground(string message) => Calls.Add("notify: " + message);
 }
 
+/// <summary>Counts the power requests an export takes and lets go of; it can be told to throw.</summary>
+internal sealed class FakeKeepAwake : IKeepAwake
+{
+    private int _held;
+    private int _disposeCalls;
+
+    /// <summary>The reasons asked for, one per export.</summary>
+    public List<string> Reasons { get; } = [];
+
+    /// <summary>Leases held now.</summary>
+    public int Held => Volatile.Read(ref _held);
+
+    /// <summary>Calls to dispose a lease, repeats included: an export disposes its lease once.</summary>
+    public int DisposeCalls => Volatile.Read(ref _disposeCalls);
+
+    /// <summary>Makes <see cref="Hold"/> throw, as a stand-in that breaks its promise would.</summary>
+    public bool Throws { get; set; }
+
+    public IDisposable Hold(string reason)
+    {
+        if (Throws)
+        {
+            throw new InvalidOperationException("No power request today.");
+        }
+
+        Reasons.Add(reason);
+        Interlocked.Increment(ref _held);
+        return new Lease(this);
+    }
+
+    private sealed class Lease(FakeKeepAwake owner) : IDisposable
+    {
+        private int _disposed;
+
+        public void Dispose()
+        {
+            Interlocked.Increment(ref owner._disposeCalls);
+            if (Interlocked.Exchange(ref _disposed, 1) == 0)
+            {
+                Interlocked.Decrement(ref owner._held);
+            }
+        }
+    }
+}
+
 /// <summary>
 /// An export view model on a stand-in UI thread (as in the app, the project and every view model live on one thread and
 /// progress posts back to it), over a project of photos, a PC that exports everything, and the fakes above.
@@ -185,7 +230,7 @@ internal sealed class ExportHarness : IDisposable
                 Player,
                 Strip,
                 () => Importing,
-                new ExportServices(Exporter, Picker, Folders, Dialogs, InfoBars, Reveal, Window),
+                new ExportServices(Exporter, Picker, Folders, Dialogs, InfoBars, Reveal, Window, KeepAwake),
                 Errors,
                 () => TimeSpan.FromTicks(Interlocked.Read(ref _nowTicks)));
             Export.Announced += (_, message) => Announced.Add(message);
@@ -213,6 +258,8 @@ internal sealed class ExportHarness : IDisposable
     public FakeReveal Reveal { get; } = new();
 
     public FakeExportWindow Window { get; } = new();
+
+    public FakeKeepAwake KeepAwake { get; } = new();
 
     public bool Importing { get; set; }
 
