@@ -191,14 +191,14 @@ public sealed class FrameImageCacheTests
     {
         var source = new FakeFrameImageSource();
         using var cache = new FrameImageCache<FakeImage>(source, _one with { RetryFailedAfter = TimeSpan.Zero });
-        var told = new List<FrameLoadFailedEventArgs>();
-        cache.FrameFailed += (_, e) => told.Add(e);
+        var told = new ConcurrentQueue<FrameLoadFailedEventArgs>();
+        cache.FrameFailed += (_, e) => told.Enqueue(e);
         var frames = Frames("a", 3);
         cache.SetFrames(frames);
 
         source.Next().Fail(SkipReason.FileNotFound);
         Eventually(() => told.Count == 1);
-        Assert.Equal(SkipReason.FileNotFound, told[0].Failure.File.Reason);
+        Assert.Equal(SkipReason.FileNotFound, told.First().Failure.File.Reason);
 
         // Tried again (the photo may be back); failing again tells nothing new.
         source.Next().Fail(SkipReason.FileNotFound);
@@ -269,10 +269,10 @@ public sealed class FrameImageCacheTests
     {
         var source = new FakeFrameImageSource();
         using var cache = new FrameImageCache<FakeImage>(source, _one);
-        var unexpected = new List<Exception>();
+        var unexpected = new ConcurrentQueue<Exception>();
         var unreadable = 0;
-        cache.UnexpectedFailure += (_, e) => unexpected.Add(e.Exception);
-        cache.FrameFailed += (_, _) => unreadable++;
+        cache.UnexpectedFailure += (_, e) => unexpected.Enqueue(e.Exception);
+        cache.FrameFailed += (_, _) => Interlocked.Increment(ref unreadable);
         var frames = Frames("a", 2);
         cache.SetFrames(frames);
 
