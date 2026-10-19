@@ -29,9 +29,13 @@ public sealed class OutputTextTests
         Assert.Equal(expected, OutputText.Size(bytes, _english));
     }
 
-    [Fact]
-    public void ASizeThatRoundsUpToAThousandMegabytesIsWrittenInGigabytes() =>
-        Assert.Equal("0.98 GB", OutputText.Size(Mb * 999, _english));
+    [Theory]
+    [InlineData(994L, "990 MB")]
+    [InlineData(996L, "1 GB")]
+    [InlineData(999L, "1 GB")]
+    [InlineData(1023L, "1 GB")]
+    public void SizesBelowAGigabyteAreNeverWrittenAsAFractionOfOne(long megabytes, string expected) =>
+        Assert.Equal(expected, OutputText.Size(Mb * megabytes, _english));
 
     [Fact]
     public void TheNumberIsWrittenInTheGivenCulture()

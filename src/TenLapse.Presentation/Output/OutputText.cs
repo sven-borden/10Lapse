@@ -118,7 +118,8 @@ public static class OutputText
             return string.Format(culture, Megabytes, Number(megabytes, culture));
         }
 
-        return string.Format(culture, Gigabytes, Number(TwoFigures((double)bytes / Gigabyte), culture));
+        // A size that rounds up to 1000 MB is nearly a gigabyte: say "1 GB", never "0.97 GB" next to figures in MB.
+        return string.Format(culture, Gigabytes, Number(Math.Max(1, TwoFigures((double)bytes / Gigabyte)), culture));
     }
 
     private const long Megabyte = 1L << 20;
