@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #34 merged. In flight: PR #88 (#24 export panel) fix round, #90 (start-up crash) building. Queued after #88: #31, #25, #36.
+2026-10-19: #24 merged. Building: #25 keep awake (Sonnet), #90 start-up crash (Opus). Next: #31 rating, #36 narrow layout, then #35 motion, #39 strings, #38 accessibility (each alone).
 
 ## Waves
 
@@ -35,10 +35,10 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 9 | #23 Output panel | S | output inspector section | merged #76 |
 | 10 | #20 Filmstrip | O | filmstrip view | merged #82 |
 | 10 | #17 Timing panel | S | timing inspector section | merged #78 |
-| 11 | #24 Export panel and finished state | O | export panel | PR #88, fix round |
+| 11 | #24 Export panel and finished state | O | export panel | merged #88 |
 | 11 | #18 Frame panel | S | frame inspector section | merged #80 |
 | 12 | #32 Golden render test | O | `tests/` golden | merged #81 |
-| 12 | #25 Export while minimized, keep awake | S | export power request | |
+| 12 | #25 Export while minimized, keep awake | S | export power request | building |
 | 13 | #21 Remember settings | S | settings persistence | merged #83 |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
 | 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | merged #85 |
@@ -216,15 +216,13 @@ Nothing blocks the build loop. Everything below waits until release is near
   export with, size included (`OutputSize.For(effective.Resolution, ...)`, not
   `snapshot.VideoSize`). `CanExport` = an effective output exists; #24 must also
   require frames. `ExportBitrate` is in `Core.Projects`.
-- #17 PR #78: `Shell/TimingPanel`, `Shell/SegmentedControl`; inspector is a
-  scrolling stack; `ShellView` owns and disposes the panel view models.
-  Separator rules: dot or comma is decimal; one separator + three digits is
-  refused (except below 1 or NTSC); every snap, clamp and rounding says so.
-  Panel text in the user's culture; Core invariant by default.
+- #17 PR #78: `Shell/TimingPanel`, `Shell/SegmentedControl`, scrolling
+  inspector stack. Dot or comma is decimal; one separator + three digits is
+  refused (except below 1 or NTSC); snaps and clamps say so. Panel text in the
+  user's culture.
 - #14 PR #79: one InfoBar per missing extension with a Store button (HEIF
-  `9PMMSR1CGPWG`, Raw `9NCTDW2W1BH8`, HEVC paid `9NMZLZ57R3T7`).
-  `CodecExtensionPrompts.Plan`; installed codecs (software decoders) never
-  prompt. Wording says restart after installing. Debug `--missing-codec=`.
+  `9PMMSR1CGPWG`, Raw `9NCTDW2W1BH8`, HEVC paid `9NMZLZ57R3T7`); says restart
+  after installing. Debug `--missing-codec=`.
 - #19 PR #77: preview on a render thread through `FrameRenderer.Draw` into a
   swap chain; `FrameTiming.FrameAt`, `PlaybackClock` (drops, never drifts).
   `ProxyCache` (1280 px JPEG, no metadata, 2 GB or a tenth of free space, LRU,
@@ -286,3 +284,13 @@ Nothing blocks the build loop. Everything below waits until release is near
   `--import-bench=FOLDER`; Spike `bench-photos`, `export-project` with decode
   depth. 3.0-dev on this PC: first view of 1,000 photos 455 ms, 5,000 x 24 MP to
   4K at 25.5 fps (1.3 GB private, default profile) or 13 fps at 938 MB (tight).
+- #24 PR #88: `ExportViewModel` + `Shell/ExportPanel`, `FilmGate` (30 samples,
+  linear in progress), `ExportPreviewOverlay` (premiere plays the real MP4;
+  Caution InfoBar if it cannot). Exports `Snapshot.WithOutput(EffectiveOutput)`.
+  Export button: visible with frames and `CanExport`, disabled at 0.6 outside
+  Editing ("Exporting…"), absent on first launch; Ctrl+E. `ShellViewModel.Edits`
+  blocks every project edit during an export (filmstrip, imports, drops, New
+  project, Reset to defaults). Close asks, cancels, waits up to 2 s. Taskbar
+  progress, notifications (packaged, or Debug `--notifications`; PRIVACY.md
+  says so). `Started`/`Ended` hooks for #25 and #31. Disabled Export uses the
+  neutral disabled colours, not dimmed amber.
