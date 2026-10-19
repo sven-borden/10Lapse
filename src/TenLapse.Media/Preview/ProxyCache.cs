@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Globalization;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using TenLapse.Core.Projects;
 using TenLapse.Media.Decoding;
 using Windows.Foundation;
@@ -58,7 +58,7 @@ public sealed record ProxyBuild(DecodedPhoto? Photo, PhotoFailure? Failure, Exce
 /// instances may share the folder; a proxy that vanishes under one is rebuilt.
 /// </para>
 /// </remarks>
-public sealed class ProxyCache
+public sealed partial class ProxyCache
 {
     /// <summary>The proxy's longest side by default (DESIGN: about 1280 px).</summary>
     public const int DefaultMaxSide = 1280;
@@ -173,7 +173,9 @@ public sealed class ProxyCache
             var stale = DateTime.UtcNow - Options.Unused;
             foreach (var info in new DirectoryInfo(Folder).EnumerateFiles())
             {
-                if (info.Extension.Equals(TempExtension, StringComparison.OrdinalIgnoreCase))
+                // Only the cache's own names are ever touched: a folder given by mistake (a Debug --cache-folder that
+                // is a photo folder) keeps every file that is not a proxy or one of its unfinished writes.
+                if (TempName().IsMatch(info.Name))
                 {
                     // Another instance may be writing it right now; one older than an hour is a leftover.
                     if (info.LastWriteTimeUtc < DateTime.UtcNow.AddHours(-1))
@@ -184,7 +186,7 @@ public sealed class ProxyCache
                     continue;
                 }
 
-                if (!info.Extension.Equals(Extension, StringComparison.OrdinalIgnoreCase))
+                if (!ProxyName().IsMatch(info.Name))
                 {
                     continue;
                 }
@@ -324,11 +326,6 @@ public sealed class ProxyCache
         Directory.CreateDirectory(Folder);
         var target = PathOf(key);
         var temporary = Path.Combine(Folder, key + "." + Guid.NewGuid().ToString("N")[..8] + TempExtension);
-        var (width, height) = (photo.Size.Width, photo.Size.Height);
-
-        // The premultiplied pixels with alpha ignored: a transparent part reads as it does over the renderer's black.
-        var pixels = new byte[width * height * 4];
-        photo.Pixels.CopyToBuffer(pixels.AsBuffer());
         try
         {
             using (var file = new FileStream(temporary, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
@@ -339,7 +336,12 @@ public sealed class ProxyCache
                     ["ImageQuality"] = new BitmapTypedValue(Options.JpegQuality, PropertyType.Single),
                 };
                 var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream, quality).AsTask(cancellationToken).ConfigureAwait(false);
-                encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)width, (uint)height, 96, 96, pixels);
+
+                // Straight from the decoded bitmap, with no managed copy: a 4.4 MB array per proxy was garbage on the
+                // large object heap, 0.3 to 0.5 GB a second during the background pass (review M1). JPEG has no alpha,
+                // so WIC drops it from the premultiplied pixels: a transparent part reads as it does over the
+                // renderer's black, as before.
+                encoder.SetSoftwareBitmap(photo.Pixels);
                 await encoder.FlushAsync().AsTask(cancellationToken).ConfigureAwait(false);
             }
 
@@ -395,6 +397,14 @@ public sealed class ProxyCache
             }
         });
     }
+
+    // A proxy: the key (16 bytes of hex) and .jpg, as PathOf names it.
+    [GeneratedRegex(@"^[0-9a-f]{32}\.jpg$", RegexOptions.CultureInvariant)]
+    private static partial Regex ProxyName();
+
+    // An unfinished write: the key, 8 hex digits and .tmp, as WriteAsync names it.
+    [GeneratedRegex(@"^[0-9a-f]{32}\.[0-9a-f]{8}\.tmp$", RegexOptions.CultureInvariant)]
+    private static partial Regex TempName();
 
     private static void TryDelete(string path)
     {
