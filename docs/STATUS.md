@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #34 merged. In flight: PR #88 (#24 export panel) fix round, #90 (start-up crash) building. Queued after #88: #31, #25, #36.
+2026-10-19: #24 merged. Building: #25 keep awake (Sonnet), #90 start-up crash (Opus). Next: #31 rating, #36 narrow layout, then #35 motion, #39 strings, #38 accessibility (each alone).
 
 ## Waves
 
@@ -35,10 +35,10 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 9 | #23 Output panel | S | output inspector section | merged #76 |
 | 10 | #20 Filmstrip | O | filmstrip view | merged #82 |
 | 10 | #17 Timing panel | S | timing inspector section | merged #78 |
-| 11 | #24 Export panel and finished state | O | export panel | PR #88, fix round |
+| 11 | #24 Export panel and finished state | O | export panel | merged #88 |
 | 11 | #18 Frame panel | S | frame inspector section | merged #80 |
 | 12 | #32 Golden render test | O | `tests/` golden | merged #81 |
-| 12 | #25 Export while minimized, keep awake | S | export power request | |
+| 12 | #25 Export while minimized, keep awake | S | export power request | building |
 | 13 | #21 Remember settings | S | settings persistence | merged #83 |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
 | 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | merged #85 |
@@ -168,121 +168,45 @@ Nothing blocks the build loop. Everything below waits until release is near
 
 ## Merged
 
-- #6 PR #60: `PRIVACY.md` and `README.md`. Owner: point the Partner Center
-  privacy URL at `PRIVACY.md`. License: all rights reserved (Sven,
-  2026-10-19).
-- #3 PR #61: tag `v2.1.1-legacy`, new solution, `scripts/gate.ps1`.
-- #4 PR #62: Store identity 3.0.0.0, `runFullTrust` only; `scripts/pack.ps1`
-  writes the unsigned x64 + ARM64 `.msixupload` to `dist/store`. Bump
-  `Version` per submission; first-submission notes on #40.
-- #10 PR #63: `Core.Timing`: `Fraction`, `FrameTiming` (100 ns ticks, floor),
-  `FrameRates`, `TimingFormat`, `TimingWords`.
-- #27 PR #64: tokens in `App/Themes/` (Light, Dark, HighContrast), text
-  styles, spacing, motion tokens, control overrides. `--gallery`.
-- #16 PR #66: `Core.Projects` (`Project`, `ProjectSnapshot`, `Frame`,
-  settings), Presentation view models, dialogs, manual composition root.
-- #8 PR #65: `Media.Export` through `IMFSinkWriter`, `VideoFileReader`, colour
-  tags, no B-frames, `tools/TenLapse.Spike`. About 34 handles per export leak
-  inside the NVIDIA encoder MFT (not ours).
-- #28 PR #67: shell (tinted Mica title bar, command bar, Empty/Editing states,
-  inspector 320, filmstrip row), InfoBar host, `FlyoutShadow`.
-- #9 PR #68: `Media.Encoding` (`EncoderProbe.LoadOrProbeAsync`,
-  `EncoderCapabilities`, JSON cache). This PC: H.264 4K at 30/60, HEVC 4K.
-- #26 PR #69: `RollingFileLog`, `ErrorPath`, `ErrorPresenter`, global
-  handlers, `TryEnqueueGuarded`, Settings with *Copy diagnostics*.
-- #13 PR #70: `Media.Decoding` (`PhotoDecoder`, EXIF orientation, files closed
-  before decode, sRGB skips colour conversion, truncation detected; JPEG
-  missing only EOI is rejected). 4K from 24 MP JPEGs about 25–28 fps.
-- #33 PR #72: `tests/.../Fixtures/Photos/` (20 files, `make_fixtures.py`,
-  README), `PhotoFixtureCatalogue`, `RuntimeFixtures`.
-- #15 PR #71: `Core.Ordering` (`NaturalNameComparer` = `StrCmpLogicalW`,
-  `CaptureTimeReader`, UTC sort only when every frame has an offset,
-  `FrameGaps.Detect`, `ReorderManually`). RAW/CR3 capture times unverified.
-- #12 PR #73: import (folder, photos, drop); 5,000 photos done in about 1.9 s,
-  UI steps under 30 ms. `IUiDispatcher`, `IPhotoPicker`, `IImportFolderMemory`
-  (session only; #21 persists it).
-- #22 PR #74: `ProjectExporter.ExportAsync` through `FrameRenderer.Draw`.
-  Hidden per-export `.partial` journaled and cleaned at next launch; a held
-  target saves `Name (2).mp4`. Below 1 fps: whole-fps nominal rate. Real-encoder
-  tests run serially. #25 takes the power request, awaits
-  `ExportCleanup.WhenAllDone()` on close.
-- #29 PR #75: `Shell/FirstLaunchView` (canvas copy, *Choose folder* amber,
-  Daybreak loop via `DaybreakPlayback`, `DragVerdict`). Launch focus uses
-  `FocusState.Pointer` (#38 to confirm). Debug `--drag-over`, `--reduce-motion`.
-- #23 PR #76: `Shell/OutputPanel` + `OutputPanelViewModel`. Unsupported sizes
-  hidden; HEVC only when available; probe at launch. `Project.Output` is the
-  user's preference and only a user pick writes it (#80): `OutputPanelViewModel.
-  EffectiveOutput` (`OutputPlan.Resolve`) is what is shown and what #24 must
-  export with, size included (`OutputSize.For(effective.Resolution, ...)`, not
-  `snapshot.VideoSize`). `CanExport` = an effective output exists; #24 must also
-  require frames. `ExportBitrate` is in `Core.Projects`.
-- #17 PR #78: `Shell/TimingPanel`, `Shell/SegmentedControl`; inspector is a
-  scrolling stack; `ShellView` owns and disposes the panel view models.
-  Separator rules: dot or comma is decimal; one separator + three digits is
-  refused (except below 1 or NTSC); every snap, clamp and rounding says so.
-  Panel text in the user's culture; Core invariant by default.
-- #14 PR #79: one InfoBar per missing extension with a Store button (HEIF
-  `9PMMSR1CGPWG`, Raw `9NCTDW2W1BH8`, HEVC paid `9NMZLZ57R3T7`).
-  `CodecExtensionPrompts.Plan`; installed codecs (software decoders) never
-  prompt. Wording says restart after installing. Debug `--missing-codec=`.
-- #19 PR #77: preview on a render thread through `FrameRenderer.Draw` into a
-  swap chain; `FrameTiming.FrameAt`, `PlaybackClock` (drops, never drifts).
-  `ProxyCache` (1280 px JPEG, no metadata, 2 GB or a tenth of free space, LRU,
-  30-day sweep, `LocalCache\Proxies` or `%LOCALAPPDATA%\10Lapse\Proxies`),
-  `FrameImageCache` (192 MB, device generations). 5,000 photos: 0 dropped at
-  30 fps, seek to picture about 10 ms, pass peak about 0.7 GB. Playhead
-  follows the frame id; paused frame re-checked on disk. Pauses when
-  minimized. Keys: Space (no repeat), arrows, Shift+arrows, Home/End.
-  PRIVACY.md describes the copies. Debug `--sample-frames` writes real photos
-  (pass `--sample-folder` under your branch folder, `--sample-clean`),
-  `--cache-folder`, `--preview-bench`. #24: `--export-to=PATH`; the unpackaged
-  app registers notifications only with `--notifications` (it writes HKCU
-  entries, removed on close, and shows real toasts).
-- #18 PR #80: `Shell/FramePanel` between Timing and Output (shapes Match
-  photos, 16:9, 9:16, 1:1, 4:5, 4:3; Fit/Fill; `SegmentedControl.ItemNames`).
-  Portrait hint (more than half portrait in 16:9 or 4:3) with *Use 9:16* and
-  *Dismiss*, never automatic, kept in the view model only. `OutputPlan.Resolve`
-  gives the effective output; *Use these settings* stores a shown replacement.
-  `FrameText.NoSize` when Match photos has no encodable size. Debug `--frame=`.
-- #32 PR #81: `tests/.../Golden/` exports 120 coded frames at 24, 25, 29.97,
-  30, 60, 2 and 0.5 fps (H.264, HEVC at 0.5) and checks every frame time
-  through `RecordingEncoder` (exact `FrameStart`/`FrameDuration`), the file
-  read-back, and the decoded frame number; every aspect x fit against the
-  preview's path (`PreviewImageSource` + `FrameRenderer.Draw`), edges within
-  1 px. Adds about 20 s to the gate. MP4 header durations are one timescale
-  unit short at 24, 29.97 and 60 fps (the MP4 sink; cosmetic in Explorer,
-  accepted, noted on #41). `MediaSkips.CannotRunHere` skips only when no
-  encoder is listed or no device works. `TENLAPSE_GOLDEN_SOFTWARE=1` forces
-  the software encoder.
-- #21 PR #83: `Core/Settings` (`UserSettings`, versioned `settings.json` in
-  LocalState or `%LOCALAPPDATA%\10Lapse`, `SettingsLocation`), `RememberedSettings`
-  (new projects start from it, 600 ms debounce, bounded flush on close, stores
-  the output preference never the effective one, import and export folders).
-  Loading never throws: bad fields fall back one by one, files over 256 KB are
-  ignored. Atomic unique-temp writes. *Reset to defaults* in a Settings
-  *Defaults* section. The portrait-hint dismissal is not stored. PRIVACY.md
-  updated (effective 2026-10-19). Debug `--settings-folder=`.
-- #20 PR #82: `Filmstrip/` (ItemsRepeater, `FilmstripViewModel` from project
-  deltas, `ThumbnailCache` 48 MB: proxy first, embedded EXIF only before a
-  proxy exists, then a small decode). `FrameHistory` undo (100 edits, removals
-  and reorders only; undo in a sorted mode re-sorts). User-removed frames do not
-  make gap markers. Edits pause playback and act on the grabbed frames. Delete
-  and Ctrl+Z only with the strip or nothing focused. Plain Space plays or
-  pauses everywhere; Shift+arrows extend the selection on thumbnails (DESIGN.md
-  updated: thumbnails are list items). Gap markers vanish in Manual order.
-  #24 uses `SetPending(snapshot, first)` / `ClearPending()` (dims the picture
-  only). Debug `--filmstrip-bench`, `--filmstrip-remove=`.
-- #84 PR #85: MetadataExtractor removed. `Core/Ordering` reads capture times
-  with bounded walkers (`ExifContainers`, `ExifTimeTags`, `ByteWindow`): JPEG,
-  TIFF/RAW, PNG (`eXIf` and raw-profile text chunks), WebP, HEIF/AVIF, CR3,
-  RAF. Pooled 64 KB buffers, at most 4 Exif blocks, every count checked
-  against the bytes; worst read about 0.5 ms and a few KB. Matches the old
-  reader on 1,289+ real files. Real fixtures (MetadataExtractor samples,
-  raw.pixls.us CC0) with licences in `tests/.../Ordering/Fixtures/README.md`.
-- #86 PR #87: no process-wide memory deltas in tests (parallel classes skew
-  them); count saves and changes instead.
-- #34 PR #89: `scripts/bench.ps1` (`-Quick`, `-Full`, `-TightMemory`, `-Keep`,
-  disk check, retries a start-up crash once) and `docs/benchmarks.md`. Debug
-  `--import-bench=FOLDER`; Spike `bench-photos`, `export-project` with decode
-  depth. 3.0-dev on this PC: first view of 1,000 photos 455 ms, 5,000 x 24 MP to
-  4K at 25.5 fps (1.3 GB private, default profile) or 13 fps at 938 MB (tight).
+Details are in each PR's "What the next issues should know".
+
+- #6 PR #60 `PRIVACY.md`, `README.md` (all rights reserved). #3 PR #61 new
+  solution and gate. #4 PR #62 Store identity 3.0.0.0, `scripts/pack.ps1`.
+- #10 PR #63 `Core.Timing` (`Fraction`, `FrameTiming`, `FrameRates`,
+  `TimingFormat`). #27 PR #64 tokens and themes, `--gallery`. #16 PR #66
+  project model and view models.
+- #8 PR #65 and #22 PR #74: export through `IMFSinkWriter` and
+  `ProjectExporter.ExportAsync`, `FrameRenderer.Draw`; per-export hidden
+  `.partial`, journaled; a held target saves `Name (2).mp4`; below 1 fps a
+  whole-fps nominal rate. NVIDIA leaks about 34 handles per export (not ours).
+- #28 PR #67 shell. #9 PR #68 encoder probe (`EncoderCapabilities`). #26 PR #69
+  error path, log, Settings, *Copy diagnostics*.
+- #13 PR #70 WIC decode with EXIF orientation. #33 PR #72 photo fixtures. #15
+  PR #71 frame order (`NaturalNameComparer`, `FrameGaps`). #12 PR #73 import
+  (5,000 photos in about 1.9 s).
+- #29 PR #75 first launch (Daybreak, `DragVerdict`; Debug `--drag-over`,
+  `--reduce-motion`). #23 PR #76, #18 PR #80: output and frame panels;
+  `Project.Output` is the preference, `OutputPlan.Resolve` the effective output
+  (export with it, size included). #17 PR #78 timing panel and
+  `SegmentedControl` (dot or comma decimal; snaps and clamps say so).
+- #14 PR #79 missing-extension InfoBars with Store links (restart after
+  installing; `--missing-codec=`).
+- #19 PR #77 preview: render thread, `PlaybackClock`, `ProxyCache` (1280 px,
+  2 GB, 30-day sweep, `LocalCache\Proxies` or `%LOCALAPPDATA%\10Lapse\Proxies`),
+  `FrameImageCache` 192 MB. Debug `--sample-frames` writes real photos: pass
+  `--sample-folder` under your branch folder and `--sample-clean`.
+- #32 PR #81 golden render tests (exact frame times through `RecordingEncoder`,
+  preview vs export geometry within 1 px; MP4 header durations one unit short at
+  24, 29.97, 60 fps, accepted). `MediaSkips.CannotRunHere`.
+- #20 PR #82 filmstrip (thumbnails proxy first, `FrameHistory` undo of removals
+  and reorders, Delete and Ctrl+Z only with the strip or nothing focused, Space
+  always plays; `--filmstrip-bench`).
+- #21 PR #83 `settings.json` (versioned, never throws, 256 KB cap, atomic),
+  *Reset to defaults*; `--settings-folder=`.
+- #84 PR #85 bounded capture-time readers replace MetadataExtractor. #86 PR #87
+  no process-wide memory deltas in tests.
+- #34 PR #89 `scripts/bench.ps1`, `docs/benchmarks.md`; `--import-bench=`.
+- #24 PR #88 export panel, film gate, premiere of the real MP4, Export button
+  disabled at 0.6 outside Editing, `ShellViewModel.Edits` blocks edits during an
+  export, close asks and waits up to 2 s, taskbar progress, notifications only
+  packaged or with Debug `--notifications`, `Started`/`Ended` hooks; `--export-to=`.
