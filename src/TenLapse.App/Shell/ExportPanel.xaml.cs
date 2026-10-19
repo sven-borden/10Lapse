@@ -66,15 +66,17 @@ public sealed partial class ExportPanel : UserControl
     }
 
     /// <summary>The running part is on screen: focus goes to the progress bar, where Narrator reads the progress.</summary>
-    internal void FocusRunning() => Progress.Focus(FocusState.Programmatic);
+    internal bool FocusRunning() => Progress.Focus(FocusState.Programmatic);
+
+    /// <summary>The finished part is coming: focus goes to Play the video.</summary>
+    internal bool FocusFinished() => PlayButton.Focus(FocusState.Programmatic);
 
     /// <summary>
-    /// The finished part is on screen: focus goes to Play, the check draws in (500 ms Enter after 200 ms; at once with
-    /// animations off) and the title rises 6 px.
+    /// The finished part enters: the check draws in (500 ms Enter after 200 ms; at once with animations off) and the title
+    /// rises 6 px.
     /// </summary>
     internal void ArriveFinished()
     {
-        PlayButton.Focus(FocusState.Programmatic);
         _arrival?.Stop();
         _arrival = null;
         FinishedHeading.Opacity = 1;

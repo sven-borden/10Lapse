@@ -19,6 +19,7 @@
   x:Class="TenLapse.Shell.FirstLaunchView"
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:keyboard="using:TenLapse.Presentation.Keyboard"
   xmlns:presentation="using:TenLapse.Presentation"
   xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml">
 
@@ -74,9 +75,11 @@
           <!-- The screen's one accent button (DESIGN.md, Colors: Choose folder on first launch). -->
           <Button
             x:Name="ChooseFolderButton"
+            AutomationProperties.AcceleratorKey="{x:Bind keyboard:KeyText.ChooseFolderKeys}"
             AutomationProperties.Name="{x:Bind presentation:ProjectText.FirstLaunchChooseFolder}"
             Command="{x:Bind Import.ChooseFolderCommand, Mode=OneWay}"
-            Style="{StaticResource AccentActionButtonStyle}">
+            Style="{StaticResource AccentActionButtonStyle}"
+            ToolTipService.ToolTip="{x:Bind keyboard:ShortcutTips.ChooseFolder}">
             <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
               <!-- Segoe Fluent Icons "Folder", as in the Add photos menu. -->
               <FontIcon
@@ -91,10 +94,12 @@
             x:Name="ChoosePhotosButton"
             Height="{StaticResource ControlHeight}"
             Padding="{StaticResource PaddingButtonStandard}"
+            AutomationProperties.AcceleratorKey="{x:Bind keyboard:KeyText.ChoosePhotosKeys}"
             AutomationProperties.Name="{x:Bind presentation:ProjectText.FirstLaunchChoosePhotos}"
             Background="{ThemeResource ControlFillBrush}"
             BorderBrush="{ThemeResource ControlStrokeBrush}"
-            Command="{x:Bind Import.ChoosePhotosCommand, Mode=OneWay}">
+            Command="{x:Bind Import.ChoosePhotosCommand, Mode=OneWay}"
+            ToolTipService.ToolTip="{x:Bind keyboard:ShortcutTips.ChoosePhotos}">
             <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
               <!-- Segoe Fluent Icons "Photo2", as in the Add photos menu. -->
               <FontIcon

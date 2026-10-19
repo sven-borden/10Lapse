@@ -30,6 +30,22 @@
     <value>Panel</value>
     <comment>The accessible name of the narrow layout's tab row (Timing, Frame, Output).</comment>
   </data>
+  <data name="StartRegionName" xml:space="preserve">
+    <value>Start</value>
+    <comment>The accessible name of the first-launch screen's main region, for a screen reader's landmark list.</comment>
+  </data>
+  <data name="StageRegionName" xml:space="preserve">
+    <value>Preview</value>
+    <comment>The accessible name of the editing screen's main region (the preview, the transport and the filmstrip).</comment>
+  </data>
+  <data name="InspectorRegionName" xml:space="preserve">
+    <value>Video settings</value>
+    <comment>The accessible name of the inspector's region (Timing, Frame, Output) while editing.</comment>
+  </data>
+  <data name="RegionLandmarkType" xml:space="preserve">
+    <value>region</value>
+    <comment>What a screen reader calls a region that is no standard landmark (the filmstrip, the export panel): the ARIA word "region" in the language.</comment>
+  </data>
   <data name="TimingReadoutOne" xml:space="preserve">
     <value>1 photo → {0} at {1}</value>
     <comment>The readout for one photo. {0} the length ("0.5 s"), {1} the rate ("30 fps").</comment>

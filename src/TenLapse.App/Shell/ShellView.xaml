@@ -34,6 +34,7 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:core="using:TenLapse.Core"
   xmlns:export="using:TenLapse.Presentation.Export"
+  xmlns:keyboard="using:TenLapse.Presentation.Keyboard"
   xmlns:presentation="using:TenLapse.Presentation"
   xmlns:services="using:TenLapse.Presentation.Services"
   xmlns:shell="using:TenLapse.Shell">
@@ -52,11 +53,18 @@
     DragOver="OnDragOver"
     Drop="OnDrop">
     <!--
-      Ctrl+E exports (the canvas keyboard map), here and not on the Export button: an accelerator on a collapsed or
-      disabled button does not fire, and the command itself decides (nothing outside the inspector).
+      The shell's shortcuts (#38, the canvas keyboard map): Ctrl+O Choose folder, Ctrl+Shift+O Choose photos, Ctrl+N New
+      project, Ctrl+E Export video. Here and not on their buttons: an accelerator on a collapsed or disabled button does not
+      fire, and New project and Export are collapsed without a project. ShellShortcuts (Presentation, tested) says where
+      each works: where its control is on screen, never on the Settings page or under a dialog. The controls advertise
+      them (AcceleratorKey, tooltip, the menu's key text). Space, the arrows, Delete and Ctrl+Z depend on the focused
+      control and stay key handlers (TransportKeyboard, FilmstripKeyboard).
     -->
     <Grid.KeyboardAccelerators>
-      <KeyboardAccelerator Key="E" Invoked="OnExportAccelerator" Modifiers="Control" />
+      <KeyboardAccelerator Key="O" Invoked="OnShortcut" Modifiers="Control" />
+      <KeyboardAccelerator Key="O" Invoked="OnShortcut" Modifiers="Control,Shift" />
+      <KeyboardAccelerator Key="N" Invoked="OnShortcut" Modifiers="Control" />
+      <KeyboardAccelerator Key="E" Invoked="OnShortcut" Modifiers="Control" />
     </Grid.KeyboardAccelerators>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
@@ -189,6 +197,7 @@
             x:Name="ProjectNameText"
             MaxWidth="360"
             VerticalAlignment="Center"
+            AutomationProperties.HeadingLevel="Level1"
             Style="{StaticResource CaptionSecondaryTextStyle}"
             Text="{x:Bind ViewModel.CurrentProject.Name, Mode=OneWay}"
             TextTrimming="CharacterEllipsis" />
@@ -262,6 +271,7 @@
         Padding="{StaticResource PaddingButtonSubtle}"
         HorizontalAlignment="Left"
         VerticalAlignment="Center"
+        AutomationProperties.AcceleratorKey="{x:Bind keyboard:KeyText.BackKeys}"
         AutomationProperties.Name="{x:Bind presentation:ProjectText.Back}"
         Command="{x:Bind ViewModel.CloseSettingsCommand}"
         KeyboardAcceleratorPlacementMode="Hidden"
@@ -302,13 +312,21 @@
           AutomationProperties.Name="{x:Bind presentation:ProjectText.AddPhotos}">
           <Button.Flyout>
             <MenuFlyout Placement="BottomEdgeAlignedLeft">
-              <MenuFlyoutItem Command="{x:Bind Import.ChooseFolderCommand}" Text="{x:Bind presentation:ProjectText.ChooseFolder}">
+              <MenuFlyoutItem
+                AutomationProperties.AcceleratorKey="{x:Bind keyboard:KeyText.ChooseFolderKeys}"
+                Command="{x:Bind Import.ChooseFolderCommand}"
+                KeyboardAcceleratorTextOverride="{x:Bind keyboard:KeyText.ChooseFolderShortcut}"
+                Text="{x:Bind presentation:ProjectText.ChooseFolder}">
                 <MenuFlyoutItem.Icon>
                   <!-- Segoe Fluent Icons "Folder". -->
                   <FontIcon Glyph="&#xE8B7;" />
                 </MenuFlyoutItem.Icon>
               </MenuFlyoutItem>
-              <MenuFlyoutItem Command="{x:Bind Import.ChoosePhotosCommand}" Text="{x:Bind presentation:ProjectText.ChoosePhotos}">
+              <MenuFlyoutItem
+                AutomationProperties.AcceleratorKey="{x:Bind keyboard:KeyText.ChoosePhotosKeys}"
+                Command="{x:Bind Import.ChoosePhotosCommand}"
+                KeyboardAcceleratorTextOverride="{x:Bind keyboard:KeyText.ChoosePhotosShortcut}"
+                Text="{x:Bind presentation:ProjectText.ChoosePhotos}">
                 <MenuFlyoutItem.Icon>
                   <!-- Segoe Fluent Icons "Photo2". -->
                   <FontIcon Glyph="&#xEB9F;" />
@@ -337,8 +355,10 @@
           Grid.Column="1"
           Height="{StaticResource ControlHeight}"
           Padding="{StaticResource PaddingButtonSubtle}"
+          AutomationProperties.AcceleratorKey="{x:Bind keyboard:KeyText.NewProjectKeys}"
           AutomationProperties.Name="{x:Bind presentation:ProjectText.NewProject}"
           Command="{x:Bind ViewModel.NewProjectCommand}"
+          ToolTipService.ToolTip="{x:Bind keyboard:ShortcutTips.NewProject}"
           Visibility="{x:Bind ViewModel.ShowsProjectName, Mode=OneWay}">
           <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
             <!--
@@ -440,7 +460,7 @@
           Command="{x:Bind Export.ExportCommand}"
           IsEnabled="{x:Bind Export.CanStartExport, Mode=OneWay}"
           Style="{StaticResource ExportButtonStyle}"
-          ToolTipService.ToolTip="{x:Bind export:ExportText.ExportVideo}"
+          ToolTipService.ToolTip="{x:Bind keyboard:ShortcutTips.Export}"
           Visibility="{x:Bind Export.ShowsExportButton, Mode=OneWay}">
           <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
             <!-- The prototype's export icon (an arrow up out of a tray), its 1.5 px strokes as a filled outline. -->
@@ -467,13 +487,15 @@
       </Grid.RowDefinitions>
 
       <!-- Empty: the first-launch drop zone (#29, FirstLaunchView.xaml), on Mica, 16 px in from the window edges. -->
-      <Grid
+      <shell:Region
         x:Name="EmptyRegion"
         Grid.RowSpan="2"
         Grid.ColumnSpan="2"
-        Padding="16,0,16,16">
+        Padding="16,0,16,16"
+        AutomationProperties.LandmarkType="Main"
+        AutomationProperties.Name="{x:Bind presentation:ProjectText.StartRegionName}">
         <shell:FirstLaunchView x:Name="FirstLaunch" />
-      </Grid>
+      </shell:Region>
 
       <!-- Editing: the Layer surface for the stage and the inspector, separated from Mica by one divider. -->
       <Border
@@ -485,102 +507,17 @@
         BorderThickness="0,1,0,0"
         Visibility="Collapsed" />
 
-      <!-- Stage: 20 px padding, 12 px between the preview, the transport and the filmstrip. -->
-      <Grid
-        x:Name="StageRegion"
-        Grid.Row="0"
-        Grid.Column="0"
-        Margin="0,1,0,0"
-        Padding="{StaticResource PaddingStage}"
-        RowSpacing="{StaticResource SpacingMd}"
-        Visibility="Collapsed">
-        <Grid.RowDefinitions>
-          <RowDefinition Height="*" />
-          <RowDefinition Height="Auto" />
-          <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-        <!--
-          Preview gate (#19, Preview/PreviewView.xaml): the frame drawn by the export's renderer, as large as fits at the
-          video's shape, in a 6 px gate; the Layer shows around it.
-        -->
-        <Grid x:Name="PreviewRegion" Grid.Row="0">
-          <preview:PreviewView xmlns:preview="using:TenLapse.Preview" x:Name="PreviewSurface" />
-          <!-- #24: "Rendering frame 0313" while the export runs, and the finished video playing over the gate. -->
-          <shell:ExportPreviewOverlay x:Name="ExportOverlay" />
-        </Grid>
-        <!-- Transport (#19, Preview/TransportBar.xaml): the 36 px play button, the scrubber, the frame counter and the time code. -->
-        <Grid
-          x:Name="TransportRegion"
-          Grid.Row="1"
-          Height="{StaticResource PlayButtonSize}">
-          <preview:TransportBar xmlns:preview="using:TenLapse.Preview" x:Name="Transport" />
-        </Grid>
-        <!--
-          Filmstrip (#20, Filmstrip/FilmstripView.xaml): every frame as a 3:2 thumbnail in a row that scrolls, and the
-          caption row under it. It sizes itself: the thumbnail height (the slider) plus the rings' inset and the caption.
-        -->
-        <Grid x:Name="FilmstripRegion" Grid.Row="2">
-          <filmstrip:FilmstripView xmlns:filmstrip="using:TenLapse.Filmstrip" x:Name="Filmstrip" />
-        </Grid>
-      </Grid>
-
-      <!--
-        Inspector (#17, #18, #23, Look; #24 swaps in the export panel): 320 px, one divider on its left. The 1 px
-        top margin clears the Layer's divider; the Narrow state sets Margin to 0 along with the rest. The sections
-        (Timing #17, Frame #18, Output #23) stack in InspectorRegion, which scrolls when the window is short. Narrow,
-        the tab row above it picks one section (the canvas's "Panel" tabs; Look is not built, so it has no tab).
-      -->
-      <Border
-        x:Name="InspectorPane"
-        Grid.Row="0"
-        Grid.Column="1"
-        Width="{StaticResource InspectorWidth}"
-        Margin="0,1,0,0"
-        BorderBrush="{ThemeResource DividerBrush}"
-        BorderThickness="1,0,0,0"
-        Visibility="Collapsed">
-        <!-- The sections, or the export panel (#24): ShellView.xaml.cs swaps them (PanelSwap). -->
-        <Grid>
-          <Grid x:Name="InspectorSections">
-            <Grid.RowDefinitions>
-              <RowDefinition Height="Auto" />
-              <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-            <!-- Narrow only: 10 px above the 32 px control, 8 below, the canvas's 50 px tab strip. -->
-            <Border x:Name="InspectorTabs" Padding="20,10,20,8" Visibility="Collapsed">
-              <shell:SegmentedControl
-                x:Name="InspectorTabsControl"
-                AutomationProperties.Name="{x:Bind presentation:ShellLayout.TabsName}"
-                Items="{x:Bind presentation:ShellLayout.TabLabels}"
-                SelectedIndex="{x:Bind Layout.SelectedTabIndex, Mode=TwoWay}" />
-            </Border>
-            <ScrollViewer x:Name="InspectorScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
-              <StackPanel x:Name="InspectorRegion" Padding="20,0,20,20">
-                <shell:TimingPanel x:Name="TimingSection" Visibility="{x:Bind Layout.ShowsTiming, Mode=OneWay}" />
-                <shell:FramePanel x:Name="FrameSection" Visibility="{x:Bind Layout.ShowsFrame, Mode=OneWay}" />
-                <shell:OutputPanel x:Name="OutputSection" Visibility="{x:Bind Layout.ShowsOutput, Mode=OneWay}" />
-              </StackPanel>
-            </ScrollViewer>
-          </Grid>
-          <shell:ExportPanel x:Name="ExportSection" />
-        </Grid>
-      </Border>
-
-      <!-- Settings (#26): the whole body, over the Empty and Editing regions, under the InfoBars. -->
-      <shell:SettingsView
-        x:Name="SettingsPage"
-        Grid.RowSpan="2"
-        Grid.ColumnSpan="2"
-        Visibility="Collapsed" />
-
       <!--
         InfoBars float over the top of the stage (DESIGN.md, Cards and InfoBars): 32 px down, at most 560 px wide,
         with the Flyout shadow. InfoBarPresenter fills, shows and animates it; FlyoutShadow casts the shadow from
-        the rectangle behind the bar, which always has its size.
+        the rectangle behind the bar, which always has its size. It comes before the stage in the document, so Tab
+        reaches a bar's buttons where the bar shows, between the command bar and the stage (#38); its ZIndex draws it
+        over the stage, the inspector and the Settings page.
       -->
       <Grid
         x:Name="InfoBarLayer"
         Grid.Row="0"
+        Canvas.ZIndex="1"
         Grid.Column="0"
         MaxWidth="{StaticResource InfoBarMaxWidth}"
         Margin="{StaticResource InfoBarHostMargin}"
@@ -629,6 +566,108 @@
           </Border>
         </InfoBar>
       </Grid>
+
+      <!-- Stage: 20 px padding, 12 px between the preview, the transport and the filmstrip. -->
+      <shell:Region
+        x:Name="StageRegion"
+        Grid.Row="0"
+        Grid.Column="0"
+        Margin="0,1,0,0"
+        Padding="{StaticResource PaddingStage}"
+        AutomationProperties.LandmarkType="Main"
+        AutomationProperties.Name="{x:Bind presentation:ProjectText.StageRegionName}"
+        RowSpacing="{StaticResource SpacingMd}"
+        Visibility="Collapsed">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <!--
+          Preview gate (#19, Preview/PreviewView.xaml): the frame drawn by the export's renderer, as large as fits at the
+          video's shape, in a 6 px gate; the Layer shows around it.
+        -->
+        <Grid x:Name="PreviewRegion" Grid.Row="0">
+          <preview:PreviewView xmlns:preview="using:TenLapse.Preview" x:Name="PreviewSurface" />
+          <!-- #24: "Rendering frame 0313" while the export runs, and the finished video playing over the gate. -->
+          <shell:ExportPreviewOverlay x:Name="ExportOverlay" />
+        </Grid>
+        <!-- Transport (#19, Preview/TransportBar.xaml): the 36 px play button, the scrubber, the frame counter and the time code. -->
+        <Grid
+          x:Name="TransportRegion"
+          Grid.Row="1"
+          Height="{StaticResource PlayButtonSize}">
+          <preview:TransportBar xmlns:preview="using:TenLapse.Preview" x:Name="Transport" />
+        </Grid>
+        <!--
+          Filmstrip (#20, Filmstrip/FilmstripView.xaml): every frame as a 3:2 thumbnail in a row that scrolls, and the
+          caption row under it. It sizes itself: the thumbnail height (the slider) plus the rings' inset and the caption.
+        -->
+        <shell:Region
+          x:Name="FilmstripRegion"
+          Grid.Row="2"
+          AutomationProperties.LandmarkType="Custom"
+          AutomationProperties.LocalizedLandmarkType="{x:Bind presentation:ProjectText.RegionLandmarkType}"
+          AutomationProperties.Name="{x:Bind presentation:ProjectText.FilmstripName}">
+          <filmstrip:FilmstripView xmlns:filmstrip="using:TenLapse.Filmstrip" x:Name="Filmstrip" />
+        </shell:Region>
+      </shell:Region>
+
+      <!--
+        Inspector (#17, #18, #23, Look; #24 swaps in the export panel): 320 px, one divider on its left. The 1 px
+        top margin clears the Layer's divider; the Narrow state sets Margin to 0 along with the rest. The sections
+        (Timing #17, Frame #18, Output #23) stack in InspectorRegion, which scrolls when the window is short. Narrow,
+        the tab row above it picks one section (the canvas's "Panel" tabs; Look is not built, so it has no tab).
+      -->
+      <Border
+        x:Name="InspectorPane"
+        Grid.Row="0"
+        Grid.Column="1"
+        Width="{StaticResource InspectorWidth}"
+        Margin="0,1,0,0"
+        BorderBrush="{ThemeResource DividerBrush}"
+        BorderThickness="1,0,0,0"
+        Visibility="Collapsed">
+        <!--
+          The sections, or the export panel (#24): ShellView.xaml.cs swaps them (PanelSwap). A Form landmark named "Video
+          settings" while editing, "Export video" while the export panel or the finished state shows (ShellView.xaml.cs).
+        -->
+        <shell:Region
+          x:Name="InspectorLandmark"
+          AutomationProperties.LandmarkType="Form"
+          AutomationProperties.Name="{x:Bind presentation:ProjectText.InspectorRegionName}">
+          <Grid x:Name="InspectorSections">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <!-- Narrow only: 10 px above the 32 px control, 8 below, the canvas's 50 px tab strip. -->
+            <Border x:Name="InspectorTabs" Padding="20,10,20,8" Visibility="Collapsed">
+              <shell:SegmentedControl
+                x:Name="InspectorTabsControl"
+                AutomationProperties.Name="{x:Bind presentation:ShellLayout.TabsName}"
+                Items="{x:Bind presentation:ShellLayout.TabLabels}"
+                SelectedIndex="{x:Bind Layout.SelectedTabIndex, Mode=TwoWay}" />
+            </Border>
+            <ScrollViewer x:Name="InspectorScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+              <StackPanel x:Name="InspectorRegion" Padding="20,0,20,20">
+                <shell:TimingPanel x:Name="TimingSection" Visibility="{x:Bind Layout.ShowsTiming, Mode=OneWay}" />
+                <shell:FramePanel x:Name="FrameSection" Visibility="{x:Bind Layout.ShowsFrame, Mode=OneWay}" />
+                <shell:OutputPanel x:Name="OutputSection" Visibility="{x:Bind Layout.ShowsOutput, Mode=OneWay}" />
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
+          <shell:ExportPanel x:Name="ExportSection" />
+        </shell:Region>
+      </Border>
+
+      <!-- Settings (#26): the whole body, over the Empty and Editing regions, under the InfoBars. -->
+      <shell:SettingsView
+        x:Name="SettingsPage"
+        Grid.RowSpan="2"
+        Grid.ColumnSpan="2"
+        Visibility="Collapsed" />
+
     </Grid>
 
     <!-- The theme crossfade (#35, ThemeCrossfade.cs): the old look, over everything, fading out; never takes input. -->

@@ -33,6 +33,18 @@ public static class ProjectText
     /// <summary>The accessible name of the narrow layout's tab row (<see cref="ShellLayout.TabsName"/>).</summary>
     public static string InspectorTabsName => _strings.Get();
 
+    /// <summary>The accessible name of the first-launch screen's main region, for a screen reader's landmark list.</summary>
+    public static string StartRegionName => _strings.Get();
+
+    /// <summary>The accessible name of the editing screen's main region (the preview, the transport and the filmstrip).</summary>
+    public static string StageRegionName => _strings.Get();
+
+    /// <summary>The accessible name of the inspector's region (Timing, Frame, Output) while editing.</summary>
+    public static string InspectorRegionName => _strings.Get();
+
+    /// <summary>What a screen reader calls a region that is no standard landmark (the filmstrip, the export panel): the ARIA word "region" in the language.</summary>
+    public static string RegionLandmarkType => _strings.Get();
+
     /// <summary>The readout for one photo. {0} the length ("0.5 s"), {1} the rate ("30 fps").</summary>
     public static string TimingReadoutOne => _strings.Get();
 

@@ -40,6 +40,9 @@ public sealed partial class TransportBar : UserControl
         FollowPlaying();
     }
 
+    /// <summary>Puts the keyboard focus on Play (#38: after the first photos land, or after an export with no Export button).</summary>
+    internal bool FocusPlay() => PlayButton.Focus(FocusState.Programmatic);
+
     /// <summary>Lets go of the player.</summary>
     internal void Detach()
     {

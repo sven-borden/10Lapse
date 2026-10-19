@@ -198,6 +198,10 @@
     <value>The export stopped.</value>
     <comment>Narrator, when the export fails (the InfoBar says why).</comment>
   </data>
+  <data name="FinishingAnnouncement" xml:space="preserve">
+    <value>Finishing the file.</value>
+    <comment>Narrator, once every frame is written and the file is being completed.</comment>
+  </data>
   <data name="FailedNotificationFormat" xml:space="preserve">
     <value>{0} couldn't be exported. Open 10Lapse to see why.</value>
     <comment>The notification when an export in the background failed: {0} the file name.</comment>

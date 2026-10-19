@@ -48,7 +48,7 @@ $samples = Join-Path $base 'samples'
 $broken = Join-Path $base 'broken-photos'
 Remove-Item $results -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $base, $results, $samples, $broken | Out-Null
-foreach ($name in 'empty', 'editing', 'export') { Remove-Item (Join-Path $base "a11y-logs-$name") -Recurse -Force -ErrorAction SilentlyContinue }
+foreach ($name in 'empty', 'editing', 'export', 'keys') { Remove-Item (Join-Path $base "a11y-logs-$name") -Recurse -Force -ErrorAction SilentlyContinue }
 Copy-Item (Join-Path $root 'tests/TenLapse.Tests/Fixtures/Photos/*') $broken -Force
 
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
@@ -100,6 +100,11 @@ function Scan($app, [string]$name) {
     $line = & $scanner $app.Process.Id $results $name 2>&1 | Select-Object -Last 1
     $summary.Add("$line")
     Write-Host "  $line"
+    # The accelerator keys a screen reader hears on this screen (UIA AcceleratorKey), on screen only.
+    $hasKey = New-Object System.Windows.Automation.NotCondition((New-Object System.Windows.Automation.PropertyCondition($AE::AcceleratorKeyProperty, '')))
+    $keys = @($app.Window.FindAll($Tree::Descendants, $hasKey)) | Where-Object { -not $_.Current.IsOffscreen } |
+        ForEach-Object { "$($_.Current.Name)=$($_.Current.AcceleratorKey)" }
+    $summary.Add("  keys on $name`: $($keys -join '; ')")
 }
 
 function Find-Id($app, [string]$id, [double]$seconds = 10) {
@@ -215,10 +220,60 @@ try {
 }
 finally { Stop-App $app; Keep-FocusLog 'export' }
 
+# 4: the keyboard-only path through the shortcuts, run by Debug --shortcut-after at fixed seconds after launch, through
+# the same method each keyboard accelerator calls (no key is pressed): Ctrl+O opens the folder picker (closed again here
+# through UIA), Ctrl+N on a project with changes asks first (scanned, then Cancel), Ctrl+E exports (--export-to answers the
+# Save dialog, --export-wait keeps it from starting by itself), Ctrl+N after the export opens the Empty screen, Ctrl+E
+# there and Ctrl+O on the Settings page do nothing. focus-keys.log has each shortcut's result and every focus landing.
+Write-Host 'Run: shortcuts'
+$export2 = Join-Path $base 'a11y-keys.mp4'
+Remove-Item $export2 -ErrorAction SilentlyContinue
+$app = Start-App ((Common 'keys') + '--sample-frames=60' + "--export-to=$export2" + '--export-wait' + '--shortcut-after=ctrl+o@8,ctrl+n@14,ctrl+e@22,ctrl+n@36,ctrl+e@40,ctrl+o@48')
+function Wait-Until($app, [double]$second) {
+    $left = $second - ((Get-Date) - $app.Process.StartTime).TotalSeconds
+    if ($left -gt 0) { Start-Sleep -Milliseconds ([int]($left * 1000)) }
+}
+try {
+    Resize $app 1280 800
+    # Ctrl+O at 8 s: the folder picker is a second window of the process.
+    $picker = $null
+    $until = (Get-Date).AddSeconds(20)
+    while (-not $picker -and (Get-Date) -lt $until -and -not $app.Process.HasExited) {
+        Start-Sleep -Milliseconds 300
+        $windows = $AE::RootElement.FindAll($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ProcessIdProperty, $app.Process.Id)))
+        $picker = @($windows) | Where-Object { $_.Current.ClassName -eq '#32770' } | Select-Object -First 1
+        if (-not $picker) { $picker = $app.Window.FindFirst($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ClassNameProperty, '#32770'))) }
+    }
+    if ($picker) {
+        $summary.Add("ctrl+o opened '$($picker.Current.Name)' ($($picker.Current.ClassName)); closed through UIA")
+        Write-Host "  Ctrl+O opened '$($picker.Current.Name)'"
+        $picker.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
+    }
+    else { Skip 'ctrl+o picker' 'no picker window appeared' }
+    # Ctrl+N at 14 s: the project has changes, so it asks first.
+    Wait-Until $app 14
+    if (Find-Id $app 'PrimaryButton' 8) {
+        $line = & $scanner $app.Process.Id $results 'new-project-question' 2>&1 | Select-Object -Last 1
+        $summary.Add("$line"); Write-Host "  $line"
+        Invoke-Element (Find-Id $app 'CloseButton' 2)
+    }
+    else { Skip 'new-project-question' 'no question appeared' }
+    # Ctrl+E at 22 s, the finished state, Ctrl+N at 36 s, Ctrl+E at 40 s on the Empty screen.
+    Wait-Until $app 38
+    if (Find-Id $app 'ChooseFolderButton' 5) { $summary.Add('ctrl+n after the export: the Empty screen') }
+    Invoke-Element (Find-Id $app 'SettingsButton' 2)
+    # Ctrl+O at 48 s on the Settings page.
+    Wait-Until $app 51
+    Invoke-Element (Find-Id $app 'BackButton' 2)
+    Start-Sleep -Seconds 2
+}
+finally { Stop-App $app; Keep-FocusLog 'keys' }
+Remove-Item $export, $export2 -ErrorAction SilentlyContinue
+
 $summary | Set-Content (Join-Path $results 'summary.txt')
 Write-Host "Results in $results"
 if ($skipped.Count -gt 0) { Write-Host "Skipped: $($skipped -join '; ')" }
-foreach ($name in 'empty', 'editing', 'export') {
+foreach ($name in 'empty', 'editing', 'export', 'keys') {
     Get-ChildItem (Join-Path $base "a11y-logs-$name") -Filter '10Lapse-*.log' -ErrorAction SilentlyContinue |
         ForEach-Object { Select-String -Path $_.FullName -Pattern ' (WARN|ERROR|CRIT) ' | ForEach-Object { "$name`: $($_.Line)" } }
 }

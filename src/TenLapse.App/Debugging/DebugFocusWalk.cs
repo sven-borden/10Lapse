@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation.Export;
+using TenLapse.Presentation.Keyboard;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using TenLapse.Shell;
@@ -45,6 +46,7 @@ internal static class DebugFocusWalk
     /// <summary>Starts watching the shell's screen (UI thread, once the shell is built).</summary>
     public static void Apply(ShellView shell, IErrorSink log)
     {
+        ApplyShortcuts(shell, log);
         if (_path is null)
         {
             return;
@@ -56,6 +58,47 @@ internal static class DebugFocusWalk
         _timer.IsRepeating = true;
         _timer.Tick += (_, _) => log.RunLogged(() => Check(shell), "The Debug focus walk failed.");
         _timer.Start();
+    }
+
+    // --shortcut-after=ctrl+n@8,ctrl+o@3: at each of those seconds after launch, runs that shortcut through the same method
+    // its keyboard accelerator calls (ShellView.RunShortcut), and notes whether it applied on the screen of the moment. It
+    // proves what each shortcut does without real key presses; the key reaching the accelerator is the framework's part.
+    private static readonly List<DispatcherQueueTimer> _shortcutTimers = [];
+
+    private static void ApplyShortcuts(ShellView shell, IErrorSink log)
+    {
+        var given = Environment.GetCommandLineArgs().FirstOrDefault(arg => arg.StartsWith("--shortcut-after=", StringComparison.OrdinalIgnoreCase));
+        if (given is null)
+        {
+            return;
+        }
+
+        foreach (var entry in given["--shortcut-after=".Length..].Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = entry.Split('@');
+            ShellShortcut? shortcut = parts[0].ToUpperInvariant() switch
+            {
+                "CTRL+O" => ShellShortcut.ChooseFolder,
+                "CTRL+SHIFT+O" => ShellShortcut.ChoosePhotos,
+                "CTRL+N" => ShellShortcut.NewProject,
+                "CTRL+E" => ShellShortcut.Export,
+                _ => null,
+            };
+            if (shortcut is not { } chosen || parts.Length != 2
+                || !double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds))
+            {
+                continue;
+            }
+
+            var timer = shell.DispatcherQueue.CreateTimer();
+            timer.Interval = TimeSpan.FromSeconds(seconds);
+            timer.IsRepeating = false;
+            timer.Tick += (_, _) => log.RunLogged(
+                () => Note($"shortcut {parts[0]} ({chosen}): {(shell.RunShortcut(chosen) ? "applied" : "not available here, nothing done")}"),
+                "The Debug shortcut switch failed.");
+            _shortcutTimers.Add(timer);
+            timer.Start();
+        }
     }
 
     /// <summary>Writes one line (any thread). A failure to write is dropped: this is a Debug aid.</summary>
@@ -121,7 +164,12 @@ internal static class DebugFocusWalk
         name += shell.Layout.IsNarrow ? string.Create(CultureInfo.InvariantCulture, $" narrow({shell.Layout.Tab})") : " wide";
         foreach (var popup in VisualTreeHelper.GetOpenPopupsForXamlRoot(root))
         {
-            name += popup.Child is ContentDialog ? " +dialog" : popup.Child is null ? string.Empty : " +popup";
+            name += popup.Child switch
+            {
+                ContentDialog => " +dialog",
+                ToolTip or null => string.Empty,
+                var child => " +popup(" + child.GetType().Name + ")",
+            };
         }
 
         if (shell.FindName("ShellInfoBar") is InfoBar { IsOpen: true } bar)
@@ -138,25 +186,40 @@ internal static class DebugFocusWalk
         var text = new StringBuilder();
         text.Append("screen: ").AppendLine(screen);
         text.Append("  focus landed on: ").AppendLine(Describe(start));
+        // From the first stop of the window (or of the open dialog, which keeps Tab inside it) to the last, where Tab
+        // leaves the content for the title bar and comes round to the first again.
+        var dialog = VisualTreeHelper.GetOpenPopupsForXamlRoot(root).Select(popup => popup.Child).OfType<ContentDialog>().FirstOrDefault();
+        var scope = (DependencyObject?)dialog ?? root.Content;
+        // Searched from the window's content in both cases: a dialog's popup keeps Tab inside it anyway.
         var options = new FindNextElementOptions { SearchRoot = root.Content };
         var stops = new List<DependencyObject>();
-        for (var i = 0; i < MaxStops; i++)
+        if (FocusManager.FindFirstFocusableElement(scope) is Control first && first.Focus(FocusState.Keyboard)
+            && FocusManager.GetFocusedElement(root) is DependencyObject firstFocused)
         {
-            if (!FocusManager.TryMoveFocus(FocusNavigationDirection.Next, options)
-                || FocusManager.GetFocusedElement(root) is not DependencyObject focused)
+            stops.Add(firstFocused);
+            text.Append("   1. ").AppendLine(Describe(firstFocused));
+            for (var i = 1; i < MaxStops; i++)
             {
-                text.AppendLine("  (Tab moved nowhere)");
-                break;
-            }
+                if (!FocusManager.TryMoveFocus(FocusNavigationDirection.Next, options)
+                    || FocusManager.GetFocusedElement(root) is not DependencyObject focused)
+                {
+                    text.AppendLine("  (end: Tab goes round to 1)");
+                    break;
+                }
 
-            if (stops.Count > 0 && ReferenceEquals(focused, stops[0]))
-            {
-                text.AppendLine("  (round again)");
-                break;
-            }
+                if (stops.Any(stop => ReferenceEquals(stop, focused)))
+                {
+                    text.Append("  (round again at ").Append(Describe(focused)).AppendLine(")");
+                    break;
+                }
 
-            stops.Add(focused);
-            text.Append(CultureInfo.InvariantCulture, $"  {stops.Count,2}. ").AppendLine(Describe(focused));
+                stops.Add(focused);
+                text.Append(CultureInfo.InvariantCulture, $"  {stops.Count,2}. ").AppendLine(Describe(focused));
+            }
+        }
+        else
+        {
+            text.AppendLine("  (nothing focusable)");
         }
 
         // Back where it was: a control takes it again; with nothing focused before, the walk leaves the last stop.

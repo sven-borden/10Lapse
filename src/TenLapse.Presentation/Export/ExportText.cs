@@ -164,6 +164,9 @@ public static class ExportText
     /// <summary>Narrator, when the export fails (the InfoBar says why).</summary>
     public static string FailedAnnouncement => _strings.Get();
 
+    /// <summary>Narrator, once every frame is written and the file is being completed.</summary>
+    public static string FinishingAnnouncement => _strings.Get();
+
     /// <summary>The notification when an export in the background failed: {0} the file name.</summary>
     public static string FailedNotificationFormat => _strings.Get();
 

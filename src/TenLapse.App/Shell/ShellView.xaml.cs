@@ -2,6 +2,8 @@ using System.ComponentModel;
 using System.Numerics;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -9,6 +11,7 @@ using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Export;
 using TenLapse.Presentation.FirstLaunch;
+using TenLapse.Presentation.Keyboard;
 using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
@@ -47,6 +50,7 @@ public sealed partial class ShellView : UserControl
     private readonly Presentation.Filmstrip.FilmstripViewModel _filmstrip;
     private readonly PanelSwap _inspectorSwap;
     private readonly ScreenMotion? _screens;
+    private ShellScreen _screen;
 
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
@@ -80,6 +84,7 @@ public sealed partial class ShellView : UserControl
             ThemeTokens.Number("NarrowPanelMinHeight"),
             ThemeTokens.Number("NarrowPreviewMinHeight"));
         InitializeComponent();
+        _screen = FocusTargets.ScreenOf(viewModel.IsSettingsOpen, viewModel.ShowsEmpty);
         SettingsPage.ViewModel = settings;
         OutputSection.ViewModel = output;
         _timing = new TimingPanelViewModel(viewModel, presenter);
@@ -366,15 +371,62 @@ public sealed partial class ShellView : UserControl
         animation.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
     }
 
-    // Opening Settings puts focus on Back, leaving it puts focus back on the Settings button, so the keyboard and a
-    // screen reader stay where the user is. After the state change has shown the button.
+    // Focus after a screen change (FocusTargets, #38), so the keyboard and a screen reader stay where the user goes on:
+    // opening Settings puts it on Back and leaving on the Settings button; the first photos landing put it on Play and New
+    // project on Choose folder, but only when the change took the focus away (a control still on screen keeps it). After
+    // the state change has shown the target.
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ShellViewModel.IsSettingsOpen))
+        if (e.PropertyName is not (nameof(ShellViewModel.IsSettingsOpen) or nameof(ShellViewModel.ShowsEmpty) or nameof(ShellViewModel.ShowsEditing)))
         {
-            var target = ViewModel.IsSettingsOpen ? BackButton : SettingsButton;
-            DispatcherQueue.TryEnqueueGuarded(_errors, () => target.Focus(FocusState.Programmatic), ProjectText.SettingsFocusFailed);
+            return;
         }
+
+        var screen = FocusTargets.ScreenOf(ViewModel.IsSettingsOpen, ViewModel.ShowsEmpty);
+        if (screen == _screen)
+        {
+            return;
+        }
+
+        var from = _screen;
+        _screen = screen;
+        var before = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+        DispatcherQueue.TryEnqueueGuarded(
+            _errors,
+            () =>
+            {
+                // Laid out first: a region that was collapsed has no templates yet, and a control without one takes no focus.
+                UpdateLayout();
+                MoveFocus(FocusTargets.AfterScreenChange(from, screen, focusLost: before is null || !IsOnScreen(before)));
+            },
+            ProjectText.SettingsFocusFailed);
+    }
+
+    // Puts the keyboard focus on the target; false when it cannot take it (not on screen, disabled).
+    private bool MoveFocus(FocusTarget target) => target switch
+    {
+        FocusTarget.Back => BackButton.Focus(FocusState.Programmatic),
+        FocusTarget.SettingsButton => SettingsButton.Focus(FocusState.Programmatic),
+        FocusTarget.ChooseFolder => FirstLaunch.FocusChooseFolder(),
+        FocusTarget.Play => Transport.FocusPlay(),
+        FocusTarget.ExportProgress => ExportSection.FocusRunning(),
+        FocusTarget.PlayVideo => ExportSection.FocusFinished(),
+        FocusTarget.ExportButton => ExportButton.Focus(FocusState.Programmatic),
+        _ => false,
+    };
+
+    // Still shown: neither it nor a parent is collapsed.
+    private static bool IsOnScreen(DependencyObject node)
+    {
+        for (var current = node; current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is UIElement { Visibility: Visibility.Collapsed })
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // The inspector column follows the export (#24): the sections, the export panel or the finished state, swapped with
@@ -397,17 +449,24 @@ public sealed partial class ShellView : UserControl
             ExportButton.Opacity = opacity;
         }
 
+        // The inspector's landmark is the export's while the export panel or the finished state shows.
+        AutomationProperties.SetName(InspectorLandmark, Export.IsEditing ? ProjectText.InspectorRegionName : ExportText.ExportVideo);
+        AutomationProperties.SetLandmarkType(InspectorLandmark, Export.IsEditing ? AutomationLandmarkType.Form : AutomationLandmarkType.Custom);
+        AutomationProperties.SetLocalizedLandmarkType(InspectorLandmark, Export.IsEditing ? string.Empty : ProjectText.RegionLandmarkType);
+
+        // Focus moves as the swap starts, not after its animation (FocusTargets.AfterExport).
+        void FocusNext() => MoveFocus(FocusTargets.AfterExport(Export.State, ExportButton.Visibility == Visibility.Visible && ExportButton.IsEnabled));
         switch (Export.State)
         {
             case ExportPanelState.Exporting:
-                _inspectorSwap.Show(ExportSection.Running, ExportSection.FocusRunning);
+                _inspectorSwap.Show(ExportSection.Running, FocusNext);
                 break;
             case ExportPanelState.Finished:
-                _inspectorSwap.Show(ExportSection.Finished, ExportSection.ArriveFinished);
+                _inspectorSwap.Show(ExportSection.Finished, FocusNext, ExportSection.ArriveFinished);
                 break;
             default:
                 ExportSection.ResetFinished();
-                _inspectorSwap.Show(InspectorSections, FocusExportButton);
+                _inspectorSwap.Show(InspectorSections, FocusNext);
                 break;
         }
     }
@@ -516,24 +575,46 @@ public sealed partial class ShellView : UserControl
     // The Export button's opacity while the export panel or the finished state shows (the canvas's exportOpacity).
     private const double DimmedExportOpacity = 0.6;
 
-    private void FocusExportButton()
+    // Ctrl+O, Ctrl+Shift+O, Ctrl+N and Ctrl+E (ShellView.xaml): handled only where the shortcut works, so elsewhere the key
+    // goes on as if there were no shortcut.
+    private void OnShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        if (ExportButton.Visibility == Visibility.Visible)
+        var shift = sender.Modifiers.HasFlag(Windows.System.VirtualKeyModifiers.Shift);
+        if (ShellShortcuts.Resolve((char)sender.Key, control: true, shift, other: false) is { } shortcut)
         {
-            ExportButton.Focus(FocusState.Programmatic);
+            args.Handled = RunShortcut(shortcut);
         }
     }
 
-    // Ctrl+E: the Export button's command, also when the button is absent or disabled (the command checks what it may do,
-    // and does nothing outside the inspector).
-    private void OnExportAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    /// <summary>
+    /// Runs a shell shortcut as its key does (also Debug <c>--shortcut-after=</c>): the command of the control it stands
+    /// for, only where <see cref="ShellShortcuts.IsAvailable"/> says it works. True when it applied here.
+    /// </summary>
+    internal bool RunShortcut(ShellShortcut shortcut)
     {
-        args.Handled = true;
-        if (Export.ExportCommand.CanExecute(null))
+        var screen = new ShortcutScreen(ViewModel.IsSettingsOpen, IsDialogOpen(), ViewModel.ShowsProjectName, Export.ShowsExportButton);
+        if (!ShellShortcuts.IsAvailable(shortcut, screen))
         {
-            Export.ExportCommand.Execute(null);
+            return false;
         }
+
+        System.Windows.Input.ICommand command = shortcut switch
+        {
+            ShellShortcut.ChooseFolder => Import.ChooseFolderCommand,
+            ShellShortcut.ChoosePhotos => Import.ChoosePhotosCommand,
+            ShellShortcut.NewProject => ViewModel.NewProjectCommand,
+            _ => Export.ExportCommand,
+        };
+        if (command.CanExecute(null))
+        {
+            command.Execute(null);
+        }
+
+        return true;
     }
+
+    private bool IsDialogOpen() =>
+        XamlRoot is { } root && VisualTreeHelper.GetOpenPopupsForXamlRoot(root).Any(popup => popup.Child is ContentDialog);
 
     // The Empty state shows or hides the first-launch drop zone (state setters on EmptyRegion), which runs its
     // timelapse only while it is on screen.
