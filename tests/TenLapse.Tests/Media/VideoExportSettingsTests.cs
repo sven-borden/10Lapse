@@ -1,3 +1,4 @@
+using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 using TenLapse.Media.Export;
 
@@ -25,6 +26,21 @@ public sealed class VideoExportSettingsTests
         Assert.Equal((5, 2), (_settings with { DecodeAhead = 5, DecodeThreads = 2 }).DecodeFor(tightMemory: true));
         Assert.Equal((2, 2), (_settings with { DecodeAhead = 2, DecodeThreads = 6 }).DecodeFor(tightMemory: false));
         Assert.Equal((1, 1), (_settings with { DecodeAhead = 0, DecodeThreads = 0 }).DecodeFor(tightMemory: false));
+    }
+
+    [Fact]
+    public void TheDefaultBitrateIsHighQualityFromTheOneFormula()
+    {
+        foreach (var rate in new[] { new Fraction(1, 10), new Fraction(1, 2), new Fraction(30, 1), new Fraction(60, 1) })
+        {
+            foreach (var format in new[] { VideoFormat.Mp4H264, VideoFormat.Mp4Hevc })
+            {
+                var settings = new VideoExportSettings(3840, 2160, rate) { Format = format };
+                Assert.Equal(ExportBitrate.For(new PixelSize(3840, 2160), rate, format, OutputQuality.High), settings.EffectiveBitrate);
+            }
+        }
+
+        Assert.Equal(5_000_000u, (_settings with { Bitrate = 5_000_000 }).EffectiveBitrate);
     }
 
     [Fact]

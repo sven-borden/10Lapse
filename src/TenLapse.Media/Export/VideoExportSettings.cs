@@ -6,9 +6,6 @@ namespace TenLapse.Media.Export;
 /// <summary>What to write and how much to keep in flight while writing it.</summary>
 public sealed record VideoExportSettings
 {
-    /// <summary>Bits per pixel per frame for <see cref="DefaultBitrate"/>: about 35 Mbit/s at 4K 30 fps, 8.7 at 1080p 30.</summary>
-    public const double DefaultBitsPerPixel = 0.14;
-
     /// <param name="width">Output width in pixels, positive and even (H.264 4:2:0).</param>
     /// <param name="height">Output height in pixels, positive and even.</param>
     /// <param name="frameRate">The exact frame rate; sample times come from <see cref="FrameTiming"/>.</param>
@@ -50,7 +47,7 @@ public sealed record VideoExportSettings
         init => field = Enum.IsDefined(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown video format.");
     }
 
-    /// <summary>Target bitrate in bits per second; null uses <see cref="DefaultBitrate"/>.</summary>
+    /// <summary>Target bitrate in bits per second; null uses <see cref="DefaultBitrate"/> (High quality for the format).</summary>
     public uint? Bitrate { get; init; }
 
     /// <summary>
@@ -127,12 +124,12 @@ public sealed record VideoExportSettings
     public int RenderTargets { get; init; } = 4;
 
     /// <summary>The bitrate the export uses.</summary>
-    public uint EffectiveBitrate => Bitrate ?? DefaultBitrate(Width, Height, FrameRate);
+    public uint EffectiveBitrate => Bitrate ?? DefaultBitrate(Width, Height, FrameRate, Format);
 
-    /// <summary><see cref="DefaultBitsPerPixel"/> times pixels times frames per second, between 1 and 200 Mbit/s.</summary>
-    public static uint DefaultBitrate(int width, int height, Fraction frameRate)
-    {
-        var bits = DefaultBitsPerPixel * width * height * frameRate.ToDouble();
-        return (uint)Math.Clamp(bits, 1_000_000, 200_000_000);
-    }
+    /// <summary>
+    /// <see cref="ExportBitrate.For"/> at <see cref="OutputQuality.High"/>: the same formula as the project export
+    /// and the Output panel's estimate, not a second one.
+    /// </summary>
+    public static uint DefaultBitrate(int width, int height, Fraction frameRate, VideoFormat format = VideoFormat.Mp4H264) =>
+        ExportBitrate.For(new PixelSize(width, height), frameRate, format, OutputQuality.High);
 }
