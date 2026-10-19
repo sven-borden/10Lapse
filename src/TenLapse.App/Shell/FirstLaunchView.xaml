@@ -146,18 +146,27 @@
           Fill="{ThemeResource CardBrush}"
           RadiusX="8"
           RadiusY="8" />
-        <win2d:CanvasControl x:Name="FrameCanvas" Draw="OnDrawFrame" />
+        <win2d:CanvasControl
+          x:Name="FrameCanvas"
+          AutomationProperties.AccessibilityView="Raw"
+          Draw="OnDrawFrame" />
         <!-- 2 px out on every side, so the ring around the first and last thumbnails fits. -->
         <win2d:CanvasControl
           x:Name="StripCanvas"
           Grid.Row="1"
           Margin="-2"
+          AutomationProperties.AccessibilityView="Raw"
           Draw="OnDrawStrip" />
+        <!-- Raw on each text too: the panel's AccessibilityView does not reach its children, and these change 30 times a second. -->
         <Grid Grid.Row="2">
-          <TextBlock x:Name="FrameCaption" Style="{StaticResource CaptionSecondaryTextStyle}" />
+          <TextBlock
+            x:Name="FrameCaption"
+            AutomationProperties.AccessibilityView="Raw"
+            Style="{StaticResource CaptionSecondaryTextStyle}" />
           <TextBlock
             x:Name="TimeCaption"
             HorizontalAlignment="Right"
+            AutomationProperties.AccessibilityView="Raw"
             Style="{StaticResource CaptionSecondaryTextStyle}" />
         </Grid>
       </Grid>
