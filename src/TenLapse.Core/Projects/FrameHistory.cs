@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using TenLapse.Core.Ordering;
 
 namespace TenLapse.Core.Projects;
 
@@ -36,6 +37,12 @@ public sealed record FrameUndo(FrameEditKind Kind, ImmutableArray<Guid> Frames);
 /// nothing changed in between every frame returns to its exact place, and after other changes (an import, another
 /// removal) it still lands beside its old neighbours. Undoing a reorder restores the earlier order and sort mode; frames
 /// added since keep their places at the end. A frame whose file was imported again meanwhile is not put back twice.
+/// When the project is sorted by a mode other than manual once the undo is done, the frames are put in that mode's order
+/// (<see cref="FrameSorter.Sort"/>), so the project never claims a sort its frames are not in.
+/// </para>
+/// <para>
+/// It also remembers every frame the user removed (<see cref="Removed"/>), beyond the undo history, so the filmstrip's gap
+/// markers can tell a hole the user made from photos that are missing.
 /// </para>
 /// <para>
 /// One history per project, on the project's owner thread (the UI thread), like every <see cref="Project"/> mutation. It
@@ -49,6 +56,7 @@ public sealed class FrameHistory
 
     private readonly Project _project;
     private readonly LinkedList<Entry> _entries = new();
+    private readonly Dictionary<string, Frame> _removed = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>A history for <paramref name="project"/>.</summary>
     public FrameHistory(Project project)
@@ -64,6 +72,14 @@ public sealed class FrameHistory
 
     /// <summary>The edit <see cref="Undo"/> would undo, or null.</summary>
     public FrameEdit? NextUndo => _entries.Last?.Value.Edit;
+
+    /// <summary>
+    /// The frames the user removed from this project and has not put back with an undo, one per photo path (the latest
+    /// removal of it). Not bounded by <see cref="Capacity"/>, and kept by <see cref="Clear"/>: a photo the user took out
+    /// stays "removed by the user" for the gap markers (#20) as long as the project lasts. Some may be in the project
+    /// again (imported anew); a caller that cares checks the paths.
+    /// </summary>
+    public IReadOnlyCollection<Frame> Removed => _removed.Values;
 
     /// <summary>
     /// Removes the frames with these ids from the project (<see cref="Project.RemoveFrames"/>, never from disk) and records
@@ -84,6 +100,11 @@ public sealed class FrameHistory
         var count = _project.RemoveFrames(wanted);
         if (count > 0)
         {
+            foreach (var frame in removed)
+            {
+                _removed[frame.SourcePath] = frame;
+            }
+
             Push(new Entry(new FrameEdit(FrameEditKind.Removal, count), before, _project.SortMode, removed, []));
         }
 
@@ -149,9 +170,37 @@ public sealed class FrameHistory
             return new FrameUndo(FrameEditKind.Removal, []);
         }
 
-        // Each frame goes after the last frame before it (in the old order) that is still in the project; frames with
-        // none go first. Frames of one run stay together, in their old order.
         var returning = back.Select(frame => frame.Id).ToHashSet();
+        var order = SortedOrder(current, back) ?? NeighbourOrder(entry, current, present, returning, back.Count);
+        _project.RestoreFrames(back, order);
+        foreach (var frame in back)
+        {
+            _removed.Remove(frame.SourcePath);
+        }
+
+        var now = _project.Frames.Select(frame => frame.Id).ToHashSet();
+        return new FrameUndo(FrameEditKind.Removal, [.. order.Where(id => returning.Contains(id) && now.Contains(id))]);
+    }
+
+    // In a sorted project (any mode but manual), the frames put back go where that mode puts them, when the frames there
+    // are in that mode's order already (they are, unless something reordered them behind the mode's back): null otherwise.
+    private List<Guid>? SortedOrder(ImmutableArray<Frame> current, List<Frame> back)
+    {
+        var mode = _project.SortMode;
+        if (mode == SortMode.Manual)
+        {
+            return null;
+        }
+
+        var sorted = FrameSorter.Sort(current.Concat(back), mode).Select(frame => frame.Id).ToList();
+        var returning = back.Select(frame => frame.Id).ToHashSet();
+        return sorted.Where(id => !returning.Contains(id)).SequenceEqual(current.Select(frame => frame.Id)) ? sorted : null;
+    }
+
+    // Each frame goes after the last frame before it (in the old order) that is still in the project; frames with none go
+    // first. Frames of one run stay together, in their old order.
+    private static List<Guid> NeighbourOrder(Entry entry, ImmutableArray<Frame> current, HashSet<Guid> present, HashSet<Guid> returning, int coming)
+    {
         var atStart = new List<Guid>();
         var after = new Dictionary<Guid, List<Guid>>();
         Guid? anchor = null;
@@ -178,7 +227,7 @@ public sealed class FrameHistory
             }
         }
 
-        var order = new List<Guid>(current.Length + back.Count);
+        var order = new List<Guid>(current.Length + coming);
         order.AddRange(atStart);
         foreach (var frame in current)
         {
@@ -189,9 +238,7 @@ public sealed class FrameHistory
             }
         }
 
-        _project.RestoreFrames(back, order);
-        var now = _project.Frames.Select(frame => frame.Id).ToHashSet();
-        return new FrameUndo(FrameEditKind.Removal, [.. order.Where(id => returning.Contains(id) && now.Contains(id))]);
+        return order;
     }
 
     private FrameUndo UndoReorder(Entry entry)
@@ -199,9 +246,12 @@ public sealed class FrameHistory
         var current = _project.Frames;
         var present = current.Select(frame => frame.Id).ToHashSet();
         var earlier = entry.Before.Select(frame => frame.Id).ToHashSet();
-        var order = entry.Before.Select(frame => frame.Id).Where(present.Contains)
-            .Concat(current.Select(frame => frame.Id).Where(id => !earlier.Contains(id)))
-            .ToList();
+
+        // Back to a sorted mode: the mode's order, which is the earlier order for the frames that were there and puts the
+        // frames imported since where the mode wants them. Back to manual: the earlier order, newcomers at the end.
+        var order = entry.Mode == SortMode.Manual
+            ? [.. entry.Before.Select(frame => frame.Id).Where(present.Contains).Concat(current.Select(frame => frame.Id).Where(id => !earlier.Contains(id)))]
+            : FrameSorter.Sort(current, entry.Mode).Select(frame => frame.Id).ToList();
         _project.ReorderAndSetMode(order, entry.Mode);
         var moved = entry.Moved.Where(present.Contains).ToHashSet();
         return new FrameUndo(FrameEditKind.Reorder, [.. order.Where(moved.Contains)]);

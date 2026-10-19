@@ -72,7 +72,7 @@
           <MenuFlyoutItem
             Command="{x:Bind ViewModel.UndoCommand, Mode=OneWay}"
             KeyboardAcceleratorTextOverride="{x:Bind presentation:ProjectText.FilmstripUndoKeys}"
-            Text="{x:Bind presentation:ProjectText.FilmstripUndo}">
+            Text="{x:Bind ViewModel.UndoText, Mode=OneWay}">
             <MenuFlyoutItem.Icon>
               <!-- Segoe Fluent Icons "Undo". -->
               <FontIcon Glyph="&#xE7A7;" />

@@ -906,6 +906,18 @@ public static class ProjectText
     /// <summary>Narrator after an undo put several frames back. {0} how many.</summary>
     public static string FilmstripRestoredMany => "Put {0} frames back.";
 
+    /// <summary>An undo of a removal that found every photo back in the project already (imported again).</summary>
+    public static string FilmstripRestoredNone => "Nothing to put back: those photos are in the project again.";
+
+    /// <summary>The context menu's Undo of a removal of one frame.</summary>
+    public static string FilmstripUndoRemoveOne => "Undo removing 1 frame";
+
+    /// <summary>The context menu's Undo of a removal of several frames.</summary>
+    public static string FilmstripUndoRemoveMany => "Undo removing {0} frames";
+
+    /// <summary>The context menu's Undo of a move.</summary>
+    public static string FilmstripUndoMove => "Undo move";
+
     /// <summary>Narrator after an undo of a move.</summary>
     public static string FilmstripReorderUndone => "Put the frames back in their earlier order.";
 
@@ -979,7 +991,21 @@ public static class ProjectText
     public static string FilmstripRemoved(int count) => count == 1 ? FilmstripRemovedOne : Format(FilmstripRemovedMany, Count(count));
 
     /// <summary>What Narrator hears after an undo put <paramref name="count"/> frames back.</summary>
-    public static string FilmstripRestored(int count) => count == 1 ? FilmstripRestoredOne : Format(FilmstripRestoredMany, Count(count));
+    public static string FilmstripRestored(int count) => count switch
+    {
+        0 => FilmstripRestoredNone,
+        1 => FilmstripRestoredOne,
+        _ => Format(FilmstripRestoredMany, Count(count)),
+    };
+
+    /// <summary>The context menu's Undo, named after <paramref name="next"/>, the edit it would undo; plain "Undo" for none.</summary>
+    public static string FilmstripUndoText(FrameEdit? next) => next switch
+    {
+        { Kind: FrameEditKind.Removal, Count: 1 } => FilmstripUndoRemoveOne,
+        { Kind: FrameEditKind.Removal } edit => Format(FilmstripUndoRemoveMany, Count(edit.Count)),
+        { Kind: FrameEditKind.Reorder } => FilmstripUndoMove,
+        _ => FilmstripUndo,
+    };
 
     /// <summary>What Narrator hears after a move: the frame's old number (one frame) or the count, and its place now (from 1).</summary>
     public static string FilmstripMoved(int count, int oldNumber, int newPlace) =>

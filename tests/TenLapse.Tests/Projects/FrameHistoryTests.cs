@@ -32,6 +32,26 @@ public sealed class FrameHistoryTests
     }
 
     [Fact]
+    public void ItRemembersWhatTheUserRemovedUntilAnUndoPutsItBack()
+    {
+        var project = new Project();
+        project.AddFrames(TestFrames.Folder("a", 6));
+        var frames = project.Frames;
+        var history = new FrameHistory(project);
+
+        history.Remove([frames[1].Id]);
+        history.Remove([frames[3].Id, frames[4].Id]);
+        Assert.Equal([frames[1], frames[3], frames[4]], history.Removed.OrderBy(frame => frame.FileName));
+
+        history.Undo();
+        Assert.Equal([frames[1]], history.Removed);
+
+        // Forgetting the edits does not forget what the user removed.
+        history.Clear();
+        Assert.Equal([frames[1]], history.Removed);
+    }
+
+    [Fact]
     public void AnUndoAfterAnImportPutsTheFramesBesideTheirOldNeighbours()
     {
         var project = new Project();

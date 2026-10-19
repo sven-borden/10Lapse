@@ -411,6 +411,131 @@ public sealed class FilmstripViewModelTests
         Assert.All(strip.Items, item => Assert.Null(item.GapBefore));
     }
 
+    // #82 review, M4: a frame the user removed leaves no "photos seem to be missing" marker; photos that were never
+    // there still do, and a gap in front of a removed frame moves to the next frame still there.
+    [Fact]
+    public void AHoleTheUserMadeIsNoGap()
+    {
+        var shell = new ShellViewModel(new FakeDialogService(), new FakeErrorSink());
+        var names = new[] { 1, 2, 3, 4, 8, 9, 10, 11, 12 };
+        shell.CurrentProject.Model.AddFrames(names.Select(n => TestFrames.At($@"C:\Photos\a\IMG_{n:0000}.jpg")));
+        shell.CurrentProject.Model.ApplySort(SortMode.Name);
+        var player = new PlayerViewModel(shell, new FakeErrorSink(), () => _now, 1000);
+        using var strip = new FilmstripViewModel(shell, player, new FakeErrorSink());
+
+        // IMG_0010 and IMG_0011 out: no marker in front of IMG_0012.
+        strip.Click(6, false, false);
+        strip.Click(7, false, control: true);
+        strip.Remove();
+        strip.RefreshGaps();
+        Assert.Equal(1, strip.GapCount);
+        Assert.Equal("IMG_0008.jpg", strip.Items.Single(item => item.GapBefore is not null).Frame.FileName);
+
+        // IMG_0008 out too: the 3 photos really missing (5 to 7) are now in front of IMG_0009.
+        strip.Click(4, false, false);
+        strip.Remove();
+        strip.RefreshGaps();
+        var marked = Assert.Single(strip.Items, item => item.GapBefore is not null);
+        Assert.Equal("IMG_0009.jpg", marked.Frame.FileName);
+        Assert.Equal(3, marked.GapBefore!.MissingFrames);
+
+        // Put back with Ctrl+Z, nothing changes for the markers.
+        strip.Undo();
+        strip.Undo();
+        strip.RefreshGaps();
+        Assert.Equal(1, strip.GapCount);
+        Assert.Equal(3, strip.Items[4].GapBefore!.MissingFrames);
+    }
+
+    [Fact]
+    public void ALongPauseTheUserMadeIsNoGapEither()
+    {
+        var shell = new ShellViewModel(new FakeDialogService(), new FakeErrorSink());
+        var start = new DateTime(2026, 10, 1, 18, 0, 0);
+        shell.CurrentProject.Model.AddFrames(TestFrames.Folder("a", 20).Select((frame, i) => frame with { CaptureTime = start.AddSeconds(5 * i) }));
+        shell.CurrentProject.Model.ApplySort(SortMode.CaptureTime);
+        var player = new PlayerViewModel(shell, new FakeErrorSink(), () => _now, 1000);
+        using var strip = new FilmstripViewModel(shell, player, new FakeErrorSink());
+
+        strip.Click(8, false, false);
+        strip.Click(11, shift: true, control: false);
+        strip.Remove();
+        strip.RefreshGaps();
+
+        Assert.Equal(0, strip.GapCount);
+    }
+
+    // #82 review, minor 1: an undo leaves the frames in the order of the sort mode the project claims.
+    [Fact]
+    public void UndoingARemovalAfterASortKeepsTheSortTrue()
+    {
+        var shell = new ShellViewModel(new FakeDialogService(), new FakeErrorSink());
+        var project = shell.CurrentProject.Model;
+        var start = new DateTime(2026, 10, 1, 10, 0, 0);
+        project.AddFrames(TestFrames.Folder("a", 5).Select((frame, i) => frame with { CaptureTime = start.AddMinutes(5 - i) }));
+        project.ApplySort(SortMode.Name);
+        var player = new PlayerViewModel(shell, new FakeErrorSink(), () => _now, 1000);
+        using var strip = new FilmstripViewModel(shell, player, new FakeErrorSink());
+
+        strip.Click(2, false, false);
+        strip.Remove();
+        project.ApplySort(SortMode.CaptureTime);
+        strip.Undo();
+
+        Assert.Equal(SortMode.CaptureTime, project.SortMode);
+        Assert.Equal(FrameSorter.Sort(project.Frames, SortMode.CaptureTime), project.Frames);
+        Assert.Equal(strip.Items.Select(item => item.Id), project.Frames.Select(frame => frame.Id));
+    }
+
+    [Fact]
+    public void UndoingAMoveAfterAnImportKeepsTheSortTrue()
+    {
+        var (shell, _, strip) = Strip(5);
+        var project = shell.CurrentProject.Model;
+        project.ApplySort(SortMode.Name);
+        strip.Click(4, false, false);
+        strip.MoveTo(0);
+        project.AddFrames([TestFrames.At(@"C:\Photos\a\IMG_0000.jpg")]);
+        project.Resort();
+
+        strip.Undo();
+
+        Assert.Equal(SortMode.Name, project.SortMode);
+        Assert.Equal(FrameSorter.Sort(project.Frames, SortMode.Name), project.Frames);
+        Assert.Equal("IMG_0000.jpg", project.Frames[0].FileName);
+    }
+
+    // #82 review, minor 5: the menu names the edit Ctrl+Z undoes, and an undo with nothing to put back says so.
+    [Fact]
+    public void TheUndoIsNamedAfterTheEditAndSaysWhenNothingCameBack()
+    {
+        var (shell, _, strip) = Strip(10);
+        var announced = Announcements(strip);
+        Assert.Equal("Undo", strip.UndoText);
+
+        strip.Click(2, false, false);
+        strip.Click(4, shift: true, control: false);
+        var path = strip.Items[3].Frame.SourcePath;
+        strip.Remove();
+        Assert.Equal("Undo removing 3 frames", strip.UndoText);
+
+        strip.Click(0, false, false);
+        strip.MoveTo(3);
+        Assert.Equal("Undo move", strip.UndoText);
+        strip.Undo();
+        Assert.Equal("Undo removing 3 frames", strip.UndoText);
+
+        // All three photos imported again before the undo: nothing comes back, and Narrator hears why.
+        var removed = shell.CurrentProject.Model.Frames.Length;
+        shell.CurrentProject.Model.AddFrames(TestFrames.Folder("a", 10).Where(frame => !shell.CurrentProject.Model.Frames.Any(f => f.SourcePath == frame.SourcePath)));
+        Assert.Equal(removed + 3, shell.CurrentProject.Model.Frames.Length);
+        Assert.Contains(shell.CurrentProject.Model.Frames, frame => frame.SourcePath == path);
+        strip.Undo();
+
+        Assert.Equal(ProjectText.FilmstripRestoredNone, announced[^1]);
+        Assert.Equal("Undo", strip.UndoText);
+    }
+
     [Fact]
     public void ALongPauseIsAMarkerToo()
     {

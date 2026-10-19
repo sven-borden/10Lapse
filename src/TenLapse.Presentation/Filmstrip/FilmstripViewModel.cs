@@ -83,6 +83,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
         Items = [];
         CaptionText = string.Empty;
         FileText = string.Empty;
+        UndoText = ProjectText.FilmstripUndoText(null);
         RemoveCommand = errors.Command(() => Remove(), ProjectText.FilmstripRemoveFailed);
         UndoCommand = errors.Command(() => Undo(), ProjectText.FilmstripUndoFailed, () => CanUndo);
         MoveEarlierCommand = errors.Command(() => MoveBy(-1), ProjectText.FilmstripMoveFailed);
@@ -135,6 +136,10 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     /// <summary>True when Ctrl+Z has something to undo.</summary>
     [ObservableProperty]
     public partial bool CanUndo { get; private set; }
+
+    /// <summary>The context menu's Undo, named after the edit it undoes: "Undo removing 3 frames", "Undo move".</summary>
+    [ObservableProperty]
+    public partial string UndoText { get; private set; }
 
     partial void OnCanUndoChanged(bool value) => UndoCommand.NotifyCanExecuteChanged();
 
@@ -404,7 +409,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
         }
 
         var count = _history.Remove(ids);
-        CanUndo = _history.CanUndo;
+        UpdateUndo();
         if (next is { } stay && _byId.TryGetValue(stay, out var stayItem))
         {
             _player.Seek(stayItem.Number - 1);
@@ -423,7 +428,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     public bool Undo()
     {
         var undone = _history.Undo();
-        CanUndo = _history.CanUndo;
+        UpdateUndo();
         if (undone is null)
         {
             Announced?.Invoke(this, ProjectText.FilmstripNothingToUndo);
@@ -480,7 +485,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
 
         var oldNumber = moving[0].Number;
         _history.Reorder(order, moving.Select(item => item.Id));
-        CanUndo = _history.CanUndo;
+        UpdateUndo();
         Announced?.Invoke(this, ProjectText.FilmstripMoved(moving.Count, oldNumber, moving[0].Number));
         return true;
     }
@@ -514,7 +519,12 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
         ApplyPending(0);
     }
 
-    /// <summary>Puts the gap markers where <see cref="FrameGaps.Detect"/> finds them for the current order and sort mode.</summary>
+    /// <summary>
+    /// Puts the gap markers where <see cref="FrameGaps.Detect"/> finds them for the current order and sort mode. A hole the
+    /// user made is no gap: the frames the user removed in this project (<see cref="FrameHistory.Removed"/>) are put back
+    /// in their sorted places for the detection, so only photos that were never in the project count as missing. A gap
+    /// found in front of a removed frame is drawn in front of the next frame still there.
+    /// </summary>
     public void RefreshGaps()
     {
         _gapsStale = false;
@@ -524,14 +534,36 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
         }
 
         _gapItems.Clear();
-        var frames = _project.Frames;
-        foreach (var gap in FrameGaps.Detect(frames, _project.SortMode))
+        var mode = _project.SortMode;
+        var scan = WithRemoved(_project.Frames, mode);
+        foreach (var found in FrameGaps.Detect(scan, mode))
         {
-            var index = gap.AfterIndex + 1;
-            if (ItemAt(index) is { } item && item.Id == frames[index].Id)
+            for (var next = found.AfterIndex + 1; next < scan.Count; next++)
             {
+                if (!_byId.TryGetValue(scan[next].Id, out var item))
+                {
+                    continue;
+                }
+
+                var gap = found;
+                if (item.GapBefore is { } earlier)
+                {
+                    // Two gaps with only removed frames between them: one marker that says both.
+                    gap = earlier with
+                    {
+                        Kinds = earlier.Kinds | found.Kinds,
+                        MissingFrames = earlier.MissingFrames + found.MissingFrames,
+                        Interval = earlier.Interval ?? found.Interval,
+                        TypicalInterval = earlier.TypicalInterval ?? found.TypicalInterval,
+                    };
+                }
+                else
+                {
+                    _gapItems.Add(item);
+                }
+
                 item.GapBefore = gap;
-                _gapItems.Add(item);
+                break;
             }
         }
 
@@ -561,6 +593,26 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
         {
             SelectOnly(item.Id);
         }
+    }
+
+    // The frames with those the user removed (and has not imported again) in the places the sort mode gives them; the
+    // frames alone when nothing was removed or the mode has no gaps.
+    private IReadOnlyList<Frame> WithRemoved(ImmutableArray<Frame> frames, SortMode mode)
+    {
+        if (_history.Removed.Count == 0 || mode is SortMode.Manual or SortMode.DateModified)
+        {
+            return frames;
+        }
+
+        var paths = frames.Select(frame => frame.SourcePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var gone = _history.Removed.Where(frame => !paths.Contains(frame.SourcePath)).ToList();
+        return gone.Count == 0 ? frames : FrameSorter.Sort(frames.Concat(gone), mode);
+    }
+
+    private void UpdateUndo()
+    {
+        CanUndo = _history.CanUndo;
+        UndoText = ProjectText.FilmstripUndoText(_history.NextUndo);
     }
 
     private FilmstripKeyResult Navigate(int index)
@@ -736,7 +788,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
                 _project = e.Current.Model;
                 _project.Changed += OnProjectChanged;
                 _history = new FrameHistory(_project);
-                CanUndo = false;
+                UpdateUndo();
                 _selected.Clear();
                 _flagged.Clear();
                 _gapItems.Clear();
