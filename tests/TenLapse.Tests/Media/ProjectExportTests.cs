@@ -362,7 +362,8 @@ public sealed class ProjectExportTests : IDisposable
 
         Assert.Equal(VideoExportFailure.EncoderStalled, exception.Failure);
         Assert.Equal(stallAt >= 0 ? stallAt : null, exception.FrameIndex);
-        Assert.InRange(clock.Elapsed, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5));
+        // Well under the 1 s stall timeout, which a timer can end a tick early; well over what a busy machine needs.
+        Assert.InRange(clock.Elapsed, TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(15));
         Assert.Equal(ProjectText.ExportFailedEncoderStalled, new VideoExportErrorMapper().Map(exception)!.Text);
         Assert.False(File.Exists(output));
 

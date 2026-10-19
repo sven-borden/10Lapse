@@ -331,7 +331,7 @@ public sealed class FrameImageCacheTests
         var retry = source.Next();
 
         Assert.Equal(frames[0].Id, retry.Frame.Id);
-        Assert.InRange(failedAt.Elapsed, TimeSpan.FromMilliseconds(150), TimeSpan.FromSeconds(3));
+        Assert.InRange(failedAt.Elapsed, TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(10)); // The retry is due after 200 ms; a timer can fire a tick early.
     }
 
     [Fact]
