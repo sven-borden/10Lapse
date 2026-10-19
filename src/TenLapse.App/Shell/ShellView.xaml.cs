@@ -137,7 +137,12 @@ public sealed partial class ShellView : UserControl
         // The screen changes and the arrival choreography (#35). Nothing animates on launch: they go live after the first
         // layout.
         _screens = new ScreenMotion(viewModel, EmptyRegion, [EditingSurface, StageRegion, InspectorPane], SettingsPage, DispatcherQueue, errors, Arrive);
-        ThemeFade = new ThemeCrossfade(this, ShellRoot, ThemeSnapshot, DispatcherQueue, errors, follows: !Gallery.GalleryLaunch.ThemeGiven);
+#if DEBUG
+        var followsWindows = !Gallery.GalleryLaunch.ThemeGiven;
+#else
+        var followsWindows = true;
+#endif
+        ThemeFade = new ThemeCrossfade(this, ShellRoot, ThemeSnapshot, DispatcherQueue, errors, followsWindows);
 #if DEBUG
         Debugging.DebugMotion.Apply(this, import, errors);
 #endif
