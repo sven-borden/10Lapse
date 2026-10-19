@@ -142,7 +142,7 @@ public sealed partial class ShellView : UserControl
 #else
         var followsWindows = true;
 #endif
-        ThemeFade = new ThemeCrossfade(this, ShellRoot, ThemeSnapshot, DispatcherQueue, errors, followsWindows);
+        ThemeFade = new ThemeCrossfade(this, ShellRoot, ThemeSnapshot, DispatcherQueue, errors, followsWindows, PhotosOnScreen);
 #if DEBUG
         Debugging.DebugMotion.Apply(this, import, errors);
 #endif
@@ -289,6 +289,20 @@ public sealed partial class ShellView : UserControl
         _frame.Dispose();
         Filmstrip.Detach();
         _filmstrip.Dispose();
+    }
+
+    // The photos on screen, which the theme crossfade's picture leaves out: the preview's gate, and the premiere's video.
+    private IEnumerable<PhotoArea> PhotosOnScreen()
+    {
+        if (PreviewSurface.PhotoOnScreen() is { } preview)
+        {
+            yield return preview;
+        }
+
+        if (ExportOverlay.PhotoOnScreen() is { } premiere)
+        {
+            yield return premiere;
+        }
     }
 
     // Any of the three properties that pick the screen: the screen change's animations are chosen now (ScreenMotion).

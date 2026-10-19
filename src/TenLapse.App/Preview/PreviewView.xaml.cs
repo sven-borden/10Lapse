@@ -3,7 +3,9 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using TenLapse.Presentation;
+using TenLapse.Presentation.Preview;
 using TenLapse.Services;
+using TenLapse.Shell;
 using TenLapse.Themes;
 using Windows.Foundation;
 using Windows.UI.ViewManagement;
@@ -55,6 +57,23 @@ public sealed partial class PreviewView : UserControl
         _session = null;
     }
 
+    /// <summary>
+    /// Where the photo is drawn: the gate, in this view's DIPs, with its corner radius (the theme crossfade leaves it out of
+    /// its picture). Null while the project has no photos.
+    /// </summary>
+    internal PhotoArea? PhotoOnScreen()
+    {
+        if (_session is not { } session || session.Player.State.Snapshot is not { Frames.IsEmpty: false } snapshot)
+        {
+            return null;
+        }
+
+        var gate = PreviewLayout.Gate(ActualWidth, ActualHeight, snapshot.VideoSize);
+        return gate.IsEmpty ? null : new PhotoArea(this, new Rect(gate.X, gate.Y, gate.Width, gate.Height), Radius());
+    }
+
+    private static float Radius() => (float)((CornerRadius)Application.Current.Resources["RadiusCard"]).TopLeft;
+
     /// <summary>Reads the colors again (high contrast or the Windows colors changed).</summary>
     internal void RefreshColors()
     {
@@ -65,7 +84,7 @@ public sealed partial class PreviewView : UserControl
 
         // On the gate (dark Letterbox) the placeholder's text is the dark theme's Ink Secondary; high contrast uses
         // the system's window and text colors. The gate's corners are the card radius token.
-        var radius = (float)((CornerRadius)Application.Current.Resources["RadiusCard"]).TopLeft;
+        var radius = Radius();
         var look = ThemeTokens.IsHighContrast
             ? new PreviewLook(ThemeTokens.Color("LayerColor", this), ThemeTokens.Color("CardColor", this), ThemeTokens.Color("InkColor", this), radius)
             : new PreviewLook(

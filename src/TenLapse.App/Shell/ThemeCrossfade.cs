@@ -1,14 +1,19 @@
+using System.Numerics;
+using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
+using TenLapse.Media;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using TenLapse.Themes;
+using Windows.Foundation;
 using Windows.UI.ViewManagement;
 
 namespace TenLapse.Shell;
@@ -22,8 +27,9 @@ namespace TenLapse.Shell;
 /// To have the old look to fade from, the shell holds its theme itself: the shell's <c>RequestedTheme</c> is set to the
 /// Windows mode, so XAML's own switch does not reach it. When Windows' colors change, the shell's window is captured as it
 /// is, the picture covers it (taking no input), the theme switches under it, and the picture fades out. The capture leaves
-/// out the Mica backdrop and the preview's swap chain, which show the new look at once; the preview's photo is the same in
-/// both themes.
+/// out the Mica backdrop, which shows the new look at once, and draws the swap chains (the preview, the premiere's video)
+/// as the surface behind them. So the picture gets a hole wherever a photo is (the preview's gate, the premiere's video),
+/// and the live photos show through it unchanged for the whole crossfade.
 /// </para>
 /// <para>
 /// In high contrast the shell's theme goes back to Default, so the system's high contrast colors apply as before. With
@@ -39,6 +45,7 @@ internal sealed class ThemeCrossfade
     private readonly DispatcherQueue _dispatcher;
     private readonly IErrorSink _log;
     private readonly bool _follows;
+    private readonly Func<IEnumerable<PhotoArea>> _photos;
     private readonly UISettings _settings = new();
     private int _generation;
 
@@ -48,8 +55,10 @@ internal sealed class ThemeCrossfade
     /// <param name="dispatcher">The UI thread's queue.</param>
     /// <param name="log">Where a failure goes (log only).</param>
     /// <param name="follows">False when the theme is fixed (Debug <c>--theme=</c>).</param>
-    public ThemeCrossfade(FrameworkElement shell, UIElement content, Image snapshot, DispatcherQueue dispatcher, IErrorSink log, bool follows)
+    /// <param name="photos">Where photos are on screen now (in swap chains, which the capture cannot see): left out of it.</param>
+    public ThemeCrossfade(FrameworkElement shell, UIElement content, Image snapshot, DispatcherQueue dispatcher, IErrorSink log, bool follows, Func<IEnumerable<PhotoArea>> photos)
     {
+        _photos = photos;
         _shell = shell;
         _content = content;
         _snapshot = snapshot;
@@ -70,8 +79,10 @@ internal sealed class ThemeCrossfade
             return;
         }
 
+        // Both high contrast changes are at once, and overtake a crossfade still capturing (its end would pin its theme).
         if (ThemeTokens.IsHighContrast)
         {
+            Clear(++_generation);
             _shell.RequestedTheme = ElementTheme.Default;
             return;
         }
@@ -80,6 +91,7 @@ internal sealed class ThemeCrossfade
         if (_shell.RequestedTheme == ElementTheme.Default)
         {
             // Back from high contrast: no old look of this kind to fade from.
+            Clear(++_generation);
             _shell.RequestedTheme = target;
         }
         else if (_shell.RequestedTheme != target)
@@ -91,46 +103,89 @@ internal sealed class ThemeCrossfade
     /// <summary>The theme now, Light or Dark.</summary>
     public ElementTheme Current => _shell.ActualTheme;
 
-    /// <summary>Crossfades to <paramref name="target"/>. Never throws: a failure is logged and the theme switches anyway.</summary>
+    /// <summary>
+    /// Crossfades to <paramref name="target"/>. A failure is logged, the picture goes, and the theme switches all the same;
+    /// a newer switch, or a high contrast change, overtakes this one.
+    /// </summary>
     public async Task SwitchAsync(ElementTheme target)
     {
         var generation = ++_generation;
         var step = MotionTokens.Plan(MotionCatalogue.ThemeChange);
-        var captured = false;
         try
         {
-            if (step.Animates && _content is FrameworkElement { ActualWidth: > 0, ActualHeight: > 0 })
+            if (step.Animates && _content is FrameworkElement { ActualWidth: > 0, ActualHeight: > 0 } content)
             {
                 var picture = new RenderTargetBitmap();
-                await picture.RenderAsync(_content);
+                await picture.RenderAsync(content);
                 if (generation != _generation)
                 {
                     return;
                 }
 
                 _snapshot.Source = picture;
-                Visual().StopAnimation(nameof(Microsoft.UI.Composition.Visual.Opacity));
-                Visual().Opacity = 1f;
+                var visual = Visual();
+                visual.StopAnimation(nameof(Microsoft.UI.Composition.Visual.Opacity));
+                visual.Opacity = 1f;
+                visual.Clip = PhotosCutOut(visual.Compositor, content);
                 _snapshot.Visibility = Visibility.Visible;
-                captured = true;
+                _shell.RequestedTheme = target;
+                FadeOut(step, generation);
+                return;
             }
         }
         catch (Exception exception)
         {
             _log.Report(exception, ProjectText.MotionFailed);
+            Clear(generation);
         }
-        finally
+
+        if (generation == _generation)
         {
-            if (generation == _generation)
+            _shell.RequestedTheme = target;
+        }
+    }
+
+    // The whole picture but the photos on screen: a clip with a hole for each (the gate's rounded corners), so the live
+    // photos show through. Null when no photo is on screen.
+    private CompositionGeometricClip? PhotosCutOut(Compositor compositor, FrameworkElement content)
+    {
+        var holes = _photos().Where(area => IsShown(area.Element, content)).ToList();
+        if (holes.Count == 0)
+        {
+            return null;
+        }
+
+        var device = GraphicsDevice.Shared;
+        var picture = CanvasGeometry.CreateRectangle(device, new Rect(0, 0, content.ActualWidth, content.ActualHeight));
+        foreach (var area in holes)
+        {
+            var place = area.Element.TransformToVisual(content).TransformBounds(area.Bounds);
+            using var hole = CanvasGeometry.CreateRoundedRectangle(device, place, area.Radius, area.Radius);
+            var cut = picture.CombineWith(hole, Matrix3x2.Identity, CanvasGeometryCombine.Exclude);
+            picture.Dispose();
+            picture = cut;
+        }
+
+        return compositor.CreateGeometricClip(compositor.CreatePathGeometry(new CompositionPath(picture)));
+    }
+
+    // True when the element and everything above it up to the shell's root shows (a collapsed screen hides its photos).
+    private static bool IsShown(UIElement element, UIElement root)
+    {
+        for (DependencyObject? node = element; node is not null; node = VisualTreeHelper.GetParent(node))
+        {
+            if (node is UIElement { Visibility: Visibility.Collapsed })
             {
-                _shell.RequestedTheme = target;
+                return false;
+            }
+
+            if (ReferenceEquals(node, root))
+            {
+                return true;
             }
         }
 
-        if (captured)
-        {
-            FadeOut(step, generation);
-        }
+        return false;
     }
 
     private Visual Visual() => ElementCompositionPreview.GetElementVisual(_snapshot);
@@ -158,7 +213,10 @@ internal sealed class ThemeCrossfade
 
         _snapshot.Visibility = Visibility.Collapsed;
         _snapshot.Source = null;
-        Visual().Opacity = 1f;
+        var visual = Visual();
+        visual.StopAnimation(nameof(Microsoft.UI.Composition.Visual.Opacity));
+        visual.Opacity = 1f;
+        visual.Clip = null;
     }
 
     // Windows' app mode: a dark background color means dark mode.
@@ -168,3 +226,9 @@ internal sealed class ThemeCrossfade
         return background.R + background.G + background.B < 384 ? ElementTheme.Dark : ElementTheme.Light;
     }
 }
+
+/// <summary>Where a photo is on screen, drawn by a swap chain that a capture of the window cannot see.</summary>
+/// <param name="Element">The element that holds it.</param>
+/// <param name="Bounds">The photo's rectangle, in the element's DIPs.</param>
+/// <param name="Radius">The radius of its corners, in DIPs.</param>
+internal readonly record struct PhotoArea(UIElement Element, Rect Bounds, float Radius);

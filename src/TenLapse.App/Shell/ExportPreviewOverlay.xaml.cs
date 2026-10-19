@@ -7,6 +7,7 @@ using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Preview;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
+using Windows.Foundation;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage;
@@ -61,6 +62,12 @@ public sealed partial class ExportPreviewOverlay : UserControl
     }
 
     /// <summary>Stops the video and lets go of everything (the window closes).</summary>
+    /// <summary>Where the premiere's video is, while it plays (the theme crossfade leaves it out of its picture); else null.</summary>
+    internal PhotoArea? PhotoOnScreen() =>
+        _playing && Video.Visibility == Visibility.Visible && Video.ActualWidth > 0 && Video.ActualHeight > 0
+            ? new PhotoArea(Video, new Rect(0, 0, Video.ActualWidth, Video.ActualHeight), 0f)
+            : null;
+
     internal void Detach()
     {
         if (_export is { } export)
