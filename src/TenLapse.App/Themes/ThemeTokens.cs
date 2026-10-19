@@ -37,6 +37,18 @@ public static class ThemeTokens
             : throw new KeyNotFoundException($"No {name} color token named {key}.");
     }
 
+    /// <summary>
+    /// A color token not tied to a theme (for example "DaybreakStarColor" or "NightColor"): the letterbox, the
+    /// brand ramp and the Daybreak picture, which look the same in every theme.
+    /// </summary>
+    public static Color FixedColor(string key)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+        return Application.Current.Resources.TryGetValue(key, out var value) && value is Color color
+            ? color
+            : throw new KeyNotFoundException($"No color token named {key}.");
+    }
+
     /// <summary>The number token <paramref name="key"/> (for example "ElevationFlyoutBlur").</summary>
     public static double Number(string key)
     {

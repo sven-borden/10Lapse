@@ -654,4 +654,15 @@
     </Setter>
   </Style>
 
+  <!--
+    AccentActionButtonStyle: the one accent button of a screen that has no Export button (DESIGN.md, Colors: the
+    accent fill is for Export video, Choose folder on first launch and Play on the finished state). The Export
+    button's look under a name that says what it is for; the amber stays inside ExportButtonStyle.
+  -->
+  <Style x:Key="AccentActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ExportButtonStyle}">
+    <Setter Property="Height" Value="{StaticResource ControlHeight}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingButtonAccent}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
 </ResourceDictionary>

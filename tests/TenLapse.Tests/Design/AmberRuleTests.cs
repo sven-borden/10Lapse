@@ -14,10 +14,15 @@ public sealed partial class AmberRuleTests
 
     /// <summary>
     /// Files other than the Themes dictionaries that may use DeepAmberIndicator*: a bespoke indicator such as
-    /// the scrubber fill or the playhead ring. Empty today; add the file's path relative to the repository root
-    /// when one needs the token, so the exception is visible in review.
+    /// the scrubber fill or the playhead ring. Add the file's path relative to the repository root when one needs
+    /// the token, so the exception is visible in review.
     /// </summary>
-    private static readonly string[] _bespokeIndicatorFiles = [];
+    private static readonly string[] _bespokeIndicatorFiles =
+    [
+        // #29: the drop zone's drag-over outline (XAML) and the ring on Daybreak's current thumbnail (code).
+        "src/TenLapse.App/Shell/FirstLaunchView.xaml",
+        "src/TenLapse.App/Shell/FirstLaunchView.xaml.cs",
+    ];
 
     [Fact]
     public void AmberAppearsOnlyWhereTheRuleAllowsIt()

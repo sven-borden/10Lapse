@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
+using TenLapse.Presentation.FirstLaunch;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using TenLapse.Themes;
@@ -32,6 +33,7 @@ public sealed partial class ShellView : UserControl
     private DataPackageView? _countedView;
     private int? _draggedPhotos;
     private int _dragGeneration;
+    private readonly long _emptyRegionVisibilityToken;
 
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
@@ -53,6 +55,8 @@ public sealed partial class ShellView : UserControl
         _presenter = presenter;
         InitializeComponent();
         SettingsPage.ViewModel = settings;
+        FirstLaunch.Attach(import, presenter, errors);
+        _emptyRegionVisibilityToken = EmptyRegion.RegisterPropertyChangedCallback(VisibilityProperty, OnEmptyRegionVisibilityChanged);
 
         _infoBarShadow = FlyoutShadow.Attach(InfoBarShadowCaster);
         _infoBars = new InfoBarPresenter(infoBars, InfoBarLayer, ShellInfoBar, InfoBarDetails, InfoBarDetailList, errors);
@@ -87,15 +91,22 @@ public sealed partial class ShellView : UserControl
     /// <summary>Paints the Mica token behind the shell where the system has no Mica backdrop.</summary>
     public void ShowMicaFallback() => MicaFallback.Visibility = Visibility.Visible;
 
-    /// <summary>Dims the title texts while the window is inactive.</summary>
-    public void SetWindowActive(bool active) =>
+    /// <summary>Dims the title texts while the window is inactive, and stops the first-launch timelapse (motion spec, Daybreak).</summary>
+    public void SetWindowActive(bool active)
+    {
         VisualStateManager.GoToState(this, active ? nameof(WindowActive) : nameof(WindowInactive), useTransitions: false);
+        FirstLaunch.ViewModel.IsWindowActive = active;
+    }
 
     /// <summary>
     /// Takes the theme again for what follows it by hand: the InfoBar shadow's colors. MainWindow calls it when
     /// Windows switches high contrast or its colors, which the elements' theme does not always report.
     /// </summary>
-    public void RefreshTheme() => _infoBarShadow.Recolor();
+    public void RefreshTheme()
+    {
+        _infoBarShadow.Recolor();
+        FirstLaunch.RefreshTheme();
+    }
 
     /// <summary>
     /// The bounds of every visible control in the command bar (DIPs, relative to the window's content), which
@@ -120,6 +131,8 @@ public sealed partial class ShellView : UserControl
         }
 
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        EmptyRegion.UnregisterPropertyChangedCallback(VisibilityProperty, _emptyRegionVisibilityToken);
+        FirstLaunch.Detach();
         ShellRoot.RemoveHandler(PointerPressedEvent, new PointerEventHandler(OnShellPointerPressed));
         _infoBars.Detach();
         _infoBarShadow.Dispose();
@@ -135,6 +148,11 @@ public sealed partial class ShellView : UserControl
             DispatcherQueue.TryEnqueueGuarded(_errors, () => target.Focus(FocusState.Programmatic), ProjectText.SettingsFocusFailed);
         }
     }
+
+    // The Empty state shows or hides the first-launch drop zone (state setters on EmptyRegion), which runs its
+    // timelapse only while it is on screen.
+    private void OnEmptyRegionVisibilityChanged(DependencyObject sender, DependencyProperty property) =>
+        FirstLaunch.SetRegionVisible(EmptyRegion.Visibility == Visibility.Visible);
 
     // The mouse's back button (XButton1) leaves Settings, as Back, Escape and Alt+Left do.
     private void OnShellPointerPressed(object sender, PointerRoutedEventArgs e)
@@ -154,17 +172,17 @@ public sealed partial class ShellView : UserControl
     // open every drop is refused, with a caption that says how to add the photos.
     private async void OnDragEnter(object sender, DragEventArgs e) => await ErrorPath.GuardAsync(_presenter, () => CountDraggedAsync(e), ProjectText.DragCountFailed);
 
-    // DragLeave bubbles from the children too: only a pointer that has left the window ends this drag's count.
-    private void OnDragLeave(object sender, DragEventArgs e)
-    {
-        var point = e.GetPosition(ShellRoot);
-        if (point.X <= 0 || point.Y <= 0 || point.X >= ShellRoot.ActualWidth || point.Y >= ShellRoot.ActualHeight)
-        {
-            ForgetDrag();
-        }
-    }
+    // DragLeave bubbles from the children too: only a pointer that has left the window ends this drag's count. A
+    // leave inside the window is either the pointer crossing into another element (DragEnter and DragOver follow at
+    // once) or the drag being cancelled with Escape (nothing follows), so the drop zone's drag-over look waits a
+    // moment before it goes (FirstLaunchViewModel, remarks).
+    private async void OnDragLeave(object sender, DragEventArgs e) => await ErrorPath.GuardAsync(_presenter, () => LeaveAsync(e), ProjectText.DragLeaveFailed);
 
-    private void OnDragOver(object sender, DragEventArgs e)
+    // The drop zone's drag-over look follows what the cursor says: shown while the window would take the drop.
+    private void OnDragOver(object sender, DragEventArgs e) => FirstLaunch.ViewModel.DragOver(Accept(e));
+
+    // Sets what a drop would do (the cursor's caption) and says whether the window takes it.
+    private bool Accept(DragEventArgs e)
     {
         if (ViewModel.IsSettingsOpen)
         {
@@ -173,13 +191,13 @@ public sealed partial class ShellView : UserControl
             e.DragUIOverride.IsCaptionVisible = true;
             e.DragUIOverride.IsGlyphVisible = false;
             e.Handled = true;
-            return;
+            return false;
         }
 
         if (!e.DataView.Contains(StandardDataFormats.StorageItems) || _draggedPhotos == 0)
         {
             e.AcceptedOperation = DataPackageOperation.None;
-            return;
+            return false;
         }
 
         e.AcceptedOperation = DataPackageOperation.Copy;
@@ -187,6 +205,7 @@ public sealed partial class ShellView : UserControl
         e.DragUIOverride.IsCaptionVisible = true;
         e.DragUIOverride.IsGlyphVisible = true;
         e.Handled = true;
+        return true;
     }
 
     private async void OnDrop(object sender, DragEventArgs e) => await ErrorPath.GuardAsync(_presenter, () => DropAsync(e), ProjectText.ImportDropFailed);
@@ -229,9 +248,25 @@ public sealed partial class ShellView : UserControl
         }
     }
 
+    private async Task LeaveAsync(DragEventArgs e)
+    {
+        var point = e.GetPosition(ShellRoot);
+        if (point.X <= 0 || point.Y <= 0 || point.X >= ShellRoot.ActualWidth || point.Y >= ShellRoot.ActualHeight)
+        {
+            ForgetDrag();
+            FirstLaunch.ViewModel.DragEnded();
+            return;
+        }
+
+        var ticket = FirstLaunch.ViewModel.DragLeft();
+        await Task.Delay(FirstLaunchViewModel.DragLeaveGrace);
+        FirstLaunch.ViewModel.ConfirmLeave(ticket);
+    }
+
     private async Task DropAsync(DragEventArgs e)
     {
         ForgetDrag();
+        FirstLaunch.ViewModel.DragEnded();
         if (ViewModel.IsSettingsOpen || !e.DataView.Contains(StandardDataFormats.StorageItems))
         {
             return;

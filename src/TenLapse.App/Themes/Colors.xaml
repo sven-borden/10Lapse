@@ -50,6 +50,8 @@
       <Color x:Key="SegmentPillColor">#FEFDFC</Color>
       <Color x:Key="TrackColor">#E4E2DE</Color>
       <Color x:Key="DropZoneStrokeColor">#CFCCC6</Color>
+      <!-- The drag-over wash of the drop zone (#29): Golden Hour Amber at 8 %, as GoldenHourAmberTint, kept apart so amber stays the Export fill only. -->
+      <Color x:Key="DropZoneTintColor">#14E8962E</Color>
       <!-- Subtle buttons (command bar): an Ink wash, 6% on hover and 4% pressed -->
       <Color x:Key="SubtleFillHoverColor">#0F1C1B19</Color>
       <Color x:Key="SubtleFillPressedColor">#0A1C1B19</Color>
@@ -90,6 +92,7 @@
       <SolidColorBrush x:Key="SegmentPillBrush" Color="{ThemeResource SegmentPillColor}" />
       <SolidColorBrush x:Key="TrackBrush" Color="{ThemeResource TrackColor}" />
       <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="{ThemeResource DropZoneStrokeColor}" />
+      <SolidColorBrush x:Key="DropZoneTintBrush" Color="{ThemeResource DropZoneTintColor}" />
       <SolidColorBrush x:Key="SubtleFillHoverBrush" Color="{ThemeResource SubtleFillHoverColor}" />
       <SolidColorBrush x:Key="SubtleFillPressedBrush" Color="{ThemeResource SubtleFillPressedColor}" />
       <SolidColorBrush x:Key="InkBrush" Color="{ThemeResource InkColor}" />
@@ -131,6 +134,7 @@
       <Color x:Key="SegmentPillColor">#4A4743</Color>
       <Color x:Key="TrackColor">#3F3D3A</Color>
       <Color x:Key="DropZoneStrokeColor">#5A5651</Color>
+      <Color x:Key="DropZoneTintColor">#1AF0A54A</Color>
       <!-- Subtle buttons (command bar): an Ink wash, 6% on hover and 4% pressed -->
       <Color x:Key="SubtleFillHoverColor">#0FF4F2EE</Color>
       <Color x:Key="SubtleFillPressedColor">#0AF4F2EE</Color>
@@ -171,6 +175,7 @@
       <SolidColorBrush x:Key="SegmentPillBrush" Color="{ThemeResource SegmentPillColor}" />
       <SolidColorBrush x:Key="TrackBrush" Color="{ThemeResource TrackColor}" />
       <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="{ThemeResource DropZoneStrokeColor}" />
+      <SolidColorBrush x:Key="DropZoneTintBrush" Color="{ThemeResource DropZoneTintColor}" />
       <SolidColorBrush x:Key="SubtleFillHoverBrush" Color="{ThemeResource SubtleFillHoverColor}" />
       <SolidColorBrush x:Key="SubtleFillPressedBrush" Color="{ThemeResource SubtleFillPressedColor}" />
       <SolidColorBrush x:Key="InkBrush" Color="{ThemeResource InkColor}" />
@@ -213,6 +218,7 @@
       <StaticResource x:Key="SegmentPillColor" ResourceKey="SystemColorWindowColor" />
       <StaticResource x:Key="TrackColor" ResourceKey="SystemColorButtonFaceColor" />
       <StaticResource x:Key="DropZoneStrokeColor" ResourceKey="SystemColorButtonTextColor" />
+      <Color x:Key="DropZoneTintColor">#00000000</Color>
       <!-- Subtle buttons keep the system button colors in high contrast (the shell scopes its washes to Light and Dark) -->
       <Color x:Key="SubtleFillHoverColor">#00000000</Color>
       <Color x:Key="SubtleFillPressedColor">#00000000</Color>
@@ -253,6 +259,7 @@
       <SolidColorBrush x:Key="SegmentPillBrush" Color="{ThemeResource SegmentPillColor}" />
       <SolidColorBrush x:Key="TrackBrush" Color="{ThemeResource TrackColor}" />
       <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="{ThemeResource DropZoneStrokeColor}" />
+      <SolidColorBrush x:Key="DropZoneTintBrush" Color="{ThemeResource DropZoneTintColor}" />
       <SolidColorBrush x:Key="SubtleFillHoverBrush" Color="{ThemeResource SubtleFillHoverColor}" />
       <SolidColorBrush x:Key="SubtleFillPressedBrush" Color="{ThemeResource SubtleFillPressedColor}" />
       <SolidColorBrush x:Key="InkBrush" Color="{ThemeResource InkColor}" />
@@ -288,5 +295,30 @@
   <SolidColorBrush x:Key="DuskBrush" Color="{StaticResource DuskColor}" />
   <SolidColorBrush x:Key="BlueHourBrush" Color="{StaticResource BlueHourColor}" />
   <SolidColorBrush x:Key="NightBrush" Color="{StaticResource NightColor}" />
+
+  <!--
+    Daybreak, the first-launch timelapse (#29; DESIGN.md, Brand ramp: empty-state visuals). Its horizon is the ramp
+    above; these are the rest of the harbor: the sky overhead from day to night (seven stops, at the phases in
+    TenLapse.Presentation.FirstLaunch.DaybreakScene), the land, the deep water, the sun and its glow by day and at
+    dusk, the stars and the lit windows. From the prototype's sky() in docs/design/canvas/Main.dc.html. Read in code
+    with ThemeTokens.FixedColor, so colors only, no brushes. A picture, not chrome: never for controls or text.
+  -->
+  <Color x:Key="DaybreakZenithDayColor">#5E9BD6</Color>
+  <Color x:Key="DaybreakZenithGoldenColor">#86A6D1</Color>
+  <Color x:Key="DaybreakZenithAmberColor">#8C83B5</Color>
+  <Color x:Key="DaybreakZenithRoseColor">#584C8C</Color>
+  <Color x:Key="DaybreakZenithDuskColor">#2B3268</Color>
+  <Color x:Key="DaybreakZenithBlueHourColor">#141B3F</Color>
+  <Color x:Key="DaybreakZenithNightColor">#070B1C</Color>
+  <Color x:Key="DaybreakLandDayColor">#33405A</Color>
+  <Color x:Key="DaybreakLandNightColor">#090D18</Color>
+  <Color x:Key="DaybreakDeepWaterColor">#05070D</Color>
+  <Color x:Key="DaybreakSunDayColor">#FFF6DC</Color>
+  <Color x:Key="DaybreakSunDuskColor">#FF9C58</Color>
+  <Color x:Key="DaybreakGlowDayColor">#FFE6A8</Color>
+  <Color x:Key="DaybreakGlowDuskColor">#FF7A45</Color>
+  <Color x:Key="DaybreakStarColor">#FFFBEF</Color>
+  <Color x:Key="DaybreakLightColor">#FFD27A</Color>
+  <Color x:Key="DaybreakLightPaleColor">#FFE3A3</Color>
 
 </ResourceDictionary>

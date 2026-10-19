@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The first-launch drop zone (#29), in the shell's EmptyRegion, after docs/design/canvas/Main.dc.html (the "empty"
+  and "drag" states) and the motion spec's Daybreak:
+
+    Drop zone   the whole body on Mica, 8 px corners, a 1.5 px dashed Drop Zone Stroke outline. While a drag the
+                window would accept is over it, the outline turns Deep Amber Indicator over an 8 % amber wash and
+                the title says "Drop to start your timelapse" (167 ms Enter fade; Daybreak lifts 6 px over 250 ms).
+    Left        the title, one explanation sentence, Choose folder (the screen's one accent button) and Choose
+                photos (standard), then "Your photos never leave this PC." with a lock.
+    Right       Daybreak, a small timelapse of a harbor from day to night (FirstLaunchView.xaml.cs draws it with
+                Win2D): the frame with the Flyout shadow, a strip of twelve thumbnails with the current one ringed,
+                and its frame number and time code. Decoration only, hidden from UI Automation.
+
+  The buttons run the import's own commands, and drops go through ShellView's drop handling: one import path.
+  Narrow or short windows drop Daybreak and center the texts (FirstLaunchLayout).
+-->
+<UserControl
+  x:Class="TenLapse.Shell.FirstLaunchView"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:presentation="using:TenLapse.Presentation"
+  xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml">
+
+  <Grid x:Name="DropZone" SizeChanged="OnDropZoneSizeChanged">
+    <!-- At rest: the dashed outline (CSS draws a 1.5 px dashed border as 3-thickness dashes and gaps). -->
+    <Rectangle
+      x:Name="RestOutline"
+      RadiusX="8"
+      RadiusY="8"
+      Stroke="{ThemeResource DropZoneStrokeBrush}"
+      StrokeDashArray="3,3"
+      StrokeThickness="1.5" />
+    <!-- Drag over: the indicator outline over the wash, faded in over the rest outline. -->
+    <Rectangle
+      x:Name="DragOverLook"
+      Fill="{ThemeResource DropZoneTintBrush}"
+      Opacity="0"
+      RadiusX="8"
+      RadiusY="8"
+      Stroke="{ThemeResource DeepAmberIndicatorBrush}"
+      StrokeDashArray="3,3"
+      StrokeThickness="1.5" />
+
+    <Grid x:Name="Columns" Padding="72,0,72,0" ColumnSpacing="64">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition x:Name="TextColumnDefinition" Width="0.9*" />
+        <ColumnDefinition x:Name="DaybreakColumnDefinition" Width="1.1*" />
+      </Grid.ColumnDefinitions>
+
+      <StackPanel
+        x:Name="TextColumn"
+        MaxWidth="440"
+        HorizontalAlignment="Left"
+        VerticalAlignment="Center"
+        Spacing="{StaticResource SpacingXl}">
+        <TextBlock
+          x:Name="TitleText"
+          AutomationProperties.HeadingLevel="Level1"
+          Style="{StaticResource TitleTextStyle}"
+          Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+          TextWrapping="WrapWholeWords" />
+        <!-- Prose capped near 46 characters (DESIGN.md, Typography). -->
+        <TextBlock
+          x:Name="ExplanationText"
+          MaxWidth="340"
+          HorizontalAlignment="Left"
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource BodyTextStyle}"
+          Text="{x:Bind ViewModel.Explanation}"
+          TextWrapping="WrapWholeWords" />
+        <StackPanel Margin="0,4,0,0" Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+          <!-- The screen's one accent button (DESIGN.md, Colors: Choose folder on first launch). -->
+          <Button
+            x:Name="ChooseFolderButton"
+            AutomationProperties.Name="{x:Bind presentation:ProjectText.FirstLaunchChooseFolder}"
+            Command="{x:Bind Import.ChooseFolderCommand, Mode=OneWay}"
+            Style="{StaticResource AccentActionButtonStyle}">
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+              <!-- Segoe Fluent Icons "Folder", as in the Add photos menu. -->
+              <FontIcon
+                VerticalAlignment="Center"
+                FontSize="16"
+                Glyph="&#xE8B7;" />
+              <TextBlock VerticalAlignment="Center" Text="{x:Bind presentation:ProjectText.FirstLaunchChooseFolder}" />
+            </StackPanel>
+          </Button>
+          <!-- Standard: Control Fill with a Control Stroke border (DESIGN.md, Buttons). -->
+          <Button
+            x:Name="ChoosePhotosButton"
+            Height="{StaticResource ControlHeight}"
+            Padding="{StaticResource PaddingButtonStandard}"
+            AutomationProperties.Name="{x:Bind presentation:ProjectText.FirstLaunchChoosePhotos}"
+            Background="{ThemeResource ControlFillBrush}"
+            BorderBrush="{ThemeResource ControlStrokeBrush}"
+            Command="{x:Bind Import.ChoosePhotosCommand, Mode=OneWay}">
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+              <!-- Segoe Fluent Icons "Photo2", as in the Add photos menu. -->
+              <FontIcon
+                VerticalAlignment="Center"
+                FontSize="16"
+                Glyph="&#xEB9F;" />
+              <TextBlock VerticalAlignment="Center" Text="{x:Bind presentation:ProjectText.FirstLaunchChoosePhotos}" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+        <!--
+          Slot: "Try it with a sample sequence" (#30), an Ember Link text button between the actions and the
+          privacy line (Main.dc.html), once a sample set exists. Absent until then: unbuilt actions are absent.
+        -->
+        <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+          <!-- Segoe Fluent Icons "Lock". -->
+          <FontIcon
+            VerticalAlignment="Center"
+            AutomationProperties.AccessibilityView="Raw"
+            FontSize="14"
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Glyph="&#xE72E;" />
+          <TextBlock
+            x:Name="PrivacyText"
+            VerticalAlignment="Center"
+            Style="{StaticResource CaptionSecondaryTextStyle}"
+            Text="{x:Bind presentation:ProjectText.FirstLaunchPrivacy}" />
+        </StackPanel>
+      </StackPanel>
+
+      <!-- Daybreak: decoration that explains the app without words, so screen readers skip it (aria-hidden in the prototype). -->
+      <Grid
+        x:Name="DaybreakPanel"
+        Grid.Column="1"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        AutomationProperties.AccessibilityView="Raw"
+        RowSpacing="10">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.RenderTransform>
+          <TranslateTransform x:Name="DaybreakLift" />
+        </Grid.RenderTransform>
+        <!-- The frame floats: FlyoutShadow casts from this rectangle right behind it. -->
+        <Rectangle
+          x:Name="DaybreakShadowCaster"
+          Fill="{ThemeResource CardBrush}"
+          RadiusX="8"
+          RadiusY="8" />
+        <win2d:CanvasControl x:Name="FrameCanvas" Draw="OnDrawFrame" />
+        <!-- 2 px out on every side, so the ring around the first and last thumbnails fits. -->
+        <win2d:CanvasControl
+          x:Name="StripCanvas"
+          Grid.Row="1"
+          Margin="-2"
+          Draw="OnDrawStrip" />
+        <Grid Grid.Row="2">
+          <TextBlock x:Name="FrameCaption" Style="{StaticResource CaptionSecondaryTextStyle}" />
+          <TextBlock
+            x:Name="TimeCaption"
+            HorizontalAlignment="Right"
+            Style="{StaticResource CaptionSecondaryTextStyle}" />
+        </Grid>
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>
