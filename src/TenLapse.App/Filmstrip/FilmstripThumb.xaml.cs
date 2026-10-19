@@ -20,6 +20,12 @@ namespace TenLapse.Filmstrip;
 /// </summary>
 public sealed partial class FilmstripThumb : UserControl
 {
+    // The selection ring in the 2 px Layer gap, or right outside the playhead ring (which spans 2 to 4 px out).
+    private static readonly Thickness _selectionInGap = new(-3);
+    private static readonly Thickness _selectionOutside = new(-5);
+    private static readonly CornerRadius _selectionInGapCorners = new(6);
+    private static readonly CornerRadius _selectionOutsideCorners = new(8);
+
     private WriteableBitmap? _bitmap;
     private bool _pointerOver;
     private bool _unreadable;
@@ -133,9 +139,14 @@ public sealed partial class FilmstripThumb : UserControl
         }
 
         PlayheadRing.Visibility = item.IsPlayhead ? Visibility.Visible : Visibility.Collapsed;
-        SelectionRing.Visibility = item.IsSelected && !item.IsPlayhead ? Visibility.Visible : Visibility.Collapsed;
+        SelectionRing.Visibility = item.IsSelected ? Visibility.Visible : Visibility.Collapsed;
+
+        // Selected and at the playhead: the Ink ring right outside the amber one, so the frame on screen shows whether
+        // Delete takes it.
+        SelectionRing.Margin = item.IsPlayhead ? _selectionOutside : _selectionInGap;
+        SelectionRing.CornerRadius = item.IsPlayhead ? _selectionOutsideCorners : _selectionInGapCorners;
         HoverRing.Visibility = _pointerOver && !item.IsSelected && !item.IsPlayhead ? Visibility.Visible : Visibility.Collapsed;
-        Root.Opacity = item.IsPending ? 0.35 : 1;
+        Photo.Opacity = item.IsPending ? 0.35 : 1;
         GapMarker.Visibility = item.GapBefore is null ? Visibility.Collapsed : Visibility.Visible;
         var gap = item.GapText;
         if (!string.Equals(gap, _gapText, StringComparison.Ordinal))

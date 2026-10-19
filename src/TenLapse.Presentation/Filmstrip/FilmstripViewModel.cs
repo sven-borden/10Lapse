@@ -65,7 +65,9 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     private Guid? _anchor;
     private Guid? _playhead;
     private int _suppressFollow;
-    private int? _pendingFrom;
+    private Dictionary<Guid, int>? _exporting;
+    private ImmutableArray<Frame> _exportFrames;
+    private int _pendingFrom;
     private List<Guid>? _dragIds;
     private bool _followed;
     private bool _gapsStale;
@@ -509,13 +511,39 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// The frames from <paramref name="firstPending"/> on are not exported yet (#24: they draw at 35 % opacity); null
-    /// when nothing is pending. Indices follow the playback order at the time of the call; later changes of the list
-    /// keep the boundary as an index.
+    /// #24's export progress: of <paramref name="exporting"/> (the frames the export renders, its snapshot), those from
+    /// index <paramref name="firstPending"/> on are not written yet, and their thumbnails draw the picture at 35 %.
+    /// Frames are matched by id, so an edit during the export (a removal, a move, an import) keeps the dim on the right
+    /// photos, and a frame the export does not render is never dimmed. Cheap enough for every progress step: the ids are
+    /// indexed once per export (per snapshot array). <see cref="ClearPending"/> ends it.
     /// </summary>
-    public void SetPendingFrom(int? firstPending)
+    public void SetPending(ImmutableArray<Frame> exporting, int firstPending)
     {
-        _pendingFrom = firstPending is { } first ? Math.Max(0, first) : null;
+        if (exporting.IsDefault)
+        {
+            ClearPending();
+            return;
+        }
+
+        if (_exporting is null || exporting != _exportFrames)
+        {
+            _exportFrames = exporting;
+            _exporting = new Dictionary<Guid, int>(exporting.Length);
+            for (var i = 0; i < exporting.Length; i++)
+            {
+                _exporting[exporting[i].Id] = i;
+            }
+        }
+
+        _pendingFrom = Math.Clamp(firstPending, 0, exporting.Length);
+        ApplyPending(0);
+    }
+
+    /// <summary>The export ended (done, failed or cancelled): no thumbnail is dimmed.</summary>
+    public void ClearPending()
+    {
+        _exporting = null;
+        _exportFrames = default;
         ApplyPending(0);
     }
 
@@ -963,7 +991,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     {
         for (var i = Math.Max(0, from); i < Items.Count; i++)
         {
-            Items[i].IsPending = _pendingFrom is { } first && i >= first;
+            Items[i].IsPending = _exporting is { } exporting && exporting.TryGetValue(Items[i].Id, out var place) && place >= _pendingFrom;
         }
     }
 

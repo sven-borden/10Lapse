@@ -4,10 +4,11 @@
   filmstrip): the photo at 3:2 with 3 px corners (RadiusThumb), cropped to fill. Around it, outside its bounds and inside
   the strip's 4 px seams:
     Playhead   2 px Layer gap, 2 px Deep Amber Indicator ring: "where the video is now" (the canvas's playhead).
-    Selected   2 px Layer gap, 1 px Ink ring (the canvas's "selected for removal").
+    Selected   2 px Layer gap, 1 px Ink ring (the canvas's "selected for removal"). Selected and at the playhead: the
+               1 px Ink ring right outside the amber ring (the canvas has no style for both; #82 review, minor 3).
     Hover      2 px Layer gap, 1 px Ink Secondary ring (.impeccable/design.json, Filmstrip).
-    Focus      the system's double ring, outside the playhead ring.
-    Pending    35 % opacity: not yet exported (#24 sets it).
+    Focus      the system's double ring, 6 px out, outside the playhead ring.
+    Pending    the picture at 35 % opacity, the rings and the gap marker not: not yet exported (#24 sets it).
     Gap        a 2 px Ink Secondary line down the seam before the thumbnail, 4 px past it at each end, with a dot on a
                Layer halo where the seam meets the top edge: photos are probably missing there (FrameGaps). A neutral
                mark, not a status color (DESIGN.md keeps those for InfoBars); it draws above the rings.
@@ -23,27 +24,30 @@
   IsTabStop="True"
   UseSystemFocusVisuals="True">
   <Grid x:Name="Root">
-    <Border x:Name="Ground" Background="{ThemeResource TrackBrush}" CornerRadius="{StaticResource RadiusThumb}" />
-    <Border
-      x:Name="Unreadable"
-      Background="{StaticResource LetterboxBrush}"
-      CornerRadius="{StaticResource RadiusThumb}"
-      Visibility="Collapsed" />
-    <Border x:Name="Picture" CornerRadius="{StaticResource RadiusThumb}">
-      <Border.Background>
-        <ImageBrush x:Name="PictureBrush" Stretch="UniformToFill" />
-      </Border.Background>
-    </Border>
-    <!-- Segoe Fluent Icons "Warning": the preview's placeholder says the file name; a thumbnail has no room (its name and tooltip do). -->
-    <FontIcon
-      x:Name="Placeholder"
-      HorizontalAlignment="Center"
-      VerticalAlignment="Center"
-      FontSize="12"
-      Foreground="{ThemeResource InkSecondaryBrush}"
-      Glyph="&#xE7BA;"
-      RequestedTheme="Dark"
-      Visibility="Collapsed" />
+    <!-- The picture (or its placeholder): what the pending state dims, never the rings or the gap marker. -->
+    <Grid x:Name="Photo">
+      <Border x:Name="Ground" Background="{ThemeResource TrackBrush}" CornerRadius="{StaticResource RadiusThumb}" />
+      <Border
+        x:Name="Unreadable"
+        Background="{StaticResource LetterboxBrush}"
+        CornerRadius="{StaticResource RadiusThumb}"
+        Visibility="Collapsed" />
+      <Border x:Name="Picture" CornerRadius="{StaticResource RadiusThumb}">
+        <Border.Background>
+          <ImageBrush x:Name="PictureBrush" Stretch="UniformToFill" />
+        </Border.Background>
+      </Border>
+      <!-- Segoe Fluent Icons "Warning": the preview's placeholder says the file name; a thumbnail has no room (its name and tooltip do). -->
+      <FontIcon
+        x:Name="Placeholder"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        FontSize="12"
+        Foreground="{ThemeResource InkSecondaryBrush}"
+        Glyph="&#xE7BA;"
+        RequestedTheme="Dark"
+        Visibility="Collapsed" />
+    </Grid>
     <Border
       x:Name="HoverRing"
       Margin="-3"

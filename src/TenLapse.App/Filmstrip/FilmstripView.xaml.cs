@@ -55,7 +55,7 @@ public sealed partial class FilmstripView : UserControl
 {
     // DIPs: the repeater's spacing and its inset in the scroller, as FilmstripView.xaml sets them.
     private const double Seam = 4;
-    private const double Inset = 4;
+    private const double Inset = 6;
     private const double AutoScrollEdge = 40;
     private const double AutoScrollSpeed = 24;
 

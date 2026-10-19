@@ -53,7 +53,7 @@ public sealed partial class FilmstripItem : ObservableObject
     [ObservableProperty]
     public partial bool IsPlayhead { get; internal set; }
 
-    /// <summary>Not yet exported (#24 dims it to 35 %). See <see cref="FilmstripViewModel.SetPendingFrom"/>.</summary>
+    /// <summary>Not yet exported (#24 dims its picture to 35 %). See <see cref="FilmstripViewModel.SetPending"/>.</summary>
     [ObservableProperty]
     public partial bool IsPending { get; internal set; }
 

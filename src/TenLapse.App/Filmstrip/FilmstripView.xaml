@@ -5,8 +5,8 @@
   0742" on the left; the file name and capture time, then the thumbnail size slider, on the right), 8 px below.
 
   The row is an ItemsRepeater in a ScrollViewer, so only the thumbnails near the view exist as elements: 5,000 frames
-  cost what 50 do. The repeater sits 4 px inside the scroller so the rings and the focus ring, which draw outside a
-  thumbnail, are not clipped. Pointer, keys, drag and the thumbnails' pictures are FilmstripView.xaml.cs's; the states a
+  cost what 50 do. The repeater sits 6 px inside the scroller so the rings and the system focus ring, which draw up to
+  6 px outside a thumbnail (FocusVisualMargin), are not clipped at the top and bottom. Pointer, keys, drag and the thumbnails' pictures are FilmstripView.xaml.cs's; the states a
   thumbnail draws are FilmstripThumb.xaml's.
 
   The size slider is a setting, not an indicator, so it is neutral here (Ink Secondary), not the app's amber slider.
@@ -91,7 +91,7 @@
         ZoomMode="Disabled">
         <ItemsRepeater
           x:Name="Repeater"
-          Margin="4"
+          Margin="6"
           HorizontalAlignment="Left"
           TabFocusNavigation="Once">
           <ItemsRepeater.Layout>

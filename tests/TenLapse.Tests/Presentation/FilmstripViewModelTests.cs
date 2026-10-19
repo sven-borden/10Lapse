@@ -548,13 +548,32 @@ public sealed class FilmstripViewModelTests
     [Fact]
     public void PendingFramesAreThoseFromTheBoundaryOn()
     {
-        var (_, _, strip) = Strip(10);
+        var (shell, _, strip) = Strip(10);
+        var exporting = shell.CurrentProject.Model.Frames;
 
-        strip.SetPendingFrom(6);
+        strip.SetPending(exporting, 6);
         Assert.Equal([false, false, false, false, false, false, true, true, true, true], strip.Items.Select(item => item.IsPending));
 
-        strip.SetPendingFrom(null);
+        strip.ClearPending();
         Assert.All(strip.Items, item => Assert.False(item.IsPending));
+    }
+
+    // #82 review, minor 6: an edit during the export keeps the dim on the photos the export has not written yet.
+    [Fact]
+    public void PendingFollowsThePhotosThroughEditsDuringTheExport()
+    {
+        var (shell, _, strip) = Strip(10);
+        var project = shell.CurrentProject.Model;
+        var exporting = project.Frames;
+        strip.SetPending(exporting, 4);
+
+        strip.Click(1, false, false);
+        strip.Remove();
+        project.AddFrames([TestFrames.At(@"C:\Photos\b\IMG_0500.jpg")]);
+        strip.SetPending(exporting, 5);
+
+        Assert.Equal(exporting.Skip(5).Select(frame => frame.Id), strip.Items.Where(item => item.IsPending).Select(item => item.Id));
+        Assert.False(strip.Items[^1].IsPending);
     }
 
     [Fact]

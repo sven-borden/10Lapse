@@ -91,7 +91,8 @@ public sealed partial class ShellView : UserControl
         ShellRoot.KeyDown += OnShellKeyDown;
 
         // The filmstrip (#20): thumbnails, selection, removal and undo, reorder and gap markers. Its Delete and Ctrl+Z
-        // also listen on ShellRoot, after the transport keys, and not on the Settings page.
+        // also listen on ShellRoot, after the transport keys, and not on the Settings page. The export panel (#24) is
+        // built after this line and given _filmstrip (its SetPending and ClearPending dim what is not exported yet).
         _filmstrip = new Presentation.Filmstrip.FilmstripViewModel(viewModel, preview.Player, presenter);
         Filmstrip.Attach(_filmstrip, preview, ShellRoot, () => !ViewModel.IsSettingsOpen);
 #if DEBUG
