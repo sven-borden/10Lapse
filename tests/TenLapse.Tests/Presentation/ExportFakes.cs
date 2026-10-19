@@ -4,6 +4,7 @@ using TenLapse.Presentation;
 using TenLapse.Presentation.Export;
 using TenLapse.Presentation.Filmstrip;
 using TenLapse.Presentation.Preview;
+using TenLapse.Presentation.Services;
 using TenLapse.Tests.Import;
 using TenLapse.Tests.Projects;
 
@@ -43,11 +44,22 @@ internal sealed class FakeVideoExporter : IVideoExporter
         var pending = _pending;
         cancellationToken.Register(() =>
         {
-            TrackCleanUp();
-            pending.TrySetCanceled(cancellationToken);
+            // Media's exporter ends a cancelled export later, on another thread: after what the canceller does in the
+            // same step.
+            if (EndOn is { } ui)
+            {
+                _ = ui.InvokeAsync(() => EndCancelled(pending, cancellationToken));
+            }
+            else
+            {
+                EndCancelled(pending, cancellationToken);
+            }
         });
         return pending.Task;
     }
+
+    /// <summary>Where a cancelled export ends, queued behind the cancelling step; at once when null.</summary>
+    public IUiDispatcher? EndOn { get; set; }
 
     public void Report(ExportStatus status) => Progress!.Report(status);
 
@@ -72,6 +84,12 @@ internal sealed class FakeVideoExporter : IVideoExporter
         {
             return Task.WhenAll([AllCleanedUp, .. _cleanUps]);
         }
+    }
+
+    private bool EndCancelled(TaskCompletionSource<ExportedVideo> pending, CancellationToken cancellationToken)
+    {
+        TrackCleanUp();
+        return pending.TrySetCanceled(cancellationToken);
     }
 
     private void TrackCleanUp()
@@ -133,6 +151,7 @@ internal sealed class ExportHarness : IDisposable
 
     public ExportHarness(int frames = 120, IOutputCapabilities? capabilities = null, Action<Project>? setup = null)
     {
+        Exporter.EndOn = Ui;
         Ui.Run(() =>
         {
             System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
