@@ -15,6 +15,10 @@ using TenLapse.Spike;
 //   TenLapse.Spike export-project --dir D [--distinct N] [--frames 1000] [--resolution 2160] [--aspect 16x9]
 //                         [--fit fill|fit] [--quality high] [--format h264|hevc] [--fps 30] [--out file.mp4]
 //                         (#22: ProjectExporter, the product's entry point, through the .partial file)
+//                         [--photos D] exports every JPEG of D as it is (no links, --distinct is ignored; #34's folder), and the last line
+//                         is a BENCH line of key=value pairs for scripts/bench.ps1
+//   TenLapse.Spike bench-photos --dir D [--count 1000] [--size 6000x4000] [--bases 24] [--noise 25] [--no-thumbnail]
+//                         [--start 2026-06-21T06:00:00] [--interval 5]   (#34: camera-like photos with EXIF capture times)
 // --verify decodes the output and checks every frame's FrameCode. Results go to the console, the
 // last line is a Markdown table row. Large files belong in %TEMP%, never in the repository.
 // --noise adds grain so the JPEGs compress like real photos (#13); --distinct N cycles the export over the
@@ -33,6 +37,7 @@ try
         "generate" => await GenerateAsync(options),
         "encode" => await EncodeAsync(options),
         "export-project" => await ExportProjectAsync(options),
+        "bench-photos" => await BenchPhotos.RunAsync(options),
         "inspect" => Inspect(options),
         "decode-bench" => await DecodeBench.RunAsync(
             options.Positional ?? throw new ArgumentException("decode-bench needs a photo."),
@@ -174,8 +179,14 @@ static FitMode Fit(Options options) => options.Text("fit", "fill") switch
 // through the .partial file with the bitrate of --quality; prints wall time, speed, peak working set and progress.
 static async Task<int> ExportProjectAsync(Options options)
 {
-    var directory = Path.GetFullPath(options.Require("dir"));
+    var photos = options.Flag("photos") ? Path.GetFullPath(options.Require("photos")) : null;
+    var directory = photos ?? Path.GetFullPath(options.Require("dir"));
     var frames = options.Int("frames", 1000);
+    if (photos is not null && !options.Flag("frames"))
+    {
+        frames = Directory.EnumerateFiles(photos, "*.jpg").Count();
+    }
+
     var distinct = options.Int("distinct", frames);
     var rate = FrameRates.TryParse(options.Text("fps", "30"), out var parsed) ? parsed : throw new FormatException("--fps is not a frame rate.");
     var resolution = options.Int("resolution", 2160) switch
@@ -201,22 +212,31 @@ static async Task<int> ExportProjectAsync(Options options)
 
     // A project holds each file once: hard-link the distinct files under as many names as there are frames
     // (symbolic links need Developer Mode).
-    var links = Path.Combine(directory, "project");
-    Directory.CreateDirectory(links);
     var project = new Project(TimingSettings.PerSecond(rate), new FrameSettings(aspect, Fit(options)), new OutputSettings(resolution, format, quality), SortMode.Manual);
     var paths = new List<string>();
-    for (var i = 0; i < frames; i++)
+    if (photos is not null)
     {
-        var link = Path.Combine(links, $"f{i:D5}.jpg");
-        if (!File.Exists(link))
+        paths.AddRange(Directory.EnumerateFiles(photos, "*.jpg").Order(StringComparer.OrdinalIgnoreCase).Take(frames));
+        frames = paths.Count;
+        distinct = frames;
+    }
+    else
+    {
+        var links = Path.Combine(directory, "project");
+        Directory.CreateDirectory(links);
+        for (var i = 0; i < frames; i++)
         {
-            if (!Windows.Win32.PInvoke.CreateHardLink(link, SyntheticJpegs.PathOf(directory, i % distinct)))
+            var link = Path.Combine(links, $"f{i:D5}.jpg");
+            if (!File.Exists(link))
             {
-                throw new IOException($"Could not link {link}: error {System.Runtime.InteropServices.Marshal.GetLastPInvokeError()}.");
+                if (!Windows.Win32.PInvoke.CreateHardLink(link, SyntheticJpegs.PathOf(directory, i % distinct)))
+                {
+                    throw new IOException($"Could not link {link}: error {System.Runtime.InteropServices.Marshal.GetLastPInvokeError()}.");
+                }
             }
-        }
 
-        paths.Add(link);
+            paths.Add(link);
+        }
     }
 
     project.AddFrames(paths.Select(path => new Frame(path, 1, DateTime.UtcNow)));
@@ -243,6 +263,13 @@ static async Task<int> ExportProjectAsync(Options options)
     process.Refresh();
     Console.WriteLine($"result: {result.FrameCount} frames in {wall.TotalSeconds:0.00} s = {result.FrameCount / wall.TotalSeconds:0.0} fps; peak working set " +
         $"{process.PeakWorkingSet64 / 1048576.0:0} MB; file {result.FileBytes / 1e6:0.0} MB; {reports} progress reports; encoder {result.Encoder?.Name}");
+
+    // PeakPagedMemorySize64 is the peak commit charge of the process: its private bytes at their highest.
+    Console.WriteLine(string.Create(
+        CultureInfo.InvariantCulture,
+        $"BENCH export frames={result.FrameCount} seconds={wall.TotalSeconds:0.00} fps={result.FrameCount / wall.TotalSeconds:0.0} " +
+        $"peakWorkingSetMB={process.PeakWorkingSet64 / 1048576.0:0} peakPrivateMB={process.PeakPagedMemorySize64 / 1048576.0:0} " +
+        $"fileMB={result.FileBytes / 1e6:0} encoder={result.Encoder?.Name.Replace(' ', '_')} hardware={result.Encoder?.IsHardware} width={settings.Width} height={settings.Height}"));
     return 0;
 }
 
