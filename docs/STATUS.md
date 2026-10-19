@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #37 merged. In flight: PR #91 (#90 start-up hardening) fix round. Then #35 motion, #39 strings, #38 accessibility (each alone).
+2026-10-19: #91 merged (#90 start-up hardening; #90 stays open). In flight: #35 motion (alone). Then #39 strings, #38 accessibility (each alone).
 
 ## Waves
 
@@ -43,7 +43,7 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
 | 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | merged #85 |
 | 13 | #86 Flaky memory assertion (bug) | S | `tests/` | merged #87 |
-| 13 | #90 Start-up crash 0xC000027B (bug) | O | App start-up | PR #91, fix round |
+| 13 | #90 Start-up crash 0xC000027B (bug) | O | App start-up | merged #91, issue open |
 | 14 | #31 Rating prompt | S | Store rating | merged #93 |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | merged #89 |
 | 15 | #36 Narrow window layout | S | shell visual states | merged #94 |
@@ -166,6 +166,19 @@ Nothing blocks the build loop. Everything below waits until release is near
   cancel; a failed ask is log-only (the one exception to never silent, since the
   user did not ask). Reset to defaults keeps the count. New settings fields need
   no schema bump. *Send feedback* opens GitHub issues, *Rate 10Lapse* the Store.
+- 2026-10-19 (#90, PR #91): every framework callback (`AppWindow.Closing`,
+  `Changed`, `Destroying`, backdrop, lambda handlers) runs through `RunLogged`;
+  `FrameworkCallbackRuleTests` catches lambda and method-group handlers.
+  `OnClosing` is one `RunLogged` call into `WindowCloseGate`: a throw logs,
+  stops a running export and lets the window close. A Mica failure is log-only
+  (the flat fallback is the documented look; it retries on the next connection).
+  The encoder probe starts after the first frame (`FirstFrameRendered`, or
+  10 s): cold, the first frame comes about 180 ms sooner; warm, the panel
+  settles about 0.4 s later. `StartupTrace` logs start-up phases until the
+  first frame and the applied probe answer. Launch-crash counts use
+  `scripts/launch-test.ps1` (`-Plain` or under `tools/TenLapse.CrashCatcher`).
+  Not reproduced in 980 launches; #90 stays open until it is seen or the beta
+  is clean.
 - 2026-10-19 (#37): the 16, 20, 24 and 32 px icons are full-bleed pixel-grid
   variants, not the canvas's padded tile, so they stay crisp. The splash is dark
   Mica `#1F1E1D` in both themes. The bundle keeps every scale in the main
@@ -231,3 +244,6 @@ Details are in each PR's "What the next issues should know".
 - #37 PR #95: `Assets/Source/TenLapse*.svg` and the Spike `assets` generator
   (deterministic) render 78 PNGs and `TenLapse.ico`; all tiles, target sizes and
   a 620x300 splash at scales 100 to 400; window icon via a guarded `SetIcon`.
+- #90 PR #91 (refs only): start-up hardening, `StartupTrace`,
+  `WindowCloseGate`, probe after the first frame, `scripts/launch-test.ps1`,
+  `tools/TenLapse.CrashCatcher`; Debug `--log-folder=`, `--encoder-cache=`.
