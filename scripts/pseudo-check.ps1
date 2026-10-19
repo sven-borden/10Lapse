@@ -16,6 +16,9 @@
         07-09 narrow (900 px): the Timing, Frame and Output tabs; 10 the smallest window (640 x 480)
         11 the export panel; 12 the close-during-export question; 13 the finished state; 14 finished, narrow
 
+    The export is fast on a GPU encoder: when it has finished before the close step, 12 is skipped and the run goes
+    on, and any capture after the app has exited is skipped too. The end lists what was skipped and why.
+
     -Plain captures the same screens in English (no --pseudo-loc) into ...\plain, to compare with them.
 
     Build the app Debug x64 first. It prints the logs' warnings and errors at the end; "The preview could not read"
@@ -116,10 +119,19 @@ function Stop-App($app) {
     if (-not $app.Process.HasExited) { Stop-Process -Id $app.Process.Id -Force; $app.Process.WaitForExit() }
 }
 
+$skipped = [System.Collections.Generic.List[string]]::new()
+
+function Skip([string]$name, [string]$why) {
+    $skipped.Add("$name ($why)")
+    Write-Host "  skipped $name`: $why"
+}
+
 function Shot($app, [string]$name) {
     Start-Sleep -Milliseconds 700
+    if ($app.Process.HasExited) { Skip $name 'the app has exited'; return }
     $path = Join-Path $shots "$name.png"
-    [PseudoCapture]::Save([IntPtr]$app.Window.Current.NativeWindowHandle, $path)
+    try { [PseudoCapture]::Save([IntPtr]$app.Window.Current.NativeWindowHandle, $path) }
+    catch { if ($app.Process.HasExited) { Skip $name 'the app exited during the capture'; return } else { throw } }
     Write-Host "  captured $name"
 }
 
@@ -127,6 +139,7 @@ function Shot($app, [string]$name) {
 function Find-Id($app, [string]$id, [double]$seconds = 10) {
     $until = (Get-Date).AddSeconds($seconds)
     do {
+        if ($app.Process.HasExited) { return $null }
         $condition = New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, $id)
         foreach ($element in @($app.Window.FindAll($Tree::Descendants, $condition))) {
             if (-not $element.Current.IsOffscreen) { return $element }
@@ -143,6 +156,7 @@ function Invoke-Element($element) {
 
 function Resize($app, [double]$width, [double]$height) {
     $transform = $null
+    if ($app.Process.HasExited) { return }
     if ($app.Window.TryGetCurrentPattern([System.Windows.Automation.TransformPattern]::Pattern, [ref]$transform) -and $transform.Current.CanResize) {
         $transform.Resize($width, $height)
         Start-Sleep -Milliseconds 800
@@ -206,11 +220,15 @@ try {
     $cancel = Find-Id $app 'CancelButton' 240
     Start-Sleep -Seconds 1
     Shot $app '11-export-panel'
-    $windowPattern = $app.Window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern)
-    $windowPattern.Close()
-    $keep = Find-Id $app 'CloseButton' 5
-    Shot $app '12-close-question'
-    Invoke-Element $keep
+    # The close question only comes while the export runs; a finished export just closes the app.
+    if (-not $app.Process.HasExited -and (Find-Id $app 'CancelButton' 0.5)) {
+        $windowPattern = $app.Window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern)
+        $windowPattern.Close()
+        $keep = Find-Id $app 'CloseButton' 5
+        Shot $app '12-close-question'
+        Invoke-Element $keep
+    }
+    else { Skip '12-close-question' 'the export had finished before the close step' }
     $play = Find-Id $app 'PlayButton' 240
     Start-Sleep -Seconds 2
     Shot $app '13-finished'
@@ -220,6 +238,7 @@ try {
 finally { Stop-App $app }
 
 Write-Host "Screenshots in $shots"
+if ($skipped.Count -gt 0) { Write-Host "Skipped: $($skipped -join '; ')" }
 foreach ($name in 'empty', 'editing', 'export') {
     Get-ChildItem (Join-Path $base "logs-$name") -Filter '10Lapse-*.log' -ErrorAction SilentlyContinue |
         ForEach-Object { Select-String -Path $_.FullName -Pattern ' (WARN|ERROR|CRIT) ' | ForEach-Object { "$name`: $($_.Line)" } }
