@@ -52,7 +52,7 @@ public sealed record VideoExportResult(int FrameCount, long Duration, VideoEncod
 /// </remarks>
 public static class VideoExporter
 {
-    /// <summary>How long one encoder call, or drawing waiting for the encoder, may take before the export fails instead of hanging.</summary>
+    /// <summary>How long one encoder call (opening, one frame, finishing) may take before the export fails instead of hanging.</summary>
     public static readonly TimeSpan EncoderStallTimeout = TimeSpan.FromSeconds(60);
 
     /// <summary>How long a failed or cancelled export waits for its clean-up before it returns and leaves the rest to the background.</summary>
@@ -427,12 +427,10 @@ public static class VideoExporter
                         CanvasRenderTarget target;
                         using (bitmap)
                         {
-                            if (!await _slots.WaitAsync(_settings.StallTimeout, _stop.Token).ConfigureAwait(false))
-                            {
-                                throw new VideoExportException(
-                                    $"{ExportFailures.Summary(VideoExportFailure.EncoderStalled, _settings.Format)}: it has not taken a frame for {_settings.StallTimeout.TotalSeconds:0.#} s.",
-                                    VideoExportFailure.EncoderStalled);
-                            }
+                            // No time limit of its own: a slot is held only by a frame the encode stage has not
+                            // written yet, and every write is timed (GuardAsync). A second timer here raced the
+                            // write's own and could report the stall without its frame.
+                            await _slots.WaitAsync(_stop.Token).ConfigureAwait(false);
 
                             target = Draw(bitmap, pending.Index);
                         }
