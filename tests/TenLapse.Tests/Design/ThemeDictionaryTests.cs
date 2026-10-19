@@ -100,6 +100,18 @@ public sealed partial class ThemeDictionaryTests
         }
     }
 
+    [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void TheDropZoneWashIsTheAmberTintItself(string theme)
+    {
+        // One value for the 8 % amber wash (#29): the drop zone names it, GoldenHourAmberTint holds it.
+        var entry = DesignFiles.ThemeDictionary(DesignFiles.LoadTheme("Colors.xaml"), theme)["DropZoneTintColor"];
+
+        Assert.Equal("StaticResource", entry.Name.LocalName);
+        Assert.Equal("GoldenHourAmberTintColor", (string?)entry.Attribute("ResourceKey"));
+    }
+
     [Fact]
     public void TheIndicatorIsDeepAmberInLightAndAmberInDark()
     {

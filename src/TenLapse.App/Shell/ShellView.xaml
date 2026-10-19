@@ -35,8 +35,8 @@
 
   <!--
     Drag and drop (#12): files and folders dropped anywhere on the window are imported (ShellView.xaml.cs). The
-    transparent background makes the whole window a drop target; it paints nothing, so Mica shows through. #29 draws
-    the first-launch drop zone and its drag-over look inside EmptyRegion; the handling stays here.
+    transparent background makes the whole window a drop target; it paints nothing, so Mica shows through. The
+    first-launch drop zone (#29) in EmptyRegion only shows the drag-over look; the handling stays here and tells it.
   -->
   <Grid
     x:Name="ShellRoot"
@@ -384,21 +384,13 @@
         <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
-      <!-- Empty: #29 puts the first-launch drop zone here, on Mica, 16 px in from the window edges. -->
+      <!-- Empty: the first-launch drop zone (#29, FirstLaunchView.xaml), on Mica, 16 px in from the window edges. -->
       <Grid
         x:Name="EmptyRegion"
         Grid.RowSpan="2"
         Grid.ColumnSpan="2"
         Padding="16,0,16,16">
-        <TextBlock
-          MaxWidth="460"
-          HorizontalAlignment="Center"
-          VerticalAlignment="Center"
-          Foreground="{ThemeResource InkSecondaryBrush}"
-          Style="{StaticResource BodyTextStyle}"
-          Text="10Lapse plays your photos back as a video."
-          TextAlignment="Center"
-          TextWrapping="Wrap" />
+        <shell:FirstLaunchView x:Name="FirstLaunch" />
       </Grid>
 
       <!-- Editing: the Layer surface for the stage and the inspector, separated from Mica by one divider. -->

@@ -369,7 +369,7 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
         var start = FrameTiming.FrameStart(CurrentFrame, rate);
         var length = FrameTiming.Duration(count, rate);
         CounterText = ProjectText.PreviewCounter(CurrentFrame + 1, count);
-        TimecodeText = ProjectText.PreviewTimecode(start, length);
+        TimecodeText = ProjectText.TimecodeCaption(start, length);
         if (!IsPlaying)
         {
             CounterName = ProjectText.PreviewCounterName(CurrentFrame + 1, count);

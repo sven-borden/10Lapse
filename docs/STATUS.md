@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Wave 8 (2026-10-19): #22 merged. PR #75 (#29 first launch) in review. Next: #19 preview and #23 output panel.
+2026-10-19: #22 and #29 merged. Building: #19 preview (Opus) and #23 output panel (Sonnet). Next: wave 10, #20 filmstrip and #17 timing panel.
 
 ## Waves
 
@@ -30,9 +30,9 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | merged #73 |
 | 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | merged #72 |
 | 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | merged #74 |
-| 8 | #29 First launch drop zone | O | App empty state view | PR #75, in review |
-| 9 | #19 Preview with proxy cache | O | preview view and cache | |
-| 9 | #23 Output panel | S | output inspector section | |
+| 8 | #29 First launch drop zone | O | App empty state view | merged #75 |
+| 9 | #19 Preview with proxy cache | O | preview view and cache | building |
+| 9 | #23 Output panel | S | output inspector section | building |
 | 10 | #20 Filmstrip | O | filmstrip view | |
 | 10 | #17 Timing panel | S | timing inspector section | |
 | 11 | #24 Export panel and finished state | O | export panel | |
@@ -99,7 +99,10 @@ Nothing blocks the build loop. Everything below waits until release is near
   `ApplicationData.Current`, `Package.Current` and `StoreContext` throw there.
   Code that needs identity guards for it or has a path that works without it
   (#21 settings, #31 rating).
-- 2026-10-18 (#27): `ExportButtonStyle` is the only amber button. It carries a
+- 2026-10-18 (#27, widened 2026-10-19 by #29): one amber accent button per
+  screen, as `DESIGN.md` says (Export; *Choose folder* on first launch via
+  `AccentActionButtonStyle`, based on `ExportButtonStyle`; a rule test
+  allow-lists the views). `ExportButtonStyle` carries a
   copy of Fluent's accent button template (WinUI 3 styles cannot hold
   resources), so a Fluent template change will not reach it. Fluent's own
   `AccentButtonStyle` and the `AccentButton*` keys stay untouched, so dialog
@@ -274,3 +277,14 @@ Nothing blocks the build loop. Everything below waits until release is near
   `FrameUnreadable`, `DrawingFailed`, `EncoderStuck` (restart 10Lapse).
   Real-encoder tests run in one serial collection. #23 uses `ExportBitrate`;
   #25 takes the power request and awaits `ExportCleanup.WhenAllDone()` on close.
+- #29 PR #75: `Shell/FirstLaunchView` in the shell's `EmptyRegion`: the
+  canvas copy (length from `FrameTiming`), *Choose folder* (amber accent) and
+  *Choose photos* on #12's commands, the privacy line, no sample button (#30
+  deferred). Daybreak, a Win2D 20 s loop (600 frames at 30 fps) driven by
+  `DaybreakPlayback` (Run, Still, Hidden: stops when hidden, inactive,
+  minimized, narrow, animations off; hidden in high contrast); colours from
+  `Daybreak*` tokens via `DaybreakPalette`. `DragVerdict` shows the drag look
+  only once the count is known. `TimingFormat.Timecode` and `TextBalance` in
+  Core/Presentation. Launch focus on *Choose folder* uses `FocusState.Pointer`
+  so no ring shows until the keyboard is used (#38 to confirm). Debug
+  switches `--drag-over`, `--reduce-motion`.

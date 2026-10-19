@@ -59,7 +59,7 @@ public sealed class TransportTextTests
     {
         var rate = new Fraction(30, 1);
 
-        Assert.Equal("00:10.40 / 00:24.73", ProjectText.PreviewTimecode(FrameTiming.FrameStart(312, rate), FrameTiming.Duration(742, rate)));
+        Assert.Equal("00:10.40 / 00:24.73", ProjectText.TimecodeCaption(FrameTiming.FrameStart(312, rate), FrameTiming.Duration(742, rate)));
         Assert.Equal("Time 00:10.40 of 00:24.73", ProjectText.PreviewTimecodeName(FrameTiming.FrameStart(312, rate), FrameTiming.Duration(742, rate)));
     }
 

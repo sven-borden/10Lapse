@@ -59,6 +59,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <!-- Win2D draws the first-launch timelapse (#29); Media uses it for export. -->
+    <PackageReference Include="Microsoft.Graphics.Win2D" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
   </ItemGroup>
 

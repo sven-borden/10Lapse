@@ -559,7 +559,8 @@
   </Style>
 
   <!--
-    ExportButtonStyle: the one amber button (DESIGN.md, Buttons: the accent button is the Export fill). It is
+    ExportButtonStyle: the one accent button per screen (DESIGN.md): Export video here, and through
+    AccentActionButtonStyle the accent of a screen without Export (Choose folder, Play). It is
     Fluent's AccentButtonStyle with its own template, because WinUI 3 styles have no Resources and the global
     AccentButton* keys must stay untouched. The state brushes live in the template root's Resources, so the
     lookups below never leave this style. Rest comes from the Style setters (Fluent's template reads them
@@ -652,6 +653,17 @@
         </ControlTemplate>
       </Setter.Value>
     </Setter>
+  </Style>
+
+  <!--
+    AccentActionButtonStyle: the one accent button of a screen that has no Export button (DESIGN.md, Colors: the
+    accent fill is for Export video, Choose folder on first launch and Play on the finished state). The Export
+    button's look under a name that says what it is for; the amber stays inside ExportButtonStyle.
+  -->
+  <Style x:Key="AccentActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ExportButtonStyle}">
+    <Setter Property="Height" Value="{StaticResource ControlHeight}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingButtonAccent}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
 
 </ResourceDictionary>
