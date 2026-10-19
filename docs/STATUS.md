@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #97 merged (minimum Windows 11). In flight: #35 motion, with #98 flaky test beside it (test code only). Then #39 strings, #38 accessibility (each alone).
+2026-10-19: #97 merged (minimum Windows 11). #99 merged (#98 flaky cache tests). In flight: #35 motion (alone). Then #39 strings, #38 accessibility (each alone).
 
 ## Waves
 
@@ -50,7 +50,7 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | merged #95 |
 | 16 | #35 Motion system | O | every view | in progress |
 | 16 | #96 Minimum Windows 11 | S | build props, manifest, README | merged #97 |
-| 16 | #98 Flaky cache test (bug) | S | `tests/` Preview | in progress |
+| 16 | #98 Flaky cache test (bug) | S | `tests/` Preview | merged #99 |
 | 17 | #39 Strings to resource files | S | every view, alone | |
 | 18 | #38 Accessibility pass | O | every view, alone | |
 
@@ -253,3 +253,6 @@ Details are in each PR's "What the next issues should know".
 - #96 PR #97: minimum OS 10.0.22000.0 (`TenLapseWindowsMinVersion`, manifest,
   README). The Mica fallback stays; the stale "Windows 10" comment in
   `Shell/ShellView.xaml` is left for #35.
+- #98 PR #99: cache tests wait for state, disposals and events, which the
+  caches record under `_gate` and then free and raise after it; positive state
+  is waited for, negative checks keep a short quiet window.
