@@ -231,7 +231,7 @@ public sealed partial class ImportViewModel : ObservableObject
     // or the project closing) shows nothing, anything else shows an InfoBar.
     private Task Start(ProjectViewModel target, IReadOnlyList<string> paths)
     {
-        var run = new ImportRun(target.Model, new ImportRequest([.. paths], IncludeSubfolders), OnRunCancelled);
+        var run = new ImportRun(target, new ImportRequest([.. paths], IncludeSubfolders), OnRunCancelled);
         target.AddResource(run);
         lock (_gate)
         {
@@ -249,6 +249,9 @@ public sealed partial class ImportViewModel : ObservableObject
         {
             _runs.Remove(run);
         }
+
+        // The project lets go of the finished run (and the paths it holds) instead of keeping it until New project.
+        run.Owner.RemoveResource(run);
     }
 
     private async Task RunAsync(ImportRun run)
@@ -617,14 +620,16 @@ public sealed partial class ImportViewModel : ObservableObject
     /// One import: its target project, its request and its cancellation. Registered with the project, which disposes
     /// it when <c>New project</c> replaces it: that cancels the import.
     /// </summary>
-    private sealed class ImportRun(Project target, ImportRequest request, Action<ImportRun> cancelled) : IDisposable
+    private sealed class ImportRun(ProjectViewModel owner, ImportRequest request, Action<ImportRun> cancelled) : IDisposable
     {
         // Never disposed: a source without timers or linked tokens holds nothing that needs it, and leaving it alive
         // means Cancel can never race a dispose.
         private readonly CancellationTokenSource _cancellation = new();
         private int _cancelled;
 
-        public Project Target { get; } = target;
+        public ProjectViewModel Owner { get; } = owner;
+
+        public Project Target { get; } = owner.Model;
 
         public bool IsCancelled => _cancellation.IsCancellationRequested;
 

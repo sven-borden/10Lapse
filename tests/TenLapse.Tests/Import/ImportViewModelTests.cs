@@ -40,6 +40,18 @@ public sealed class ImportViewModelTests
     }
 
     [Fact]
+    public async Task AFinishedImportIsNoLongerHeldByItsProject()
+    {
+        using var harness = ImportHarness.With(new ScriptedImportSource([ScriptedImportSource.Photo("a.jpg")]));
+
+        await harness.ImportAsync(@"C:\Scripted");
+        await harness.Import.WhenIdleAsync();
+
+        Assert.Single(harness.Project.Frames);
+        Assert.Equal(0, harness.Shell.CurrentProject.ResourceCount);
+    }
+
+    [Fact]
     public async Task ImportingTheSameFolderTwiceAddsNothingTheSecondTimeAndSaysSo()
     {
         using var harness = ImportHarness.With(new ScriptedImportSource([ScriptedImportSource.Photo("a.jpg")]));
