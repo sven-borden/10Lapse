@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using TenLapse.Core.Settings;
 using Windows.Storage;
 
 namespace TenLapse.Services;
@@ -50,7 +51,7 @@ internal static class AppEnvironment
     /// unpackaged, beside the log. A plain file rather than <c>ApplicationData.LocalSettings</c>, so one format and one
     /// code path serve both and the tests cover them. Never throws.
     /// </summary>
-    public static string SettingsFile() => Path.Combine(Path.GetDirectoryName(LogFolder())!, "settings.json");
+    public static string SettingsFile() => SettingsLocation.BesideLogFolder(LogFolder(), "settings.json");
 
     /// <summary>
     /// The journal of unfinished export files (#22's <c>PartialFileJournal</c>): <c>unfinished-exports.txt</c> in the
