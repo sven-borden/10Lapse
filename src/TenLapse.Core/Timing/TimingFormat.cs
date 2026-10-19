@@ -65,6 +65,22 @@ public static class TimingFormat
     }
 
     /// <summary>
+    /// A rate or a number of seconds as a plain number for an input box: up to two decimals, trailing zeros
+    /// dropped ("30", "29.97", "0.25"), rounded half up, with the decimal separator of <paramref name="culture"/>
+    /// ("29,97" in German). The digits are the ones <see cref="FrameRate"/> prints, so a box and the readout never
+    /// disagree.
+    /// </summary>
+    /// <param name="value">A positive value.</param>
+    /// <param name="culture">The culture whose decimal separator is used; the invariant culture (a dot) when null.</param>
+    public static string Decimal(Fraction value, CultureInfo? culture = null)
+    {
+        RequirePositive(value);
+        var text = Hundredths(value.Numerator, value.Denominator);
+        var separator = culture?.NumberFormat.NumberDecimalSeparator ?? ".";
+        return separator == "." ? text : text.Replace(".", separator, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// The per-photo label whatever the rate: "0.5 s per photo", "2 s per photo", "3.33 s per photo".
     /// From 0.1 s up two decimals; below 0.1 s three significant figures, so 30 fps reads
     /// "0.0333 s per photo" and 29.97 fps "0.0334 s per photo" instead of both "0.03".

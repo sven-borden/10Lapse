@@ -150,4 +150,33 @@ public sealed class TimingFormatTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => TimingFormat.FrameRate(default));
     }
+
+    [Theory]
+    [InlineData(30, 1, "30", "30")]
+    [InlineData(30000, 1001, "29.97", "29,97")]
+    [InlineData(60000, 1001, "59.94", "59,94")]
+    [InlineData(1, 4, "0.25", "0,25")]
+    [InlineData(247, 10, "24.7", "24,7")]
+    [InlineData(25, 2, "12.5", "12,5")]
+    [InlineData(1, 3, "0.33", "0,33")]
+    public void DecimalIsTheBoxNumberInTheCulturesSeparator(int num, int den, string invariant, string german)
+    {
+        var rate = new Fraction(num, den);
+
+        Assert.Equal(invariant, TimingFormat.Decimal(rate));
+        Assert.Equal(invariant, TimingFormat.Decimal(rate, System.Globalization.CultureInfo.GetCultureInfo("en-US")));
+        Assert.Equal(german, TimingFormat.Decimal(rate, System.Globalization.CultureInfo.GetCultureInfo("de-DE")));
+        Assert.Equal(german, TimingFormat.Decimal(rate, System.Globalization.CultureInfo.GetCultureInfo("fr-FR")));
+    }
+
+    [Fact]
+    public void DecimalDigitsAreTheOnesTheFrameRateLabelPrints()
+    {
+        foreach (var rate in new[] { new Fraction(30000, 1001), new Fraction(60000, 1001), new Fraction(25, 2), new Fraction(7420, 247) })
+        {
+            Assert.Equal($"{TimingFormat.Decimal(rate)} {TimingWords.FramesPerSecond}", TimingFormat.FrameRate(rate));
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => TimingFormat.Decimal(default));
+    }
 }
