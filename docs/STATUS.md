@@ -55,13 +55,16 @@ own waves once 3.0 ships.
 
 ## Owner items (Sven)
 
-- #2 Partner Center numbers: decides x86 and the first translations.
-- #7 Fix the Store description line now (listing only, no package).
-- Partner Center privacy URL: point it at `PRIVACY.md` on GitHub before the
-  first 3.0 submission (bundle with #7).
-- #30 Sample sequence: deferred (Sven, 2026-10-19). #29 ships without the
-  *Try a sample* button; add it once a set exists.
-- Later: #40 flight, #42 listing, #43 trailer, #44 rollout, #58 pricing.
+Nothing blocks the build loop. Everything below waits until release is near
+(Sven, 2026-10-19).
+
+- Before the first 3.0 submission, one Partner Center visit: #2 numbers
+  (decides x86 and the first translations; #39 extracts English strings
+  without them), #7 description line, and the privacy URL pointed at
+  `PRIVACY.md` on GitHub.
+- #30 Sample sequence: deferred. #29 ships without the *Try a sample* button;
+  add it once a set exists.
+- Release: #40 flight, #42 listing, #43 trailer, #44 rollout, #58 pricing.
 
 ## Decisions
 
