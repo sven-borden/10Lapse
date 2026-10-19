@@ -33,6 +33,58 @@ public sealed class ProjectDeltaTests
     }
 
     [Fact]
+    public void RemovingFramesAndListingThemAsSkippedIsOneChange()
+    {
+        var project = new Project();
+        var frames = TestFrames.Folder("a", 4);
+        project.AddFrames(frames);
+        var events = new List<ProjectChangedEventArgs>();
+        var seen = new List<(int Frames, int Skipped)>();
+        project.Changed += (_, e) =>
+        {
+            events.Add(e);
+            seen.Add((project.Frames.Length, project.SkippedFiles.Length));
+        };
+        var skipped = new[]
+        {
+            new SkippedFile(frames[1].SourcePath, SkipReason.Truncated, "cut"),
+            new SkippedFile(frames[3].SourcePath, SkipReason.EmptyFile, "empty"),
+        };
+
+        var removed = project.RemoveFramesAndSkip([frames[3].Id, frames[1].Id, Guid.NewGuid()], skipped);
+
+        Assert.Equal(2, removed);
+        var change = Assert.Single(events);
+        Assert.Equal(ProjectChanges.Frames | ProjectChanges.SkippedFiles, change.Changes & ~ProjectChanges.Dirty);
+        Assert.Equal(FrameChangeKind.Removed, change.Frames!.Kind);
+        Assert.Equal([1, 3], change.Frames.Indices);
+        Assert.Equal([frames[1].Id, frames[3].Id], change.Frames.Ids);
+        Assert.Equal(skipped, change.Snapshot.SkippedFiles);
+        Assert.Equal([frames[0], frames[2]], project.Frames);
+
+        // A reader never sees the frames gone but not yet skipped.
+        Assert.Equal([(2, 2)], seen);
+    }
+
+    [Fact]
+    public void RemoveFramesAndSkipWithNoKnownFrameStillListsTheSkippedFilesAndANullEntryChangesNothing()
+    {
+        var project = new Project();
+        project.AddFrames(TestFrames.Folder("a", 1));
+        var events = new List<ProjectChangedEventArgs>();
+        project.Changed += (_, e) => events.Add(e);
+
+        Assert.Throws<ArgumentNullException>(() => project.RemoveFramesAndSkip([project.Frames[0].Id], [null!]));
+        Assert.Empty(events);
+        Assert.Single(project.Frames);
+
+        Assert.Equal(0, project.RemoveFramesAndSkip([Guid.NewGuid()], [new SkippedFile(@"C:\x.jpg", SkipReason.Other, "")]));
+        Assert.Equal(ProjectChanges.SkippedFiles, Assert.Single(events).Changes);
+        Assert.Equal(0, project.RemoveFramesAndSkip([], []));
+        Assert.Single(events);
+    }
+
+    [Fact]
     public void UndoPutsDeletedFramesBackInPlaceInOneChange()
     {
         var project = new Project();

@@ -83,6 +83,32 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Takes back a resource that ended on its own (a finished import), so the project no longer holds it and does not
+    /// dispose it. It is not disposed here. Unknown resources are ignored. Safe on any thread.
+    /// </summary>
+    /// <returns>True when it was registered.</returns>
+    public bool RemoveResource(IDisposable resource)
+    {
+        ArgumentNullException.ThrowIfNull(resource);
+        lock (_gate)
+        {
+            return _resources.Remove(resource);
+        }
+    }
+
+    /// <summary>How many resources the project holds (tests).</summary>
+    internal int ResourceCount
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _resources.Count;
+            }
+        }
+    }
+
+    /// <summary>
     /// Stops following the model, closes it (it takes no more changes) and disposes every registered resource,
     /// newest first. Never throws: a resource that throws is reported to the error sink and the others are
     /// still disposed. The resources are disposed outside the lock, so one that registers another resource

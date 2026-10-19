@@ -293,6 +293,224 @@ public static class ProjectText
         return new Confirmation(NewProjectTitle, message, NewProjectConfirm, Cancel);
     }
 
+    // ---- Import (#12): Add photos, drag and drop, progress. One block so other issues' strings merge around it. ----
+
+    /// <summary>The command bar button that opens the import menu.</summary>
+    public static string AddPhotos => "Add photos";
+
+    /// <summary>The Add photos menu item that opens the folder picker.</summary>
+    public static string ChooseFolder => "Choose folder…";
+
+    /// <summary>The Add photos menu item that opens the file picker.</summary>
+    public static string ChoosePhotos => "Choose photos…";
+
+    /// <summary>The Add photos menu toggle that searches a folder's subfolders too (folders picked or dropped).</summary>
+    public static string IncludeSubfolders => "Include subfolders";
+
+    /// <summary>The import progress while the first photos are being looked for.</summary>
+    public static string ImportLooking => "Looking for photos…";
+
+    /// <summary>The import progress while listing, one photo found so far.</summary>
+    public static string ImportFoundOne => "Found 1 photo…";
+
+    /// <summary>The import progress while listing. {0} the photos found so far ("1,240").</summary>
+    public static string ImportFoundMany => "Found {0} photos…";
+
+    /// <summary>The import progress while reading one photo.</summary>
+    public static string ImportAddingOne => "Adding 1 photo…";
+
+    /// <summary>The import progress while reading. {0} the photos read ("1,240"), {1} all of them ("5,000").</summary>
+    public static string ImportAddingMany => "Adding {0} of {1} photos…";
+
+    /// <summary>The accessible name of the progress's Cancel button.</summary>
+    public static string ImportCancelName => "Stop adding photos";
+
+    /// <summary>The drag caption when the count is not known (folders, or items still being looked at).</summary>
+    public static string DragCaptionAny => "Add photos";
+
+    /// <summary>The drag caption for one photo file.</summary>
+    public static string DragCaptionOne => "Add 1 photo";
+
+    /// <summary>The drag caption for several photo files. {0} the count ("120").</summary>
+    public static string DragCaptionMany => "Add {0} photos";
+
+    /// <summary>The drag caption while Settings is open: the drop is refused until the user goes back.</summary>
+    public static string DragCaptionSettingsOpen => "Close Settings to add photos";
+
+    /// <summary>The title of the question a drop onto a project with photos asks.</summary>
+    public static string DropTitle => "Add these photos to this project?";
+
+    /// <summary>The drop question for a project with one photo.</summary>
+    public static string DropMessageOne => "This project has 1 photo. Add the new photos to it, or start a new project with only the new ones. Starting a new project clears this one's photo and settings; the file stays on your PC.";
+
+    /// <summary>The drop question for a project with several photos. {0} the count ("742").</summary>
+    public static string DropMessageMany => "This project has {0} photos. Add the new photos to it, or start a new project with only the new ones. Starting a new project clears this one's photos and settings; the files stay on your PC.";
+
+    /// <summary>The drop question's default button: add to the project that is open.</summary>
+    public static string DropAddToProject => "Add to project";
+
+    /// <summary>A Caution InfoBar: nothing to import was found.</summary>
+    public static string ImportNothingFound => "No photos 10Lapse can read were found there. Choose a folder or files with JPEG, PNG, TIFF or other photos, then try again.";
+
+    /// <summary>The same with subfolders off, when a folder was searched.</summary>
+    public static string ImportNothingFoundSubfolders => "No photos were found in that folder. If they're in its subfolders, turn on Include subfolders under Add photos, then try again.";
+
+    /// <summary>A Neutral InfoBar: every photo found was in the project already.</summary>
+    public static string ImportAlreadyAdded => "Those photos are already in this project.";
+
+    /// <summary>A Neutral InfoBar after Cancel, when no photo was kept.</summary>
+    public static string ImportStoppedNone => "Stopped adding photos. None were added.";
+
+    /// <summary>A Neutral InfoBar after Cancel, one photo kept.</summary>
+    public static string ImportStoppedOne => "Stopped adding photos. 1 photo was added.";
+
+    /// <summary>A Neutral InfoBar after Cancel. {0} the photos kept ("1,240").</summary>
+    public static string ImportStoppedMany => "Stopped adding photos. {0} photos were added.";
+
+    /// <summary>
+    /// A Caution InfoBar: a folder of the import would not open, or a path was no longer there. {0} the folder's name
+    /// (its full path for a drive).
+    /// </summary>
+    public static string ImportFolderFailedOne => "Couldn't open the folder {0}. Check that its drive or memory card is connected and that you can open it in File Explorer, then add it again.";
+
+    /// <summary>The same for several folders, listed under View list. {0} the count ("3").</summary>
+    public static string ImportFolderFailedMany => "Couldn't open {0} folders. Check that their drives or memory cards are connected and that you can open them in File Explorer, then add them again.";
+
+    /// <summary>The title of the question an import asks when photos are only in OneDrive (files on demand).</summary>
+    public static string CloudDownloadTitle => "Download from OneDrive?";
+
+    /// <summary>The question for one online-only photo. {0} its size ("12 MB").</summary>
+    public static string CloudDownloadOne => "1 photo is only in OneDrive. Download it now? About {0}.";
+
+    /// <summary>The question for several online-only photos. {0} the count ("1,240"), {1} their size ("2.4 GB").</summary>
+    public static string CloudDownloadMany => "{0} photos are only in OneDrive. Download them now? About {1}.";
+
+    /// <summary>The question's button that downloads the photos and adds them.</summary>
+    public static string CloudDownloadConfirm => "Download";
+
+    /// <summary>The question's default button for one photo: leave it in the cloud and list it as skipped.</summary>
+    public static string CloudDownloadSkipOne => "Skip it";
+
+    /// <summary>The question's default button for several photos.</summary>
+    public static string CloudDownloadSkipMany => "Skip them";
+
+    /// <summary>A size under 1 GB. {0} the megabytes, whole ("340").</summary>
+    public static string SizeMegabytes => "{0} MB";
+
+    /// <summary>A size of 1 GB or more. {0} the gigabytes, one decimal ("2.4").</summary>
+    public static string SizeGigabytes => "{0} GB";
+
+    /// <summary>Error context: an import failed part way.</summary>
+    public static string ImportFailed => "Importing photos failed.";
+
+    /// <summary>Error context: Choose folder failed.</summary>
+    public static string ChooseFolderFailed => "Choosing a folder to import failed.";
+
+    /// <summary>Error context: Choose photos failed.</summary>
+    public static string ChoosePhotosFailed => "Choosing photos to import failed.";
+
+    /// <summary>Error context: a drop onto the window failed.</summary>
+    public static string ImportDropFailed => "Adding dropped photos failed.";
+
+    /// <summary>Error context: the progress's Cancel failed.</summary>
+    public static string CancelImportFailed => "Stopping the import failed.";
+
+    /// <summary>Error context (log only): a UI-thread step of an import failed to run; the import itself reports what it means.</summary>
+    public static string ImportUiStepFailed => "A step of an import on the UI thread failed.";
+
+    /// <summary>Error context (log only): counting the photos being dragged over the window failed; the caption stays generic.</summary>
+    public static string DragCountFailed => "Counting the dragged photos failed.";
+
+    /// <summary>The question a drop onto a project with <paramref name="frameCount"/> photos asks.</summary>
+    public static Choice DropChoice(int frameCount)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(frameCount);
+        var message = frameCount == 1 ? DropMessageOne : Format(DropMessageMany, Count(frameCount));
+        return new Choice(DropTitle, message, DropAddToProject, NewProjectConfirm, Cancel);
+    }
+
+    /// <summary>"Add 120 photos", or "Add photos" when <paramref name="photoCount"/> is not known.</summary>
+    public static string DragCaption(int? photoCount) => photoCount switch
+    {
+        null or <= 0 => DragCaptionAny,
+        1 => DragCaptionOne,
+        _ => Format(DragCaptionMany, Count(photoCount.Value)),
+    };
+
+    /// <summary>The listing progress: "Looking for photos…", then "Found 1,240 photos…".</summary>
+    public static string ImportListingProgress(int found)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(found);
+        return found switch
+        {
+            0 => ImportLooking,
+            1 => ImportFoundOne,
+            _ => Format(ImportFoundMany, Count(found)),
+        };
+    }
+
+    /// <summary>The reading progress: "Adding 1,240 of 5,000 photos…".</summary>
+    public static string ImportReadingProgress(int read, int total)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(read);
+        ArgumentOutOfRangeException.ThrowIfLessThan(total, read);
+        return total == 1 ? ImportAddingOne : Format(ImportAddingMany, Count(read), Count(total));
+    }
+
+    /// <summary>The InfoBar after Cancel, with the photos the import kept.</summary>
+    public static string ImportStopped(int kept)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(kept);
+        return kept switch
+        {
+            0 => ImportStoppedNone,
+            1 => ImportStoppedOne,
+            _ => Format(ImportStoppedMany, Count(kept)),
+        };
+    }
+
+    /// <summary>
+    /// The question an import asks before reading <paramref name="count"/> online-only photos of <paramref name="bytes"/>
+    /// in all (their reported sizes): <see cref="CloudDownloadConfirm"/>, or the default button, which skips them.
+    /// </summary>
+    public static Confirmation CloudDownload(int count, long bytes)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+        ArgumentOutOfRangeException.ThrowIfNegative(bytes);
+        var size = Size(bytes);
+        return count == 1
+            ? new Confirmation(CloudDownloadTitle, Format(CloudDownloadOne, size), CloudDownloadConfirm, CloudDownloadSkipOne)
+            : new Confirmation(CloudDownloadTitle, Format(CloudDownloadMany, Count(count), size), CloudDownloadConfirm, CloudDownloadSkipMany);
+    }
+
+    /// <summary>"340 MB" under 1 GB (at least 1 MB, rounded up), "2.4 GB" from there; binary units, as File Explorer counts them.</summary>
+    public static string Size(long bytes)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(bytes);
+        const double megabyte = 1024 * 1024;
+        const double gigabyte = megabyte * 1024;
+        return bytes >= gigabyte
+            ? Format(SizeGigabytes, (bytes / gigabyte).ToString("N1", CultureInfo.InvariantCulture))
+            : Format(SizeMegabytes, Math.Max(1, Math.Ceiling(bytes / megabyte)).ToString("N0", CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>The InfoBar for one folder (or path) the import could not open: named by its folder name.</summary>
+    public static string ImportFolderFailed(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
+        return Format(ImportFolderFailedOne, string.IsNullOrEmpty(name) ? path : name);
+    }
+
+    /// <summary>The InfoBar for several folders the import could not open.</summary>
+    public static string ImportFoldersFailed(int count)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(count, 2);
+        return Format(ImportFolderFailedMany, Count(count));
+    }
+
+    // ---- End of the import block (#12). ----
+
     // "5,000": grouped, invariant until #39 localizes numbers with the words.
     private static string Count(int count) => count.ToString("N0", CultureInfo.InvariantCulture);
 

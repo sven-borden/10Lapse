@@ -49,6 +49,23 @@ public sealed class ProjectViewModelTests
     }
 
     [Fact]
+    public void ARemovedResourceIsLetGoAndNotDisposedWithTheProject()
+    {
+        var log = new List<string>();
+        var viewModel = new ProjectViewModel(new Project(), new FakeErrorSink());
+        var import = new RecordingResource("import", log);
+        viewModel.AddResource(new RecordingResource("cache", log));
+        viewModel.AddResource(import);
+
+        Assert.True(viewModel.RemoveResource(import));
+        Assert.False(viewModel.RemoveResource(import));
+        Assert.Equal(1, viewModel.ResourceCount);
+        viewModel.Dispose();
+
+        Assert.Equal(["cache"], log);
+    }
+
+    [Fact]
     public void AResourceThatArrivesAfterDisposeIsDisposedAtOnce()
     {
         var viewModel = new ProjectViewModel(new Project(), new FakeErrorSink());

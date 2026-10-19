@@ -10,6 +10,9 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="TenLapse.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\TenLapse.Core\TenLapse.Core.csproj" />
   </ItemGroup>
 </Project>

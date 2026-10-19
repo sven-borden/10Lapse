@@ -379,10 +379,35 @@ public sealed class Project
     {
         EnsureWritable();
         ArgumentNullException.ThrowIfNull(ids);
+        return Remove(ids, []);
+    }
 
+    /// <summary>
+    /// Removes the frames with these ids and appends <paramref name="skipped"/> to <see cref="SkippedFiles"/> in one
+    /// commit (#12: files that turn out unreadable while an import reads them), so a reader never sees a frame gone
+    /// that is not listed as skipped yet. One <see cref="Changed"/> event with <see cref="ProjectChanges.Frames"/> (a
+    /// <see cref="FrameChangeKind.Removed"/> delta) and <see cref="ProjectChanges.SkippedFiles"/>, each as far as it
+    /// really changes; none when nothing does. Unknown ids are ignored; the skipped files are checked whole first, so a
+    /// null entry changes nothing. The files stay on disk.
+    /// </summary>
+    /// <returns>How many frames were removed.</returns>
+    public int RemoveFramesAndSkip(IEnumerable<Guid> ids, IEnumerable<SkippedFile> skipped)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(ids);
+        return Remove(ids, Materialize(skipped, nameof(skipped)));
+    }
+
+    private int Remove(IEnumerable<Guid> ids, List<SkippedFile> skipped)
+    {
         var doomed = ids.Where(_ids.Contains).ToHashSet();
         if (doomed.Count == 0)
         {
+            if (skipped.Count > 0)
+            {
+                Commit(_state with { SkippedFiles = _state.SkippedFiles.AddRange(skipped) }, ProjectChanges.SkippedFiles);
+            }
+
             return 0;
         }
 
@@ -401,10 +426,15 @@ public sealed class Project
             }
         }
 
-        Commit(
-            _state with { Frames = frames.RemoveAll(frame => doomed.Contains(frame.Id)) },
-            ProjectChanges.Frames,
-            FrameChange.Removed(indices.MoveToImmutable(), removedIds.MoveToImmutable()));
+        var next = _state with { Frames = frames.RemoveAll(frame => doomed.Contains(frame.Id)) };
+        var changes = ProjectChanges.Frames;
+        if (skipped.Count > 0)
+        {
+            next = next with { SkippedFiles = next.SkippedFiles.AddRange(skipped) };
+            changes |= ProjectChanges.SkippedFiles;
+        }
+
+        Commit(next, changes, FrameChange.Removed(indices.MoveToImmutable(), removedIds.MoveToImmutable()));
         return doomed.Count;
     }
 
@@ -474,6 +504,23 @@ public sealed class Project
     {
         EnsureWritable();
         ArgumentNullException.ThrowIfNull(order);
+        ReorderAndSetMode(order, _state.SortMode);
+    }
+
+    /// <summary>
+    /// <see cref="ReorderFrames"/> and <see cref="SortMode"/> in one commit, so a listener never sees the new order under the
+    /// old mode (or the new mode over the old order). One <see cref="Changed"/> event with <see cref="ProjectChanges.Frames"/>
+    /// and <see cref="ProjectChanges.SortMode"/> as far as each really changes; none when neither does. An invalid order
+    /// or mode throws and changes nothing. For <c>TenLapse.Core.Ordering</c>.
+    /// </summary>
+    internal void ReorderAndSetMode(IReadOnlyList<Guid> order, SortMode mode)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(order);
+        if (!Enum.IsDefined(mode))
+        {
+            throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown sort mode.");
+        }
 
         var frames = _state.Frames;
         var byId = frames.ToDictionary(frame => frame.Id);
@@ -482,12 +529,24 @@ public sealed class Project
             throw new ArgumentException("The order must list every frame id in the project exactly once.", nameof(order));
         }
 
-        if (order.SequenceEqual(frames.Select(frame => frame.Id)))
+        var next = _state;
+        var changes = ProjectChanges.None;
+        if (!order.SequenceEqual(frames.Select(frame => frame.Id)))
         {
-            return;
+            next = next with { Frames = [.. order.Select(id => byId[id])] };
+            changes |= ProjectChanges.Frames;
         }
 
-        Commit(_state with { Frames = [.. order.Select(id => byId[id])] }, ProjectChanges.Frames, FrameChange.Reset);
+        if (mode != _state.SortMode)
+        {
+            next = next with { SortMode = mode };
+            changes |= ProjectChanges.SortMode;
+        }
+
+        if (changes != ProjectChanges.None)
+        {
+            Commit(next, changes, (changes & ProjectChanges.Frames) != 0 ? FrameChange.Reset : null);
+        }
     }
 
     /// <summary>

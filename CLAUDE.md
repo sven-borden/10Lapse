@@ -81,6 +81,17 @@ conventions live next to the code; do not duplicate them here.
 - Batch independent reads into one message, keep command output small, never
   wait in a loop. Done is "PR open".
 - Never commit a `.pfx`, a certificate or any secret.
+- This is Sven's own desktop. Never send synthetic input to it: no
+  `SendKeys`, `SendInput`, `keybd_event`, `mouse_event`, `SetCursorPos`
+  clicks or drags, and no `SetForegroundWindow` tricks. Drive the app only
+  through UI Automation patterns on its own window (`InvokePattern`,
+  `ValuePattern`, `SelectionItemPattern`) or Debug launch switches. If a
+  check needs real input, skip it and say so.
+- Stop every process you started before you hand back, and never stop one
+  you did not start.
+- Two agents may run at once: write logs, screenshots and test data only
+  under your own worktree or a folder named after your branch in
+  `%LOCALAPPDATA%\Temp\claude\`, never to a shared file name.
 
 ## Product invariants
 

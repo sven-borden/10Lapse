@@ -132,6 +132,7 @@ public sealed class ProjectThreadingTests
         Assert.Throws<ObjectDisposedException>(() => project.InsertFrames(0, TestFrames.Folder("b", 1)));
         Assert.Throws<ObjectDisposedException>(() => project.UpdateFrames([frames[0]]));
         Assert.Throws<ObjectDisposedException>(() => project.RemoveFrames([frames[0].Id]));
+        Assert.Throws<ObjectDisposedException>(() => project.RemoveFramesAndSkip([frames[0].Id], []));
         Assert.Throws<ObjectDisposedException>(() => project.ReorderFrames([frames[1].Id, frames[0].Id]));
         Assert.Throws<ObjectDisposedException>(() => project.AddSkippedFiles([]));
         Assert.Throws<ObjectDisposedException>(() => project.Name = "Other");
@@ -140,9 +141,11 @@ public sealed class ProjectThreadingTests
         Assert.Equal(frames, project.Frames);
     }
 
+    // The test goes on on the thread pool, never inline on the new thread: that thread exits right after, and a later
+    // thread can reuse its managed id, so a project created after the await would see a stranger as its owner.
     private static Task RunOnNewThread(Action action)
     {
-        var done = new TaskCompletionSource();
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var thread = new Thread(() =>
         {
             try

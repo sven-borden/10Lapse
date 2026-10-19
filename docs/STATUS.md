@@ -1,10 +1,10 @@
 # 10Lapse 3.0 status
 
-Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
+Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Running: PR #71 fix round (#15) and #33 (wave 7).
+Wave 8 running (2026-10-19): the PR #74 fix round (#22, Opus fixer) and #29 first launch (Opus) in parallel. Next: #19 preview and #23 output panel.
 
 ## Waves
 
@@ -26,10 +26,10 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 5 | #28 Title bar and app shell | O | `TenLapse.App` window and shell | merged #67 |
 | 5 | #13 Photo formats through WIC | O | `TenLapse.Media/Decoding` | merged #70 |
 | 6 | #26 One error path | O | App startup, `Core/Diagnostics` | merged #69 |
-| 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | PR #71, fix round |
-| 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | |
-| 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | running |
-| 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | |
+| 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | merged #71 |
+| 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | merged #73 |
+| 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | merged #72 |
+| 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | PR #74, reviewed, fix round pending |
 | 8 | #29 First launch drop zone | O | App empty state view | |
 | 9 | #19 Preview with proxy cache | O | preview view and cache | |
 | 9 | #23 Output panel | S | output inspector section | |
@@ -44,7 +44,7 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 14 | #31 Rating prompt | S | Store rating | |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | |
 | 15 | #36 Narrow window layout | S | shell visual states | |
-| 15 | #37 Icon and tile assets | S | `Assets/` (needs the icon choice) | |
+| 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | |
 | 16 | #35 Motion system | O | every view, alone | |
 | 17 | #39 Strings to resource files | S | every view, alone | |
 | 18 | #38 Accessibility pass | O | every view, alone | |
@@ -55,15 +55,16 @@ own waves once 3.0 ships.
 
 ## Owner items (Sven)
 
-- #2 Partner Center numbers: decides x86 and the first translations.
-- #7 Fix the Store description line now (listing only, no package).
-- #11 Sign off the design spec. Until then `DESIGN.md` and
-  `docs/design/canvas/` are treated as the approved spec.
-- #30 Sample sequence: 60 to 120 frames, shot by Sven or CC0. Until it exists,
-  the first-launch screen has no *Try a sample* button.
-- #37 needs the icon direction before wave 15: A Five frames, B Sun path, or
-  C Stacked frames (`docs/design/canvas/foundations/Icon.dc.html`).
-- Later: #40 flight, #42 listing, #43 trailer, #44 rollout, #58 pricing.
+Nothing blocks the build loop. Everything below waits until release is near
+(Sven, 2026-10-19).
+
+- Before the first 3.0 submission, one Partner Center visit: #2 numbers
+  (decides x86 and the first translations; #39 extracts English strings
+  without them), #7 description line, and the privacy URL pointed at
+  `PRIVACY.md` on GitHub.
+- #30 Sample sequence: deferred. #29 ships without the *Try a sample* button;
+  add it once a set exists.
+- Release: #40 flight, #42 listing, #43 trailer, #44 rollout, #58 pricing.
 
 ## Decisions
 
@@ -156,12 +157,26 @@ own waves once 3.0 ships.
   `AppEnvironment.EncoderCacheFile()`.
 - 2026-10-18 (#13 review): RAW+JPEG pairs with the same base name in one
   folder import once, keeping the JPEG (#12).
+- 2026-10-19 (#12): `IPhotoImportSource` lives in Core; Media's
+  `PhotoImporter` implements it; Presentation's `ImportViewModel` drives it.
+  Import fills in two phases (list, then read metadata with 8 readers). OneDrive
+  online-only files are not read silently: one question per import ("N photos
+  are only in OneDrive. Download them now? About X GB."), default *Skip them*
+  (`SkipReason.CloudOnly`). Junctions and symlinks are not followed (cloud
+  reparse folders are). A RAW is dropped only when a readable non-RAW twin
+  exists. Folders that will not open get their own InfoBar, not a skipped
+  photo. `ApplyDefaultSort` only on a project that was empty and unsorted by
+  the user during the import. Drops are refused while Settings is open.
+- 2026-10-19 (Sven): icon direction A Five frames (#37). Design spec approved
+  (#11 closed): `DESIGN.md`, the canvas, `Main.dc.html` and the motion spec are
+  the spec. License stays all rights reserved; no `LICENSE` file. #29 ships
+  without *Try a sample*; #30 stays open for later.
 
 ## Merged
 
 - #6 PR #60: `PRIVACY.md` and `README.md`. Owner: point the Partner Center
-  privacy URL at `PRIVACY.md`; choose a license (none yet, all rights
-  reserved).
+  privacy URL at `PRIVACY.md`. License: all rights reserved (Sven,
+  2026-10-19).
 - #3 PR #61: tag `v2.1.1-legacy`, legacy UWP removed, new solution, gate
   (`solution`, `restore`, Debug `build`, `test`, Release `build`, about 19 s).
 - #4 PR #62: Store identity `62394glaglasven.10Lapse` 3.0.0.0, Application Id
@@ -227,3 +242,24 @@ own waves once 3.0 ships.
   size: 4K export from 24 MP JPEGs about 25–28 fps, 540–640 MB peak.
   Presentation `SkippedFileText` and `SkippedFilesInfoBar` for #12. A JPEG
   missing only its EOI marker is rejected as truncated (documented).
+- #33 PR #72: `tests/TenLapse.Tests/Fixtures/Photos/` (20 generated files,
+  288 KB; `make_fixtures.py`, run with `python -P`; README with expected
+  outcomes), `PhotoFixtureCatalogue`, `RuntimeFixtures` (100 MP, locked,
+  deleted, long Unicode path, read-only). #12's import test must skip exactly
+  `empty.jpg`, `truncated.jpg`, `no-eoi.jpg`, `text.heic` and import the other
+  16.
+- #15 PR #71: `TenLapse.Core.Ordering` (`NaturalNameComparer` exact against
+  `StrCmpLogicalW` for ASCII, Latin-1 and Latin Extended-A, names normalised to
+  Form C; `CaptureTimeReader` with sub-seconds and offsets, never throws;
+  `FrameSorter` sorting by UTC only when every timed frame has an offset;
+  `FrameGaps.Detect(frames, mode)` with timestamp names excluded from
+  numbering; `Project` extensions `ApplySort`, `ApplyDefaultSort` (empty
+  project only), `Resort` (keeps Manual order), `ReorderManually`). New
+  `Frame.CaptureUtcOffset`. RAW and CR3 capture times are unverified until #30.
+- #12 PR #73: import from *Add photos* (*Choose folder…*, *Choose photos…*,
+  *Include subfolders*), and drops on the window (asks to add or start new on
+  a non-empty project). 5,000 photos: first frames about 0.1 s, done about
+  1.9 s, UI steps under 30 ms. `Project.RemoveFramesAndSkip` (one commit),
+  `ProjectViewModel.RemoveResource`, `IDialogService.ChooseAsync`,
+  `IUiDispatcher`, `IPhotoPicker`, `IImportFolderMemory` (session only; #21
+  persists it). The import progress sits in the command bar with Cancel.

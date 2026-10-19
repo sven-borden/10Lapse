@@ -1,5 +1,7 @@
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using TenLapse.Core.Diagnostics;
+using TenLapse.Media.Import;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
@@ -111,7 +113,20 @@ public partial class App : Application
         var errors = new ErrorPresenter(_log, infoBars, [new VideoExportErrorMapper()], diagnostics.CopyAsync);
         var shell = new ShellViewModel(dialogs, errors);
         var settings = new SettingsViewModel(errors, diagnostics);
-        window = new MainWindow(shell, settings, infoBars, logOnly);
+
+        // Import (#12): Media's PhotoImporter does the file work behind Core's IPhotoImportSource; the batches reach
+        // the project on this (the UI) thread's queue. The pickers remember the last folder for the session; #21
+        // passes an IImportFolderMemory that lasts across launches instead of SessionImportFolders.
+        var import = new ImportViewModel(
+            shell,
+            new PhotoImporter { Log = _log },
+            new PhotoPickerService(() => window!.AppWindow.Id),
+            new SessionImportFolders(),
+            new DispatcherQueueUiDispatcher(DispatcherQueue.GetForCurrentThread(), logOnly),
+            dialogs,
+            infoBars,
+            errors);
+        window = new MainWindow(shell, settings, import, infoBars, logOnly, errors);
         _errors = errors;
 #if DEBUG
         errors.Guard(() => Debugging.DebugLaunch.Apply(shell, infoBars), "Applying the Debug switches failed.");

@@ -385,5 +385,8 @@ public sealed class ErrorPathTests
 
         public Task<bool> ConfirmAsync(Confirmation confirmation) =>
             Throws ? throw new InvalidOperationException("The window has no XAML root yet.") : Task.FromResult(true);
+
+        public Task<ChoiceResult> ChooseAsync(Choice choice) =>
+            Throws ? throw new InvalidOperationException("The window has no XAML root yet.") : Task.FromResult(ChoiceResult.Primary);
     }
 }

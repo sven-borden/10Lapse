@@ -48,6 +48,9 @@ public static class SkippedFileText
     /// <summary><see cref="SkipReason.CloudFileOffline"/>.</summary>
     public static string CloudFileOffline => "In the cloud and not available offline";
 
+    /// <summary><see cref="SkipReason.CloudOnly"/>: the user chose not to download it.</summary>
+    public static string CloudOnly => "Only in OneDrive, not on this PC";
+
     /// <summary>The short reason shown beside the file name.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A value <see cref="SkipReason"/> does not define.</exception>
     public static string Reason(SkipReason reason) => reason switch
@@ -63,6 +66,7 @@ public static class SkippedFileText
         SkipReason.FileInUse => FileInUse,
         SkipReason.ImageTooLarge => ImageTooLarge,
         SkipReason.CloudFileOffline => CloudFileOffline,
+        SkipReason.CloudOnly => CloudOnly,
         _ => throw new ArgumentOutOfRangeException(nameof(reason), reason, "Unknown skip reason."),
     };
 }
