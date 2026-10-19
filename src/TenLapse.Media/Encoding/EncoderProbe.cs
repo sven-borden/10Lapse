@@ -48,9 +48,11 @@ public static class EncoderProbe
 
     /// <summary>
     /// How long one test encode may take before it counts as stalled. A 4K frame takes about 0.3 s here on the GPU
-    /// and about 0.3 s in software; a slow laptop's software HEVC encoder a few times that.
+    /// and about 0.3 s in software; a slow laptop's software HEVC encoder a few times that, and a GPU encoder shared
+    /// with another process's encodes (or opening its first session after a driver update) several seconds more:
+    /// 8 s stalled now and then under load here, so 20 s.
     /// </summary>
-    public static TimeSpan TestEncodeTimeout { get; } = TimeSpan.FromSeconds(8);
+    public static TimeSpan TestEncodeTimeout { get; } = TimeSpan.FromSeconds(20);
 
     private static readonly VideoFormat[] _formats = [VideoFormat.Mp4H264, VideoFormat.Mp4Hevc];
 

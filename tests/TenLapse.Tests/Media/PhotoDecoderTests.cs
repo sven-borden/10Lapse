@@ -4,6 +4,7 @@ using System.Security.Principal;
 using TenLapse.Core.Projects;
 using TenLapse.Media.Decoding;
 using TenLapse.Media.Export;
+using TenLapse.Media.Rendering;
 using Windows.Graphics.Imaging;
 using static TenLapse.Tests.Media.PhotoFixtures;
 
@@ -649,6 +650,29 @@ public sealed class PhotoDecoderTests : IDisposable
         Assert.True(IsRed(Quadrant(photo, 1)), $"top-right is {Quadrant(photo, 1)}");
     }
 
+    // Stored 64x32 with red top-left, shown 32x64 for orientations 5 to 8: 5 transposes (red stays top-left), 6 turns
+    // clockwise (top-right), 7 transposes the other way (bottom-right), 8 turns anticlockwise (bottom-left).
+    // Contained in 32x32, it halves: 16x32 as shown.
+    [Theory]
+    [InlineData((ushort)5, 0)]
+    [InlineData((ushort)6, 1)]
+    [InlineData((ushort)7, 3)]
+    [InlineData((ushort)8, 2)]
+    public async Task AContainSizeAppliesToThePhotoAsTurned(ushort orientation, int redQuadrant)
+    {
+        var path = await _files.WriteAsync($"contain-{orientation}.jpg", BitmapEncoder.JpegEncoderId, orientation: orientation);
+
+        var result = await PhotoDecoder.DecodeAsync(path, PhotoDecodeOptions.Contain(new PixelSize(32, 32)), Token);
+
+        Assert.True(result.Succeeded, result.Failure?.Detail);
+        using var photo = result.Value;
+        Assert.Equal(new PixelSize(16, 32), photo.Size);
+        for (var quadrant = 0; quadrant < 4; quadrant++)
+        {
+            Assert.True(IsRed(Quadrant(photo, quadrant)) == (quadrant == redQuadrant), $"quadrant {quadrant} is {Quadrant(photo, quadrant)}");
+        }
+    }
+
     [Theory]
     [InlineData(6000, 4000, 3840, 2160, 0.64)]
     [InlineData(4000, 6000, 3840, 2160, 0.96)]
@@ -672,7 +696,7 @@ public sealed class PhotoDecoderTests : IDisposable
     [InlineData(1280, 720, 3840, 2160, 1280, 720)]
     public void TheSideACoverCropsHasTheParityOfTheOutput(int width, int height, int outputWidth, int outputHeight, int scaledWidth, int scaledHeight)
     {
-        // The crop's margin splits evenly, so FrameFill starts on a whole pixel: 4288x2848 to 3840x2160 used to
+        // The crop's margin splits evenly, so the Fill crop starts on a whole pixel: 4288x2848 to 3840x2160 used to
         // decode 2551 rows and crop from row 195.5.
         var output = new PixelSize(outputWidth, outputHeight);
         var scale = PhotoDecoder.Scale(new PixelSize(width, height), PhotoDecodeOptions.Cover(output));
@@ -680,7 +704,7 @@ public sealed class PhotoDecoderTests : IDisposable
         var scaled = (PhotoDecoder.Scaled(width, scale, outputWidth), PhotoDecoder.Scaled(height, scale, outputHeight));
 
         Assert.Equal((scaledWidth, scaledHeight), scaled);
-        var crop = FrameFill.SourceRect(new Windows.Foundation.Size(scaled.Item1, scaled.Item2), new Windows.Foundation.Size(outputWidth, outputHeight));
+        var crop = FrameRenderer.CoverSourceRect(new Windows.Foundation.Size(scaled.Item1, scaled.Item2), new Windows.Foundation.Size(outputWidth, outputHeight));
         Assert.Equal(Math.Round(crop.X), crop.X);
         Assert.Equal(Math.Round(crop.Y), crop.Y);
     }

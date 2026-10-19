@@ -31,6 +31,7 @@ public partial class App : Application
         UnhandledException += OnUnhandledException;
 
         _log.Info($"10Lapse {AppDiagnostics.AppVersion()} starting ({(AppEnvironment.HasPackageIdentity ? "packaged" : "unpackaged")}); log in {_log.Folder}.");
+        ExportCleanupLog.Start(_log);
 
         // App.xaml (the token dictionaries, the styles) that fails to load would escape the constructor with no
         // message and maybe no log: as in OnLaunched, log it, say so in a plain message box and close. The process

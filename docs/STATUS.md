@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Wave 8 running (2026-10-19): the PR #74 fix round (#22, Opus fixer) and #29 first launch (Opus) in parallel. Next: #19 preview and #23 output panel.
+2026-10-19: #22 merged. PR #75 (#29 first launch) in review; #19 preview (Opus) building. Next: #23 output panel.
 
 ## Waves
 
@@ -29,9 +29,9 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 6 | #15 Frame order | S | `TenLapse.Core/Ordering` | merged #71 |
 | 7 | #12 Import folder, files, drag and drop | O | `Core/Import`, App import commands | merged #73 |
 | 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | merged #72 |
-| 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | PR #74, reviewed, fix round pending |
-| 8 | #29 First launch drop zone | O | App empty state view | |
-| 9 | #19 Preview with proxy cache | O | preview view and cache | |
+| 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | merged #74 |
+| 8 | #29 First launch drop zone | O | App empty state view | PR #75, in review |
+| 9 | #19 Preview with proxy cache | O | preview view and cache | building |
 | 9 | #23 Output panel | S | output inspector section | |
 | 10 | #20 Filmstrip | O | filmstrip view | |
 | 10 | #17 Timing panel | S | timing inspector section | |
@@ -263,3 +263,14 @@ Nothing blocks the build loop. Everything below waits until release is near
   `ProjectViewModel.RemoveResource`, `IDialogService.ChooseAsync`,
   `IUiDispatcher`, `IPhotoPicker`, `IImportFolderMemory` (session only; #21
   persists it). The import progress sits in the command bar with Cancel.
+- #22 PR #74: `ProjectExporter.ExportAsync(snapshot, path, progress, ct)`
+  through `FrameRenderer.Draw` (the call preview must use). Each export writes
+  its own hidden `<name>.<8 hex>.partial`, journaled in
+  `unfinished-exports.txt` and deleted at next launch if left. A target held
+  by another app past 5 s: the video is saved as `Name (2).mp4` and
+  `ProjectExportResult.TargetInUse` says so. H.264 and HEVC below 1 fps use a
+  whole-fps nominal rate with scaled bitrate. Decode defaults 4 ahead and 3
+  threads on an iGPU or 8 GB RAM or less, else 8 and 6. New failures
+  `FrameUnreadable`, `DrawingFailed`, `EncoderStuck` (restart 10Lapse).
+  Real-encoder tests run in one serial collection. #23 uses `ExportBitrate`;
+  #25 takes the power request and awaits `ExportCleanup.WhenAllDone()` on close.

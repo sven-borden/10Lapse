@@ -274,6 +274,76 @@ public static class OutputSize
         return width >= height ? new PixelSize(longSide, shortSide) : new PixelSize(shortSide, longSide);
     }
 
+    /// <summary>
+    /// The size of a project's video: <see cref="For"/> with its resolution and shape, and for
+    /// <see cref="FrameAspect.MatchPhotos"/> the most common photo size (<see cref="MostCommonPhotoSize"/>).
+    /// Match photos with no photo size known yet (no frames, or none read) takes 16:9.
+    /// </summary>
+    public static PixelSize For(OutputResolution resolution, FrameAspect aspect, IEnumerable<Frame> frames)
+    {
+        ArgumentNullException.ThrowIfNull(frames);
+        if (aspect != FrameAspect.MatchPhotos)
+        {
+            return For(resolution, aspect);
+        }
+
+        return MostCommonPhotoSize(frames) is { } photo
+            ? For(resolution, aspect, photo)
+            : For(resolution, FrameAspect.Ratio16x9);
+    }
+
+    /// <summary>
+    /// The oriented photo size Match photos (#18) takes, or null when no frame has a size. The shape is decided
+    /// before the size: the orientation most frames have (landscape, portrait or square), then the reduced aspect
+    /// ratio most of those have (4032x3024 and 4000x3000 are both 4:3), then the size most of those have. Counting
+    /// exact sizes alone let three landscape photos outvote four portrait ones from two phones. On a tie, the
+    /// first to reach the count wins.
+    /// </summary>
+    public static PixelSize? MostCommonPhotoSize(IEnumerable<Frame> frames)
+    {
+        ArgumentNullException.ThrowIfNull(frames);
+        var sizes = frames.Where(frame => frame.PixelSize is not null).Select(frame => frame.PixelSize!.Value).ToList();
+        if (sizes.Count == 0)
+        {
+            return null;
+        }
+
+        var orientation = MostCommon(sizes, Orientation);
+        sizes.RemoveAll(size => Orientation(size) != orientation);
+        var aspect = MostCommon(sizes, ReducedAspect);
+        sizes.RemoveAll(size => ReducedAspect(size) != aspect);
+        return MostCommon(sizes, static size => size);
+    }
+
+    private static int Orientation(PixelSize size) => Math.Sign(size.Width - size.Height);
+
+    private static (int Width, int Height) ReducedAspect(PixelSize size)
+    {
+        // Both sides are positive (PixelSize), so the divisor is at least 1.
+        var divisor = (int)System.Numerics.BigInteger.GreatestCommonDivisor(size.Width, size.Height);
+        return (size.Width / divisor, size.Height / divisor);
+    }
+
+    // The key most sizes have; on a tie, the first to reach that count.
+    private static T MostCommon<T>(List<PixelSize> sizes, Func<PixelSize, T> key)
+        where T : notnull
+    {
+        var counts = new Dictionary<T, int>();
+        var best = key(sizes[0]);
+        var bestCount = 0;
+        foreach (var size in sizes)
+        {
+            var value = key(size);
+            var count = counts[value] = counts.GetValueOrDefault(value) + 1;
+            if (count > bestCount)
+            {
+                (best, bestCount) = (value, count);
+            }
+        }
+
+        return best;
+    }
+
     // shortSide × longRatio / shortRatio, rounded half up to an even number.
     private static int LongSide(int shortSide, long longRatio, long shortRatio) =>
         (int)(((shortSide * longRatio) + shortRatio) / (2 * shortRatio) * 2);

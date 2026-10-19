@@ -4,6 +4,7 @@ using TenLapse.Core.Timing;
 using TenLapse.Media.Decoding;
 using TenLapse.Media.Export;
 using TenLapse.Media.Inspection;
+using TenLapse.Media.Rendering;
 using Windows.Graphics.Imaging;
 using static TenLapse.Tests.Media.MediaSkips;
 
@@ -83,7 +84,7 @@ public sealed class PhotoFileSourceTests : IDisposable
         // 213 rows it started at row 16.5 and every pixel was resampled between two rows.
         var decoded = cover.GetPixelBytes();
         var (width, height) = ((int)cover.SizeInPixels.Width, (int)cover.SizeInPixels.Height);
-        var crop = FrameFill.SourceRect(new Windows.Foundation.Size(width, height), new Windows.Foundation.Size(output.Width, output.Height));
+        var crop = FrameRenderer.CoverSourceRect(new Windows.Foundation.Size(width, height), new Windows.Foundation.Size(output.Width, output.Height));
         var copied = 0;
         for (var y = 0; y < output.Height; y++)
         {
@@ -106,7 +107,7 @@ public sealed class PhotoFileSourceTests : IDisposable
         using (var session = target.CreateDrawingSession())
         {
             session.Clear(Microsoft.UI.Colors.Black);
-            FrameFill.Draw(session, bitmap, new Windows.Foundation.Size(output.Width, output.Height));
+            FrameRenderer.Draw(session, bitmap, FitMode.Fill, output);
         }
 
         return target.GetPixelBytes();
@@ -140,9 +141,13 @@ public sealed class PhotoFileSourceTests : IDisposable
         await File.WriteAllTextAsync(bad, "not a photo", TestContext.Current.CancellationToken);
         var output = _files.PathOf("broken.mp4");
 
-        var failure = await Assert.ThrowsAsync<PhotoDecodeException>(
+        var exception = await Assert.ThrowsAsync<VideoExportException>(
             () => ExportOrSkipAsync(new PhotoFileSource([good, good, bad, good]), output, new VideoExportSettings(640, 360, new Fraction(30, 1))));
+        await ExportCleanup.WhenDone(output);
 
+        Assert.Equal(VideoExportFailure.FrameUnreadable, exception.Failure);
+        Assert.Equal((2, bad), (exception.FrameIndex, exception.SourcePath));
+        var failure = Assert.IsType<PhotoDecodeException>(exception.InnerException);
         Assert.Equal(2, failure.FrameIndex);
         Assert.Equal(SkipReason.UnsupportedFormat, failure.Failure.Reason);
         Assert.False(File.Exists(output));

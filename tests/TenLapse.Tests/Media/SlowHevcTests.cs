@@ -89,15 +89,14 @@ public sealed class SlowHevcTests
     }
 
     [Fact]
-    public void OnlyHevcBelowOneFpsGetsANominalRate()
+    public void RatesBelowOneFpsGetANominalRate()
     {
-        Assert.Equal(new Fraction(1, 1), SinkWriterEncoder.NominalFrameRate(VideoFormat.Mp4Hevc, new Fraction(1, 10)));
-        Assert.Equal(new Fraction(6, 5), SinkWriterEncoder.NominalFrameRate(VideoFormat.Mp4Hevc, new Fraction(3, 10)));
-        Assert.Equal(new Fraction(999, 500), SinkWriterEncoder.NominalFrameRate(VideoFormat.Mp4Hevc, new Fraction(999, 1000)));
-        Assert.Equal(new Fraction(1, 1), SinkWriterEncoder.NominalFrameRate(VideoFormat.Mp4Hevc, new Fraction(1, 9999)));
-        Assert.Equal(new Fraction(1, 1), SinkWriterEncoder.NominalFrameRate(VideoFormat.Mp4Hevc, new Fraction(1, 1)));
-        Assert.Equal(new Fraction(3, 2), SinkWriterEncoder.NominalFrameRate(VideoFormat.Mp4Hevc, new Fraction(3, 2)));
-        Assert.Equal(new Fraction(1, 10), SinkWriterEncoder.NominalFrameRate(VideoFormat.Mp4H264, new Fraction(1, 10)));
+        Assert.Equal(new Fraction(1, 1), SinkWriterEncoder.NominalFrameRate(new Fraction(1, 10)));
+        Assert.Equal(new Fraction(6, 5), SinkWriterEncoder.NominalFrameRate(new Fraction(3, 10)));
+        Assert.Equal(new Fraction(999, 500), SinkWriterEncoder.NominalFrameRate(new Fraction(999, 1000)));
+        Assert.Equal(new Fraction(1, 1), SinkWriterEncoder.NominalFrameRate(new Fraction(1, 9999)));
+        Assert.Equal(new Fraction(1, 1), SinkWriterEncoder.NominalFrameRate(new Fraction(1, 1)));
+        Assert.Equal(new Fraction(3, 2), SinkWriterEncoder.NominalFrameRate(new Fraction(3, 2)));
 
         // Each frame keeps its bits: ten times the rate, ten times the bitrate.
         Assert.Equal(10_000_000u, SinkWriterEncoder.NominalBitrate(1_000_000, new Fraction(1, 10), new Fraction(1, 1)));
@@ -123,7 +122,7 @@ public sealed class SlowHevcTests
             // The MP4 sink's timescale is floor(nominal rate x 1000) units a second, as it is floor(rate x 1000) at
             // every other rate: when that is whole (1/2, 1/5, 1/10, 3/10 here) every time is exact; otherwise
             // (1000/1001) each lands less than one unit after its start, as StreamingExportTests checks for H.264.
-            var nominal = SinkWriterEncoder.NominalFrameRate(VideoFormat.Mp4Hevc, rate);
+            var nominal = SinkWriterEncoder.NominalFrameRate(rate);
             var timescale = (long)nominal.Numerator * 1000 / nominal.Denominator;
             var unit = (FrameTiming.TicksPerSecond + timescale - 1) / timescale;
             if ((long)nominal.Numerator * 1000 % nominal.Denominator == 0)
