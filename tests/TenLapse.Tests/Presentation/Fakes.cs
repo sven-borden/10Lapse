@@ -241,3 +241,19 @@ internal sealed class RecordingResource(string name, List<string> log, bool thro
         }
     }
 }
+
+/// <summary>Records the links it was asked to open, and answers or throws as the test says (the Store and the browser stay shut).</summary>
+internal sealed class FakeLauncher : ILauncher
+{
+    public List<Uri> Launched { get; } = [];
+
+    public bool Result { get; set; } = true;
+
+    public Exception? Failure { get; set; }
+
+    public Task<bool> LaunchUriAsync(Uri uri)
+    {
+        Launched.Add(uri);
+        return Failure is { } failure ? Task.FromException<bool>(failure) : Task.FromResult(Result);
+    }
+}

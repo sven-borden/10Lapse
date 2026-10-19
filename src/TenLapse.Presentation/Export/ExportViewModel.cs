@@ -43,8 +43,8 @@ public enum ExportPanelState
 /// (each phase change and the last frame always). Narrator hears the start, every ten percent at most, and the end.
 /// </para>
 /// <para>
-/// <b>Hooks.</b> <see cref="Started"/> and <see cref="Ended"/> bracket every export: #25 takes its power request there,
-/// #31 counts <see cref="ExportOutcome.Succeeded"/> for the rating prompt.
+/// <b>Hooks.</b> <see cref="Started"/> and <see cref="Ended"/> bracket every export. The power request (#25) is held
+/// between the same two points, by this class, so no way out of an export can forget it. #31 counts <see cref="ExportOutcome.Succeeded"/> for the rating prompt.
 /// </para>
 /// </remarks>
 public sealed partial class ExportViewModel : ObservableObject, IDisposable
@@ -77,6 +77,9 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     private int _announcedTenth;
     private bool _closing;
     private bool _disposed;
+
+    // The power request of the running export (#25); null when none runs or Windows refused.
+    private IDisposable? _awake;
 
     // The export moving the preview itself (so its own seeks are not taken for the user's), and when the user last did.
     private bool _seeking;
@@ -142,10 +145,10 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         _player.PropertyChanged += OnPlayerPropertyChanged;
     }
 
-    /// <summary>Raised as an export starts, after the Save dialog (#25 takes its power request here).</summary>
+    /// <summary>Raised as an export starts, after the Save dialog and after the PC is asked to stay awake.</summary>
     public event EventHandler? Started;
 
-    /// <summary>Raised once per export as it ends, however it ends (#25 lets go of its power request; #31 counts successes).</summary>
+    /// <summary>Raised once per export as it ends, however it ends, after the power request is let go (#31 counts successes).</summary>
     public event EventHandler<ExportEndedEventArgs>? Ended;
 
     /// <summary>Something for Narrator to hear (the view raises it as a UIA notification).</summary>
@@ -353,6 +356,9 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
             _closing = true;
             ExportCommand.Cancel();
         }
+
+        // The export ends on a worker thread a moment after the cancel; the PC need not stay awake for that.
+        ReleaseAwake();
     }
 
     private async Task ExportAsync(CancellationToken cancellationToken)
@@ -470,8 +476,20 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         SeekPreview(0);
         _filmstrip.SetPending(snapshot.Frames, 0);
         _services.Window.ShowProgress(null);
-        Announced?.Invoke(this, ExportText.Started(fileName));
-        Started?.Invoke(this, EventArgs.Empty);
+        HoldAwake(fileName);
+        try
+        {
+            Announced?.Invoke(this, ExportText.Started(fileName));
+            Started?.Invoke(this, EventArgs.Empty);
+        }
+        catch
+        {
+            // A subscriber threw before the exporter began: take the export back out (the power request goes, the panel
+            // is not left on "Exporting") and let the command's guard show the failure.
+            End(failed: true);
+            State = ExportPanelState.Editing;
+            throw;
+        }
     }
 
     // Shown at most every MinProgressInterval; a new phase and the last frame always. Reports of an export that has ended
@@ -505,7 +523,9 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         // The preview shows the frame being written, unless the user is playing it or has just moved it (each seek also
         // decodes a frame beside the export); the strip dims what is still to come.
         var writing = Math.Clamp(status.Frame, 0, Math.Max(0, status.FrameCount - 1));
-        if (!_player.IsPlaying && (_userSeekAt is not { } moved || now - moved >= UserSeekPause))
+        // Not while the window is minimized or hidden: nothing should decode and draw unseen (#19), and the export does not
+        // wait for the preview. It catches up with the next report after the window shows again.
+        if (_player.IsWindowShown && !_player.IsPlaying && (_userSeekAt is not { } moved || now - moved >= UserSeekPause))
         {
             SeekPreview(writing);
         }
@@ -568,6 +588,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     private void End(bool failed)
     {
         _run++;
+        ReleaseAwake();
         _applied = null;
         _shell.Edits.Open();
         _filmstrip.ClearPending();
@@ -583,6 +604,36 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     }
 
     private void RaiseEnded(ExportOutcome outcome, ExportedVideo? video) => Ended?.Invoke(this, new ExportEndedEventArgs(outcome, video));
+
+    // Windows is asked to stay awake for as long as the export runs (the display may still go off). The service never
+    // throws; the guard is for a stand-in that does, because a missing power request must not stop an export.
+    private void HoldAwake(string fileName)
+    {
+        ReleaseAwake();
+        try
+        {
+            _awake = _services.KeepAwake.Hold(ExportText.KeepAwakeReason(fileName));
+        }
+        catch (Exception exception)
+        {
+            _errors.Report(exception, ExportText.KeepAwakeFailed);
+        }
+    }
+
+    // Idempotent: every way out of an export, and Dispose, may call it.
+    private void ReleaseAwake()
+    {
+        var awake = _awake;
+        _awake = null;
+        try
+        {
+            awake?.Dispose();
+        }
+        catch (Exception exception)
+        {
+            _errors.Report(exception, ExportText.KeepAwakeReleaseFailed);
+        }
+    }
 
     private void SeekPreview(int frame)
     {

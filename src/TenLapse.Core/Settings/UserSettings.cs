@@ -32,6 +32,15 @@ public sealed record UserSettings
 
     /// <summary>The folder the Save dialog opens in (#24 sets it after an export), or null for Videos.</summary>
     public string? ExportFolder { get; init; }
+
+    /// <summary>
+    /// How many exports have succeeded on this PC (#31), for the rating prompt. Not a preference: <i>Reset to defaults</i>
+    /// keeps it, so a reset cannot bring the prompt back.
+    /// </summary>
+    public int SuccessfulExports { get; init; }
+
+    /// <summary>The app version the rating prompt was last shown in (#31), or null when it never was. Kept by <i>Reset to defaults</i> too.</summary>
+    public string? RatingAskedVersion { get; init; }
 }
 
 /// <summary>What <see cref="ISettingsStore.Load"/> found.</summary>

@@ -35,6 +35,7 @@
   -->
   <ItemGroup>
     <Compile Include="..\..\src\TenLapse.App\Services\VideoExportErrorMapper.cs" Link="Linked\VideoExportErrorMapper.cs" />
+    <Compile Include="..\..\src\TenLapse.App\Services\PowerRequestKeepAwake.cs" Link="Linked\PowerRequestKeepAwake.cs" />
     <Compile Include="..\..\src\TenLapse.App\Services\EncoderDiagnostics.cs" Link="Linked\EncoderDiagnostics.cs" />
     <Compile Include="..\..\src\TenLapse.App\Services\EncoderOutputCapabilities.cs" Link="Linked\EncoderOutputCapabilities.cs" />
     <Compile Include="..\..\src\TenLapse.App\Services\ProjectVideoExporter.cs" Link="Linked\ProjectVideoExporter.cs" />

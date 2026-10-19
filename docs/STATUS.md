@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #24 merged. Building: #25 keep awake (Sonnet), #90 start-up crash (Opus). Next: #31 rating, #36 narrow layout, then #35 motion, #39 strings, #38 accessibility (each alone).
+2026-10-19: in flight: PR #91 (#90 start-up hardening, crash not reproduced) fix round, PR #94 (#36 narrow layout) in review, #37 icon assets building. Then #35 motion, #39 strings, #38 accessibility (each alone).
 
 ## Waves
 
@@ -38,16 +38,16 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 11 | #24 Export panel and finished state | O | export panel | merged #88 |
 | 11 | #18 Frame panel | S | frame inspector section | merged #80 |
 | 12 | #32 Golden render test | O | `tests/` golden | merged #81 |
-| 12 | #25 Export while minimized, keep awake | S | export power request | building |
+| 12 | #25 Export while minimized, keep awake | S | export power request | merged #92 |
 | 13 | #21 Remember settings | S | settings persistence | merged #83 |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
 | 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | merged #85 |
 | 13 | #86 Flaky memory assertion (bug) | S | `tests/` | merged #87 |
-| 13 | #90 Start-up crash 0xC000027B (bug) | O | App start-up | building |
-| 14 | #31 Rating prompt | S | Store rating | |
+| 13 | #90 Start-up crash 0xC000027B (bug) | O | App start-up | PR #91, fix round |
+| 14 | #31 Rating prompt | S | Store rating | merged #93 |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | merged #89 |
-| 15 | #36 Narrow window layout | S | shell visual states | |
-| 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | |
+| 15 | #36 Narrow window layout | S | shell visual states | PR #94, in review |
+| 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | building |
 | 16 | #35 Motion system | O | every view, alone | |
 | 17 | #39 Strings to resource files | S | every view, alone | |
 | 18 | #38 Accessibility pass | O | every view, alone | |
@@ -161,6 +161,11 @@ Nothing blocks the build loop. Everything below waits until release is near
 - 2026-10-19 (#34): the 1 GB export memory target applies on PCs with 8 GB RAM
   or less or an iGPU (decode 4 ahead, 3 threads: 932 MB peak private at 24 MP
   to 4K, thin margin). Larger PCs use 8 and 6 for speed (about 1.3 GB).
+- 2026-10-19 (#31): the rating ask comes 4 s after the second successful
+  export's finished state, once per package version, never after a failure or
+  cancel; a failed ask is log-only (the one exception to never silent, since the
+  user did not ask). Reset to defaults keeps the count. New settings fields need
+  no schema bump. *Send feedback* opens GitHub issues, *Rate 10Lapse* the Store.
 - 2026-10-19 (Sven): icon direction A Five frames (#37). Design spec approved
   (#11 closed): `DESIGN.md`, the canvas, `Main.dc.html` and the motion spec are
   the spec. License stays all rights reserved; no `LICENSE` file. #29 ships
@@ -210,3 +215,8 @@ Details are in each PR's "What the next issues should know".
   disabled at 0.6 outside Editing, `ShellViewModel.Edits` blocks edits during an
   export, close asks and waits up to 2 s, taskbar progress, notifications only
   packaged or with Debug `--notifications`, `Started`/`Ended` hooks; `--export-to=`.
+- #25 PR #92: `IKeepAwake` power request (system required, not display) held
+  by `ExportViewModel` from `Begin` to `End`; minimized exports run at full
+  speed and the hidden preview is not seeked.
+- #31 PR #93: `RatingPrompt`, `StoreRatingService` (no-op unpackaged), Settings
+  *Feedback* card; Debug `--fake-rating`. Verify the real dialog in #40.

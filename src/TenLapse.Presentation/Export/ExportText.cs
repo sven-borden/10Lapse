@@ -179,6 +179,15 @@ public static class ExportText
     /// <summary>Log: a progress report could not be shown.</summary>
     public static string ProgressFailed => "Showing the export progress failed.";
 
+    /// <summary>What <c>powercfg /requests</c> shows next to 10Lapse while a video is written.</summary>
+    public static string KeepAwakeReason(string fileName) => $"Exporting {fileName}";
+
+    /// <summary>Log: Windows would not keep the PC awake for the export (the export goes on).</summary>
+    public static string KeepAwakeFailed => "Asking Windows to keep the PC awake during the export failed. The export goes on; the PC may go to sleep.";
+
+    /// <summary>Log: letting go of the export's power request failed.</summary>
+    public static string KeepAwakeReleaseFailed => "Letting go of the export's power request failed.";
+
     /// <summary>Log: the taskbar progress could not be set.</summary>
     public static string TaskbarFailed => "Setting the taskbar progress failed.";
 
