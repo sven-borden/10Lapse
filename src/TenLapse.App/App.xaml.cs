@@ -99,11 +99,15 @@ public partial class App : Application
         var logOnly = new LogErrorSink(_log);
         var infoBars = new InfoBarQueue(logOnly);
 
-        // Copy diagnostics. The encoder section reads the cache #9's probe writes and never probes; #23, which starts
-        // the probe at launch, hands its result to EncoderDiagnostics as `loaded`.
+        // The encoder probe (#9) starts now, in the background; the Output panel (#23) takes its answer when it comes
+        // and nothing waits for it.
+        var encoders = new EncoderStartup(AppEnvironment.EncoderCacheFile());
+
+        // Copy diagnostics. The encoder section reads this session's probe result, else the cache #9's probe writes,
+        // and never probes itself.
         var diagnostics = new DiagnosticsCopier(
             new DiagnosticsCollector(
-                [new AppDiagnostics(), new GraphicsDiagnostics(), new EncoderDiagnostics(AppEnvironment.EncoderCacheFile())],
+                [new AppDiagnostics(), new GraphicsDiagnostics(), new EncoderDiagnostics(AppEnvironment.EncoderCacheFile(), () => encoders.Loaded)],
                 _log,
                 redaction: DiagnosticsRedaction.ForCurrentUser(AppEnvironment.ShortProfileFolder())),
             new ClipboardService(),
@@ -118,16 +122,26 @@ public partial class App : Application
         // Import (#12): Media's PhotoImporter does the file work behind Core's IPhotoImportSource; the batches reach
         // the project on this (the UI) thread's queue. The pickers remember the last folder for the session; #21
         // passes an IImportFolderMemory that lasts across launches instead of SessionImportFolders.
+        var ui = new DispatcherQueueUiDispatcher(DispatcherQueue.GetForCurrentThread(), logOnly);
         var import = new ImportViewModel(
             shell,
             new PhotoImporter { Log = _log },
             new PhotoPickerService(() => window!.AppWindow.Id),
             new SessionImportFolders(),
-            new DispatcherQueueUiDispatcher(DispatcherQueue.GetForCurrentThread(), logOnly),
+            ui,
             dialogs,
             infoBars,
             errors);
-        window = new MainWindow(shell, settings, import, infoBars, logOnly, errors);
+
+        // The Output panel (#23) offers only what the probe confirms; until then it says it is checking. A probe
+        // that is slow or fails leaves it with H.264 up to 1080p (OutputCapabilitiesDelivery).
+        var output = new OutputPanelViewModel(shell, errors);
+        var probe = encoders.Probe;
+#if DEBUG
+        probe = Debugging.DebugOutputCapabilities.FromSwitches(Environment.GetCommandLineArgs()) ?? probe;
+#endif
+        _ = errors.GuardAsync(() => output.DeliverAsync(probe, ui, errors, OutputCapabilitiesDelivery.DefaultPatience), OutputText.ProbeFailed);
+        window = new MainWindow(shell, settings, import, output, infoBars, logOnly, errors);
         _errors = errors;
 #if DEBUG
         errors.Guard(() => Debugging.DebugLaunch.Apply(shell, infoBars), "Applying the Debug switches failed.");

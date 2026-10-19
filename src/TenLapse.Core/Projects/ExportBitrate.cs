@@ -1,7 +1,6 @@
-using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 
-namespace TenLapse.Media.Export;
+namespace TenLapse.Core.Projects;
 
 /// <summary>
 /// The bitrate each <see cref="OutputQuality"/> exports at, and the file size that gives, from one formula so the
