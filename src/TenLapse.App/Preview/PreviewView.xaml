@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   The preview gate (#19): a swap chain the render thread (PreviewRenderLoop) draws the frame into, through the export's
-  FrameRenderer, as large as fits at the video's shape, centred, with 6 px corners (RadiusCard). Around the gate the
-  swap chain is transparent, so the Layer shows. It resizes with the window.
+  FrameRenderer, as large as fits at the video's shape, centred, with the RadiusCard corners. Around the gate the
+  render thread paints the Layer color itself (a transparent swap chain came out Mica-grey), so the stage reads as one
+  surface. It resizes with the window.
 -->
 <UserControl
   x:Class="TenLapse.Preview.PreviewView"

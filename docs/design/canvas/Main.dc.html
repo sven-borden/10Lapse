@@ -142,6 +142,7 @@ body{margin:0}
         <!-- Stage -->
         <div style="flex: 1; min-width: 0; min-height: 0; position: relative; display: flex; flex-direction: column; gap: 12px; padding: 20px">
           <div style="position: relative; width: {{g.W}}px; height: {{g.H}}px; flex: none">
+            <!-- The gate: Letterbox (#0C0C0D) behind a frame that has no picture yet or cannot be read. The bars Fit leaves inside the frame are the export's black (#000000), as the app draws them through the export's renderer (#19). -->
             <div style="position: absolute; inset: 0; background: #0C0C0D; clip-path: {{g.clip}}; opacity: {{dev.o}}; filter: {{dev.filter}}; transform: {{dev.tf}}; transition: {{dev.tr}}">
               <div style="position: absolute; left: 50%; top: 50%; width: {{g.pw}}px; height: {{g.ph}}px; margin-left: {{g.ml}}px; margin-top: {{g.mt}}px; overflow: hidden; transform: scale({{g.sc}}); transition: {{scaleTr}}">
                 <div style="position: absolute; inset: 0; background: linear-gradient(180deg, {{cur.top}} 0%, {{cur.mid}} 46%, {{cur.hor}} 68%)"></div>

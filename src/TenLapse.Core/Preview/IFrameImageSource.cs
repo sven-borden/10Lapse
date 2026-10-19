@@ -9,7 +9,7 @@ public enum FrameImageQuality
     /// <summary>No image.</summary>
     None = 0,
 
-    /// <summary>A small, fast decode of the photo (about 320 px), shown scaled up while its proxy is not built yet.</summary>
+    /// <summary>A small, fast decode of the photo (480 px on the longer side), shown scaled up while its proxy is not built yet.</summary>
     Quick = 1,
 
     /// <summary>The proxy (about 1280 px): what the preview shows once the cache has it.</summary>

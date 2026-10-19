@@ -64,7 +64,7 @@ public enum KeyFocus
 }
 
 /// <summary>
-/// The transport's keys (DESIGN.md, Keyboard shortcuts; #19): Space plays or pauses, the arrows step one frame,
+/// The transport's keys (#19): Space plays or pauses, the arrows step one frame,
 /// Shift with an arrow ten, Home and End jump to the ends. A key typed into a text input stays there, a key with
 /// Ctrl, Alt or the Windows key belongs to someone else (Alt+Left is Back), and a control that uses the arrows keeps
 /// them. The App asks this only for keys no control has handled.
