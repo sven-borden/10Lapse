@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  10Lapse app icon at 16 px, drawn on a 16 x 16 grid so that every edge lands on a pixel. TenLapse-20.svg and TenLapse-24.svg are the same drawing on their own grids.
+  10Lapse app icon at 16 px, drawn on a 16 x 16 grid so that every edge lands on a pixel. TenLapse-20.svg, -24.svg and -32.svg are the same drawing on their own grids.
   The canvas (Icon.dc.html) closes the gaps between the frames at 16 px and uses 8 px bands on the 48 grid;
   here the tile also fills the whole canvas (the Fluent small-size guidance: no padding when every pixel
   counts) and the five bands are 3, 3, 4, 3, 3 px. Same colours as

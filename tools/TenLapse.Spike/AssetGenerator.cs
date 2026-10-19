@@ -22,8 +22,8 @@ internal static partial class AssetGenerator
     // Square44x44Logo target sizes. Each comes plain, altform-unplated and altform-lightunplated.
     private static readonly int[] _targetSizes = [16, 20, 24, 30, 32, 36, 40, 48, 60, 64, 72, 80, 96, 256];
 
-    // Up to this size a drawing on the size's own pixel grid is used (16, 20, 24), from here on the 48 grid master.
-    private const int SmallLimit = 24;
+    // The sizes that have a drawing on their own pixel grid (TenLapse-NN.svg); every other size uses the 48 grid master.
+    private static readonly int[] _gridSizes = [16, 20, 24, 32];
 
     private const string FullView = "0 0 48 48";    // The master with its 4 px padding: the plated forms.
     private const string TightView = "3 3 42 42";   // The tile fills 95%: the unplated forms and the .ico.
@@ -54,6 +54,7 @@ internal static partial class AssetGenerator
             [16] = await File.ReadAllTextAsync(Path.Combine(sourceDirectory, "TenLapse-16.svg")),
             [20] = await File.ReadAllTextAsync(Path.Combine(sourceDirectory, "TenLapse-20.svg")),
             [24] = await File.ReadAllTextAsync(Path.Combine(sourceDirectory, "TenLapse-24.svg")),
+            [32] = await File.ReadAllTextAsync(Path.Combine(sourceDirectory, "TenLapse-32.svg")),
         });
 
         var device = CanvasDevice.GetSharedDevice();
@@ -106,7 +107,7 @@ internal static partial class AssetGenerator
     private static int Px(int size, int scale) => (int)Math.Floor((size * scale / 100.0) + 0.5);
 
     private static Asset Square(string file, int size, bool unplated) =>
-        new(file, size, size, size <= SmallLimit ? null : unplated ? TightView : FullView, 1);
+        new(file, size, size, _gridSizes.Contains(size) ? null : unplated ? TightView : FullView, 1);
 
     private static Asset Tile(string file, int width, int height, double fraction) => new(file, width, height, TileView, fraction);
 
