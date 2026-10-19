@@ -15,7 +15,7 @@ namespace TenLapse.Debugging;
 /// <summary>
 /// The filmstrip's Debug switch (#20): <c>--filmstrip-bench [--filmstrip-bench-out=PATH] [--filmstrip-bench-seconds=S]</c>
 /// with <c>--sample-frames=N</c> waits until the N photos are in, then scrolls the strip programmatically from the first
-/// thumbnail to the last at an even speed (20 s by default) and back in jumps of one view, and reports the private bytes
+/// thumbnail to the last at an even speed (20 s by default) and back in jumps of four views, and reports the private bytes
 /// along the way, the thumbnail loads (count and time by origin, cancelled), the UI thread's frame times
 /// (CompositionTarget.Rendering intervals) and what the cache holds; then closes the window. It drives the scroller, never
 /// synthetic input.
