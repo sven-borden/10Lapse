@@ -149,10 +149,10 @@ internal readonly record struct ExifTimeTags(
             return null;
         }
 
-        // The last entry of each of the six tags, in the order of TimeTags (a later duplicate replaces an earlier one,
-        // as MetadataExtractor did). Values are read once the table is done, so duplicates cost no reads.
-        Span<byte> last = stackalloc byte[TimeTags.Length * EntryBytes];
-        Span<bool> seen = stackalloc bool[TimeTags.Length];
+        // The last entry of each of the six tags, by SlotOf (a later duplicate replaces an earlier one, as
+        // MetadataExtractor did). Values are read once the table is done, so duplicates cost no reads.
+        Span<byte> last = stackalloc byte[6 * EntryBytes];
+        Span<bool> seen = stackalloc bool[6];
         Span<byte> entries = stackalloc byte[EntriesPerRead * EntryBytes];
         var count = EntryCount(tiff, ifd, bigEndian);
         for (var first = 0; first < count; first += EntriesPerRead)
@@ -165,7 +165,7 @@ internal readonly record struct ExifTimeTags(
 
             for (var at = 0; at < block.Length; at += EntryBytes)
             {
-                var slot = TimeTags.IndexOf(Read16(block, at, bigEndian));
+                var slot = SlotOf(Read16(block, at, bigEndian));
                 if (slot >= 0)
                 {
                     block.Slice(at, EntryBytes).CopyTo(last.Slice(slot * EntryBytes, EntryBytes));
@@ -188,9 +188,17 @@ internal readonly record struct ExifTimeTags(
     private static string? ValueOf(int slot, ByteWindow tiff, ReadOnlySpan<byte> last, ReadOnlySpan<bool> seen, bool bigEndian, Span<byte> text) =>
         seen[slot] ? ReadText(tiff, last.Slice(slot * EntryBytes, EntryBytes), bigEndian, text) : null;
 
-    /// <summary>The six tags, in the order of the record's parameters.</summary>
-    private static ReadOnlySpan<ushort> TimeTags =>
-        [DateTimeOriginalTag, SubSecTimeOriginalTag, OffsetTimeOriginalTag, DateTimeDigitizedTag, SubSecTimeDigitizedTag, OffsetTimeDigitizedTag];
+    /// <summary>The slot of one of the six tags, in the order of the record's parameters; -1 for any other tag.</summary>
+    private static int SlotOf(ushort tag) => tag switch
+    {
+        DateTimeOriginalTag => 0,
+        SubSecTimeOriginalTag => 1,
+        OffsetTimeOriginalTag => 2,
+        DateTimeDigitizedTag => 3,
+        SubSecTimeDigitizedTag => 4,
+        OffsetTimeDigitizedTag => 5,
+        _ => -1,
+    };
 
     /// <summary>LONG, SLONG, FLOAT and IFD: the TIFF types whose values are 4 bytes each.</summary>
     private static bool IsFourByteType(ushort type) => type is 4 or 9 or 11 or 13;
