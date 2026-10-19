@@ -18,6 +18,8 @@ pwsh -File scripts/gate.ps1
 
 The script restores packages, builds, and runs every test.
 
+`scripts/launch-test.ps1` starts the Debug app many times, under CPU or GPU load if asked, and keeps the details of any launch that crashes (`Get-Help scripts/launch-test.ps1`).
+
 The solution at the repo root has four projects:
 
 - `src/TenLapse.App`: the WinUI 3 app, packaged as a single-project MSIX
