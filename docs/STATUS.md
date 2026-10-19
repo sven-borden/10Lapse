@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: in flight: PR #91 (#90 start-up hardening, crash not reproduced) fix round, PR #94 (#36 narrow layout) in review, #37 icon assets building. Then #35 motion, #39 strings, #38 accessibility (each alone).
+2026-10-19: #36 merged. In flight: PR #91 (#90 start-up hardening) and PR #95 (#37 icon assets) fix rounds. Then #35 motion, #39 strings, #38 accessibility (each alone).
 
 ## Waves
 
@@ -46,8 +46,8 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 13 | #90 Start-up crash 0xC000027B (bug) | O | App start-up | PR #91, fix round |
 | 14 | #31 Rating prompt | S | Store rating | merged #93 |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | merged #89 |
-| 15 | #36 Narrow window layout | S | shell visual states | PR #94, in review |
-| 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | building |
+| 15 | #36 Narrow window layout | S | shell visual states | merged #94 |
+| 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | PR #95, fix round |
 | 16 | #35 Motion system | O | every view, alone | |
 | 17 | #39 Strings to resource files | S | every view, alone | |
 | 18 | #38 Accessibility pass | O | every view, alone | |
@@ -220,3 +220,7 @@ Details are in each PR's "What the next issues should know".
   speed and the hidden preview is not seeked.
 - #31 PR #93: `RatingPrompt`, `StoreRatingService` (no-op unpackaged), Settings
   *Feedback* card; Debug `--fake-rating`. Verify the real dialog in #40.
+- #36 PR #94: below 1,000 DIPs the inspector is a 260 px panel under the stage
+  with Timing/Frame/Output tabs (`ShellLayout`), selects in a row, floor
+  152 px in short windows; export and finished use two columns and hide the
+  tabs (deviations from the canvas, kept so the actions stay visible).

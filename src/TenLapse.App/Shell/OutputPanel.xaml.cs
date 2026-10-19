@@ -16,6 +16,10 @@ public sealed partial class OutputPanel : UserControl
         Unloaded += OnUnloaded;
     }
 
+    /// <summary>The narrow layout (#36): the three selects in one row and no bottom divider, or stacked with it.</summary>
+    internal void SetNarrow(bool narrow) =>
+        VisualStateManager.GoToState(this, narrow ? "Narrow" : "Wide", useTransitions: false);
+
     /// <summary>The panel's view model, for x:Bind. Set once, before the panel is loaded.</summary>
     public OutputPanelViewModel? ViewModel { get; set; }
 

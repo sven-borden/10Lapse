@@ -11,6 +11,10 @@
     Finished  a Success check that draws in, "Harbor sunset.mp4 is ready" with length, resolution, codec and real size,
               Exported in / Saved to, Play (the screen's one accent button), Show in folder, Back to editing (Ember Link).
 
+  Narrow (#36): the panel sits in the 260 px strip under the stage, where one column would push Cancel export and Play
+  below the fold. The two blocks of each part (RunningHead and RunningDetails, FinishedHead and FinishedDetails) then
+  stand side by side, 32 px apart, head left, with 12 px gaps instead of 20 and Cancel export above the minimize hint, so
+  the button shows in the panel's shortest height. ShellView calls SetNarrow. The reading and Tab order is the same in both.
   The Export button in the command bar is absent while this panel shows, so Play is the only amber button on the
   finished screen (DESIGN.md: one accent button per screen).
 -->
@@ -30,6 +34,31 @@
   </UserControl.Resources>
 
   <Grid>
+    <VisualStateManager.VisualStateGroups>
+      <VisualStateGroup x:Name="LayoutStates">
+        <VisualState x:Name="Wide" />
+        <VisualState x:Name="Narrow">
+          <VisualState.Setters>
+            <Setter Target="RunningSideColumn.Width" Value="*" />
+            <Setter Target="RunningLayout.RowSpacing" Value="0" />
+            <Setter Target="RunningLayout.Padding" Value="{StaticResource PaddingExportNarrow}" />
+            <Setter Target="RunningHead.Spacing" Value="{StaticResource SpacingMd}" />
+            <Setter Target="RunningDetails.(Grid.Row)" Value="0" />
+            <Setter Target="RunningDetails.(Grid.Column)" Value="1" />
+            <Setter Target="RunningDetails.RowSpacing" Value="{StaticResource SpacingMd}" />
+            <Setter Target="MinimizeHint.(Grid.Row)" Value="2" />
+            <Setter Target="CancelButton.(Grid.Row)" Value="1" />
+            <Setter Target="FinishedSideColumn.Width" Value="*" />
+            <Setter Target="FinishedLayout.RowSpacing" Value="0" />
+            <Setter Target="FinishedLayout.Padding" Value="{StaticResource PaddingExportNarrow}" />
+            <Setter Target="FinishedHead.Spacing" Value="{StaticResource SpacingMd}" />
+            <Setter Target="FinishedDetails.(Grid.Row)" Value="0" />
+            <Setter Target="FinishedDetails.(Grid.Column)" Value="1" />
+            <Setter Target="FinishedDetails.Spacing" Value="{StaticResource SpacingMd}" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
     <!-- Running. -->
     <ScrollViewer
       x:Name="RunningScroll"
@@ -38,95 +67,122 @@
       VerticalScrollBarVisibility="Auto"
       VerticalScrollMode="Auto"
       Visibility="Collapsed">
-      <StackPanel Padding="20,18,20,20" Spacing="{StaticResource SpacingXl}">
-        <StackPanel Spacing="{StaticResource SpacingXxs}">
-          <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind export:ExportText.Exporting}" />
-          <TextBlock
-            x:Name="RunningTitle"
-            AutomationProperties.HeadingLevel="Level2"
-            Style="{StaticResource SubtitleTextStyle}"
-            Text="{x:Bind ViewModel.FileName, Mode=OneWay}"
-            TextTrimming="CharacterEllipsis" />
-        </StackPanel>
-
-        <StackPanel Spacing="10">
-          <Grid ColumnSpacing="{StaticResource SpacingMd}">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="Auto" />
-              <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <!-- The percent is read through the bar's RangeValue; this text is for the eye. -->
+      <Grid
+        x:Name="RunningLayout"
+        Padding="20,18,20,20"
+        ColumnSpacing="{StaticResource ExportColumnSpacing}"
+        RowSpacing="{StaticResource SpacingXl}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition x:Name="RunningSideColumn" Width="0" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <StackPanel x:Name="RunningHead" Spacing="{StaticResource SpacingXl}">
+          <StackPanel Spacing="{StaticResource SpacingXxs}">
+            <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind export:ExportText.Exporting}" />
             <TextBlock
-              AutomationProperties.AccessibilityView="Raw"
-              Style="{StaticResource TitleLargeTabularTextStyle}"
-              Text="{x:Bind ViewModel.PercentText, Mode=OneWay}" />
-            <TextBlock
-              x:Name="TimeLeftText"
-              Grid.Column="1"
-              Margin="0,0,0,8"
-              HorizontalAlignment="Right"
-              VerticalAlignment="Bottom"
-              Style="{StaticResource CaptionSecondaryTextStyle}"
-              Text="{x:Bind ViewModel.TimeLeftText, Mode=OneWay}"
-              TextAlignment="Right"
+              x:Name="RunningTitle"
+              AutomationProperties.HeadingLevel="Level2"
+              Style="{StaticResource SubtitleTextStyle}"
+              Text="{x:Bind ViewModel.FileName, Mode=OneWay}"
               TextTrimming="CharacterEllipsis" />
-          </Grid>
-          <!-- A tab stop, so focus lands here as the export starts and Narrator reads "Export progress, 46". -->
-          <ProgressBar
-            x:Name="Progress"
-            AutomationProperties.Name="{x:Bind export:ExportText.ProgressName}"
-            IsTabStop="True"
-            Maximum="100"
-            UseSystemFocusVisuals="True"
-            Value="{x:Bind ViewModel.Percent, Mode=OneWay}" />
+          </StackPanel>
+
+          <StackPanel Spacing="10">
+            <Grid ColumnSpacing="{StaticResource SpacingMd}">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <!-- The percent is read through the bar's RangeValue; this text is for the eye. -->
+              <TextBlock
+                AutomationProperties.AccessibilityView="Raw"
+                Style="{StaticResource TitleLargeTabularTextStyle}"
+                Text="{x:Bind ViewModel.PercentText, Mode=OneWay}" />
+              <TextBlock
+                x:Name="TimeLeftText"
+                Grid.Column="1"
+                Margin="0,0,0,8"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Style="{StaticResource CaptionSecondaryTextStyle}"
+                Text="{x:Bind ViewModel.TimeLeftText, Mode=OneWay}"
+                TextAlignment="Right"
+                TextTrimming="CharacterEllipsis" />
+            </Grid>
+            <!-- A tab stop, so focus lands here as the export starts and Narrator reads "Export progress, 46". -->
+            <ProgressBar
+              x:Name="Progress"
+              AutomationProperties.Name="{x:Bind export:ExportText.ProgressName}"
+              IsTabStop="True"
+              Maximum="100"
+              UseSystemFocusVisuals="True"
+              Value="{x:Bind ViewModel.Percent, Mode=OneWay}" />
+          </StackPanel>
+
+          <!-- The film gate: decoration for the eye; the numbers say the same to a screen reader. -->
+          <shell:FilmGate x:Name="Gate" AutomationProperties.AccessibilityView="Raw" />
         </StackPanel>
-
-        <!-- The film gate: decoration for the eye; the numbers say the same to a screen reader. -->
-        <shell:FilmGate x:Name="Gate" AutomationProperties.AccessibilityView="Raw" />
-
-        <Grid ColumnSpacing="{StaticResource SpacingLg}" RowSpacing="{StaticResource SpacingSm}">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-          </Grid.ColumnDefinitions>
+        <Grid x:Name="RunningDetails" Grid.Row="1" RowSpacing="{StaticResource SpacingXl}">
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
           </Grid.RowDefinitions>
-          <TextBlock Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.FrameLabel}" />
+
+          <Grid ColumnSpacing="{StaticResource SpacingLg}" RowSpacing="{StaticResource SpacingSm}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.FrameLabel}" />
+            <TextBlock
+              Grid.Column="1"
+              AutomationProperties.Name="{x:Bind export:ExportText.FrameLabel}"
+              Style="{StaticResource BodyTabularTextStyle}"
+              Text="{x:Bind ViewModel.FramesText, Mode=OneWay}" />
+            <TextBlock Grid.Row="1" Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.SpeedLabel}" />
+            <TextBlock
+              Grid.Row="1"
+              Grid.Column="1"
+              Style="{StaticResource BodyTabularTextStyle}"
+              Text="{x:Bind ViewModel.SpeedText, Mode=OneWay}"
+              TextWrapping="Wrap" />
+            <TextBlock Grid.Row="2" Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.OutputLabel}" />
+            <TextBlock
+              Grid.Row="2"
+              Grid.Column="1"
+              Style="{StaticResource BodyTabularTextStyle}"
+              Text="{x:Bind ViewModel.OutputSummary, Mode=OneWay}"
+              TextWrapping="Wrap" />
+          </Grid>
+
           <TextBlock
-            Grid.Column="1"
-            AutomationProperties.Name="{x:Bind export:ExportText.FrameLabel}"
-            Style="{StaticResource BodyTabularTextStyle}"
-            Text="{x:Bind ViewModel.FramesText, Mode=OneWay}" />
-          <TextBlock Grid.Row="1" Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.SpeedLabel}" />
-          <TextBlock
+            x:Name="MinimizeHint"
             Grid.Row="1"
-            Grid.Column="1"
-            Style="{StaticResource BodyTabularTextStyle}"
-            Text="{x:Bind ViewModel.SpeedText, Mode=OneWay}"
+            Style="{StaticResource CaptionSecondaryTextStyle}"
+            Text="{x:Bind export:ExportText.MinimizeHint}"
             TextWrapping="Wrap" />
-          <TextBlock Grid.Row="2" Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.OutputLabel}" />
-          <TextBlock
+
+          <Button
+            x:Name="CancelButton"
             Grid.Row="2"
-            Grid.Column="1"
-            Style="{StaticResource BodyTabularTextStyle}"
-            Text="{x:Bind ViewModel.OutputSummary, Mode=OneWay}"
-            TextWrapping="Wrap" />
+            Height="{StaticResource ControlHeight}"
+            Padding="{StaticResource PaddingButtonStandard}"
+            HorizontalAlignment="Left"
+            AutomationProperties.Name="{x:Bind export:ExportText.CancelExport}"
+            Command="{x:Bind ViewModel.CancelCommand}"
+            Content="{x:Bind export:ExportText.CancelExport}" />
         </Grid>
-
-        <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind export:ExportText.MinimizeHint}" TextWrapping="Wrap" />
-
-        <Button
-          x:Name="CancelButton"
-          Height="{StaticResource ControlHeight}"
-          Padding="{StaticResource PaddingButtonStandard}"
-          HorizontalAlignment="Left"
-          AutomationProperties.Name="{x:Bind export:ExportText.CancelExport}"
-          Command="{x:Bind ViewModel.CancelCommand}"
-          Content="{x:Bind export:ExportText.CancelExport}" />
-      </StackPanel>
+      </Grid>
     </ScrollViewer>
 
     <!-- Finished. -->
@@ -137,106 +193,122 @@
       VerticalScrollBarVisibility="Auto"
       VerticalScrollMode="Auto"
       Visibility="Collapsed">
-      <StackPanel Padding="20,18,20,20" Spacing="{StaticResource SpacingXl}">
-        <!-- The check: a Success Fill disc and a Success stroke that draws in (500 ms Enter after 200 ms; at once with animations off). -->
-        <Grid
-          Width="48"
-          Height="48"
-          HorizontalAlignment="Left"
-          AutomationProperties.Name="{x:Bind export:ExportText.DoneName}">
-          <Ellipse
-            Width="44"
-            Height="44"
-            Fill="{ThemeResource SuccessFillBrush}" />
-          <!-- The stroke is 26.2 px long; a 28 px dash (9.34 x the 3 px thickness) hides it at offset 9.34 and shows it at 0. -->
-          <Path
-            x:Name="CheckStroke"
-            Data="M15,24.5 L21,30.5 L33,17.5"
-            StrokeDashArray="9.34,9.34"
-            StrokeDashOffset="9.34"
-            StrokeEndLineCap="Round"
-            StrokeLineJoin="Round"
-            StrokeStartLineCap="Round"
-            StrokeThickness="3"
-            Stroke="{ThemeResource SuccessBrush}" />
-        </Grid>
+      <Grid
+        x:Name="FinishedLayout"
+        Padding="20,18,20,20"
+        ColumnSpacing="{StaticResource ExportColumnSpacing}"
+        RowSpacing="{StaticResource SpacingXl}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition x:Name="FinishedSideColumn" Width="0" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <StackPanel x:Name="FinishedHead" Spacing="{StaticResource SpacingXl}">
+          <!-- The check: a Success Fill disc and a Success stroke that draws in (500 ms Enter after 200 ms; at once with animations off). -->
+          <Grid
+            Width="48"
+            Height="48"
+            HorizontalAlignment="Left"
+            AutomationProperties.Name="{x:Bind export:ExportText.DoneName}">
+            <Ellipse
+              Width="44"
+              Height="44"
+              Fill="{ThemeResource SuccessFillBrush}" />
+            <!-- The stroke is 26.2 px long; a 28 px dash (9.34 x the 3 px thickness) hides it at offset 9.34 and shows it at 0. -->
+            <Path
+              x:Name="CheckStroke"
+              Data="M15,24.5 L21,30.5 L33,17.5"
+              StrokeDashArray="9.34,9.34"
+              StrokeDashOffset="9.34"
+              StrokeEndLineCap="Round"
+              StrokeLineJoin="Round"
+              StrokeStartLineCap="Round"
+              StrokeThickness="3"
+              Stroke="{ThemeResource SuccessBrush}" />
+          </Grid>
 
-        <StackPanel x:Name="FinishedHeading" Spacing="{StaticResource SpacingXs}">
+          <StackPanel x:Name="FinishedHeading" Spacing="{StaticResource SpacingXs}">
+            <TextBlock
+              x:Name="FinishedTitle"
+              AutomationProperties.HeadingLevel="Level2"
+              Style="{StaticResource SubtitleTextStyle}"
+              Text="{x:Bind ViewModel.FinishedTitle, Mode=OneWay}"
+              TextWrapping="Wrap" />
+            <TextBlock
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource BodyTabularTextStyle}"
+              Text="{x:Bind ViewModel.FinishedSummary, Mode=OneWay}"
+              TextWrapping="Wrap" />
+          </StackPanel>
+
+          <!-- Another app held the chosen file: where the video went instead. -->
           <TextBlock
-            x:Name="FinishedTitle"
-            AutomationProperties.HeadingLevel="Level2"
-            Style="{StaticResource SubtitleTextStyle}"
-            Text="{x:Bind ViewModel.FinishedTitle, Mode=OneWay}"
-            TextWrapping="Wrap" />
-          <TextBlock
-            Foreground="{ThemeResource InkSecondaryBrush}"
-            Style="{StaticResource BodyTabularTextStyle}"
-            Text="{x:Bind ViewModel.FinishedSummary, Mode=OneWay}"
-            TextWrapping="Wrap" />
+            Style="{StaticResource CaptionTextStyle}"
+            Text="{x:Bind ViewModel.SavedBesideText, Mode=OneWay}"
+            TextWrapping="Wrap"
+            Visibility="{x:Bind ViewModel.HasSavedBeside, Mode=OneWay}" />
         </StackPanel>
+        <StackPanel x:Name="FinishedDetails" Grid.Row="1" Spacing="{StaticResource SpacingXl}">
 
-        <!-- Another app held the chosen file: where the video went instead. -->
-        <TextBlock
-          Style="{StaticResource CaptionTextStyle}"
-          Text="{x:Bind ViewModel.SavedBesideText, Mode=OneWay}"
-          TextWrapping="Wrap"
-          Visibility="{x:Bind ViewModel.HasSavedBeside, Mode=OneWay}" />
+          <Grid ColumnSpacing="{StaticResource SpacingLg}" RowSpacing="{StaticResource SpacingSm}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.ExportedInLabel}" />
+            <TextBlock Grid.Column="1" Style="{StaticResource BodyTabularTextStyle}" Text="{x:Bind ViewModel.ExportedInText, Mode=OneWay}" />
+            <TextBlock Grid.Row="1" Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.SavedToLabel}" />
+            <TextBlock
+              Grid.Row="1"
+              Grid.Column="1"
+              Style="{StaticResource BodyTextStyle}"
+              Text="{x:Bind ViewModel.SavedToText, Mode=OneWay}"
+              TextTrimming="CharacterEllipsis" />
+          </Grid>
 
-        <Grid ColumnSpacing="{StaticResource SpacingLg}" RowSpacing="{StaticResource SpacingSm}">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-          </Grid.ColumnDefinitions>
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-          </Grid.RowDefinitions>
-          <TextBlock Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.ExportedInLabel}" />
-          <TextBlock Grid.Column="1" Style="{StaticResource BodyTabularTextStyle}" Text="{x:Bind ViewModel.ExportedInText, Mode=OneWay}" />
-          <TextBlock Grid.Row="1" Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.SavedToLabel}" />
-          <TextBlock
-            Grid.Row="1"
-            Grid.Column="1"
-            Style="{StaticResource BodyTextStyle}"
-            Text="{x:Bind ViewModel.SavedToText, Mode=OneWay}"
-            TextTrimming="CharacterEllipsis" />
-        </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+            <!-- The screen's one accent button: plays the video in the preview from frame one. -->
+            <Button
+              x:Name="PlayButton"
+              Height="{StaticResource ControlHeight}"
+              Padding="{StaticResource PaddingButtonAccent}"
+              AutomationProperties.Name="{x:Bind export:ExportText.PlayName}"
+              Command="{x:Bind ViewModel.PlayCommand}"
+              Style="{StaticResource ExportButtonStyle}">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+                <!-- The prototype's play triangle. -->
+                <PathIcon
+                  Width="14"
+                  Height="14"
+                  VerticalAlignment="Center"
+                  Data="F1 M4.375 2.8V11.2A0.525 0.525 0 0 0 5.1625 11.6375L11.6375 7.4375A0.525 0.525 0 0 0 11.6375 6.5625L5.1625 2.3625A0.525 0.525 0 0 0 4.375 2.8Z" />
+                <TextBlock VerticalAlignment="Center" Text="{x:Bind export:ExportText.Play}" />
+              </StackPanel>
+            </Button>
+            <Button
+              x:Name="ShowInFolderButton"
+              Height="{StaticResource ControlHeight}"
+              Padding="{StaticResource PaddingButtonStandard}"
+              AutomationProperties.Name="{x:Bind export:ExportText.ShowInFolder}"
+              Command="{x:Bind ViewModel.ShowInFolderCommand}"
+              Content="{x:Bind export:ExportText.ShowInFolder}" />
+          </StackPanel>
 
-        <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
-          <!-- The screen's one accent button: plays the video in the preview from frame one. -->
-          <Button
-            x:Name="PlayButton"
-            Height="{StaticResource ControlHeight}"
-            Padding="{StaticResource PaddingButtonAccent}"
-            AutomationProperties.Name="{x:Bind export:ExportText.PlayName}"
-            Command="{x:Bind ViewModel.PlayCommand}"
-            Style="{StaticResource ExportButtonStyle}">
-            <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
-              <!-- The prototype's play triangle. -->
-              <PathIcon
-                Width="14"
-                Height="14"
-                VerticalAlignment="Center"
-                Data="F1 M4.375 2.8V11.2A0.525 0.525 0 0 0 5.1625 11.6375L11.6375 7.4375A0.525 0.525 0 0 0 11.6375 6.5625L5.1625 2.3625A0.525 0.525 0 0 0 4.375 2.8Z" />
-              <TextBlock VerticalAlignment="Center" Text="{x:Bind export:ExportText.Play}" />
-            </StackPanel>
-          </Button>
-          <Button
-            x:Name="ShowInFolderButton"
-            Height="{StaticResource ControlHeight}"
-            Padding="{StaticResource PaddingButtonStandard}"
-            AutomationProperties.Name="{x:Bind export:ExportText.ShowInFolder}"
-            Command="{x:Bind ViewModel.ShowInFolderCommand}"
-            Content="{x:Bind export:ExportText.ShowInFolder}" />
+          <HyperlinkButton
+            x:Name="BackButton"
+            Padding="0"
+            AutomationProperties.Name="{x:Bind export:ExportText.BackToEditing}"
+            Command="{x:Bind ViewModel.BackToEditingCommand}"
+            Content="{x:Bind export:ExportText.BackToEditing}" />
         </StackPanel>
-
-        <HyperlinkButton
-          x:Name="BackButton"
-          Padding="0"
-          AutomationProperties.Name="{x:Bind export:ExportText.BackToEditing}"
-          Command="{x:Bind ViewModel.BackToEditingCommand}"
-          Content="{x:Bind export:ExportText.BackToEditing}" />
-      </StackPanel>
+      </Grid>
     </ScrollViewer>
   </Grid>
 </UserControl>

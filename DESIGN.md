@@ -212,7 +212,7 @@ This system rejects: the legacy 10Lapse 2.x UI (blurred background photo, three 
 - Golden-hour amber marks only the primary action, progress, the playhead and the selected frame.
 - Always-visible math: "742 photos → 24.7 s at 30 frames per second".
 - 4 px grid, 32 px controls, 20 px stage and inspector padding, 16 px section rhythm.
-- Inspector docks right at 320 px from 1000 px wide; below that it folds into a 260 px tabbed panel under the preview; smallest window 640 × 480.
+- Inspector docks right at 320 px from 1000 px wide; below that it folds into a 260 px tabbed panel under the preview (Timing, Frame, Output tabs; the Output selects in a row; the export panel and the finished state in two columns, head left and details right, so Cancel export and Back to editing stay in view, with a 32 px gutter; the tab row is hidden while exporting and when finished, which gives those panels its 50 px, unlike the canvas, which keeps it); smallest window 640 × 480, where the panel gives height to the preview down to 152 px (it scrolls). The switch is instant, and Tab order and focus follow the visual order in both layouts.
 - Motion tokens: Tap 83 ms, Control 167 ms, Reveal 250 ms, Scene 400 ms, Cinema 700 ms; Enter `cubic-bezier(0.16, 1, 0.3, 1)`, Exit `cubic-bezier(0.7, 0, 0.84, 0)`, Move `cubic-bezier(0.65, 0, 0.35, 1)`, linear for playback and progress.
 
 ## 2. Colors

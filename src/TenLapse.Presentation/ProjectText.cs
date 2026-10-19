@@ -309,6 +309,12 @@ public static class ProjectText
     /// <summary>Error context (log only): moving focus after opening or leaving Settings failed.</summary>
     public static string SettingsFocusFailed => "Moving focus after opening or leaving Settings failed.";
 
+    /// <summary>Error context (log only): switching between the docked and the narrow inspector layout, or sizing the narrow panel, failed (#36).</summary>
+    public static string LayoutSwitchFailed => "Switching the inspector between the side and the narrow layout failed.";
+
+    /// <summary>Error context (log only): keeping focus where it was when the layout switched failed (#36).</summary>
+    public static string LayoutFocusFailed => "Moving focus after the layout switched failed.";
+
     /// <summary>Error context (log only): putting focus on the drop zone's Choose folder at launch failed.</summary>
     public static string FirstLaunchFocusFailed => "Putting focus on Choose folder at launch failed.";
 
