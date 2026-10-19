@@ -63,6 +63,9 @@ public sealed partial class ShellView : UserControl
         var timing = new TimingPanelViewModel(viewModel, presenter);
         TimingSection.ViewModel = timing;
         Unloaded += (_, _) => timing.Dispose();
+#if DEBUG
+        Debugging.DebugTiming.Apply(timing);
+#endif
         FirstLaunch.Attach(import, presenter, errors);
         _emptyRegionVisibilityToken = EmptyRegion.RegisterPropertyChangedCallback(VisibilityProperty, OnEmptyRegionVisibilityChanged);
 

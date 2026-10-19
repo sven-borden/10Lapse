@@ -90,13 +90,16 @@
     <Grid x:Name="Inner">
       <!--
         The pill: two rectangles of the same size, the lower one casts the shadow (a child visual draws above its own
-        element, so the upper one covers the caster's inside). 3 px corners are RadiusThumb. Translation is animated.
+        element, so the upper one covers the caster's inside). 3 px corners are RadiusThumb. The shift is what slides.
       -->
       <Grid
         x:Name="Pill"
         HorizontalAlignment="Left"
         IsHitTestVisible="False"
         Visibility="Collapsed">
+        <Grid.RenderTransform>
+          <TranslateTransform x:Name="PillShift" />
+        </Grid.RenderTransform>
         <Rectangle
           x:Name="PillShadowCaster"
           Fill="{ThemeResource SegmentPillBrush}"

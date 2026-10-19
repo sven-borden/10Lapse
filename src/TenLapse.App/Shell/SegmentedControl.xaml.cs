@@ -6,6 +6,9 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
+using Windows.Foundation;
 using Windows.System;
 using TenLapse.Themes;
 
@@ -34,7 +37,7 @@ public sealed partial class SegmentedControl : UserControl
     private readonly List<RadioButton> _buttons = [];
     private readonly string _group = $"Segments{Guid.NewGuid():N}";
     private bool _syncing;
-    private float _pillX;
+    private Storyboard? _slide;
     private bool _pillPlaced;
     private DropShadow? _shadow;
     private SpriteVisual? _shadowSprite;
@@ -121,30 +124,50 @@ public sealed partial class SegmentedControl : UserControl
         var width = Inner.ActualWidth / _buttons.Count;
         Pill.Width = width;
         Pill.Height = Inner.ActualHeight;
-        MovePill((float)(selected * width), animate && _pillPlaced && IsLoaded && MotionTokens.AnimationsEnabled);
+        MovePill(selected * width,animate && _pillPlaced && IsLoaded && AnimationsEnabled);
         _pillPlaced = true;
     }
 
-    private void MovePill(float x, bool animate)
+    private static bool AnimationsEnabled =>
+#if DEBUG
+        MotionTokens.AnimationsEnabled && !Debugging.DebugLaunch.ReduceMotion;
+#else
+        MotionTokens.AnimationsEnabled;
+#endif
+
+    private void MovePill(double x, bool animate)
     {
-        var from = _pillX;
-        _pillX = x;
-        ElementCompositionPreview.SetIsTranslationEnabled(Pill, true);
-        Pill.Translation = new Vector3(x, 0, 0);
+        // Wherever the pill is drawn now, which is part way along while an earlier slide still runs.
+        var from = PillShift.X;
+        _slide?.Stop();
+        _slide = null;
+
+        // The local value is always the end value. The slide only draws the way there and stops holding anything, so
+        // a slide that is cut short or never finishes cannot leave the pill in the wrong place.
+        PillShift.X = x;
         if (!animate || from == x)
         {
             return;
         }
 
-        // 250 ms Move (DESIGN.md, Segmented control). The property already holds the end value, so the animation only
-        // draws the way there.
-        var visual = ElementCompositionPreview.GetElementVisual(Pill);
-        var compositor = visual.Compositor;
-        var slide = compositor.CreateScalarKeyFrameAnimation();
-        slide.InsertKeyFrame(0f, from);
-        slide.InsertKeyFrame(1f, x, MotionTokens.CreateMove(compositor));
-        slide.Duration = MotionTokens.Reveal;
-        visual.StartAnimation("Translation.X", slide);
+        // 250 ms Move (DESIGN.md, Segmented control).
+        var slide = new DoubleAnimationUsingKeyFrames { FillBehavior = FillBehavior.Stop };
+        slide.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = TimeSpan.Zero, Value = from });
+        slide.KeyFrames.Add(new SplineDoubleKeyFrame
+        {
+            KeyTime = MotionTokens.Reveal,
+            Value = x,
+            KeySpline = new KeySpline
+            {
+                ControlPoint1 = new Point(MotionTokens.Move.ControlPoint1.X, MotionTokens.Move.ControlPoint1.Y),
+                ControlPoint2 = new Point(MotionTokens.Move.ControlPoint2.X, MotionTokens.Move.ControlPoint2.Y),
+            },
+        });
+        Storyboard.SetTarget(slide, PillShift);
+        Storyboard.SetTargetProperty(slide, nameof(TranslateTransform.X));
+        _slide = new Storyboard();
+        _slide.Children.Add(slide);
+        _slide.Begin();
     }
 
     private void OnChecked(object sender, RoutedEventArgs e)
