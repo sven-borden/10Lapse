@@ -18,7 +18,6 @@
 
   <ItemGroup Label="Graphics and media">
     <PackageVersion Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
-    <PackageVersion Include="MetadataExtractor" Version="2.9.3" />
   </ItemGroup>
 
   <ItemGroup Label="App">
