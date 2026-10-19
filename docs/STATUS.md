@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #22, #29, #23, #17 merged. Fix rounds: PR #77 (#19), PR #79 (#14, pulled forward). Next: #20 filmstrip after #77, then #24 and #18.
+2026-10-19: #22, #29, #23, #17, #14 merged. PR #77 (#19) at the orchestrator gate; #18 frame panel building. Next: #20 filmstrip and #24 export panel after #77.
 
 ## Waves
 
@@ -36,11 +36,11 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 10 | #20 Filmstrip | O | filmstrip view | |
 | 10 | #17 Timing panel | S | timing inspector section | merged #78 |
 | 11 | #24 Export panel and finished state | O | export panel | |
-| 11 | #18 Frame panel | S | frame inspector section | |
+| 11 | #18 Frame panel | S | frame inspector section | building |
 | 12 | #32 Golden render test | O | `tests/` golden | |
 | 12 | #25 Export while minimized, keep awake | S | export power request | |
 | 13 | #21 Remember settings | S | settings persistence | |
-| 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | PR #79, fix round |
+| 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
 | 14 | #31 Rating prompt | S | Store rating | |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | |
 | 15 | #36 Narrow window layout | S | shell visual states | |
@@ -274,3 +274,12 @@ Nothing blocks the build loop. Everything below waits until release is near
   say so; clamps and rounding always say so. The panel formats in the user's
   culture (`TimingFormat`/`TimingReadoutParts` take an optional culture; Core
   stays invariant by default). Debug `--timing=`, `--timing-value=`.
+- #14 PR #79: skipped photos that lack a Windows extension become one InfoBar
+  per extension with *Get it from the Store* (`ms-windows-store://pdp/`):
+  HEIF `9PMMSR1CGPWG`, Raw `9NCTDW2W1BH8`, HEVC paid `9NMZLZ57R3T7` (the free
+  OEM one is not reliably installable). `CodecExtensionPrompts.Plan` decides
+  coverage once; a codec the PC has (software decoders only) never prompts, and
+  a HEIF/AVIF whose header is not HEIF/AVIF is just unreadable. Both missing:
+  one bar, its button chains a follow-up shown first (`InfoBarRequest.ShowsNext`).
+  Wording says restart 10Lapse after installing (live pickup unproven). Launch
+  failure is Caution. Debug `--missing-codec=heif,hevc,raw`.
