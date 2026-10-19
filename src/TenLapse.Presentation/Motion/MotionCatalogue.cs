@@ -99,8 +99,8 @@ public static class MotionCatalogue
     /// <summary>A gate sample changes strength (pending 30 % to written), 167 ms linear; a fade, so it stays with animations off.</summary>
     public static readonly MotionTransition GateSample = new("Export.GateSample", Control, MotionEasing.Linear, MotionDirection.Change, Moves: false, ReducedMotion.Same, "fades");
 
-    /// <summary>The Export button dims to 0.6 while the export panel shows, and back, 167 ms linear.</summary>
-    public static readonly MotionTransition ExportButtonDim = new("Export.ButtonDim", Control, MotionEasing.Linear, MotionDirection.Change, Moves: false, ReducedMotion.Cut, "fades");
+    /// <summary>The Export button dims to 0.6 while the export panel shows, and back, 167 ms linear; a fade, so it stays with animations off.</summary>
+    public static readonly MotionTransition ExportButtonDim = new("Export.ButtonDim", Control, MotionEasing.Linear, MotionDirection.Change, Moves: false, ReducedMotion.Same, "fades");
 
     // ---- Wrap: the video is ready ----
 
@@ -132,8 +132,8 @@ public static class MotionCatalogue
 
     // ---- Theme: Windows changes mode ----
 
-    /// <summary>The colors crossfade to the new theme, 250 ms linear; the photos never change. At once with animations off.</summary>
-    public static readonly MotionTransition ThemeChange = new("Theme.Crossfade", ThemeCrossfade, MotionEasing.Linear, MotionDirection.Change, Moves: false, ReducedMotion.Cut, "crossfades")
+    /// <summary>The colors crossfade to the new theme, 250 ms linear; the photos never change. A fade, so it stays with animations off.</summary>
+    public static readonly MotionTransition ThemeChange = new("Theme.Crossfade", ThemeCrossfade, MotionEasing.Linear, MotionDirection.Change, Moves: false, ReducedMotion.Same, "crossfades")
     {
         HoldsInfoBars = true,
     };

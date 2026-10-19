@@ -38,7 +38,7 @@ public sealed class MotionCatalogueTests
         { "Export.PanelIn", 400, MotionEasing.Enter, 0, 0, true, MotionKind.Faded, 150, 0 },
         { "Export.GateStrip", 100, MotionEasing.Linear, 0, 0, true, MotionKind.None, 0, 0 },
         { "Export.GateSample", 167, MotionEasing.Linear, 0, 0, false, MotionKind.Faded, 167, 0 },
-        { "Export.ButtonDim", 167, MotionEasing.Linear, 0, 0, false, MotionKind.None, 0, 0 },
+        { "Export.ButtonDim", 167, MotionEasing.Linear, 0, 0, false, MotionKind.Faded, 167, 0 },
 
         // Wrap: check stroke draws, 500 ms enter after 200 ms; title rises 6 px, 400 ms enter; premiere after 1.1 s.
         { "Finished.Check", 500, MotionEasing.Enter, 200, 0, true, MotionKind.None, 0, 0 },
@@ -50,8 +50,8 @@ public sealed class MotionCatalogueTests
         { "InfoBar.Out", 167, MotionEasing.Exit, 0, 0, true, MotionKind.Faded, 90, 0 },
         { "InfoBar.Details", 250, MotionEasing.Enter, 0, 0, true, MotionKind.Faded, 150, 0 },
 
-        // Theme: colors crossfade, 250 ms linear.
-        { "Theme.Crossfade", 250, MotionEasing.Linear, 0, 0, false, MotionKind.None, 0, 0 },
+        // Theme: colors crossfade, 250 ms linear (a fade: the same with animations off, as the prototype keeps it).
+        { "Theme.Crossfade", 250, MotionEasing.Linear, 0, 0, false, MotionKind.Faded, 250, 0 },
 
         // First launch: drag look 167 ms (canvas: border and fill, 167 ms enter), Daybreak lifts 6 px over 250 ms enter,
         // Daybreak loops 20 s linear (reduced: a still frame at golden hour).
@@ -97,7 +97,8 @@ public sealed class MotionCatalogueTests
     public void NothingMovesWithAnimationsOff()
     {
         // "None run with animations turned off": a short linear fade at most, a wait, or the end state at once. The only
-        // longer fade is the gate samples' strength (167 ms), which is not movement and stays.
+        // longer fades are the ones that move nothing and stay (the gate samples' strength, the Export button's dim, the
+        // theme's crossfade).
         foreach (var transition in MotionCatalogue.All)
         {
             for (var index = 0; index < 20; index++)

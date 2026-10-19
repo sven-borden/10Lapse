@@ -390,7 +390,7 @@ public sealed partial class ShellView : UserControl
         }
 
         // The canvas's exportOpacity: the Export button stays in the command bar, disabled and at 0.6, outside the
-        // inspector; the change fades over 167 ms (at once with animations off).
+        // inspector; the change fades over 167 ms (a fade, the same with animations off).
         var opacity = Export.IsEditing ? 1 : DimmedExportOpacity;
         if (ExportButton.Opacity != opacity)
         {

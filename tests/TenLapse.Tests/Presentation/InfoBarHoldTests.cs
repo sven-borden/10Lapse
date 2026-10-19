@@ -66,6 +66,10 @@ public sealed class InfoBarHoldTests
         Assert.All(
             [MotionCatalogue.SceneOut, MotionCatalogue.SceneIn, MotionCatalogue.ArrivalDevelop, MotionCatalogue.ArrivalFilmstrip, MotionCatalogue.ArrivalInspector, MotionCatalogue.PanelOut, MotionCatalogue.PanelIn, MotionCatalogue.ThemeChange],
             transition => Assert.True(transition.HoldsInfoBars, transition.Name));
+
+        // The theme's crossfade is a fade, the same with animations off: it holds for its 250 ms either way.
+        quiet.Hold(MotionCatalogue.ThemeChange.Plan(animationsEnabled: false));
+        Assert.Equal(MotionSpec.ThemeCrossfade, quiet.Remaining);
     }
 
     [Fact]

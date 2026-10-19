@@ -20,7 +20,7 @@ namespace TenLapse.Shell;
 
 /// <summary>
 /// When Windows switches between light and dark, the app crossfades instead of flashing (motion spec, Theme: colors
-/// crossfade over 250 ms linear; photos never change). At once with animations off, and in high contrast.
+/// crossfade over 250 ms linear; photos never change). The same fade with animations off (it moves nothing); at once in high contrast.
 /// </summary>
 /// <remarks>
 /// <para>
