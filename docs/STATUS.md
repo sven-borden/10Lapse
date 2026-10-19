@@ -235,7 +235,7 @@ Nothing blocks the build loop. Everything below waits until release is near
 - #19 PR #77: preview on a render thread through `FrameRenderer.Draw` into a
   swap chain; `FrameTiming.FrameAt`, `PlaybackClock` (drops, never drifts).
   `ProxyCache` (1280 px JPEG, no metadata, 2 GB or a tenth of free space, LRU,
-  30-day sweep, `LocalCache\Proxies` or `%LOCALAPPDATA%Lapse\Proxies`),
+  30-day sweep, `LocalCache\Proxies` or `%LOCALAPPDATA%\10Lapse\Proxies`),
   `FrameImageCache` (192 MB, device generations). 5,000 photos: 0 dropped at
   30 fps, seek to picture about 10 ms, pass peak about 0.7 GB. Playhead
   follows the frame id; paused frame re-checked on disk. Pauses when
