@@ -12,8 +12,20 @@ public sealed record ImportRequest(IReadOnlyList<string> Paths, bool IncludeSubf
 
 /// <summary>One batch of the listing phase: new frames with their file facts only, and the paths that could not be listed.</summary>
 /// <param name="Frames">The photos found, each a new <see cref="Frame"/> with its path, size and last write time.</param>
-/// <param name="Skipped">Paths of the request that could not be read (gone, or access denied), with the reason.</param>
-public sealed record ImportListBatch(IReadOnlyList<Frame> Frames, IReadOnlyList<SkippedFile> Skipped);
+/// <param name="Skipped">Photo files of the request that could not be read (access denied), with the reason.</param>
+public sealed record ImportListBatch(IReadOnlyList<Frame> Frames, IReadOnlyList<SkippedFile> Skipped)
+{
+    /// <summary>
+    /// Folders of the request that would not open, and paths that were no longer there. They are not photos, so they
+    /// never join <see cref="Project.SkippedFiles"/>: the import names them in an InfoBar of their own.
+    /// </summary>
+    public IReadOnlyList<UnopenedPath> Unopened { get; init; } = [];
+}
+
+/// <summary>A folder (or a path that was gone) the import could not open.</summary>
+/// <param name="Path">The path as the request gave it, made full.</param>
+/// <param name="Message">What Windows said, for the log.</param>
+public sealed record UnopenedPath(string Path, string Message);
 
 /// <summary>What the reading phase learned about one frame: the frame with its facts filled in, or why it was skipped.</summary>
 public sealed record FrameReading
@@ -61,8 +73,9 @@ public interface IPhotoImportSource
 {
     /// <summary>
     /// Lists the photos of <paramref name="request"/> in batches, in a stable order (folder by folder, each folder's
-    /// files in name order). Hidden and system files and folders are left out, folders Windows does not let 10Lapse
-    /// open are passed over, and a camera RAW file with a JPEG (or another non-RAW photo) of the same name in the same
+    /// files in name order). Hidden and system files and folders are left out, subfolders Windows does not let 10Lapse
+    /// open are passed over (a requested folder that does not open, or a path that is gone, comes back in
+    /// <see cref="ImportListBatch.Unopened"/>), junctions and folder links are not followed, and a camera RAW file with a JPEG (or another non-RAW photo) of the same name in the same
     /// folder is left out so each shot is imported once.
     /// </summary>
     IAsyncEnumerable<ImportListBatch> ListAsync(ImportRequest request, CancellationToken cancellationToken);

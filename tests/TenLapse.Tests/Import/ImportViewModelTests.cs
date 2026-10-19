@@ -52,6 +52,37 @@ public sealed class ImportViewModelTests
     }
 
     [Fact]
+    public async Task AFolderThatWillNotOpenGetsItsOwnInfoBarAndIsNotASkippedPhoto()
+    {
+        using var harness = ImportHarness.WithPhotoImporter();
+        var gone = Path.Combine(Path.GetTempPath(), $"10lapse-gone-{Guid.NewGuid():N}", "Card");
+
+        await harness.ImportAsync(gone);
+
+        Assert.Empty(harness.Project.Frames);
+        Assert.Empty(harness.Project.SkippedFiles);
+        var bar = Assert.Single(harness.InfoBars.Shown);
+        Assert.Equal(InfoBarSeverity.Caution, bar.Severity);
+        Assert.Equal(ProjectText.ImportFolderFailed(gone), bar.Message);
+        Assert.StartsWith("Couldn't open the folder Card. ", bar.Message, StringComparison.Ordinal);
+        Assert.Empty(harness.RealFailures());
+    }
+
+    [Fact]
+    public async Task SeveralFoldersThatWillNotOpenAreListedInOneInfoBar()
+    {
+        using var harness = ImportHarness.WithPhotoImporter();
+        var parent = Path.Combine(Path.GetTempPath(), $"10lapse-gone-{Guid.NewGuid():N}");
+
+        await harness.ImportAsync(Path.Combine(parent, "A"), Path.Combine(parent, "B"));
+
+        var bar = Assert.Single(harness.InfoBars.Shown);
+        Assert.Equal(ProjectText.ImportFoldersFailed(2), bar.Message);
+        Assert.Equal(2, bar.Details.Count);
+        Assert.Empty(harness.Project.SkippedFiles);
+    }
+
+    [Fact]
     public async Task ALateBatchAfterNewProjectNeverLandsInTheNewProject()
     {
         var source = new ScriptedImportSource(

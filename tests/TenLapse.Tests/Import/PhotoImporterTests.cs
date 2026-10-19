@@ -125,7 +125,7 @@ public sealed class PhotoImporterTests : IDisposable
     }
 
     [Fact]
-    public async Task FilesAreTakenAsGivenUnsupportedOnesAreLeftOutAndMissingOnesAreSkipped()
+    public async Task FilesAreTakenAsGivenUnsupportedOnesAreLeftOutAndMissingOnesAreUnopened()
     {
         Touch("IMG_1.jpg", "IMG_2.jpg", "notes.txt");
         var missing = Path.Combine(_root, "gone.jpg");
@@ -138,9 +138,8 @@ public sealed class PhotoImporterTests : IDisposable
         var frame = Assert.Single(listed.Frames);
         Assert.Equal(file.FullName, frame.SourcePath);
         Assert.True(frame.Matches(file.Length, file.LastWriteTimeUtc));
-        var skipped = Assert.Single(listed.Skipped);
-        Assert.Equal(missing, skipped.Path);
-        Assert.Equal(SkipReason.FileNotFound, skipped.Reason);
+        Assert.Empty(listed.Skipped);
+        Assert.Equal(missing, Assert.Single(listed.Unopened).Path);
     }
 
     [Fact]
@@ -179,14 +178,15 @@ public sealed class PhotoImporterTests : IDisposable
     }
 
     [Fact]
-    public async Task AFolderThatIsNotThereIsSkipped()
+    public async Task AFolderThatIsNotThereIsUnopenedNotASkippedPhoto()
     {
         var gone = Path.Combine(_root, "card");
 
         var listed = await ListAsync(Importer(), new ImportRequest([gone], IncludeSubfolders: true));
 
         Assert.Empty(listed.Frames);
-        Assert.Equal(SkipReason.FileNotFound, Assert.Single(listed.Skipped).Reason);
+        Assert.Empty(listed.Skipped);
+        Assert.Equal(gone, Assert.Single(listed.Unopened).Path);
     }
 
     private static bool Importable(string path) =>
@@ -196,17 +196,19 @@ public sealed class PhotoImporterTests : IDisposable
 
     private static List<string> Names(IEnumerable<Frame> frames) => [.. frames.Select(frame => frame.FileName)];
 
-    private static async Task<(List<Frame> Frames, List<SkippedFile> Skipped)> ListAsync(PhotoImporter importer, ImportRequest request)
+    private static async Task<(List<Frame> Frames, List<SkippedFile> Skipped, List<UnopenedPath> Unopened)> ListAsync(PhotoImporter importer, ImportRequest request)
     {
         var frames = new List<Frame>();
         var skipped = new List<SkippedFile>();
+        var unopened = new List<UnopenedPath>();
         await foreach (var batch in importer.ListAsync(request, TestContext.Current.CancellationToken))
         {
             frames.AddRange(batch.Frames);
             skipped.AddRange(batch.Skipped);
+            unopened.AddRange(batch.Unopened);
         }
 
-        return (frames, skipped);
+        return (frames, skipped, unopened);
     }
 
     // A directory junction (no administrator rights needed, unlike a symbolic link).

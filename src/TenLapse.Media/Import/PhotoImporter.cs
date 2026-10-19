@@ -86,26 +86,25 @@ public sealed class PhotoImporter : IPhotoImportSource
         await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
 
         var frames = new List<Frame>(_firstListBatch);
-        var skipped = new List<SkippedFile>();
+        var listing = new Listing();
         var limit = _firstListBatch;
-        foreach (var group in Groups(request, skipped, cancellationToken))
+        foreach (var group in Groups(request, listing, cancellationToken))
         {
             foreach (var file in group)
             {
                 frames.Add(new Frame(file.Path, file.Length, file.LastWriteTimeUtc));
                 if (frames.Count >= limit)
                 {
-                    yield return new ImportListBatch(frames, [.. skipped]);
+                    yield return listing.Take(frames);
                     frames = new List<Frame>(_listBatch);
-                    skipped.Clear();
                     limit = _listBatch;
                 }
             }
         }
 
-        if (frames.Count > 0 || skipped.Count > 0)
+        if (frames.Count > 0 || listing.HasNews)
         {
-            yield return new ImportListBatch(frames, [.. skipped]);
+            yield return listing.Take(frames);
         }
     }
 
@@ -220,7 +219,7 @@ public sealed class PhotoImporter : IPhotoImportSource
 
     // The request's photos, one group per folder: first the files picked or dropped one by one (grouped by their
     // folder, in the order the folders first appear), then each folder and, when asked, its subfolders.
-    private IEnumerable<List<ListedFile>> Groups(ImportRequest request, List<SkippedFile> skipped, CancellationToken cancellationToken)
+    private IEnumerable<List<ListedFile>> Groups(ImportRequest request, Listing listing, CancellationToken cancellationToken)
     {
         var looseFiles = new Dictionary<string, List<ListedFile>>(StringComparer.OrdinalIgnoreCase);
         var looseOrder = new List<string>();
@@ -251,7 +250,7 @@ public sealed class PhotoImporter : IPhotoImportSource
                     continue;
                 }
 
-                if (Listed(path, skipped) is { } file)
+                if (Listed(path, listing.Skipped) is { } file)
                 {
                     var folder = Path.GetDirectoryName(path) ?? string.Empty;
                     if (!looseFiles.TryGetValue(folder, out var list))
@@ -265,7 +264,7 @@ public sealed class PhotoImporter : IPhotoImportSource
             }
             else
             {
-                skipped.Add(new SkippedFile(path, SkipReason.FileNotFound, "The file or folder is not there any more."));
+                listing.Unopened.Add(new UnopenedPath(path, "The file or folder is not there any more."));
             }
         }
 
@@ -275,11 +274,10 @@ public sealed class PhotoImporter : IPhotoImportSource
         }
 
         // Every folder walked, by its final path, across the whole request: a second guard after the links are left
-        // out, against two requested folders that overlap or a link that still slips through.
-        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // out, against two requested folders that overlap or a link that still slips through (Listing.Visited).
         foreach (var folder in folders)
         {
-            foreach (var group in Folder(folder, request.IncludeSubfolders, visited, skipped, cancellationToken))
+            foreach (var group in Folder(folder, request.IncludeSubfolders, listing, cancellationToken))
             {
                 yield return group;
             }
@@ -287,9 +285,9 @@ public sealed class PhotoImporter : IPhotoImportSource
     }
 
     // The photos of one folder and, when asked, of its subfolders, depth first in name order. The folder the user
-    // chose must open (a refusal is listed as skipped); a subfolder that does not open is passed over. Junctions and
+    // chose must open (a refusal is reported as unopened); a subfolder that does not open is passed over. Junctions and
     // symbolic links to folders are never followed: one pointing back up would list the same photos again and again.
-    private IEnumerable<List<ListedFile>> Folder(string root, bool includeSubfolders, HashSet<string> visited, List<SkippedFile> skipped, CancellationToken cancellationToken)
+    private IEnumerable<List<ListedFile>> Folder(string root, bool includeSubfolders, Listing listing, CancellationToken cancellationToken)
     {
         var pending = new Stack<(string Path, string FinalPath, int Depth)>();
         pending.Push((root, FinalPath(root), 0));
@@ -297,7 +295,7 @@ public sealed class PhotoImporter : IPhotoImportSource
         {
             cancellationToken.ThrowIfCancellationRequested();
             var (folder, finalPath, depth) = pending.Pop();
-            if (!visited.Add(finalPath))
+            if (!listing.Visited.Add(finalPath))
             {
                 continue;
             }
@@ -323,10 +321,8 @@ public sealed class PhotoImporter : IPhotoImportSource
             }
             catch (Exception exception) when (isRoot && exception is IOException or UnauthorizedAccessException)
             {
-                skipped.Add(new SkippedFile(
-                    root,
-                    exception is UnauthorizedAccessException ? SkipReason.AccessDenied : SkipReason.FileNotFound,
-                    exception.Message));
+                // Not a photo: the import names the folder in an InfoBar of its own.
+                listing.Unopened.Add(new UnopenedPath(root, exception.Message));
                 refused = true;
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -430,4 +426,28 @@ public sealed class PhotoImporter : IPhotoImportSource
 
     /// <summary>One entry of a folder's listing: a photo file or a subfolder, with its attributes.</summary>
     private readonly record struct ListedEntry(string Path, bool IsDirectory, long Length, DateTime LastWriteTimeUtc, FileAttributes Attributes);
+
+    /// <summary>
+    /// What one listing has gathered besides the frames: handed out with the next batch, then cleared (the walk keeps
+    /// adding to the same lists, so a batch gets copies).
+    /// </summary>
+    private sealed class Listing
+    {
+        public List<SkippedFile> Skipped { get; } = [];
+
+        public List<UnopenedPath> Unopened { get; } = [];
+
+        /// <summary>Every folder walked, by its final path.</summary>
+        public HashSet<string> Visited { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public bool HasNews => Skipped.Count > 0 || Unopened.Count > 0;
+
+        public ImportListBatch Take(List<Frame> frames)
+        {
+            var batch = new ImportListBatch(frames, [.. Skipped]) { Unopened = [.. Unopened] };
+            Skipped.Clear();
+            Unopened.Clear();
+            return batch;
+        }
+    }
 }

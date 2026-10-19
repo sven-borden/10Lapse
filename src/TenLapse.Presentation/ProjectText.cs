@@ -338,6 +338,15 @@ public static class ProjectText
     /// <summary>A Neutral InfoBar after Cancel. {0} the photos kept ("1,240").</summary>
     public static string ImportStoppedMany => "Stopped adding photos. {0} photos were added.";
 
+    /// <summary>
+    /// A Caution InfoBar: a folder of the import would not open, or a path was no longer there. {0} the folder's name
+    /// (its full path for a drive).
+    /// </summary>
+    public static string ImportFolderFailedOne => "Couldn't open the folder {0}. Check that its drive or memory card is connected and that you can open it in File Explorer, then add it again.";
+
+    /// <summary>The same for several folders, listed under View list. {0} the count ("3").</summary>
+    public static string ImportFolderFailedMany => "Couldn't open {0} folders. Check that their drives or memory cards are connected and that you can open them in File Explorer, then add them again.";
+
     /// <summary>Error context: an import failed part way.</summary>
     public static string ImportFailed => "Importing photos failed.";
 
@@ -405,6 +414,21 @@ public static class ProjectText
             1 => ImportStoppedOne,
             _ => Format(ImportStoppedMany, Count(kept)),
         };
+    }
+
+    /// <summary>The InfoBar for one folder (or path) the import could not open: named by its folder name.</summary>
+    public static string ImportFolderFailed(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
+        return Format(ImportFolderFailedOne, string.IsNullOrEmpty(name) ? path : name);
+    }
+
+    /// <summary>The InfoBar for several folders the import could not open.</summary>
+    public static string ImportFoldersFailed(int count)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(count, 2);
+        return Format(ImportFolderFailedMany, Count(count));
     }
 
     // ---- End of the import block (#12). ----

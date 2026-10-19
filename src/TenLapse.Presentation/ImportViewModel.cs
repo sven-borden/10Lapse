@@ -288,6 +288,7 @@ public sealed partial class ImportViewModel : ObservableObject
         var listed = new List<Frame>();
         var unread = new HashSet<Guid>();
         var skipped = new List<SkippedFile>();
+        var unopened = new List<UnopenedPath>();
         var found = 0;
         var kept = 0;
         try
@@ -299,6 +300,7 @@ public sealed partial class ImportViewModel : ObservableObject
                 listed.AddRange(added);
                 unread.UnionWith(added.Select(frame => frame.Id));
                 skipped.AddRange(batch.Skipped);
+                unopened.AddRange(batch.Unopened);
             }
 
             // Phase 2: read, then write back once per batch.
@@ -327,12 +329,14 @@ public sealed partial class ImportViewModel : ObservableObject
                 Sort(target, wasEmpty);
             }).ConfigureAwait(false);
             ReportSkipped(skipped);
+            ReportUnopened(unopened);
             _infoBars.Show(InfoBarSeverity.Neutral, ProjectText.ImportStopped(kept));
             throw;
         }
 
         ReportSkipped(skipped);
-        if (found == 0 && skipped.Count == 0)
+        ReportUnopened(unopened);
+        if (found == 0 && skipped.Count == 0 && unopened.Count == 0)
         {
             _infoBars.Show(
                 InfoBarSeverity.Caution,
@@ -434,6 +438,22 @@ public sealed partial class ImportViewModel : ObservableObject
         if (SkippedFilesInfoBar.Create(skipped) is { } request)
         {
             _infoBars.Show(request);
+        }
+    }
+
+    // Folders that would not open are not photos: one InfoBar of their own, never the skipped list.
+    private void ReportUnopened(List<UnopenedPath> unopened)
+    {
+        if (unopened.Count == 1)
+        {
+            _infoBars.Show(InfoBarSeverity.Caution, ProjectText.ImportFolderFailed(unopened[0].Path));
+        }
+        else if (unopened.Count > 1)
+        {
+            _infoBars.ShowWithDetails(
+                InfoBarSeverity.Caution,
+                ProjectText.ImportFoldersFailed(unopened.Count),
+                unopened.Select(path => new InfoBarDetail(path.Path)));
         }
     }
 
