@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. In flight: #38 accessibility, the last 3.0 code issue.
+2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. In flight: PR #106 (#38 accessibility, the last 3.0 code issue) review.
 
 ## Waves
 
@@ -20,7 +20,7 @@ Waves 0 to 16 are done; every issue in them is under Merged below. #90
 | 17 | #39 Strings to resource files | O | every view (Opus: resw/resx split) | merged #103 |
 | 17 | #104 Flaky allocation count (bug) | S | `tests/` Ordering | merged #105 |
 | 17 | #101 Flaky timing lower bound (bug) | S | `tests/` timing asserts | merged #102 |
-| 18 | #38 Accessibility pass | O | every view, `tools/` Axe.Windows scan | in progress |
+| 18 | #38 Accessibility pass | O | every view, `tools/` Axe.Windows scan | PR #106, review |
 
 After wave 18, 3.0 is code-complete. Milestones 4 (private beta) and 5
 (relaunch) are mostly owner work; milestone 6 (3.1 creative tools) gets its
