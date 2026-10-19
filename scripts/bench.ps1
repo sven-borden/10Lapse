@@ -334,10 +334,18 @@ try {
             $notes.Add("The GPU was $gpu % busy before the export started (other work on this PC): export speed is lower than on a quiet GPU. Rerun when it is idle.")
             Write-Host "bench: WARNING the GPU is $gpu % busy; the export speed will be low. Close other GPU work and rerun for a clean number." -ForegroundColor Yellow
         }
+        elseif ($null -eq $gpu) {
+            $notes.Add('The GPU load before the export was not measured (the check uses nvidia-smi, which only NVIDIA GPUs have): the speed assumes no other GPU work.')
+        }
         $video = Join-Path $data 'export.mp4'
         Write-Step "exporting $Photos photos to 4K H.264 (Spike, ProjectExporter)"
         $exportLog = Join-Path $logs 'export.log'
-        $lines = @(& $spikeExe export-project --photos $allFolder --resolution 2160 --fps 30 --quality High --out $video 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $exportLog)
+        $exportArguments = @('export-project', '--photos', $allFolder, '--resolution', '2160', '--fps', '30', '--quality', 'High', '--out', $video)
+        if ($TightMemory) {
+            Write-Step 'tight-memory profile: 4 frames decoded ahead, 3 decode threads'
+            $exportArguments += @('--decode-ahead', '4', '--decode-threads', '3')
+        }
+        $lines = @(& $spikeExe @exportArguments 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $exportLog)
         if ($LASTEXITCODE -ne 0) { $lines | Select-Object -Last 20 | Write-Host; throw "The export failed (exit $LASTEXITCODE)." }
         $lines | Select-Object -Last 4 | Write-Host
         if (Test-Path $video) { Remove-Item $video -Force }
@@ -358,6 +366,7 @@ try {
             Width     = $pairs['width']
             Height    = $pairs['height']
             GpuBefore = $gpu
+            Tight     = [bool]$TightMemory
         }
     }
 
@@ -410,6 +419,7 @@ if ($results.Contains('filmstrip')) {
     $filmMemory = Get-Match $text 'After: settled private bytes (\d+) MB[^\r\n]*\(([+-]?\d+) MB against the baseline\)'
 }
 
+$profileLabel = if ($results.Contains('export') -and $results['export'].Tight) { "$profileName, tight-memory profile" } else { $profileName }
 $targetMs = 2000
 $limitMb = 1024
 $date = Get-Date -Format 'yyyy-MM-dd'
@@ -437,8 +447,17 @@ if ($results.Contains('bare')) {
 if ($results.Contains('export')) {
     $e = $results['export']
     Add-Row "Export, $($e.Frames) photos x $([Math]::Round($megapixels)) MP to $($e.Width) x $($e.Height) H.264" 'none set' ("{0:0.0} frames/s ({1:0} s), {2}{3}, file {4:N0} MB" -f $e.Fps, $e.Seconds, $e.Encoder, $(if ($e.Hardware -eq 'True') { ' (hardware)' } else { ' (software)' }), $e.FileMB) 'info'
-    $memoryVerdict = if ($e.PeakWsMB -lt $limitMb -and $e.PeakPvtMB -lt $limitMb) { 'met' } else { 'MISSED' }
-    Add-Row 'Export peak memory' 'under 1 GB' ("working set {0:N0} MB, private bytes {1:N0} MB (the process held {2:N0} MB before the export; managed heap peak {3:N0} MB)" -f $e.PeakWsMB, $e.PeakPvtMB, $e.BaselineMB, $e.ManagedMB) $memoryVerdict
+    $memoryText = "working set {0:N0} MB, private bytes {1:N0} MB (the process held {2:N0} MB before the export; managed heap peak {3:N0} MB)" -f $e.PeakWsMB, $e.PeakPvtMB, $e.BaselineMB, $e.ManagedMB
+    if ($e.Tight) {
+        # The 1 GB target is for PCs with 8 GB of RAM or less or an integrated GPU, which run 4 ahead and 3 threads.
+        $memoryVerdict = if ($e.PeakWsMB -lt $limitMb -and $e.PeakPvtMB -lt $limitMb) { 'met' } else { 'MISSED' }
+        $margin = ($limitMb - $e.PeakPvtMB) / $limitMb * 100
+        Add-Row 'Export peak memory, tight-memory profile (4 ahead, 3 threads)' 'under 1 GB' ("$memoryText; {0:0} % under the limit" -f $margin) $memoryVerdict
+    }
+    else {
+        # Bigger PCs decode 8 ahead on up to 6 threads and may use more memory for speed: information, not a verdict.
+        Add-Row 'Export peak memory, default profile (8 ahead, up to 6 threads on this PC)' 'under 1 GB on 8 GB RAM or less or an integrated GPU only' $memoryText 'info'
+    }
 }
 if ($cold) { Add-Row "Preview, cold playback (5 s, proxies being built), $sampleFrames sample photos" 'none set' "$($cold[1]) of $($cold[2]) frames shown, $($cold[3]) dropped; lateness median $($cold[5]) ms, p95 $($cold[6]) ms" 'info' }
 if ($warm) { Add-Row "Preview, warm playback (10 s, proxies built), $sampleFrames sample photos" 'none set' "$($warm[1]) of $($warm[2]) frames shown, $($warm[3]) dropped; lateness median $($warm[5]) ms, p95 $($warm[6]) ms" 'info' }
@@ -448,11 +467,11 @@ if ($filmSweep) { Add-Row "Filmstrip, sweep over $($filmSweep[1]) frames in $($f
 if ($filmJumps) { Add-Row 'Filmstrip, jumps of four views' 'none set' "view filled median $($filmJumps[3]) ms, p95 $($filmJumps[4]) ms ($($filmJumps[1]) jumps)" 'info' }
 if ($filmMemory) { Add-Row 'Filmstrip, memory after the sweep' 'none set' "settled private bytes $($filmMemory[1]) MB ($($filmMemory[2]) MB against its baseline)" 'info' }
 
-Add-Line "### $Release, $date, commit $commit ($profileName)"
+Add-Line "### $Release, $date, commit $commit ($profileLabel)"
 Add-Line
 Add-Line "- Machine: $($machine.Cpu); $($machine.Gpu); $($machine.RamGb) GB RAM; $($machine.Os)$(if ($machine.Disk) { "; photos on $($machine.Disk)" })."
 Add-Line ("- Photos: {0:N0} JPEGs of {1} x {2} ({3:0.#} MP), EXIF capture times 5 s apart and an embedded picture, written by the Spike's bench-photos." -f $Photos, $width, $height, $megapixels)
-Add-Line "- App benches ran on the Debug configuration built with Optimize=true (the switches are not in Release); the export ran in the Spike, Release."
+Add-Line "- App benches ran on the Debug configuration built with Optimize=true (the switches are not in Release; Debug keeps asserts and unoptimised dependencies, so these numbers are an upper bound for Release); the export ran in the Spike, Release."
 foreach ($note in $notes) { Add-Line "- $note" }
 Add-Line
 Add-Line '| Measure | Target | Result | Verdict |'
@@ -462,11 +481,11 @@ Add-Line
 
 # One line for the table at the top of docs/benchmarks.md.
 $firstText = if ($results.Contains('first')) { "$(Format-Ms $results['first'].ViewFilled) ($($results['first'].Count))" } else { '-' }
-$index1 = if ($results.Contains('first')) { Format-Ms $results['first'].Done } else { '-' }
+$index1 = if ($results.Contains('first')) { "$(Format-Ms $results['first'].Done) ($($results['first'].Count))" } else { '-' }
 $indexAll = if ($results.Contains('all')) { "$(Format-Ms $results['all'].Done) ($($results['all'].Count))" } else { '-' }
 $exportText = if ($results.Contains('export')) { '{0:0.0} fps' -f $results['export'].Fps } else { '-' }
 $memText = if ($results.Contains('export')) { '{0:N0} / {1:N0} MB' -f $results['export'].PeakWsMB, $results['export'].PeakPvtMB } else { '-' }
-$summary = "| $date | $Release | $commit | $($machine.GpuShort), $($machine.RamGb) GB | $profileName | $firstText | $index1 | $indexAll | $exportText | $memText |"
+$summary = "| $date | $Release | $commit | $($machine.GpuShort), $($machine.RamGb) GB | $profileLabel | $firstText | $index1 | $indexAll | $exportText | $memText |"
 
 $report = $out.ToString()
 Set-Content -Path (Join-Path $logs 'result.md') -Value ($report + "`n" + $summary + "`n")
