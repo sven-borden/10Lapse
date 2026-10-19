@@ -129,6 +129,15 @@ public sealed partial class MainWindow : Window
     /// <summary>The window's view model.</summary>
     public ShellViewModel ViewModel { get; }
 
+    /// <summary>The export panel's view model (the rating prompt, #31, follows its starts and ends).</summary>
+    internal ExportViewModel Export => _shell.Export;
+
+    /// <summary>True while this is the active window and not minimized: the rating prompt only asks then (#31).</summary>
+    internal bool IsInForeground => _active && !IsMinimized;
+
+    /// <summary>The window's handle, for the Store's rating dialog (#31).</summary>
+    internal nint Handle => Win32Interop.GetWindowFromWindowId(AppWindow.Id);
+
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(ShellViewModel.Title))

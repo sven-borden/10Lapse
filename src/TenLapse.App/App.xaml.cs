@@ -4,6 +4,7 @@ using TenLapse.Core.Diagnostics;
 using TenLapse.Core.Settings;
 using TenLapse.Media.Import;
 using TenLapse.Presentation;
+using TenLapse.Presentation.Rating;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 
@@ -121,7 +122,7 @@ public partial class App : Application
         // from them, the pickers open in the last folder, and the file is written a moment after each change.
         var remembered = new RememberedSettings(new JsonFileSettingsStore(SettingsFile()), errors, _log);
         var shell = new ShellViewModel(dialogs, errors, remembered.CreateProject);
-        var settings = new SettingsViewModel(errors, diagnostics, remembered, infoBars);
+        var settings = new SettingsViewModel(errors, diagnostics, remembered, infoBars, new LauncherService());
 
         // Import (#12): Media's PhotoImporter does the file work behind Core's IPhotoImportSource; the batches reach
         // the project on this (the UI) thread's queue. The pickers remember the last folder across launches (#21).
@@ -187,6 +188,19 @@ public partial class App : Application
 
         // And the preview: its render thread, its loads and the frame images.
         window.Closed += (_, _) => logOnly.RunLogged(preview.Dispose, ProjectText.PreviewProjectFailed);
+
+        // The rating prompt (#31): after the second successful export, once per version, if the window is in front and
+        // nothing is open. Unpackaged it does nothing; Debug --fake-rating logs the ask instead of calling the Store.
+        IRatingService ratingService = new StoreRatingService(() => window!.Handle, _log);
+#if DEBUG
+        if (Debugging.DebugRating.Requested)
+        {
+            ratingService = new Debugging.DebugRating(_log);
+        }
+#endif
+        var rating = new RatingPrompt(remembered, ratingService, () => window!.IsInForeground && !dialogs.HasOpenDialog && window.Export.IsFinished, AppDiagnostics.AppVersion(), _log, logOnly);
+        rating.Attach(window.Export);
+        window.Closed += (_, _) => rating.Dispose();
         _errors = errors;
 #if DEBUG
         errors.Guard(() => Debugging.DebugLaunch.ApplyPreview(preview, window, _log), "Applying the preview's Debug switches failed.");
