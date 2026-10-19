@@ -64,6 +64,22 @@ public static class CaptureTimeCostTests
     }
 
     [Fact]
+    public static void ManyDamagedRawProfilesCostNoMoreThanFour()
+    {
+        // Each damaged zTXt fails inside the decompressor; each still counts as a block, so a PNG of thousands costs four.
+        (string, byte[]) damaged = ("zTXt", [.. "Raw profile type exif"u8, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF]);
+        var good = ExifFiles.TextChunk(ExifFiles.PngText.Compressed, "Raw profile type exif", ExifFiles.RawProfileText("exif", [.. "Exif\0\0"u8, .. ExifFiles.ExifTiff(new ExifFiles.Tags(Original: "2026:05:01 18:30:07"))]));
+
+        var eight = ReadCounted(ExifFiles.PngOf([.. Enumerable.Repeat(damaged, 8), good]), out var none);
+        var thousand = ReadCounted(ExifFiles.PngOf([.. Enumerable.Repeat(damaged, 1000), good]), out _);
+        var threeThenGood = CaptureTimeReader.Read(new MemoryStream(ExifFiles.PngOf([.. Enumerable.Repeat(damaged, 3), good])));
+
+        Assert.Null(none);
+        Assert.Equal(eight.Reads, thousand.Reads);
+        Assert.Equal(new DateTime(2026, 5, 1, 18, 30, 7), threeThenGood?.Time);
+    }
+
+    [Fact]
     public static void AHeifExifItemNamedSeveralTimesIsReadOnce()
     {
         var once = ReadCounted(ExifFiles.HeifRepeatedExifItem(names: 1, extents: 2, extentBytes: 1024), out _);

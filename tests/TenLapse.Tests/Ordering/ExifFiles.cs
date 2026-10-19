@@ -146,22 +146,33 @@ internal static class ExifFiles
         PngWithText(storage, keyword, RawProfileText(keyword.EndsWith("APP1", StringComparison.Ordinal) ? "APP1" : "exif", [.. "Exif\0\0"u8, .. ExifTiff(tags)]));
 
     /// <summary>A PNG with one text chunk keyed <paramref name="keyword"/> holding <paramref name="text"/>, stored as <paramref name="storage"/> says.</summary>
-    public static byte[] PngWithText(PngText storage, string keyword, byte[] text)
+    public static byte[] PngWithText(PngText storage, string keyword, byte[] text) => PngOf(TextChunk(storage, keyword, text));
+
+    /// <summary>A PNG text chunk keyed <paramref name="keyword"/> holding <paramref name="text"/>, stored as <paramref name="storage"/> says.</summary>
+    public static (string Type, byte[] Data) TextChunk(PngText storage, string keyword, byte[] text)
     {
         byte[] name = [.. Encoding.Latin1.GetBytes(keyword), 0];
-        var (type, data) = storage switch
+        return storage switch
         {
-            PngText.Plain => ("tEXt", (byte[])[.. name, .. text]),
+            PngText.Plain => ("tEXt", [.. name, .. text]),
             PngText.Compressed => ("zTXt", [.. name, 0, .. Deflate(text)]),
             PngText.International => ("iTXt", [.. name, 0, 0, .. "en\0"u8, .. "Exif\0"u8, .. text]),
             _ => ("iTXt", [.. name, 1, 0, .. "en\0"u8, .. "Exif\0"u8, .. Deflate(text)]),
         };
+    }
 
+    /// <summary>A PNG: signature, IHDR, one IDAT, the given chunks and IEND, with real CRCs.</summary>
+    public static byte[] PngOf(params (string Type, byte[] Data)[] chunks)
+    {
         using var output = new MemoryStream();
         output.Write([0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A]);
         PngChunk(output, "IHDR", [0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 0, 0, 0]);
         PngChunk(output, "IDAT", new byte[16]);
-        PngChunk(output, type, data);
+        foreach (var (type, data) in chunks)
+        {
+            PngChunk(output, type, data);
+        }
+
         PngChunk(output, "IEND", []);
         return output.ToArray();
     }

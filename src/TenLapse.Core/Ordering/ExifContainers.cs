@@ -192,6 +192,18 @@ internal sealed class ExifContainers : IDisposable
         }
     }
 
+    /// <summary>
+    /// The length of a PNG text chunk's keyword (1 to 79 Latin-1 characters, then a NUL) when it is
+    /// <c>Raw profile type exif</c> or <c>Raw profile type APP1</c>; -1 for any other keyword.
+    /// </summary>
+    private static int RawProfileKeywordLength(ByteWindow chunk)
+    {
+        Span<byte> head = stackalloc byte[80];
+        var got = chunk.ReadAtMost(0, head);
+        var end = head[..got].IndexOf((byte)0);
+        return end > 0 && (head[..end].SequenceEqual(ExifProfileKeyword) || head[..end].SequenceEqual(App1ProfileKeyword)) ? end : -1;
+    }
+
     private static int HexValue(byte c) => c switch
     {
         >= (byte)'0' and <= (byte)'9' => c - '0',
@@ -451,10 +463,14 @@ internal sealed class ExifContainers : IDisposable
             }
             else if (type is TextChunk or CompressedTextChunk or InternationalTextChunk
                 && length <= MaxPngTextChunkBytes
-                && png.Slice(position + 8, length) is { } text
-                && RawExifProfile(text, type) is { } profile)
+                && png.Slice(position + 8, length) is { } text)
             {
-                Offer(ExifBlockTags(profile));
+                // A raw profile counts as a block whether or not it decodes, so damaged ones cannot multiply the work.
+                var keywordLength = RawProfileKeywordLength(text);
+                if (keywordLength > 0)
+                {
+                    Offer(ExifBlockTags(RawExifProfile(text, type, keywordLength)));
+                }
             }
             else if (type == EndChunk)
             {
@@ -467,23 +483,15 @@ internal sealed class ExifContainers : IDisposable
     }
 
     /// <summary>
-    /// The Exif bytes of a PNG text chunk keyed <c>Raw profile type exif</c> or <c>Raw profile type APP1</c>, the
-    /// "raw profile" ImageMagick and exiv2 write: the text is <c>\n&lt;name&gt;\n&lt;length&gt;\n</c> and then the bytes
-    /// in hex, deflated in <c>zTXt</c> and in a compressed <c>iTXt</c>. Decoded into the block buffer; null for any
-    /// other chunk or a damaged one.
+    /// The Exif bytes of a PNG text chunk keyed <c>Raw profile type exif</c> or <c>Raw profile type APP1</c> (a keyword
+    /// of <paramref name="keywordLength"/> bytes), the "raw profile" ImageMagick and exiv2 write: the text is
+    /// <c>\n&lt;name&gt;\n&lt;length&gt;\n</c> and then the bytes in hex, deflated in <c>zTXt</c> and in a compressed
+    /// <c>iTXt</c>. Decoded into the block buffer; null for a damaged chunk.
     /// </summary>
-    private ByteWindow? RawExifProfile(ByteWindow chunk, uint type)
+    private ByteWindow? RawExifProfile(ByteWindow chunk, uint type, int keywordLength)
     {
-        // The keyword: 1 to 79 Latin-1 characters and a NUL.
         Span<byte> head = stackalloc byte[80];
-        var got = chunk.ReadAtMost(0, head);
-        var keyword = head[..got].IndexOf((byte)0);
-        if (keyword < 0 || !(head[..keyword].SequenceEqual(ExifProfileKeyword) || head[..keyword].SequenceEqual(App1ProfileKeyword)))
-        {
-            return null;
-        }
-
-        long textStart = keyword + 1;
+        long textStart = keywordLength + 1;
         var compressed = false;
         if (type == CompressedTextChunk)
         {
@@ -499,7 +507,7 @@ internal sealed class ExifContainers : IDisposable
         else if (type == InternationalTextChunk)
         {
             // Compression flag and method, then a language tag and a translated keyword, each ending in a NUL.
-            got = chunk.ReadAtMost(textStart, head);
+            var got = chunk.ReadAtMost(textStart, head);
             var language = got < 2 || head[1] != 0 ? -1 : head[2..got].IndexOf((byte)0);
             var translated = language < 0 ? -1 : head[(3 + language)..got].IndexOf((byte)0);
             if (translated < 0)
