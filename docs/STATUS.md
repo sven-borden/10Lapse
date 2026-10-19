@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #91 merged (#90 start-up hardening; #90 stays open). In flight: #35 motion (alone). Then #39 strings, #38 accessibility (each alone).
+2026-10-19: #97 merged (minimum Windows 11). In flight: #35 motion, with #98 flaky test beside it (test code only). Then #39 strings, #38 accessibility (each alone).
 
 ## Waves
 
@@ -48,7 +48,9 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | merged #89 |
 | 15 | #36 Narrow window layout | S | shell visual states | merged #94 |
 | 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | merged #95 |
-| 16 | #35 Motion system | O | every view, alone | |
+| 16 | #35 Motion system | O | every view | in progress |
+| 16 | #96 Minimum Windows 11 | S | build props, manifest, README | merged #97 |
+| 16 | #98 Flaky cache test (bug) | S | `tests/` Preview | in progress |
 | 17 | #39 Strings to resource files | S | every view, alone | |
 | 18 | #38 Accessibility pass | O | every view, alone | |
 
@@ -61,10 +63,8 @@ own waves once 3.0 ships.
 Nothing blocks the build loop. Everything below waits until release is near
 (Sven, 2026-10-19).
 
-- Before the first 3.0 submission, one Partner Center visit: the rest of #2
-  (OS and architecture split decides x86, markets the first translations; #39
-  extracts English strings without them; acquisitions and usage are posted),
-  #7 description line, and the privacy URL pointed at `PRIVACY.md` on GitHub.
+- Before the first 3.0 submission, one Partner Center visit: the #7
+  description line, and the privacy URL pointed at `PRIVACY.md` on GitHub.
 - #30 Sample sequence: deferred. #29 ships without the *Try a sample* button;
   add it once a set exists.
 - Release: #40 flight, #42 listing, #43 trailer, #44 rollout, #58 pricing.
@@ -78,12 +78,13 @@ Nothing blocks the build loop. Everything below waits until release is near
 - 2026-10-18: The Store package depends on the Windows App Runtime 2 framework
   package, which the Store installs with the app; it is not self-contained.
   Debug builds run unpackaged for local checks.
-- 2026-10-18: Architectures x64 and ARM64. x86 only if #2 shows real x86
-  installs.
+- 2026-10-19 (Sven, #2): Windows 11 only (minimum 10.0.22000.0, #96), x64 and
+  ARM64, no x86; Windows 10 devices keep 2.1.1. English only in 3.0;
+  translations come later.
 - 2026-10-18 (Sven): the orchestrator merges each PR itself after the review,
   the fix round and a green gate on the PR branch.
 - 2026-10-18 (#3): solution `TenLapse.slnx`. Windows projects target
-  `net10.0-windows10.0.26100.0`, minimum 10.0.17763.0; Core is `net10.0`. Each
+  `net10.0-windows10.0.26100.0`, minimum 10.0.22000.0 (#96); Core is `net10.0`. Each
   new project needs the same three platform mappings in the slnx (Any CPU maps
   Windows projects to x64), and the gate fails if a tracked csproj is missing
   from it. App root namespace is `TenLapse`; Core's is `TenLapse.Core`.
@@ -167,8 +168,7 @@ Nothing blocks the build loop. Everything below waits until release is near
   user did not ask). Reset to defaults keeps the count. New settings fields need
   no schema bump. *Send feedback* opens GitHub issues, *Rate 10Lapse* the Store.
 - 2026-10-19 (#2): same listing confirmed from the acquisitions and usage
-  numbers Sven posted on #2. x86 and the first languages wait for the rest of
-  #2.
+  numbers Sven posted on #2 (#2 closed).
 - 2026-10-19 (#90, PR #91): every framework callback (`AppWindow.Closing`,
   `Changed`, `Destroying`, backdrop, lambda handlers) runs through `RunLogged`;
   `FrameworkCallbackRuleTests` catches lambda and method-group handlers.
@@ -250,3 +250,6 @@ Details are in each PR's "What the next issues should know".
 - #90 PR #91 (refs only): start-up hardening, `StartupTrace`,
   `WindowCloseGate`, probe after the first frame, `scripts/launch-test.ps1`,
   `tools/TenLapse.CrashCatcher`; Debug `--log-folder=`, `--encoder-cache=`.
+- #96 PR #97: minimum OS 10.0.22000.0 (`TenLapseWindowsMinVersion`, manifest,
+  README). The Mica fallback stays; the stale "Windows 10" comment in
+  `Shell/ShellView.xaml` is left for #35.
