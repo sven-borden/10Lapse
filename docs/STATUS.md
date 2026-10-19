@@ -1,6 +1,6 @@
 # 10Lapse 3.0 status
 
-Updated 2026-10-18. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
+Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
@@ -44,7 +44,7 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 14 | #31 Rating prompt | S | Store rating | |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | |
 | 15 | #36 Narrow window layout | S | shell visual states | |
-| 15 | #37 Icon and tile assets | S | `Assets/` (needs the icon choice) | |
+| 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | |
 | 16 | #35 Motion system | O | every view, alone | |
 | 17 | #39 Strings to resource files | S | every view, alone | |
 | 18 | #38 Accessibility pass | O | every view, alone | |
@@ -57,12 +57,10 @@ own waves once 3.0 ships.
 
 - #2 Partner Center numbers: decides x86 and the first translations.
 - #7 Fix the Store description line now (listing only, no package).
-- #11 Sign off the design spec. Until then `DESIGN.md` and
-  `docs/design/canvas/` are treated as the approved spec.
-- #30 Sample sequence: 60 to 120 frames, shot by Sven or CC0. Until it exists,
-  the first-launch screen has no *Try a sample* button.
-- #37 needs the icon direction before wave 15: A Five frames, B Sun path, or
-  C Stacked frames (`docs/design/canvas/foundations/Icon.dc.html`).
+- Partner Center privacy URL: point it at `PRIVACY.md` on GitHub before the
+  first 3.0 submission (bundle with #7).
+- #30 Sample sequence: deferred (Sven, 2026-10-19). #29 ships without the
+  *Try a sample* button; add it once a set exists.
 - Later: #40 flight, #42 listing, #43 trailer, #44 rollout, #58 pricing.
 
 ## Decisions
@@ -166,12 +164,16 @@ own waves once 3.0 ships.
   exists. Folders that will not open get their own InfoBar, not a skipped
   photo. `ApplyDefaultSort` only on a project that was empty and unsorted by
   the user during the import. Drops are refused while Settings is open.
+- 2026-10-19 (Sven): icon direction A Five frames (#37). Design spec approved
+  (#11 closed): `DESIGN.md`, the canvas, `Main.dc.html` and the motion spec are
+  the spec. License stays all rights reserved; no `LICENSE` file. #29 ships
+  without *Try a sample*; #30 stays open for later.
 
 ## Merged
 
 - #6 PR #60: `PRIVACY.md` and `README.md`. Owner: point the Partner Center
-  privacy URL at `PRIVACY.md`; choose a license (none yet, all rights
-  reserved).
+  privacy URL at `PRIVACY.md`. License: all rights reserved (Sven,
+  2026-10-19).
 - #3 PR #61: tag `v2.1.1-legacy`, legacy UWP removed, new solution, gate
   (`solution`, `restore`, Debug `build`, `test`, Release `build`, about 19 s).
 - #4 PR #62: Store identity `62394glaglasven.10Lapse` 3.0.0.0, Application Id
