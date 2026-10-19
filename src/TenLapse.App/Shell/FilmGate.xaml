@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The film gate (#24; DESIGN.md, Export panel; motion spec, Gate): the export's frames as 48 x 32 thumbnails with 3 px
-  corners and 3 px gaps, sliding linearly past a 54 x 40 frame of 2 px Deep Amber Indicator in the middle as they are
-  encoded. Frames already written show at full strength, the ones to come at 30 %. The edges fade into the Layer (the
-  canvas's mask, 16 % each side): two Layer gradients over the strip, colored in code from the LayerColor token. With
-  animations off the strip stands still and only its pictures change. FilmGate.xaml.cs places the slots.
+  The film gate (#24; DESIGN.md, Export panel; motion spec, Gate; the canvas's gateThumbs and gateX): 30 frames sampled
+  over the whole film as 48 x 32 thumbnails with 3 px corners and 3 px gaps, sliding linearly with the progress past a
+  54 x 40 frame of 2 px Deep Amber Indicator in the middle. Samples the export has reached show at full strength, the
+  ones to come at 30 % (167 ms linear fades). The edges fade into the Layer (the canvas's mask, 16 % each side): two Layer
+  gradients over the strip, colored in code from the LayerColor token. With animations off the strip stands still and
+  only the strengths change. FilmGate.xaml.cs places the samples.
 -->
 <UserControl
   x:Class="TenLapse.Shell.FilmGate"

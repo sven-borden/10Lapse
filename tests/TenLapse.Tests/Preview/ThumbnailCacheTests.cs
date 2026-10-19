@@ -48,6 +48,60 @@ public sealed class ThumbnailCacheTests
     }
 
     [Fact]
+    public async Task KeptFramesLoadAfterTheWantedOnesAndAWantDoesNotCancelThem()
+    {
+        var source = new GatedSource();
+        using var cache = new ThumbnailCache<FakeImage>(source, new ThumbnailCacheOptions { Workers = 1 });
+        var frames = TestFrames.Folder("a", 5);
+        var large = new ThumbnailSize(72, 48);
+        cache.SetFrames([.. frames]);
+        cache.Want([frames[0]], _small);
+        var first = await source.NextAsync();
+
+        cache.Keep([frames[4], frames[3]], large);
+        cache.Want([frames[0], frames[1]], _small);
+        first.Release();
+        (await source.NextAsync()).Release();
+        var kept = await source.NextAsync();
+
+        // The strip scrolls on: the kept frame's load goes on, and the newly wanted frame comes before the next kept one.
+        cache.Want([frames[2]], _small);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
+        Assert.False(kept.Token.IsCancellationRequested);
+        kept.Release();
+        (await source.NextAsync()).Release();
+        (await source.NextAsync()).Release();
+
+        Assert.Equal([frames[0].Id, frames[1].Id, frames[4].Id, frames[2].Id, frames[3].Id], source.Started);
+        await WaitAsync(() => cache.Count == 5);
+        using var lease = cache.Acquire(frames[3].Id);
+        Assert.Equal(large, lease!.Size);
+    }
+
+    [Fact]
+    public async Task KeptFramesSurviveTheBudgetUntilTheyAreLetGo()
+    {
+        var source = new GatedSource { AutoRelease = true, BytesEach = 1000 };
+        using var cache = new ThumbnailCache<FakeImage>(source, new ThumbnailCacheOptions { Workers = 1, MemoryBudgetBytes = 3000 });
+        var frames = TestFrames.Folder("a", 40);
+        cache.SetFrames([.. frames]);
+        cache.Keep([frames[39]], _small);
+        await WaitAsync(() => cache.Acquire(frames[39].Id) is { } lease && Disposed(lease));
+
+        for (var start = 0; start < 30; start += 3)
+        {
+            var view = frames.Skip(start).Take(3).ToList();
+            cache.Want(view, _small);
+            await WaitAsync(() => view.All(frame => cache.Acquire(frame.Id) is { } lease && Disposed(lease)));
+            Assert.True(cache.Acquire(frames[39].Id) is { } still && Disposed(still), "The kept frame was trimmed.");
+        }
+
+        cache.Keep([], _small);
+        cache.Want(frames.Skip(30).Take(3).ToList(), _small);
+        await WaitAsync(() => cache.Acquire(frames[39].Id) is null);
+    }
+
+    [Fact]
     public async Task AFrameThatScrollsAwayHasItsLoadCancelled()
     {
         var source = new GatedSource();

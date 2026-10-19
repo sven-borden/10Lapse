@@ -166,6 +166,9 @@ public sealed class ThumbnailCache<TImage> : IDisposable
     private TaskCompletionSource _wake = NewWake();
     private IReadOnlyList<Frame> _wanted = [];
     private HashSet<Guid> _wantedIds = [];
+    private IReadOnlyList<Frame> _kept = [];
+    private HashSet<Guid> _keptIds = [];
+    private ThumbnailSize _keptSize = new(48, 32);
     private HashSet<Guid>? _known;
     private ThumbnailSize _size = new(48, 32);
     private long _bytes;
@@ -272,7 +275,40 @@ public sealed class ThumbnailCache<TImage> : IDisposable
             var wanted = frames.Select(frame => frame.Id).ToHashSet();
             _wantedIds = wanted;
             _size = size;
-            CancelLoads(id => !wanted.Contains(id));
+            var kept = _keptIds;
+            CancelLoads(id => !wanted.Contains(id) && !kept.Contains(id));
+            Trim(dispose);
+        }
+
+        DisposeAll(dispose);
+        Wake();
+    }
+
+    /// <summary>
+    /// A few frames to have in memory besides the wanted ones (the export's film gate, #24): loaded at
+    /// <paramref name="size"/> only when no wanted frame needs a load, never cancelled by <see cref="Want"/>, and kept
+    /// past the memory budget's trimming until the next call (an empty list lets them go). A frame with a picture of any
+    /// size already counts as there.
+    /// </summary>
+    public void Keep(IReadOnlyList<Frame> frames, ThumbnailSize size)
+    {
+        ArgumentNullException.ThrowIfNull(frames);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(size.Width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(size.Height);
+        var dispose = new List<TImage>();
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _kept = [.. frames];
+            var kept = frames.Select(frame => frame.Id).ToHashSet();
+            _keptIds = kept;
+            _keptSize = size;
+            var wanted = _wantedIds;
+            CancelLoads(id => !wanted.Contains(id) && !kept.Contains(id));
             Trim(dispose);
         }
 
@@ -464,8 +500,7 @@ public sealed class ThumbnailCache<TImage> : IDisposable
                     return;
                 }
 
-                frame = Next();
-                size = _size;
+                frame = Next(out size);
                 wake = _wake.Task;
                 load = frame is null ? null! : CancellationTokenSource.CreateLinkedTokenSource(_disposing.Token);
                 if (frame is not null)
@@ -485,24 +520,31 @@ public sealed class ThumbnailCache<TImage> : IDisposable
     }
 
     // Under the lock: the first wanted frame that needs a load (none in memory of the wanted size from its best source, not
-    // loading, not failed lately).
-    private Frame? Next()
+    // loading, not failed lately), then the first kept frame without any picture, and the size to load it at.
+    private Frame? Next(out ThumbnailSize size)
     {
         var now = Environment.TickCount64;
         var retry = (long)_options.RetryFailedAfter.TotalMilliseconds;
+        bool Waiting(Frame frame) =>
+            _loading.ContainsKey(frame.Id)
+            || (_known is { } known && !known.Contains(frame.Id))
+            || (_failed.TryGetValue(frame.Id, out var failed) && now - failed.At < retry);
+
+        size = _size;
         foreach (var frame in _wanted)
         {
-            if (_loading.ContainsKey(frame.Id) || (_known is { } known && !known.Contains(frame.Id)))
+            if (Waiting(frame) || (_entries.TryGetValue(frame.Id, out var entry) && entry.Size == _size && !entry.Stale))
             {
                 continue;
             }
 
-            if (_failed.TryGetValue(frame.Id, out var failed) && now - failed.At < retry)
-            {
-                continue;
-            }
+            return frame;
+        }
 
-            if (_entries.TryGetValue(frame.Id, out var entry) && entry.Size == _size && !entry.Stale)
+        size = _keptSize;
+        foreach (var frame in _kept)
+        {
+            if (Waiting(frame) || _entries.ContainsKey(frame.Id))
             {
                 continue;
             }
@@ -612,7 +654,7 @@ public sealed class ThumbnailCache<TImage> : IDisposable
         }
     }
 
-    // Under the lock: past the budget, the least recently used thumbnails that are not wanted go.
+    // Under the lock: past the budget, the least recently used thumbnails that are neither wanted nor kept go.
     private void Trim(List<TImage> dispose)
     {
         if (_bytes <= _options.MemoryBudgetBytes)
@@ -620,7 +662,7 @@ public sealed class ThumbnailCache<TImage> : IDisposable
             return;
         }
 
-        foreach (var entry in _entries.Values.Where(entry => !_wantedIds.Contains(entry.Id)).OrderBy(entry => entry.LastUsed).ToList())
+        foreach (var entry in _entries.Values.Where(entry => !_wantedIds.Contains(entry.Id) && !_keptIds.Contains(entry.Id)).OrderBy(entry => entry.LastUsed).ToList())
         {
             if (_bytes <= _options.MemoryBudgetBytes)
             {

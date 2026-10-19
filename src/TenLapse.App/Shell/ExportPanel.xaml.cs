@@ -20,6 +20,10 @@ public sealed partial class ExportPanel : UserControl
 {
     private IErrorSink? _log;
 
+    // The check and title animation, kept so the next finished state starts undrawn (a stopped storyboard lets go of the
+    // values it held; a finished one holds them over the local values).
+    private Storyboard? _arrival;
+
     public ExportPanel()
     {
         InitializeComponent();
@@ -66,6 +70,8 @@ public sealed partial class ExportPanel : UserControl
     internal void ArriveFinished()
     {
         PlayButton.Focus(FocusState.Programmatic);
+        _arrival?.Stop();
+        _arrival = null;
         var animate = MotionTokens.AnimationsEnabled && !ReduceMotionSwitch;
         if (!animate)
         {
@@ -95,14 +101,19 @@ public sealed partial class ExportPanel : UserControl
         Storyboard.SetTarget(rise, FinishedHeading.RenderTransform);
         Storyboard.SetTargetProperty(rise, "Y");
 
-        var storyboard = new Storyboard();
-        storyboard.Children.Add(draw);
-        storyboard.Children.Add(rise);
-        storyboard.Begin();
+        _arrival = new Storyboard();
+        _arrival.Children.Add(draw);
+        _arrival.Children.Add(rise);
+        _arrival.Begin();
     }
 
-    /// <summary>The finished part left: the check is undrawn for next time.</summary>
-    internal void ResetFinished() => CheckStroke.StrokeDashOffset = CheckDash;
+    /// <summary>The finished part left: the animation lets go of its end values, and the check is undrawn for next time.</summary>
+    internal void ResetFinished()
+    {
+        _arrival?.Stop();
+        _arrival = null;
+        CheckStroke.StrokeDashOffset = CheckDash;
+    }
 
     // The stroke's dash in units of its thickness (28 px / 3 px), as in ExportPanel.xaml.
     private const double CheckDash = 9.34;
@@ -122,9 +133,9 @@ public sealed partial class ExportPanel : UserControl
             return;
         }
 
-        if (e.PropertyName is nameof(ExportViewModel.CurrentFrame) or nameof(ExportViewModel.ExportFrames) or nameof(ExportViewModel.FramesText))
+        if (e.PropertyName is nameof(ExportViewModel.Fraction) or nameof(ExportViewModel.ExportFrames) or nameof(ExportViewModel.FramesText))
         {
-            log.RunLogged(() => Gate.Show(viewModel.ExportFrames, viewModel.CurrentFrame), ExportText.ProgressFailed);
+            log.RunLogged(() => Gate.Show(viewModel.ExportFrames, viewModel.Fraction), ExportText.ProgressFailed);
         }
     }
 

@@ -211,6 +211,10 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial double Percent { get; private set; }
 
+    /// <summary>The exact share of frames written, 0 to 1: the film gate's position, linear in it.</summary>
+    [ObservableProperty]
+    public partial double Fraction { get; private set; }
+
     /// <summary>"About 2 min 30 s left", "Getting ready…", "Finishing the file…".</summary>
     [ObservableProperty]
     public partial string TimeLeftText { get; private set; }
@@ -450,8 +454,9 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         _announcedTenth = 0;
         FileName = fileName;
         OutputSummary = ExportText.OutputSummary(output);
-        ExportFrames = snapshot.Frames;
+        // The numbers first, so the film gate starts the new export at 0 rather than where the last one ended.
         Show(new ExportStatus(ExportPhase.Preparing, 0, snapshot.Frames.Length, null, null));
+        ExportFrames = snapshot.Frames;
         SavedBesideText = string.Empty;
         _shell.Edits.Close();
         State = ExportPanelState.Exporting;
@@ -517,6 +522,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     private void Show(ExportStatus status)
     {
         Percent = ExportText.WholePercent(status.Fraction);
+        Fraction = status.Fraction;
         PercentText = ExportText.Percent(status.Fraction);
         TimeLeftText = ExportText.TimeLeft(status);
         FramesText = ExportText.Frames(status.Frame, status.FrameCount);
