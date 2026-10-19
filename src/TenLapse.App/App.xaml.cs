@@ -163,7 +163,7 @@ public partial class App : Application
         if (Debugging.DebugMissingCodecs.FromSwitches(Environment.GetCommandLineArgs()) is { } fakedMissing)
         {
             // --missing-codec: the InfoBars an import of 12 HEIC and 3 RAW photos would raise with those extensions missing.
-            errors.Guard(() => new CodecExtensionPrompts(codecs, infoBars, errors).Show(Debugging.DebugMissingCodecs.SampleSkips(fakedMissing)), "Showing the faked missing-codec InfoBars failed.");
+            errors.Guard(() => { var prompts = new CodecExtensionPrompts(codecs, infoBars, errors); prompts.Show(prompts.Plan(Debugging.DebugMissingCodecs.SampleSkips(fakedMissing))); }, "Showing the faked missing-codec InfoBars failed.");
         }
 #endif
         return window;
