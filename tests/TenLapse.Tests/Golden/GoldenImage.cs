@@ -89,14 +89,14 @@ internal sealed class GoldenImage
     public IReadOnlyList<int> QuietColumns(IEnumerable<double> fractions, int margin = 4) =>
         Quiet(Width, Height, (along, across) => Luma(across, along), fractions, margin);
 
-    /// <summary>Writes the frame as a PNG (opaque) through WIC.</summary>
-    public async Task SavePngAsync(string path)
+    /// <summary>Writes the frame as a PNG (opaque) through WIC, declaring <paramref name="dpi"/> in its header. The one PNG writer of the tests' generated photos.</summary>
+    public async Task SavePngAsync(string path, double dpi = 96)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         using var file = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
         using var stream = file.AsRandomAccessStream();
         var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
-        encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)Width, (uint)Height, 96, 96, Pixels);
+        encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)Width, (uint)Height, dpi, dpi, Pixels);
         await encoder.FlushAsync();
     }
 

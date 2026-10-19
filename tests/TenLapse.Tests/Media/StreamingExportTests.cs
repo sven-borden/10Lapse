@@ -2,6 +2,7 @@ using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 using TenLapse.Media.Export;
 using TenLapse.Media.Inspection;
+using TenLapse.Tests.Golden;
 using static TenLapse.Tests.Media.MediaSkips;
 
 namespace TenLapse.Tests.Media;
@@ -310,15 +311,7 @@ public sealed class StreamingExportTests : IDisposable
         Assert.Throws<FileNotFoundException>(() => VideoFileReader.Read(Path.Combine(_directory, "missing.mp4")));
     }
 
-    /// <summary>
-    /// One unit of the MP4 sink's timescale, floor(rate x 1000) units a second, in whole ticks rounded up:
-    /// 334 at 30 and 29.97 fps, 4,287 at 7/3, 23,365 at 3/7. The bound for #32's timing checks.
-    /// </summary>
-    private static long TimescaleUnit(Fraction rate)
-    {
-        var timescale = (long)rate.Numerator * 1000 / rate.Denominator;
-        return (FrameTiming.TicksPerSecond + timescale - 1) / timescale;
-    }
+    private static long TimescaleUnit(Fraction rate) => GoldenExport.TimescaleUnit(rate);
 
     // Each sample's duration and the track's are whole timescale units: within one unit of ours.
     private static void AssertDurations(VideoFileInfo info, Fraction rate)

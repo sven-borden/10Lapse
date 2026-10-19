@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Microsoft.Graphics.Canvas;
 using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
+using TenLapse.Media.Export;
 using TenLapse.Media.Inspection;
 using TenLapse.Tests.Media;
 using Windows.UI;
@@ -11,13 +12,15 @@ namespace TenLapse.Tests.Golden;
 
 /// <summary>
 /// The golden render test for timing (#32): 120 photos, each with its number drawn in as a <see cref="FrameCode"/>,
-/// exported as a project at every common speed and read back with Media Foundation's source reader. Every frame
-/// must be there, at its exact time (<see cref="FrameTiming.FrameStart"/>, within the MP4 timescale's documented
-/// rounding and no worse), in order, with the right total duration.
+/// exported as a project at every common speed. The exporter must hand every frame to the encoder at exactly
+/// <see cref="FrameTiming.FrameStart"/> for exactly <see cref="FrameTiming.FrameDuration"/> (our arithmetic, recorded
+/// by <see cref="RecordingEncoder"/>), and the file, read back with Media Foundation's source reader, must hold every
+/// frame in order, at its time within the MP4 timescale's documented rounding and no worse.
 /// </summary>
 [Collection(nameof(RealEncoderCollection))]
 public sealed class GoldenTimingTests(GoldenTimingTests.NumberedPhotos photos) : IClassFixture<GoldenTimingTests.NumberedPhotos>
 {
+    private const string ClassName = "timing";
     private const int FrameCount = 120;
 
     [Theory]
@@ -38,58 +41,79 @@ public sealed class GoldenTimingTests(GoldenTimingTests.NumberedPhotos photos) :
         }
 
         var label = $"{speed}, {format}";
-        var evidence = GoldenExport.EvidenceFolder(Slug(label));
+        var evidence = GoldenExport.EvidenceFolder(ClassName, Slug(label));
         var input = new Fraction(numerator, denominator);
         var timing = perPhoto ? TimingSettings.PerPhoto(input) : TimingSettings.PerSecond(input);
-        var snapshot = GoldenExport.Snapshot(await photos.GetAsync(), timing, FrameAspect.Ratio16x9, FitMode.Fill, format);
+        var snapshot = GoldenExport.Snapshot((await photos.GetAsync()).Select(photo => GoldenExport.FrameOf(photo.Path, photo.Size)), timing, FrameAspect.Ratio16x9, FitMode.Fill, format);
         var rate = snapshot.EffectiveRate.Rate;
         Assert.Equal(perPhoto ? input.Reciprocal() : input, rate);
 
         var output = Path.Combine(photos.Folder, $"{Slug(label)}.mp4");
         var clock = Stopwatch.StartNew();
-        var result = await GoldenExport.ExportOrSkipAsync(snapshot, output);
+        var (result, record) = await GoldenExport.ExportSmallOrSkipAsync(snapshot, output);
         var exported = clock.Elapsed;
 
         var problems = new List<string>();
         var size = GoldenExport.SmallSize(snapshot.VideoSize);
         var info = VideoFileReader.Read(result.Path);
+        var nominal = SinkWriterEncoder.NominalFrameRate(rate);
         Check(problems, "frames written", FrameCount, result.FrameCount);
         Check(problems, "frames in the file", FrameCount, info.FrameCount);
         Check(problems, "frame size", $"{size.Width}x{size.Height}", $"{info.Width}x{info.Height}");
-        if (!perPhoto)
-        {
-            // The source reader names the broadcast rates exactly (24, 25, 30, 60, 30000/1001); below 1 fps it reports the nominal rate.
-            Check(problems, "declared frame rate", rate, info.FrameRate);
-        }
 
-        var unit = GoldenExport.TimescaleUnit(rate);
-        var exact = GoldenExport.HasExactTimescale(rate);
-        var bound = exact ? "exactly" : $"0 to {unit} ticks late";
-        var late = Enumerable.Range(0, Math.Min(FrameCount, info.FrameCount))
+        // The declared rate is the rate itself at 1 fps and above. Below, the encoder is given a nominal rate, a whole
+        // multiple of it (#22), and the file declares one or the other: measured with NVENC at 0.5 fps, the real rate
+        // in H.264 and the nominal one in HEVC.
+        Check(
+            problems,
+            nominal == rate ? "declared frame rate" : $"declared frame rate (or the nominal {nominal.Numerator}/{nominal.Denominator})",
+            (Fraction?)rate,
+            info.FrameRate,
+            ok: info.FrameRate == rate || info.FrameRate == nominal);
+
+        // Our arithmetic: what the exporter handed the encoder, exactly FrameTiming's, from each frame's index.
+        CheckWrites(problems, record, rate);
+
+        // Media Foundation's: the sample times on the sink's timescale grid.
+        var (earliest, latest) = GoldenExport.SampleTimeBound(rate);
+        var count = Math.Min(FrameCount, info.FrameCount);
+        var off = Enumerable.Range(0, count)
             .Select(i => (Index: i, Expected: FrameTiming.FrameStart(i, rate), Actual: info.SampleTimes[i]))
-            .Where(sample => exact ? sample.Actual != sample.Expected : sample.Actual < sample.Expected || sample.Actual - sample.Expected > unit)
+            .Where(sample => sample.Actual - sample.Expected < earliest || sample.Actual - sample.Expected > latest)
             .ToList();
-        if (late.Count > 0)
+        if (off.Count > 0)
         {
             problems.Add(
-                $"{late.Count} sample times are off FrameTiming.FrameStart (expected {bound}): " +
-                string.Join("; ", late.Take(5).Select(s => $"frame {s.Index} expected {s.Expected}, got {s.Actual} ({s.Actual - s.Expected:+0;-0} ticks)")));
+                $"{off.Count} sample times are off FrameTiming.FrameStart (expected {earliest:+0;-0;0} to {latest:+0;-0;0} ticks): " +
+                string.Join("; ", off.Take(5).Select(s => $"frame {s.Index} expected {s.Expected}, got {s.Actual} ({s.Actual - s.Expected:+0;-0} ticks)")));
         }
 
-        var durations = Enumerable.Range(0, Math.Min(FrameCount, info.FrameCount))
-            .Where(i => info.SampleDurations[i] >= 0 && Math.Abs(info.SampleDurations[i] - FrameTiming.FrameDuration(i, rate)) > unit)
+        // Each sample's duration: the sink stores whole units, so within one tick of ours when the timescale is exact.
+        var unit = GoldenExport.SinkTimescaleUnit(rate);
+        var tolerance = GoldenExport.HasExactTimescale(rate) ? 1 : unit;
+        var missing = Enumerable.Range(0, count).Where(i => info.SampleDurations[i] < 0).ToList();
+        if (missing.Count > 0)
+        {
+            problems.Add($"{missing.Count} samples have no duration in the file: frames {string.Join(", ", missing.Take(10))}");
+        }
+
+        var durations = Enumerable.Range(0, count)
+            .Where(i => info.SampleDurations[i] >= 0 && Math.Abs(info.SampleDurations[i] - FrameTiming.FrameDuration(i, rate)) > tolerance)
             .ToList();
         if (durations.Count > 0)
         {
             problems.Add(
-                $"{durations.Count} sample durations are more than {unit} ticks off FrameTiming.FrameDuration: " +
+                $"{durations.Count} sample durations are more than {tolerance} ticks off FrameTiming.FrameDuration: " +
                 string.Join("; ", durations.Take(5).Select(i => $"frame {i} expected {FrameTiming.FrameDuration(i, rate)}, got {info.SampleDurations[i]}")));
         }
 
-        // The container duration is rounded down to the timescale (PR #65).
+        // The header durations (mvhd, tkhd, mdhd) come from the MP4 sink, not from us: it writes them one unit short
+        // of its own sample table at 24 and 60 fps (119,999 of 120,000 units, with the same headers from the software
+        // encoder, and whatever last-sample duration we pass), exactly at 25, 30, 2 and 0.5 fps; at 29.97 fps the true
+        // length is not a whole number of units. Playback is unaffected; only Explorer's Length (which truncates) shows
+        // it, a second short on a whole-second clip. Accepted (#32 review); asserted so a change either way is noticed.
         var duration = FrameTiming.Duration(FrameCount, rate);
-        Check(problems, $"total duration (ticks; at most {unit} short)", duration, info.Duration, ok: info.Duration <= duration && duration - info.Duration <= unit);
-        Check(problems, "export result duration", duration, result.Duration);
+        Check(problems, $"header duration (ticks; at most {unit}, one timescale unit, short)", duration, info.Duration, ok: info.Duration <= duration && duration - info.Duration <= unit);
 
         // Decoded: frame n shows number n, at sample n's time.
         var decoded = 0;
@@ -123,24 +147,44 @@ public sealed class GoldenTimingTests(GoldenTimingTests.NumberedPhotos photos) :
         }
 
         TestContext.Current.TestOutputHelper?.WriteLine(
-            $"{label}: export {exported.TotalMilliseconds:0} ms, read back {(clock.Elapsed - exported).TotalMilliseconds:0} ms, encoder {result.Encoder?.Name ?? "unknown"}, worst lateness {info.SampleTimes.Select((t, i) => t - FrameTiming.FrameStart(i, rate)).DefaultIfEmpty().Max()} ticks, duration {info.Duration} of {duration}");
+            $"{label}: export {exported.TotalMilliseconds:0} ms, read back {(clock.Elapsed - exported).TotalMilliseconds:0} ms, encoder {result.Encoder?.Name ?? "unknown"}, " +
+            $"sample offsets {info.SampleTimes.Select((t, i) => t - FrameTiming.FrameStart(i, rate)).DefaultIfEmpty().Min()} to {info.SampleTimes.Select((t, i) => t - FrameTiming.FrameStart(i, rate)).DefaultIfEmpty().Max()} ticks, " +
+            $"header duration {info.Duration} of {duration}");
 
         if (problems.Count > 0)
         {
             Directory.CreateDirectory(evidence);
-            File.Copy(result.Path, Path.Combine(evidence, "export.mp4"));
+            File.Copy(result.Path, Path.Combine(evidence, "export.mp4"), overwrite: true);
             if (firstWrong is not null)
             {
                 // The decoded frame and the photo it should show.
                 var index = wrong[0].Index;
                 await firstWrong.SavePngAsync(Path.Combine(evidence, $"frame{index:D3}-export.png"));
-                File.Copy(photos.PathOf(index), Path.Combine(evidence, $"frame{index:D3}-expected.png"));
+                File.Copy(photos.PathOf(index), Path.Combine(evidence, $"frame{index:D3}-expected.png"), overwrite: true);
             }
 
             Assert.Fail(GoldenExport.Report($"{label} ({rate.Numerator}/{rate.Denominator} fps, encoder {result.Encoder?.Name ?? "unknown"}):", problems, $"{evidence} (the video, and the first wrong frame with the photo it should show)"));
         }
 
         File.Delete(result.Path);
+    }
+
+    // One encoder, FrameCount writes, each at exactly FrameStart(i) for exactly FrameDuration(i).
+    private static void CheckWrites(List<string> problems, EncoderRecord record, Fraction rate)
+    {
+        Check(problems, "encoders opened", 1, record.EncodersOpened);
+        var writes = record.Writes;
+        Check(problems, "frames handed to the encoder", FrameCount, writes.Count);
+        var off = Enumerable.Range(0, Math.Min(FrameCount, writes.Count))
+            .Where(i => writes[i].Time != FrameTiming.FrameStart(i, rate) || writes[i].Duration != FrameTiming.FrameDuration(i, rate))
+            .ToList();
+        if (off.Count > 0)
+        {
+            problems.Add(
+                $"{off.Count} frames were handed to the encoder at another time or duration than FrameTiming's (expected exactly): " +
+                string.Join("; ", off.Take(5).Select(i =>
+                    $"frame {i} at {writes[i].Time} for {writes[i].Duration}, expected {FrameTiming.FrameStart(i, rate)} for {FrameTiming.FrameDuration(i, rate)} ({writes[i].Time - FrameTiming.FrameStart(i, rate):+0;-0;0} ticks)")));
+        }
     }
 
     private static void Check<T>(List<string> problems, string what, T expected, T actual, bool? ok = null)
@@ -163,7 +207,7 @@ public sealed class GoldenTimingTests(GoldenTimingTests.NumberedPhotos photos) :
         private readonly SemaphoreSlim _gate = new(1, 1);
         private IReadOnlyList<(string Path, PixelSize Size)>? _photos;
 
-        public string Folder { get; } = GoldenExport.NewScratchFolder("timing");
+        public string Folder { get; } = GoldenExport.StartClass(ClassName);
 
         public string PathOf(int index) => System.IO.Path.Combine(Folder, $"photo{index:D3}.png");
 
@@ -184,7 +228,7 @@ public sealed class GoldenTimingTests(GoldenTimingTests.NumberedPhotos photos) :
         public void Dispose()
         {
             _gate.Dispose();
-            GoldenExport.DeleteFolder(Folder);
+            GoldenExport.EndClass(Folder);
         }
 
         private async Task<IReadOnlyList<(string Path, PixelSize Size)>> WriteAsync()
