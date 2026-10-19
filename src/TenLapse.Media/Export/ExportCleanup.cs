@@ -16,8 +16,9 @@ public sealed record ExportCleanupFailure(string Path, string Step, Exception? E
 /// stopping whatever the clean-up does; this class lets a caller wait for it, and reports what it could not do.
 /// </summary>
 /// <remarks>
-/// Clean-ups never throw: a failure is reported through <see cref="Failed"/> (the app logs it) and to
-/// <see cref="Trace"/>. A successful export has finished its clean-up before it returns.
+/// Clean-ups never throw: a failure is reported through <see cref="Failed"/> (the app's <c>ExportCleanupLog</c>
+/// writes it to the log as a Warning) and to <see cref="Trace"/>. A successful export has finished its clean-up
+/// before it returns.
 /// </remarks>
 public static class ExportCleanup
 {
