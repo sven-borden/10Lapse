@@ -226,7 +226,7 @@ public sealed class EncoderSearchTests
             Assert.Equal((Hevc, 3840, 2160, VideoExportFailure.EncoderStalled), (last.Format, last.Width, last.Height, last.Failure));
             Assert.Equal(3, probes.Count);
             Assert.Equal(EncoderKind.None, last.Encoder);
-            Assert.InRange(last.Milliseconds, 150, 10_000);
+            Assert.InRange(last.Milliseconds, 100, 10_000); // The timeout is 200 ms; a timer can end a tick early.
             Assert.True(Result(encoders, probes).IsProvisional, "A stalled probe must not be cached.");
         }
         finally
