@@ -6,8 +6,8 @@ namespace TenLapse.Presentation;
 /// <summary>
 /// Every user-visible word of the Timing panel (#17), as whole format strings for #39. The panel's numbers
 /// (the preset labels, the box and the sentences about what was typed) are written in the user's culture, so a
-/// German or French user reads and types a decimal comma. The readout is built by
-/// <see cref="ProjectText.TimingReadoutParts"/> and keeps Core's invariant numbers until #39.
+/// German or French user reads and types a decimal comma, and so does the readout, which
+/// <see cref="ProjectText.TimingReadoutParts"/> writes in the panel's culture.
 /// </summary>
 public static class TimingText
 {
@@ -65,8 +65,8 @@ public static class TimingText
     /// <summary>The bar's right end: a minute, the longest clip it can show.</summary>
     public static string BarEnd => "60 s";
 
-    /// <summary>The Per second box was left with something that is not a number.</summary>
-    public static string NotANumberFramesPerSecond => "Type a frame rate from {0} to {1} fps, like 24 or 29.97.";
+    /// <summary>The Per second box was left with something that is not a number. {0}: the lowest rate, {1}: the highest, {2}: the NTSC example ("29.97").</summary>
+    public static string NotANumberFramesPerSecond => "Type a frame rate from {0} to {1} fps, like 24 or {2}.";
 
     /// <summary>The Length box was left with something that is not a length. {0}: the shortest length ("0.1 s"), {1}: the longest.</summary>
     public static string NotANumberLength => "Type a length in seconds, like 30, or as minutes and seconds, like 1:30. It can be from {0} to {1}.";
@@ -82,6 +82,12 @@ public static class TimingText
 
     /// <summary>A time per photo outside the range was typed. {0}: what was typed, {1}: the value now set, {2}: the shortest, {3}: the longest.</summary>
     public static string ClampedSecondsPerPhoto => "A photo can stay from {2} to {3}, so {0} is now {1}.";
+
+    /// <summary>A frame rate typed in digits became the exact NTSC rate. {0}: the rate ("29.97 fps"), {1}: its numerator, {2}: its denominator.</summary>
+    public static string NtscRate => "Using the NTSC rate {0} ({1}/{2}).";
+
+    /// <summary>One separator followed by exactly three digits was typed ("1,000"); it is refused rather than guessed. {0}: one and a half in the user's culture ("1.5").</summary>
+    public static string ThousandsSeparator => "Type 1000 without a separator, or {0} for one and a half.";
 
     /// <summary>More decimals were typed than the box keeps. {0}: the value kept ("37.48 fps").</summary>
     public static string Rounded => "Rounded to {0}.";

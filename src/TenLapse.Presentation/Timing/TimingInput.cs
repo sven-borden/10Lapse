@@ -55,9 +55,17 @@ public static class TimingInput
     /// <summary>The number as the box shows it: up to two decimals, trailing zeros dropped, the culture's decimal separator ("29,97" in German).</summary>
     public static string Number(Fraction value, CultureInfo culture) => TimingFormat.Decimal(value, culture);
 
-    /// <summary>A value with its unit, for the sentences: "29.97 fps", "24.7 s", "0.25 s".</summary>
+    /// <summary>
+    /// A value with its unit, for the sentences: "29.97 fps", "24.7 s", "0.25 s". A length of whole seconds from an hour up
+    /// reads as a clock length ("10 h 00 min"), not as 36000 s.
+    /// </summary>
     public static string Describe(TimingField field, Fraction value, CultureInfo culture)
     {
+        if (field == TimingField.LengthSeconds && value.Denominator == 1 && value.Numerator >= 3600)
+        {
+            return TimingFormat.Duration(value.Numerator * FrameTiming.TicksPerSecond, culture);
+        }
+
         var unit = field == TimingField.FramesPerSecond ? TimingWords.FramesPerSecond : TimingWords.Second;
         return $"{Number(value, culture)} {unit}";
     }
@@ -73,7 +81,13 @@ public static class TimingInput
     {
         ArgumentNullException.ThrowIfNull(culture);
         var typed = (text ?? string.Empty).Trim();
-        var (reading, value) = Read(field, StripUnit(field, typed));
+        var body = StripUnit(field, typed);
+        var (reading, value) = Read(field, body);
+        if (reading != Reading.NotANumber && LooksLikeThousands(body) && !(reading == Reading.Value && IsNtsc(field, value)))
+        {
+            return new TimingEntry(false, default, TimingText.Format(culture, TimingText.ThousandsSeparator, Number(new Fraction(3, 2), culture)));
+        }
+
         if (reading == Reading.NotANumber)
         {
             return new TimingEntry(false, default, NotANumber(field, culture));
@@ -97,7 +111,17 @@ public static class TimingInput
             return Clamped(field, typed, max, culture);
         }
 
-        return new TimingEntry(true, value, rounded ? TimingText.Format(culture, TimingText.Rounded, Describe(field, value, culture)) : string.Empty);
+        var message = string.Empty;
+        if (rounded)
+        {
+            message = TimingText.Format(culture, TimingText.Rounded, Describe(field, value, culture));
+        }
+        else if (SnappedToNtsc(field, body, value))
+        {
+            message = TimingText.Format(culture, TimingText.NtscRate, Describe(field, value, culture), value.Numerator, value.Denominator);
+        }
+
+        return new TimingEntry(true, value, message);
     }
 
     private enum Reading
@@ -124,17 +148,41 @@ public static class TimingInput
     }
 
     // A bound in a sentence: a long length reads "10 h 00 min", not 36000 s.
-    private static string Bound(TimingField field, Fraction value, CultureInfo culture) =>
-        field == TimingField.LengthSeconds && value >= new Fraction(60, 1)
-            ? TimingFormat.Duration((long)value.Numerator * FrameTiming.TicksPerSecond / value.Denominator)
-            : Describe(field, value, culture);
+    private static string Bound(TimingField field, Fraction value, CultureInfo culture) => Describe(field, value, culture);
 
     private static string NotANumber(TimingField field, CultureInfo culture) => field switch
     {
-        TimingField.FramesPerSecond => TimingText.Format(culture, TimingText.NotANumberFramesPerSecond, Number(Min(field), culture), Number(Max(field), culture)),
+        TimingField.FramesPerSecond => TimingText.Format(culture, TimingText.NotANumberFramesPerSecond, Number(Min(field), culture), Number(Max(field), culture), Number(new Fraction(30000, 1001), culture)),
         TimingField.LengthSeconds => TimingText.Format(culture, TimingText.NotANumberLength, Bound(field, Min(field), culture), Bound(field, Max(field), culture)),
         _ => TimingText.Format(culture, TimingText.NotANumberSecondsPerPhoto, Bound(field, Min(field), culture), Bound(field, Max(field), culture)),
     };
+
+    // A frame rate typed as decimal digits that came out as an NTSC rational with other digits: 29.98 and 29.975 are 29.97,
+    // 23.976 is 23.98. 29.97 and 23.98 themselves, and a typed ratio such as 30000/1001, say what they are and need no sentence.
+    private static bool SnappedToNtsc(TimingField field, string body, Fraction value)
+    {
+        if (!IsNtsc(field, value) || body.Contains('/', StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var typed = decimal.TryParse(body.Replace(',', '.'), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number);
+        return !typed || number != decimal.Parse(TimingFormat.Decimal(value), CultureInfo.InvariantCulture);
+    }
+
+    // One separator followed by exactly three digits after a non-zero whole part ("1,000", "1.000", "12.345") reads as a thousands
+    // separator in many countries and as a decimal point in others; that is not guessed. "0.125" and ".125" can only be decimals,
+    // and a frame rate that is an NTSC rate to three decimals (23.976, 29.970) is a decimal by its meaning.
+    private static bool LooksLikeThousands(string body)
+    {
+        if (!IsPlainNumber(body))
+        {
+            return false;
+        }
+
+        var at = body.IndexOfAny(['.', ',']);
+        return at >= 0 && body.Length - at - 1 == 3 && body[..at].Any(c => c is >= '1' and <= '9');
+    }
 
     // The NTSC rationals (n * 1000/1001) are exact and are not rounded to hundredths.
     private static bool IsNtsc(TimingField field, Fraction value) => field == TimingField.FramesPerSecond && value.Denominator == 1001;

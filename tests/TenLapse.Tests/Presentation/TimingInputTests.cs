@@ -50,7 +50,6 @@ public sealed class TimingInputTests
 
     [Theory]
     [InlineData("59.94", 60000, 1001)]
-    [InlineData("23.976", 24000, 1001)]
     [InlineData("23,98", 24000, 1001)]
     [InlineData("119.88", 120000, 1001)]
     public void OtherNtscRatesAreExactAndNeverRounded(string text, int numerator, int denominator)
@@ -73,7 +72,7 @@ public sealed class TimingInputTests
     [Theory]
     [InlineData("37.4829", "37.48", 3748, 100)]
     [InlineData("37,4829", "37.48", 3748, 100)]
-    [InlineData("12.345", "12.35", 1235, 100)]
+    [InlineData("12.3456", "12.35", 1235, 100)]
     [InlineData("100/3", "33.33", 3333, 100)]
     public void MoreDecimalsThanTheBoxKeepsAreRoundedAndSaid(string text, string shown, int numerator, int denominator)
     {
@@ -138,6 +137,102 @@ public sealed class TimingInputTests
         Assert.Equal("Rounded to 37,48 fps.", rounded.Message);
     }
 
+    [Theory]
+    [InlineData("29.98", "Using the NTSC rate 29.97 fps (30000/1001).")]
+    [InlineData("29.975", "Using the NTSC rate 29.97 fps (30000/1001).")]
+    [InlineData("29,98", "Using the NTSC rate 29.97 fps (30000/1001).")]
+    [InlineData("23.976", "Using the NTSC rate 23.98 fps (24000/1001).")]
+    [InlineData("59.95 fps", "Using the NTSC rate 59.94 fps (60000/1001).")]
+    public void AnEntryThatSnapsToNtscWithOtherDigitsSaysSo(string text, string message)
+    {
+        var entry = Fps(text);
+
+        Assert.True(entry.IsValid);
+        Assert.Equal(message, entry.Message);
+        Assert.Equal(1001, entry.Value.Denominator);
+    }
+
+    [Theory]
+    [InlineData("29.97")]
+    [InlineData("29,97")]
+    [InlineData("29.970")]
+    [InlineData("23.98")]
+    [InlineData("59.94")]
+    [InlineData("119.88")]
+    [InlineData("30000/1001")]
+    [InlineData("30")]
+    public void AnEntryThatIsWhatTheBoxShowsStaysSilent(string text)
+    {
+        var entry = Fps(text);
+
+        Assert.True(entry.IsValid);
+        Assert.Equal(string.Empty, entry.Message);
+    }
+
+    [Fact]
+    public void TheNtscSentenceUsesTheCulturesDecimalSeparator()
+    {
+        Assert.Equal("Using the NTSC rate 29,97 fps (30000/1001).", Fps("29,98", _de).Message);
+        Assert.Equal("Using the NTSC rate 23,98 fps (24000/1001).", Fps("23,976", _fr).Message);
+    }
+
+    [Theory]
+    [InlineData("1,000")]
+    [InlineData("1.000")]
+    [InlineData("12,345")]
+    [InlineData("12.345")]
+    [InlineData("100.000")]
+    public void OneSeparatorAndExactlyThreeDigitsIsRefusedNotGuessed(string text)
+    {
+        foreach (var entry in new[] { Fps(text), Length(text), Photo(text) })
+        {
+            Assert.False(entry.IsValid);
+            Assert.Equal("Type 1000 without a separator, or 1.5 for one and a half.", entry.Message);
+        }
+    }
+
+    [Fact]
+    public void TheThousandsSentenceWritesItsExampleInTheCulture()
+    {
+        Assert.Equal("Type 1000 without a separator, or 1,5 for one and a half.", Fps("1.000", _de).Message);
+        Assert.Equal("Type 1000 without a separator, or 1,5 for one and a half.", TimingInput.Parse(TimingField.LengthSeconds, "1,000", _fr).Message);
+    }
+
+    [Theory]
+    [InlineData("0.125")]
+    [InlineData(".125")]
+    [InlineData("0,125")]
+    [InlineData("1.25")]
+    [InlineData("1.2")]
+    [InlineData("1000")]
+    [InlineData("10.0000")]
+    public void OtherNumbersAreNotMistakenForAThousandsSeparator(string text) =>
+        Assert.DoesNotContain("without a separator", Photo(text).Message, StringComparison.Ordinal);
+
+    [Fact]
+    public void ThePlainNumbersTheRefusalSuggestsAreTakenAsTheyAre()
+    {
+        Assert.Equal(new Fraction(1000, 1), Length("1000").Value);
+        Assert.Equal(new Fraction(3, 2), Length("1.5").Value);
+    }
+
+    [Fact]
+    public void TheFramesPerSecondSentenceWritesItsExampleInTheCulture()
+    {
+        Assert.Equal("Type a frame rate from 1 to 120 fps, like 24 or 29,97.", Fps("abc", _de).Message);
+        Assert.Equal("Type a frame rate from 1 to 120 fps, like 24 or 29,97.", Fps("abc", _fr).Message);
+        Assert.Equal("Type a frame rate from 1 to 120 fps, like 24 or 29.97.", Fps("abc", _en).Message);
+    }
+
+    [Fact]
+    public void ALongLengthInASentenceReadsAsAClockLengthNotAsSeconds()
+    {
+        Assert.Equal("A video can be from 0.1 s to 10 h 00 min long, so 11:00:00 is now 10 h 00 min.", Length("11:00:00").Message);
+        Assert.Equal("90 s", TimingInput.Describe(TimingField.LengthSeconds, new Fraction(90, 1), _en));
+        Assert.Equal("1 h 00 min", TimingInput.Describe(TimingField.LengthSeconds, new Fraction(3600, 1), _en));
+        Assert.Equal("3600.5 s", TimingInput.Describe(TimingField.LengthSeconds, new Fraction(7201, 2), _en));
+    }
+
     [Fact]
     public void TheDotWorksInGermanToo()
     {
@@ -177,9 +272,9 @@ public sealed class TimingInputTests
     [InlineData("0", 1, 10, "0.1 s")]
     [InlineData("0.04", 1, 10, "0.1 s")]
     [InlineData("0:00", 1, 10, "0.1 s")]
-    [InlineData("36001", 36000, 1, "36000 s")]
-    [InlineData("11:00:00", 36000, 1, "36000 s")]
-    [InlineData("99:00:00", 36000, 1, "36000 s")]
+    [InlineData("36001", 36000, 1, "10 h 00 min")]
+    [InlineData("11:00:00", 36000, 1, "10 h 00 min")]
+    [InlineData("99:00:00", 36000, 1, "10 h 00 min")]
     public void ALengthOutsideTheRangeIsHeldToTheBoundAndSaid(string text, int numerator, int denominator, string shown)
     {
         var entry = Length(text);
