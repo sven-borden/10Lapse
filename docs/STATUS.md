@@ -61,10 +61,10 @@ own waves once 3.0 ships.
 Nothing blocks the build loop. Everything below waits until release is near
 (Sven, 2026-10-19).
 
-- Before the first 3.0 submission, one Partner Center visit: #2 numbers
-  (decides x86 and the first translations; #39 extracts English strings
-  without them), #7 description line, and the privacy URL pointed at
-  `PRIVACY.md` on GitHub.
+- Before the first 3.0 submission, one Partner Center visit: the rest of #2
+  (OS and architecture split decides x86, markets the first translations; #39
+  extracts English strings without them; acquisitions and usage are posted),
+  #7 description line, and the privacy URL pointed at `PRIVACY.md` on GitHub.
 - #30 Sample sequence: deferred. #29 ships without the *Try a sample* button;
   add it once a set exists.
 - Release: #40 flight, #42 listing, #43 trailer, #44 rollout, #58 pricing.
@@ -166,6 +166,9 @@ Nothing blocks the build loop. Everything below waits until release is near
   cancel; a failed ask is log-only (the one exception to never silent, since the
   user did not ask). Reset to defaults keeps the count. New settings fields need
   no schema bump. *Send feedback* opens GitHub issues, *Rate 10Lapse* the Store.
+- 2026-10-19 (#2): same listing confirmed from the acquisitions and usage
+  numbers Sven posted on #2. x86 and the first languages wait for the rest of
+  #2.
 - 2026-10-19 (#90, PR #91): every framework callback (`AppWindow.Closing`,
   `Changed`, `Destroying`, backdrop, lambda handlers) runs through `RunLogged`;
   `FrameworkCallbackRuleTests` catches lambda and method-group handlers.
