@@ -5,7 +5,10 @@ using TenLapse.Media.Inspection;
 namespace TenLapse.Media.Export;
 
 /// <summary>What a project export wrote, for #24's finished state ("Harbor sunset.mp4 is ready · 24.7 s · 4K · H.264 · 173 MB").</summary>
-/// <param name="Path">The video file, full path.</param>
+/// <param name="Path">
+/// The video file, full path: the target asked for, or, when another app held that file to the end, a free name
+/// beside it (<c>Harbor (2).mp4</c>; <see cref="TargetInUse"/> then names the target).
+/// </param>
 /// <param name="FrameCount">Frames written.</param>
 /// <param name="Duration">The clip duration in 100 ns ticks (<see cref="FrameTiming.Duration"/>).</param>
 /// <param name="Size">Width and height in pixels.</param>
@@ -21,7 +24,15 @@ public sealed record ProjectExportResult(
     Fraction Rate,
     VideoFormat Format,
     long FileBytes,
-    VideoEncoderInfo? Encoder);
+    VideoEncoderInfo? Encoder)
+{
+    /// <summary>
+    /// The file the export was asked to write, when another app kept it open (or it was read-only) through the
+    /// final move: the finished video is at <see cref="Path"/> instead, and the old file is untouched. Null when
+    /// the video is where it was asked to be. The finished state says so (<c>ProjectText.ExportSavedBeside</c>).
+    /// </summary>
+    public string? TargetInUse { get; init; }
+}
 
 /// <summary>
 /// Exports a <see cref="ProjectSnapshot"/>: its frames in order at its effective rate, with its frame settings
@@ -125,7 +136,7 @@ public static class ProjectExporter
         CancellationToken cancellationToken)
     {
         var partial = NewPartialPath(target);
-        PrepareOutput(target, partial, settings.Format);
+        await PrepareOutputAsync(target, partial, settings.Format, options.InUsePatience, cancellationToken).ConfigureAwait(false);
         try
         {
             var createEncoder = options.CreateEncoder ?? (static (path, s, device) => new SinkWriterEncoder(path, s, device));
@@ -146,16 +157,19 @@ public static class ProjectExporter
 
             tracker.Enter(ExportStage.Finishing);
             SetHidden(partial, false);
-            Replace(partial, target, settings.Format);
+            var saved = await PlaceAsync(partial, target, settings.Format, options.ReplacePatience, cancellationToken).ConfigureAwait(false);
             return new ProjectExportResult(
-                target,
+                saved,
                 written.FrameCount,
                 written.Duration,
                 new PixelSize(settings.Width, settings.Height),
                 settings.FrameRate,
                 settings.Format,
-                new FileInfo(target).Length,
-                written.Encoder);
+                new FileInfo(saved).Length,
+                written.Encoder)
+            {
+                TargetInUse = saved == target ? null : target,
+            };
         }
         catch
         {
@@ -168,8 +182,9 @@ public static class ProjectExporter
     }
 
     // Fails early, before a long export, for what would otherwise fail at the end: a folder that is not there or
-    // cannot be written to, or a target another app has open. The partial file's name is new, so this creates it.
-    private static void PrepareOutput(string target, string partial, VideoFormat format)
+    // cannot be written to, or a target another app has open. A target held only for a moment (Explorer making a
+    // thumbnail) is waited out. The partial file's name is new, so this creates it.
+    private static async Task PrepareOutputAsync(string target, string partial, VideoFormat format, TimeSpan patience, CancellationToken cancellationToken)
     {
         var folder = Path.GetDirectoryName(target);
         if (folder is null || !Directory.Exists(folder))
@@ -184,8 +199,20 @@ public static class ProjectExporter
             if (File.Exists(target))
             {
                 // Opened for writing with no sharing: fails when a player has it open or it is read-only.
-                using (new FileStream(target, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                Exception? held = null;
+                await RetryAsync(
+                    () =>
+                    {
+                        using (new FileStream(target, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                        {
+                        }
+                    },
+                    patience,
+                    exception => held = exception,
+                    cancellationToken).ConfigureAwait(false);
+                if (held is not null)
                 {
+                    throw held;
                 }
             }
 
@@ -214,18 +241,91 @@ public static class ProjectExporter
         }
     }
 
-    // Moves the finished video over the target in one step: an existing file is replaced only now.
-    private static void Replace(string partial, string target, VideoFormat format)
+    // Moves the finished video over the target in one step: an existing file is replaced only now. Another app
+    // that opened the target since the early check (a player, Explorer's thumbnailer) makes the move fail with
+    // access denied even when it shares everything; a short hold is waited out. One that holds on gets the video
+    // beside the target ("Harbor (2).mp4") rather than losing a finished export. Returns where the video is.
+    private static async Task<string> PlaceAsync(string partial, string target, VideoFormat format, TimeSpan patience, CancellationToken cancellationToken)
     {
+        Exception? failure = null;
         try
         {
-            File.Move(partial, target, overwrite: true);
+            await RetryAsync(
+                () => File.Move(partial, target, overwrite: true),
+                patience,
+                exception => failure = exception,
+                cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             throw ExportFailures.Classify(exception, VideoExportFailure.OutputFolderNotWritable, format);
         }
+
+        if (failure is null)
+        {
+            return target;
+        }
+
+        if (!File.Exists(target) || !File.Exists(partial))
+        {
+            throw ExportFailures.Classify(failure, VideoExportFailure.OutputFolderNotWritable, format);
+        }
+
+        var folder = Path.GetDirectoryName(target)!;
+        var name = Path.GetFileNameWithoutExtension(target);
+        var extension = Path.GetExtension(target);
+        for (var n = 2; n < 100; n++)
+        {
+            var beside = Path.Combine(folder, $"{name} ({n}){extension}");
+            try
+            {
+                File.Move(partial, beside, overwrite: false);
+                return beside;
+            }
+            catch (IOException) when (File.Exists(beside))
+            {
+                // Taken: try the next number.
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                break;
+            }
+        }
+
+        // Nowhere to put it: the target is still held, so that is what the user can fix.
+        throw ExportFailures.Wrap(failure, VideoExportFailure.OutputFileInUse, format);
     }
+
+    // Runs a file operation, retrying for up to `patience` while it fails with a sharing or access violation
+    // (another process holding the file for a moment); hands the last failure to `failed` instead of throwing it.
+    private static async Task RetryAsync(Action operation, TimeSpan patience, Action<Exception> failed, CancellationToken cancellationToken)
+    {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var delay = TimeSpan.FromMilliseconds(50);
+        while (true)
+        {
+            try
+            {
+                operation();
+                return;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException && IsHeld(exception))
+            {
+                if (clock.Elapsed + delay > patience)
+                {
+                    failed(exception);
+                    return;
+                }
+            }
+
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+            delay = TimeSpan.FromTicks(Math.Min(delay.Ticks * 2, TimeSpan.FromMilliseconds(800).Ticks));
+        }
+    }
+
+    // E_ACCESSDENIED, ERROR_SHARING_VIOLATION, ERROR_LOCK_VIOLATION, ERROR_USER_MAPPED_FILE: another process has the file.
+    private static bool IsHeld(Exception exception) =>
+        unchecked((uint)exception.HResult) is 0x80070005 or 0x80070020 or 0x80070021 or 0x800704C8;
 }
 
 /// <summary>Test seams of <see cref="ProjectExporter"/>.</summary>
@@ -239,4 +339,10 @@ internal sealed record ProjectExportOptions
 
     /// <summary>The progress clock; null for a stopwatch.</summary>
     public Func<TimeSpan>? Clock { get; init; }
+
+    /// <summary>How long the early check waits for another app to let go of an existing target.</summary>
+    public TimeSpan InUsePatience { get; init; } = TimeSpan.FromSeconds(1.5);
+
+    /// <summary>How long the final move waits for another app to let go of the target before the video goes beside it.</summary>
+    public TimeSpan ReplacePatience { get; init; } = TimeSpan.FromSeconds(5);
 }

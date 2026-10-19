@@ -216,6 +216,76 @@ public sealed class ProjectExportTests : IDisposable
     }
 
     [Fact]
+    public async Task ATargetHeldForAMomentIsWaitedOutAtTheStartAndAtTheEnd()
+    {
+        SkipWithoutGraphicsDevice();
+        var output = _scratch.PathOf("moment.mp4");
+        await File.WriteAllTextAsync(output, "the previous video", TestContext.Current.CancellationToken);
+
+        // Explorer making a thumbnail: held when the export starts, and again when it moves the video in.
+        var atStart = new FileStream(output, FileMode.Open, FileAccess.Read, FileShare.Read);
+        _ = Task.Delay(300, TestContext.Current.CancellationToken).ContinueWith(_ => atStart.Dispose(), TaskScheduler.Default);
+        var result = await ExportAsync(
+            Snapshot(GoodPhotos),
+            output,
+            options: new ProjectExportOptions
+            {
+                CreateEncoder = (path, _, _) => new ExportFailureTests.FakeEncoder(path)
+                {
+                    OnFinish = () =>
+                    {
+                        var atEnd = new FileStream(output, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                        _ = Task.Delay(500).ContinueWith(_ => atEnd.Dispose(), TaskScheduler.Default);
+                    },
+                },
+            });
+
+        Assert.Equal((output, null), (result.Path, result.TargetInUse));
+        Assert.Equal(4, new FileInfo(output).Length); // the fake encoder's file
+        Assert.Empty(ProjectExporter.PartialFilesOf(output));
+    }
+
+    [Fact]
+    public async Task ATargetHeldThroughTheFinalMoveGetsTheVideoBesideIt()
+    {
+        // Renaming over a file another app opened after the early check fails with access denied, however it
+        // shares it. The finished video must not be lost to that.
+        SkipWithoutGraphicsDevice();
+        var output = _scratch.PathOf("held.mp4");
+        var taken = _scratch.PathOf("held (2).mp4");
+        await File.WriteAllTextAsync(output, "the previous video", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(taken, "another video", TestContext.Current.CancellationToken);
+        FileStream? holder = null;
+        try
+        {
+            var result = await ExportAsync(
+                Snapshot(GoodPhotos),
+                output,
+                options: new ProjectExportOptions
+                {
+                    CreateEncoder = (path, _, _) => new ExportFailureTests.FakeEncoder(path)
+                    {
+                        OnFinish = () => holder = new FileStream(output, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete),
+                    },
+                    ReplacePatience = TimeSpan.FromMilliseconds(300),
+                });
+
+            Assert.Equal((_scratch.PathOf("held (3).mp4"), output), (result.Path, result.TargetInUse));
+            Assert.Equal(4, new FileInfo(result.Path).Length);
+            Assert.False(File.GetAttributes(result.Path).HasFlag(FileAttributes.Hidden));
+            Assert.Equal("another video", await File.ReadAllTextAsync(taken, TestContext.Current.CancellationToken));
+            Assert.Empty(ProjectExporter.PartialFilesOf(output));
+            Assert.Equal("held.mp4 is open in another app, so the video was saved as held (3).mp4.", ProjectText.ExportSavedBeside(output, result.Path));
+        }
+        finally
+        {
+            holder?.Dispose();
+        }
+
+        Assert.Equal("the previous video", await File.ReadAllTextAsync(output, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task AMissingFolderFailsAtOnce()
     {
         var output = Path.Combine(_scratch.Directory, "gone", "out.mp4");

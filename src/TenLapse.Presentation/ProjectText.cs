@@ -165,6 +165,20 @@ public static class ProjectText
             : Format(ExportFailedPhotoUnreadableNamedNoReason, number, name);
     }
 
+    /// <summary>Export finished beside the target: {0} the file asked for, {1} the file written ("Harbor (2).mp4").</summary>
+    public static string ExportSavedBesideFormat => "{0} is open in another app, so the video was saved as {1}.";
+
+    /// <summary>
+    /// The sentence for an export whose target another app held through the final move
+    /// (<c>ProjectExportResult.TargetInUse</c>): the video is under another name next to it.
+    /// </summary>
+    public static string ExportSavedBeside(string targetPath, string savedPath)
+    {
+        ArgumentNullException.ThrowIfNull(targetPath);
+        ArgumentNullException.ThrowIfNull(savedPath);
+        return Format(ExportSavedBesideFormat, Path.GetFileName(targetPath), Path.GetFileName(savedPath));
+    }
+
     /// <summary>The InfoBar action and the Settings button that copy the diagnostics.</summary>
     public static string CopyDiagnostics => "Copy diagnostics";
 
