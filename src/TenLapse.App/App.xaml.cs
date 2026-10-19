@@ -106,8 +106,8 @@ public partial class App : Application
         var logOnly = new LogErrorSink(_log);
         var infoBars = new InfoBarQueue(logOnly);
 
-        // The encoder probe (#9) starts now, in the background; the Output panel (#23) takes its answer when it comes
-        // and nothing waits for it.
+        // The encoder probe (#9) runs in the background once the window's first frame is on screen (#90); the Output
+        // panel (#23) takes its answer when it comes and nothing waits for it.
         var encoders = new EncoderStartup(EncoderCacheFile(), _startup);
 
         // Copy diagnostics. The encoder section reads this session's probe result, else the cache #9's probe writes,
@@ -198,6 +198,7 @@ public partial class App : Application
             _startup);
         _startup.Phase("attaching the window's services");
         window.Closed += (_, _) => notifications.Dispose();
+        window.FirstFrameRendered += (_, _) => encoders.Start();
 
         // Closing the window stops the probe (it ends within one test encode and removes that file) and the panel.
         window.Closed += (_, _) =>

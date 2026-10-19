@@ -140,6 +140,9 @@ public sealed partial class MainWindow : Window
     /// <summary>The window's view model.</summary>
     public ShellViewModel ViewModel { get; }
 
+    /// <summary>Raised once, as the first frame is drawn: the encoder probe begins then (#90).</summary>
+    internal event EventHandler? FirstFrameRendered;
+
     /// <summary>The export panel's view model (the rating prompt, #31, follows its starts and ends).</summary>
     internal ExportViewModel Export => _shell.Export;
 
@@ -184,6 +187,7 @@ public sealed partial class MainWindow : Window
     {
         CompositionTarget.Rendering -= OnFirstRendering;
         _startup.FirstFrame("first frame rendering");
+        FirstFrameRendered?.Invoke(this, EventArgs.Empty);
     }
 
     // Inactive windows dim their title (Windows 11): the title texts go to Ink Secondary. Back in the window, a failed
