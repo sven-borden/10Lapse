@@ -184,14 +184,19 @@ internal sealed class Win32PowerRequests : IPowerRequests
     /// <inheritdoc />
     public void Close(nint handle)
     {
-        var closed = CloseHandle(handle);
-        var error = Marshal.GetLastPInvokeError();
+        // The string is forgotten before the handle is closed, so a new request that gets the same handle value cannot
+        // have its string freed by this call. It is freed after: the request may read it until then.
+        nint text;
         lock (_gate)
         {
-            if (_reasons.Remove(handle, out var text))
-            {
-                Marshal.FreeHGlobal(text);
-            }
+            _reasons.Remove(handle, out text);
+        }
+
+        var closed = CloseHandle(handle);
+        var error = Marshal.GetLastPInvokeError();
+        if (text != 0)
+        {
+            Marshal.FreeHGlobal(text);
         }
 
         if (!closed)
