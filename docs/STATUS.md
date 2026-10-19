@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #22 and #29 merged. Building: #19 preview (Opus) and #23 output panel (Sonnet). Next: wave 10, #20 filmstrip and #17 timing panel.
+2026-10-19: #22, #29, #23 merged. PR #77 (#19 preview) in review. Next: wave 10, #17 timing panel (now), #20 filmstrip (after #77).
 
 ## Waves
 
@@ -31,8 +31,8 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | merged #72 |
 | 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | merged #74 |
 | 8 | #29 First launch drop zone | O | App empty state view | merged #75 |
-| 9 | #19 Preview with proxy cache | O | preview view and cache | building |
-| 9 | #23 Output panel | S | output inspector section | building |
+| 9 | #19 Preview with proxy cache | O | preview view and cache | PR #77, in review |
+| 9 | #23 Output panel | S | output inspector section | merged #76 |
 | 10 | #20 Filmstrip | O | filmstrip view | |
 | 10 | #17 Timing panel | S | timing inspector section | |
 | 11 | #24 Export panel and finished state | O | export panel | |
@@ -180,61 +180,25 @@ Nothing blocks the build loop. Everything below waits until release is near
 - #6 PR #60: `PRIVACY.md` and `README.md`. Owner: point the Partner Center
   privacy URL at `PRIVACY.md`. License: all rights reserved (Sven,
   2026-10-19).
-- #3 PR #61: tag `v2.1.1-legacy`, legacy UWP removed, new solution, gate
-  (`solution`, `restore`, Debug `build`, `test`, Release `build`, about 19 s).
-- #4 PR #62: Store identity `62394glaglasven.10Lapse` 3.0.0.0, Application Id
-  `App` kept, `Windows.Desktop` 17763 to 26100, `runFullTrust` only.
-  `pwsh -File scripts/pack.ps1` writes the unsigned x64 + ARM64 `.msixupload`
-  (about 124 MB, 65 MB per architecture) to `dist/store` and checks the built
-  identity and version. Bump the manifest `Version` for every submission. Owner
-  notes for the first submission are on #40.
-- #10 PR #63: `TenLapse.Core.Timing`. `Fraction` (reduced rational),
-  `FrameTiming.FrameStart/FrameDuration/Duration` in 100 ns ticks with floor
-  rounding, `FrameRates` (presets, NTSC snapping within 0.01, the three speed
-  modes), `TimingFormat` ("24.7 s", "1 min 12 s", "1 h 02 min", "29.97 fps",
-  "2 s per photo"), every user-visible word in `TimingWords`. A single comma is
-  a decimal point.
-- #27 PR #64: tokens in `src/TenLapse.App/Themes/` (`<Token>Color`/`<Token>Brush`
-  for Light, Dark, HighContrast; `<Step>TextStyle` and `<Step>TabularTextStyle`;
-  `Spacing*`, `Thickness*`, `Radius*`, `ControlHeight`; `Motion*Duration` and
-  `Motion*KeySpline`; C# `TenLapse.Themes.MotionTokens`, `AnimationsEnabled`
-  polled at each animation start). Per-control overrides put the indicator
-  color on progress, slider, toggle, check box, radio and ProgressRing, with
-  hover and pressed tints. Debug gallery: `TenLapse.App.exe --gallery
-  [--theme=light|dark] [--scroll=PX]`.
-- #16 PR #66: `TenLapse.Core.Projects` (`Project`, `ProjectSnapshot`, `Frame`,
-  `SkippedFile`, settings records, `ProjectChangedEventArgs` with a frame delta,
-  `AddFrames`/`InsertFrames`/`RemoveFrames`/`ReorderFrames`/`UpdateFrames`,
-  `MarkExported(version)`), `src/TenLapse.Presentation` (`ShellViewModel`,
-  `ProjectViewModel`, `ProjectText`, `IDialogService`, `DialogQueue`,
-  `IErrorSink`), App `ContentDialogService` and `TraceErrorSink`, manual
-  composition root in `App.xaml.cs`.
-- #8 PR #65: `TenLapse.Media.Export` (`VideoExporter.ExportAsync`, callable
-  from any thread; `VideoDevice` per export; `SinkWriterEncoder` behind the
-  internal `IVideoEncoder` seam; `IFrameSource`, `PhotoFileSource`;
-  `VideoExportFailure` categories classified by HRESULT; output deleted on
-  failure or cancel), `TenLapse.Media.Inspection.VideoFileReader` (exact sample
-  times, first-sample check), colour tags (BT.709 above 576 lines, BT.601
-  below, studio range), no B-frames. `tools/TenLapse.Spike` harness. 4K from
-  memory: 155 fps, 151 MB peak on NVENC. MP4 timestamps: exact when rate × 1000
-  is whole, else 0 to one timescale unit late (#32). About 34 handles per
-  export leak inside the NVIDIA encoder MFT, not fixable on our side.
-- #28 PR #67: app shell (title bar on tinted Mica, command bar with *New
-  project* once there is work, Empty/Editing states with stage 920×555 at
-  1280×800, inspector 320, filmstrip row), InfoBar host, `FlyoutShadow`,
-  `TintedMicaBackdrop`, minimum window 640×480. Debug switches
-  `--sample-frames=N`, `--infobar`, `--theme=light|dark`.
-- #9 PR #68: `TenLapse.Media.Encoding` (`EncoderProbe.LoadOrProbeAsync(cachePath)`,
-  `EncoderCapabilities` with `Supports`/`MaxShortSide`/summary text,
-  `EncoderCatalog`, JSON cache, 8 s per test encode, transient results not
-  cached). HEVC export (Main profile; below 1 fps the nominal rate is a whole
-  multiple ≥ 1 fps with frame-rate conversion off, after a software-encoder
-  crash). This PC: H.264 4K at 30/60, 1440p at 120; HEVC 4K at all three.
-- #26 PR #69: `TenLapse.Core.Diagnostics.RollingFileLog`, Presentation
-  `ErrorPath`, `ErrorPresenter`, `ErrorMessages`, `Diagnostics`,
-  `DiagnosticsRedaction`; App global handlers, `TryEnqueueGuarded`,
-  `VideoExportErrorMapper`, `EncoderDiagnostics`, Settings page with *Copy
-  diagnostics*. Debug `--crash=command|task|ui|unhandled`.
+- #3 PR #61: tag `v2.1.1-legacy`, new solution, `scripts/gate.ps1`.
+- #4 PR #62: Store identity 3.0.0.0, `runFullTrust` only; `scripts/pack.ps1`
+  writes the unsigned x64 + ARM64 `.msixupload` to `dist/store`. Bump
+  `Version` per submission; first-submission notes on #40.
+- #10 PR #63: `Core.Timing`: `Fraction`, `FrameTiming` (100 ns ticks, floor),
+  `FrameRates`, `TimingFormat`, `TimingWords`.
+- #27 PR #64: tokens in `App/Themes/` (Light, Dark, HighContrast), text
+  styles, spacing, motion tokens, control overrides. `--gallery`.
+- #16 PR #66: `Core.Projects` (`Project`, `ProjectSnapshot`, `Frame`,
+  settings), Presentation view models, dialogs, manual composition root.
+- #8 PR #65: `Media.Export` through `IMFSinkWriter`, `VideoFileReader`, colour
+  tags, no B-frames, `tools/TenLapse.Spike`. About 34 handles per export leak
+  inside the NVIDIA encoder MFT (not ours).
+- #28 PR #67: shell (tinted Mica title bar, command bar, Empty/Editing states,
+  inspector 320, filmstrip row), InfoBar host, `FlyoutShadow`.
+- #9 PR #68: `Media.Encoding` (`EncoderProbe.LoadOrProbeAsync`,
+  `EncoderCapabilities`, JSON cache). This PC: H.264 4K at 30/60, HEVC 4K.
+- #26 PR #69: `RollingFileLog`, `ErrorPath`, `ErrorPresenter`, global
+  handlers, `TryEnqueueGuarded`, Settings with *Copy diagnostics*.
 - #13 PR #70: `TenLapse.Media.Decoding` (`PhotoDecoder.ReadInfoAsync` header
   plus end check, `DecodeAsync` to cover size with EXIF orientation, files read
   through a shared handle and closed before decoding so nothing stays mapped;
@@ -288,3 +252,15 @@ Nothing blocks the build loop. Everything below waits until release is near
   Core/Presentation. Launch focus on *Choose folder* uses `FocusState.Pointer`
   so no ring shows until the keyboard is used (#38 to confirm). Debug
   switches `--drag-over`, `--reduce-motion`.
+- #23 PR #76: `Shell/OutputPanel` with `Presentation/Output/OutputPanelViewModel`
+  in `InspectorRegion` (#17 and #18 stack above it). Sizes this PC cannot
+  encode are hidden with one note; HEVC only when available. The startup
+  probe runs at launch (`EncoderStartup`, cancelled on close). A provisional
+  answer (15 s timeout or failed probe: H.264 up to 1080p) never writes the
+  project; the real answer restores the stored choice or writes a correction
+  once. `CanExport` means the settings are supported; #24 must also require
+  frames, and must let Export use the displayed values when a provisional
+  replacement is showing (today Export hides until the user picks another
+  entry). `ExportBitrate` moved to `Core.Projects`. The select pip is Deep
+  Amber Indicator for every ComboBox. Debug `--max-resolution`, `--no-hevc`,
+  `--probe-delay`, `--probe-failed`, `--output`.

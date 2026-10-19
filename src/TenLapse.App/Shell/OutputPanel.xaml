@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Output section of the inspector (#23), after the prototype's Output section in docs/design/canvas/Main.dc.html:
+  a Body strong heading, Resolution, Format and Quality as selects (Card fill, Control Stroke border, 4 px corners,
+  32 px), and the estimated file size in Caption Secondary, between 16 px of padding above and below and a divider
+  at the bottom. Inspector sections stack in a column inside ShellView's InspectorRegion.
+
+  The lists hold only what this PC confirmed it can encode (OutputPanelViewModel): a size it cannot export is left
+  out, never disabled, and one line under the lists says why. Until the startup probe has answered, a quiet line
+  replaces the lists in a block as tall as they are, so nothing moves while the lists are still empty (the note and
+  the notice add lines when they appear). The code-behind raises screen reader notifications for the pending state,
+  the lists appearing and the notice, since a Collapsed to Visible flip does not raise a live region event.
+  No amber here: the selects take their colors from the control overrides (ControlOverrides.xaml).
+-->
+<UserControl
+  x:Class="TenLapse.Shell.OutputPanel"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:presentation="using:TenLapse.Presentation">
+
+  <UserControl.Resources>
+    <!-- A select: 32 px, 4 px corners, 8 px side padding, as wide as the inspector's column. -->
+    <Style x:Key="OutputSelectStyle" TargetType="ComboBox">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="MinHeight" Value="{StaticResource ControlHeight}" />
+      <Setter Property="Padding" Value="{StaticResource PaddingSelect}" />
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusControl}" />
+    </Style>
+  </UserControl.Resources>
+
+  <Border
+    Padding="0,16,0,16"
+    BorderBrush="{ThemeResource DividerBrush}"
+    BorderThickness="0,0,0,1">
+    <StackPanel Spacing="{StaticResource SpacingMd}">
+      <TextBlock
+        AutomationProperties.HeadingLevel="Level2"
+        Style="{StaticResource BodyStrongTextStyle}"
+        Text="{x:Bind presentation:OutputText.Heading}" />
+
+      <!--
+        Pending: as tall as the three lists and the estimate (3 x 54 px, 28 px, three 12 px gaps), so the lists appear without moving anything
+        (the note and the notice, when there are any, add 1 to 3 lines under them). Plain Ink Secondary text, no progress bar: nothing here is an export.
+      -->
+      <Border x:Name="PendingBlock" MinHeight="214" Visibility="{x:Bind ViewModel.IsPending, Mode=OneWay}">
+        <TextBlock
+          x:Name="PendingText"
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource BodyTextStyle}"
+          Text="{x:Bind ViewModel.Status, Mode=OneWay}"
+          TextWrapping="Wrap" />
+      </Border>
+
+      <StackPanel
+        x:Name="Lists"
+        Spacing="{StaticResource SpacingMd}"
+        Visibility="{x:Bind ViewModel.IsSettled, Mode=OneWay}">
+        <StackPanel Spacing="6">
+          <TextBlock
+            x:Name="ResolutionLabel"
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTextStyle}"
+            Text="{x:Bind presentation:OutputText.ResolutionLabel}" />
+          <ComboBox
+            x:Name="ResolutionList"
+            AutomationProperties.Name="{x:Bind presentation:OutputText.ResolutionLabel}"
+            ItemsSource="{x:Bind ViewModel.Resolutions, Mode=OneWay}"
+            SelectedItem="{x:Bind ViewModel.SelectedResolution, Mode=TwoWay}"
+            Style="{StaticResource OutputSelectStyle}" />
+        </StackPanel>
+        <StackPanel Spacing="6">
+          <TextBlock
+            x:Name="FormatLabel"
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTextStyle}"
+            Text="{x:Bind presentation:OutputText.FormatLabel}" />
+          <ComboBox
+            x:Name="FormatList"
+            AutomationProperties.Name="{x:Bind presentation:OutputText.FormatLabel}"
+            ItemsSource="{x:Bind ViewModel.Formats, Mode=OneWay}"
+            SelectedItem="{x:Bind ViewModel.SelectedFormat, Mode=TwoWay}"
+            Style="{StaticResource OutputSelectStyle}" />
+        </StackPanel>
+        <StackPanel Spacing="6">
+          <TextBlock
+            x:Name="QualityLabel"
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTextStyle}"
+            Text="{x:Bind presentation:OutputText.QualityLabel}" />
+          <ComboBox
+            x:Name="QualityList"
+            AutomationProperties.Name="{x:Bind presentation:OutputText.QualityLabel}"
+            ItemsSource="{x:Bind ViewModel.Qualities}"
+            SelectedItem="{x:Bind ViewModel.SelectedQuality, Mode=TwoWay}"
+            Style="{StaticResource OutputSelectStyle}" />
+        </StackPanel>
+
+        <!-- "About 180 MB": empty without photos. No automation name of its own: a screen reader reads the text itself. -->
+        <TextBlock
+          x:Name="EstimateText"
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource CaptionTabularTextStyle}"
+          Text="{x:Bind ViewModel.EstimatedSize, Mode=OneWay}"
+          Visibility="{x:Bind ViewModel.HasEstimate, Mode=OneWay}" />
+
+        <!-- Why a size is missing or slower ("This PC's graphics hardware exports up to 1440p."). One line, shown only then. -->
+        <TextBlock
+          x:Name="NoteText"
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource CaptionTextStyle}"
+          Text="{x:Bind ViewModel.Note, Mode=OneWay}"
+          TextWrapping="Wrap"
+          Visibility="{x:Bind ViewModel.HasNote, Mode=OneWay}" />
+
+        <!-- What the panel changed on its own ("4K can't be exported on this PC with these settings, so 1440p is selected."). -->
+        <TextBlock
+          x:Name="NoticeText"
+          Foreground="{ThemeResource InkBrush}"
+          Style="{StaticResource CaptionTextStyle}"
+          Text="{x:Bind ViewModel.Notice, Mode=OneWay}"
+          TextWrapping="Wrap"
+          Visibility="{x:Bind ViewModel.HasNotice, Mode=OneWay}" />
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</UserControl>

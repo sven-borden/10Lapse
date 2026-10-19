@@ -225,8 +225,8 @@ public sealed partial class AmberRuleTests
     private static string Line(XElement element) =>
         element is IXmlLineInfo info && info.HasLineInfo() ? $" (line {info.LineNumber})" : string.Empty;
 
-    /// <summary>The override keys of the controls whose state is the indicator.</summary>
-    [GeneratedRegex("^(ProgressBar|ProgressRing|Slider|ToggleSwitch(Fill|Stroke)On|ToggleSwitchKnobFillOn|CheckBox|RadioButton|ListViewItemSelectionIndicator|NavigationViewSelectionIndicator|PivotHeaderItemSelectedPipe)")]
+    /// <summary>The override keys of the controls whose state is the indicator (a select's list marks its selected entry with the same pip as a list).</summary>
+    [GeneratedRegex("^(ProgressBar|ProgressRing|Slider|ToggleSwitch(Fill|Stroke)On|ToggleSwitchKnobFillOn|CheckBox|RadioButton|ListViewItemSelectionIndicator|NavigationViewSelectionIndicator|PivotHeaderItemSelectedPipe|ComboBoxItemPillFill)")]
     private static partial Regex IndicatorKey();
 
     [GeneratedRegex(@"\b(ExportButtonStyle|AccentActionButtonStyle)\b")]

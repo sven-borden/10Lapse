@@ -7,8 +7,11 @@ namespace TenLapse.Debugging;
 /// <summary>
 /// Debug-only switches for looking at the shell before import exists (this folder is not built in Release):
 /// <c>--sample-frames=N</c> fills the project with N generated photos (DebugPreview.cs, which also has the
-/// preview's switches), so the Editing state shows and plays, and <c>--infobar</c> raises #13's skipped-photos InfoBar with its detail list, and a neutral one behind
-/// it. <c>--theme=light|dark</c> is the gallery's switch. <c>--crash=command|task|ui|unhandled</c> is in DebugCrash.cs.
+/// preview's switches), so the Editing state shows and plays, and <c>--infobar</c> raises #13's skipped-photos InfoBar
+/// with its detail list, and a neutral one behind it. <c>--output=720|1080|1440|2160[,hevc][,standard|maximum]</c> stores
+/// those Output settings in the project (to see the Output panel replace what this PC cannot do, with
+/// <c>--max-resolution</c> and the other switches in DebugOutputCapabilities.cs). <c>--theme=light|dark</c> is the
+/// gallery's switch. <c>--crash=command|task|ui|unhandled</c> is in DebugCrash.cs.
 /// </summary>
 internal static partial class DebugLaunch
 {
@@ -30,6 +33,11 @@ internal static partial class DebugLaunch
             AddSampleFrames(shell.CurrentProject.Model, Math.Min(count, MaxSampleFrames), infoBars);
         }
 
+        if (Value("--output=") is { } output)
+        {
+            ApplyOutput(shell.CurrentProject.Model, output);
+        }
+
         if (_args.Contains("--infobar", StringComparer.OrdinalIgnoreCase))
         {
             // #13's InfoBar: View list / Hide list opens the list inside the bar and keeps it open.
@@ -45,6 +53,27 @@ internal static partial class DebugLaunch
             // A second one waits behind it, so the exit and the next entrance can be watched too.
             infoBars.Show(InfoBarSeverity.Neutral, "Export cancelled. The unfinished file was removed.");
         }
+    }
+
+    private static void ApplyOutput(Project project, string text)
+    {
+        var settings = project.Output;
+        foreach (var part in text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            settings = part.ToLowerInvariant() switch
+            {
+                "720" => settings with { Resolution = OutputResolution.Hd720 },
+                "1080" => settings with { Resolution = OutputResolution.Hd1080 },
+                "1440" => settings with { Resolution = OutputResolution.Qhd1440 },
+                "2160" => settings with { Resolution = OutputResolution.Uhd2160 },
+                "hevc" => settings with { Format = VideoFormat.Mp4Hevc },
+                "standard" => settings with { Quality = OutputQuality.Standard },
+                "maximum" => settings with { Quality = OutputQuality.Maximum },
+                _ => settings,
+            };
+        }
+
+        project.Output = settings;
     }
 
     private static string? Value(string prefix) =>

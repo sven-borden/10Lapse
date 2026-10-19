@@ -44,18 +44,19 @@ public sealed partial class MainWindow : Window
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
     /// <param name="import">Add photos, drag and drop and the import progress (#12).</param>
+    /// <param name="output">The Output section of the inspector (#23).</param>
     /// <param name="infoBars">The InfoBars to float over the stage; the composition root hands the same queue to whoever raises them.</param>
     /// <param name="errors">Logs failures of the window's dispatcher callbacks (log only, see <see cref="DispatcherQueueExtensions"/>).</param>
     /// <param name="presenter">The error path, for the shell's drop handler.</param>
     /// <param name="preview">The preview's player, images and cache (#19).</param>
-    internal MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview)
+    internal MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(errors);
         ViewModel = viewModel;
         _errors = errors;
         InitializeComponent();
-        _shell = new ShellView(viewModel, settings, import, infoBars, errors, presenter, preview);
+        _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter, preview);
         Content = _shell;
 
         // Window is not a DependencyObject, so its Title cannot take a binding: follow the view model by hand.
