@@ -61,6 +61,13 @@ public sealed partial class OutputPanel : UserControl
         }
     }
 
+    // The user keeps the shown settings. The button goes with the replacement, so focus moves to the first list.
+    private void OnKeepSelected(object sender, RoutedEventArgs e)
+    {
+        ViewModel?.UseSelected();
+        ResolutionList.Focus(FocusState.Programmatic);
+    }
+
     private void Announce(string message, string activityId)
     {
         var peer = FrameworkElementAutomationPeer.FromElement(this) ?? FrameworkElementAutomationPeer.CreatePeerForElement(this);

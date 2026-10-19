@@ -120,6 +120,14 @@
           Text="{x:Bind ViewModel.Notice, Mode=OneWay}"
           TextWrapping="Wrap"
           Visibility="{x:Bind ViewModel.HasNotice, Mode=OneWay}" />
+
+        <!-- Stores the shown settings in place of the earlier choice. Picking the entry that is already shown cannot do it: a ComboBox reports no change. -->
+        <Button
+          x:Name="KeepSelectedButton"
+          HorizontalAlignment="Left"
+          Click="OnKeepSelected"
+          Content="{x:Bind presentation:OutputText.KeepSelected}"
+          Visibility="{x:Bind ViewModel.HasReplacement, Mode=OneWay}" />
       </StackPanel>
     </StackPanel>
   </Border>
