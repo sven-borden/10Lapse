@@ -11,13 +11,17 @@ namespace TenLapse.Services;
 internal sealed class EncoderStartup
 {
     private readonly CancellationTokenSource _cancellation = new();
+    private readonly StartupTrace _trace;
     private EncoderCapabilities? _loaded;
 
     /// <summary>Starts the probe, or loads its cache file when it is still valid for this PC (about 0.25 s; a cold probe about 3.5 s).</summary>
     /// <param name="cachePath">The cache file, <see cref="AppEnvironment.EncoderCacheFile"/>.</param>
-    public EncoderStartup(string cachePath)
+    /// <param name="trace">The start-up trace (#90): whether the cache answered or the probe ran cold, and when the answer came.</param>
+    public EncoderStartup(string cachePath, StartupTrace trace)
     {
         ArgumentException.ThrowIfNullOrEmpty(cachePath);
+        ArgumentNullException.ThrowIfNull(trace);
+        _trace = trace;
         var token = _cancellation.Token;
         Probe = Task.Run(() => RunAsync(cachePath, token), token);
     }
@@ -39,7 +43,17 @@ internal sealed class EncoderStartup
 
     private async Task<IOutputCapabilities> RunAsync(string cachePath, CancellationToken cancellationToken)
     {
-        var capabilities = await EncoderProbe.LoadOrProbeAsync(cachePath, cancellationToken).ConfigureAwait(false);
+        _trace.Phase("encoder probe: reading its cache");
+        var cold = false;
+        var capabilities = await EncoderProbe.LoadOrProbeAsync(
+            cachePath,
+            () =>
+            {
+                cold = true;
+                _trace.Phase("encoder probe: no cache for this build and PC, probing cold");
+            },
+            cancellationToken).ConfigureAwait(false);
+        _trace.Phase(cold ? "encoder probe answered after a cold probe" : "encoder probe answered from its cache");
         Volatile.Write(ref _loaded, capabilities);
         return new EncoderOutputCapabilities(capabilities);
     }

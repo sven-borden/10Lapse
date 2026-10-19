@@ -108,7 +108,7 @@ public partial class App : Application
 
         // The encoder probe (#9) starts now, in the background; the Output panel (#23) takes its answer when it comes
         // and nothing waits for it.
-        var encoders = new EncoderStartup(EncoderCacheFile());
+        var encoders = new EncoderStartup(EncoderCacheFile(), _startup);
 
         // Copy diagnostics. The encoder section reads this session's probe result, else the cache #9's probe writes,
         // and never probes itself.
@@ -123,6 +123,9 @@ public partial class App : Application
         // The error path: every command goes through it. Mappers word the failures of libraries Presentation
         // cannot see.
         var errors = new ErrorPresenter(_log, infoBars, [new VideoExportErrorMapper()], diagnostics.CopyAsync);
+
+        // From here an exception XAML routes is shown and handled (its InfoBar waits for the window), not fatal (#90).
+        _errors = errors;
         // The remembered settings (#21): a small file read now, on this thread, before the window; a new project starts
         // from them, the pickers open in the last folder, and the file is written a moment after each change.
         var remembered = new RememberedSettings(new JsonFileSettingsStore(SettingsFile()), errors, _log);
@@ -157,7 +160,13 @@ public partial class App : Application
 #if DEBUG
         probe = Debugging.DebugOutputCapabilities.FromSwitches(Environment.GetCommandLineArgs()) ?? probe;
 #endif
-        _ = errors.GuardAsync(() => output.DeliverAsync(probe, ui, errors, OutputCapabilitiesDelivery.DefaultPatience, encoders.Token), OutputText.ProbeFailed);
+        _ = errors.GuardAsync(
+            async () =>
+            {
+                await output.DeliverAsync(probe, ui, errors, OutputCapabilitiesDelivery.DefaultPatience, encoders.Token).ConfigureAwait(false);
+                _startup.ProbeApplied("encoder answer applied to the Output panel");
+            },
+            OutputText.ProbeFailed);
 
         // The preview (#19): the proxy cache in LocalCache (beside the log unpackaged), the frame images, the player.
         _startup.Phase("creating the preview session");
@@ -212,7 +221,6 @@ public partial class App : Application
         var rating = new RatingPrompt(remembered, ratingService, () => window!.IsInForeground && !dialogs.HasOpenDialog && window.Export.IsFinished, AppDiagnostics.AppVersion(), _log, logOnly);
         rating.Attach(window.Export);
         window.Closed += (_, _) => rating.Dispose();
-        _errors = errors;
 #if DEBUG
         errors.Guard(() => Debugging.DebugLaunch.ApplyPreview(preview, window, _log), "Applying the preview's Debug switches failed.");
         errors.Guard(() => Debugging.DebugLaunch.Apply(shell, infoBars), "Applying the Debug switches failed.");

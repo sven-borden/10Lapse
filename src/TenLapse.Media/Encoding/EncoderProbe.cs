@@ -72,8 +72,15 @@ public static class EncoderProbe
     public static Task<EncoderCapabilities> LoadOrProbeAsync(string cachePath, CancellationToken cancellationToken = default) =>
         LoadOrProbeAsync(cachePath, Path.GetTempPath(), cancellationToken);
 
+    /// <summary>
+    /// <see cref="LoadOrProbeAsync(string, CancellationToken)"/>, calling <paramref name="probingCold"/> on the pool thread
+    /// when the cache holds nothing for this PC and the test encodes begin (the start-up trace logs it, #90).
+    /// </summary>
+    public static Task<EncoderCapabilities> LoadOrProbeAsync(string cachePath, Action probingCold, CancellationToken cancellationToken = default) =>
+        LoadOrProbeAsync(cachePath, Path.GetTempPath(), cancellationToken, probingCold);
+
     /// <summary><see cref="LoadOrProbeAsync(string, CancellationToken)"/> with the test encodes written to <paramref name="temporaryFolder"/>.</summary>
-    internal static Task<EncoderCapabilities> LoadOrProbeAsync(string cachePath, string temporaryFolder, CancellationToken cancellationToken)
+    internal static Task<EncoderCapabilities> LoadOrProbeAsync(string cachePath, string temporaryFolder, CancellationToken cancellationToken, Action? probingCold = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(cachePath);
         ArgumentException.ThrowIfNullOrEmpty(temporaryFolder);
@@ -91,6 +98,7 @@ public static class EncoderProbe
                     return cached;
                 }
 
+                probingCold?.Invoke();
                 var capabilities = Probe(encoders, decoders, hardwareAcceleration: true, temporaryFolder, TestEncodeTimeout, cancellationToken);
                 if (!capabilities.IsProvisional)
                 {
