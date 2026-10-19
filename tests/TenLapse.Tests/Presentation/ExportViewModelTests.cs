@@ -440,11 +440,10 @@ public sealed class ExportViewModelTests
     [Fact]
     public async Task ClosingDuringAnExportStopsItWaitsForTheCleanUpAndShowsNoInfoBar()
     {
+        // The fake registers the cancelled export's clean-up only as the export ends, as ExportCleanup does: a close that
+        // asked for the clean-ups before the export had ended would not wait for it.
         using var app = new ExportHarness(capabilities: _everything);
         app.StartExport();
-        var cleaned = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        app.Exporter.AllCleanedUp = cleaned.Task;
-        app.Exporter.CleanUp.SetResult(true);
 
         var close = app.On(() => app.Export.PrepareToCloseAsync());
         app.Settle();
@@ -452,7 +451,7 @@ public sealed class ExportViewModelTests
         Assert.False(close.IsCompleted);
         Assert.Equal(ExportPanelState.Editing, app.On(() => app.Export.State));
         Assert.Equal(["started", "ended Cancelled"], app.Lifecycle);
-        cleaned.SetResult();
+        app.Exporter.CleanUp.SetResult(true);
         Assert.True(await close.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
         app.Settle();
         Assert.Empty(app.InfoBars.Shown);
@@ -463,9 +462,8 @@ public sealed class ExportViewModelTests
     {
         using var app = new ExportHarness(capabilities: _everything);
         app.StartExport();
-        app.Exporter.AllCleanedUp = new TaskCompletionSource().Task;
-        app.Exporter.CleanUp.SetResult(true);
 
+        // The cancelled export's clean-up never finishes.
         var started = System.Diagnostics.Stopwatch.StartNew();
         var close = app.On(() => app.Export.PrepareToCloseAsync());
 

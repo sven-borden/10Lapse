@@ -15,16 +15,22 @@ namespace TenLapse.Tests.Presentation;
 /// </summary>
 internal sealed class FakeVideoExporter : IVideoExporter
 {
+    private readonly Lock _gate = new();
+    private readonly List<Task> _cleanUps = [];
     private TaskCompletionSource<ExportedVideo>? _pending;
 
     public List<(ProjectSnapshot Snapshot, string Path)> Calls { get; } = [];
 
     public IProgress<ExportStatus>? Progress { get; private set; }
 
-    /// <summary>Completes a <see cref="CleanUpAsync"/>; its result says whether the unfinished file is gone.</summary>
+    /// <summary>
+    /// The clean-up of a cancelled or failed export: <see cref="CleanUpAsync"/> returns it, and its result says whether the
+    /// unfinished file is gone. Like Media's <c>ExportCleanup</c>, it is registered only as the export ends, so
+    /// <see cref="WhenAllCleanedUp"/> asked before that does not wait for it.
+    /// </summary>
     public TaskCompletionSource<bool> CleanUp { get; set; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    /// <summary>What <see cref="WhenAllCleanedUp"/> returns.</summary>
+    /// <summary>Another clean-up <see cref="WhenAllCleanedUp"/> waits for (an earlier export's, say).</summary>
     public Task AllCleanedUp { get; set; } = Task.CompletedTask;
 
     public List<string> CleanUpAsked { get; } = [];
@@ -35,7 +41,11 @@ internal sealed class FakeVideoExporter : IVideoExporter
         Progress = progress;
         _pending = new TaskCompletionSource<ExportedVideo>(TaskCreationOptions.RunContinuationsAsynchronously);
         var pending = _pending;
-        cancellationToken.Register(() => pending.TrySetCanceled(cancellationToken));
+        cancellationToken.Register(() =>
+        {
+            TrackCleanUp();
+            pending.TrySetCanceled(cancellationToken);
+        });
         return pending.Task;
     }
 
@@ -43,7 +53,11 @@ internal sealed class FakeVideoExporter : IVideoExporter
 
     public void Finish(ExportedVideo video) => _pending!.SetResult(video);
 
-    public void Fail(Exception exception) => _pending!.SetException(exception);
+    public void Fail(Exception exception)
+    {
+        TrackCleanUp();
+        _pending!.SetException(exception);
+    }
 
     public Task<bool> CleanUpAsync(string path)
     {
@@ -51,7 +65,22 @@ internal sealed class FakeVideoExporter : IVideoExporter
         return CleanUp.Task;
     }
 
-    public Task WhenAllCleanedUp() => AllCleanedUp;
+    // A snapshot, as ExportCleanup.WhenAllDone takes one: clean-ups registered later are not in it.
+    public Task WhenAllCleanedUp()
+    {
+        lock (_gate)
+        {
+            return Task.WhenAll([AllCleanedUp, .. _cleanUps]);
+        }
+    }
+
+    private void TrackCleanUp()
+    {
+        lock (_gate)
+        {
+            _cleanUps.Add(CleanUp.Task);
+        }
+    }
 }
 
 /// <summary>The Save dialog's answer, and what it was asked.</summary>

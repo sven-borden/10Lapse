@@ -280,16 +280,36 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
             }
         }
 
-        try
+        // One budget for both waits. First the export itself: a cancelled export registers its clean-up only as it ends
+        // (on a worker thread, after the token fires), so the clean-ups are asked for afterwards, not before. Whatever is
+        // left after the budget, the journal deletes at the next launch.
+        var budget = Stopwatch.StartNew();
+        var running = ExportCommand.ExecutionTask ?? Task.CompletedTask;
+        if (!await WithinAsync(running, CloseLimit))
         {
-            await Task.WhenAll(ExportCommand.ExecutionTask ?? Task.CompletedTask, _services.Exporter.WhenAllCleanedUp()).WaitAsync(CloseLimit);
+            return true;
         }
-        catch (TimeoutException)
+
+        var left = CloseLimit - budget.Elapsed;
+        if (left > TimeSpan.Zero)
         {
-            // The journal deletes what is left at the next launch.
+            await WithinAsync(_services.Exporter.WhenAllCleanedUp(), left);
         }
 
         return true;
+    }
+
+    // Whether the task ended (in any way) within the limit. Never throws.
+    private static async Task<bool> WithinAsync(Task task, TimeSpan limit)
+    {
+        if (task.IsCompleted)
+        {
+            return true;
+        }
+
+        using var timeout = new CancellationTokenSource(limit);
+        var delay = Task.Delay(Timeout.Infinite, timeout.Token);
+        return await Task.WhenAny(task, delay) == task;
     }
 
     /// <inheritdoc />
