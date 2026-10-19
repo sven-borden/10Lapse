@@ -124,7 +124,11 @@ public sealed class DiagnosticsTests
     }
 
     private static SettingsViewModel Settings(FakeClipboard clipboard, FakeInfoBarService infoBars, IErrorPresenter errors) =>
-        new(errors, new DiagnosticsCopier(new DiagnosticsCollector([new Section("App", "Version", "3.0.0.0")], new FakeLog()), clipboard, infoBars));
+        new(
+            errors,
+            new DiagnosticsCopier(new DiagnosticsCollector([new Section("App", "Version", "3.0.0.0")], new FakeLog()), clipboard, infoBars),
+            new RememberedSettings(new TenLapse.Core.Settings.MemorySettingsStore(), errors, new FakeLog()),
+            infoBars);
 
     private sealed class Section(string title, string name, string value) : IDiagnosticsContributor
     {

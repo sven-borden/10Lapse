@@ -46,6 +46,13 @@ internal static class AppEnvironment
     public static string EncoderCacheFile() => Path.Combine(Path.GetDirectoryName(LogFolder())!, "encoder-capabilities.json");
 
     /// <summary>
+    /// The remembered settings (#21): <c>settings.json</c> in the package's LocalState, or in %LOCALAPPDATA%\10Lapse
+    /// unpackaged, beside the log. A plain file rather than <c>ApplicationData.LocalSettings</c>, so one format and one
+    /// code path serve both and the tests cover them. Never throws.
+    /// </summary>
+    public static string SettingsFile() => Path.Combine(Path.GetDirectoryName(LogFolder())!, "settings.json");
+
+    /// <summary>
     /// The journal of unfinished export files (#22's <c>PartialFileJournal</c>): <c>unfinished-exports.txt</c> in the
     /// package's LocalState, or in %LOCALAPPDATA%\10Lapse unpackaged. Never throws.
     /// </summary>

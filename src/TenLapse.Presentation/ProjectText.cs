@@ -217,6 +217,40 @@ public static class ProjectText
     /// <summary>The diagnostics card's caption.</summary>
     public static string DiagnosticsCardCaption => "Copies the app and Windows versions, your graphics card, the video encoders and the last 200 log lines, to paste into a bug report. The log lines can name files and folders 10Lapse worked with, never the photos themselves. Nothing is sent from your PC.";
 
+    // ---- Remembered settings (#21)
+
+    /// <summary>The Settings section that holds the reset card.</summary>
+    public static string SettingsDefaultsSection => "Defaults";
+
+    /// <summary>The reset card's title.</summary>
+    public static string ResetCardTitle => "Reset to defaults";
+
+    /// <summary>The reset card's caption.</summary>
+    public static string ResetCardCaption => "10Lapse starts each project with your last speed, frame shape and output. This puts them back to what a fresh install has, in the project you have open too, and forgets the folders it opens in. Your photos are not touched.";
+
+    /// <summary>The reset card's button.</summary>
+    public static string ResetButton => "Reset";
+
+    /// <summary>The InfoBar that says the reset is done.</summary>
+    public static string ResetDone => "Settings are back to their defaults.";
+
+    /// <summary>Error context: resetting the settings failed.</summary>
+    public static string ResetSettingsFailed => "Resetting the settings failed.";
+
+    /// <summary>Error context (log only): following the project for the remembered settings failed.</summary>
+    public static string SettingsAttachFailed => "Remembering the settings of this session failed.";
+
+    /// <summary>Error context (log only): the remembered settings could not be written.</summary>
+    public static string SettingsSaveFailed => "Saving your settings failed. They will be tried again after the next change.";
+
+    /// <summary>Log line: what the settings file could not give at start-up (one line, so it is logged once).</summary>
+    public static string SettingsLoadProblems(IReadOnlyList<string> problems) =>
+        "Some remembered settings could not be read and use their defaults: " + string.Join(" ", problems);
+
+    /// <summary>Log line: the settings were loaded, and how long it took.</summary>
+    public static string SettingsLoaded(double milliseconds) =>
+        Format("Remembered settings loaded in {0:0.0} ms.", milliseconds);
+
     // Error contexts: what was being done, for the log only.
 
     /// <summary>Error context: <c>New project</c> failed.</summary>
