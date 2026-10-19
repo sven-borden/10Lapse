@@ -51,6 +51,8 @@ public static class UserSettingsJson
             },
             ["importFolder"] = settings.ImportFolder,
             ["exportFolder"] = settings.ExportFolder,
+            ["successfulExports"] = settings.SuccessfulExports,
+            ["ratingAskedVersion"] = settings.RatingAskedVersion,
         };
         return root.ToJsonString(_writeOptions);
     }
@@ -111,6 +113,8 @@ public static class UserSettingsJson
                 Field(output, "output.quality", defaults.Output.Quality, ReadEnum<OutputQuality>, problems)),
             ImportFolder = Field(root, "importFolder", defaults.ImportFolder, ReadFolder, problems),
             ExportFolder = Field(root, "exportFolder", defaults.ExportFolder, ReadFolder, problems),
+            SuccessfulExports = Field(root, "successfulExports", defaults.SuccessfulExports, ReadCount, problems),
+            RatingAskedVersion = Field(root, "ratingAskedVersion", defaults.RatingAskedVersion, ReadVersionText, problems),
         };
         return new SettingsLoadResult(settings, problems);
 
@@ -217,5 +221,19 @@ public static class UserSettingsJson
         return path.Contains('\0') || !Path.IsPathFullyQualified(path)
             ? throw new ArgumentException("not a full folder path")
             : path;
+    }
+
+    private static int ReadCount(JsonNode node)
+    {
+        var count = node.GetValue<int>();
+        return count < 0 ? throw new ArgumentOutOfRangeException(nameof(node), "a count cannot be negative") : count;
+    }
+
+    private static string? ReadVersionText(JsonNode node)
+    {
+        var text = node.GetValue<string>();
+        return text.Length == 0
+            ? null
+            : text.Length > 64 || text.Any(char.IsControl) ? throw new ArgumentException("not a version") : text;
     }
 }

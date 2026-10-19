@@ -402,7 +402,7 @@ public sealed class RememberedSettingsTests
         var shell = Attached(remembered);
         var infoBars = new FakeInfoBarService();
         var collector = new DiagnosticsCollector([], _log);
-        var settings = new SettingsViewModel(_errors, new DiagnosticsCopier(collector, new FakeClipboard(), infoBars), remembered, infoBars);
+        var settings = new SettingsViewModel(_errors, new DiagnosticsCopier(collector, new FakeClipboard(), infoBars), remembered, infoBars, new FakeLauncher());
 
         settings.ResetToDefaultsCommand.Execute(null);
 
@@ -543,7 +543,7 @@ public sealed class RememberedSettingsTests
         var remembered = Remembered();
         var infoBars = new FakeInfoBarService();
         var collector = new DiagnosticsCollector([], _log);
-        var settings = new SettingsViewModel(_errors, new DiagnosticsCopier(collector, new FakeClipboard(), infoBars), remembered, infoBars);
+        var settings = new SettingsViewModel(_errors, new DiagnosticsCopier(collector, new FakeClipboard(), infoBars), remembered, infoBars, new FakeLauncher());
 
         settings.ResetToDefaultsCommand.Execute(null);
 

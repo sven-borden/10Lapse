@@ -128,7 +128,8 @@ public sealed class DiagnosticsTests
             errors,
             new DiagnosticsCopier(new DiagnosticsCollector([new Section("App", "Version", "3.0.0.0")], new FakeLog()), clipboard, infoBars),
             new RememberedSettings(new TenLapse.Core.Settings.MemorySettingsStore(), errors, new FakeLog()),
-            infoBars);
+            infoBars,
+            new FakeLauncher());
 
     private sealed class Section(string title, string name, string value) : IDiagnosticsContributor
     {

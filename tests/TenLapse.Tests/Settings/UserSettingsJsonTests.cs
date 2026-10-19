@@ -14,6 +14,8 @@ public sealed class UserSettingsJsonTests
         Output = new OutputSettings(OutputResolution.Uhd2160, VideoFormat.Mp4Hevc, OutputQuality.Maximum),
         ImportFolder = @"C:\Photos\Trip",
         ExportFolder = @"D:\Videos\10Lapse",
+        SuccessfulExports = 7,
+        RatingAskedVersion = "3.0.0.0",
     };
 
     private const string V1 = """
@@ -90,6 +92,46 @@ public sealed class UserSettingsJsonTests
         Assert.Equal(new OutputSettings(OutputResolution.Qhd1440, VideoFormat.Mp4H264, OutputQuality.Standard), result.Settings.Output);
         Assert.Equal(@"C:\Photos", result.Settings.ImportFolder);
         Assert.Null(result.Settings.ExportFolder);
+    }
+
+    [Fact]
+    public void AFileFromBeforeTheRatingPromptNeedsNoMigrationAndStartsTheCountAtZero()
+    {
+        // #31 added the count and the version asked in as new fields. A new field needs no schema version (an older build
+        // ignores it), so the version stays 1 and a #21 file reads quietly with the prompt not yet due.
+        var result = UserSettingsJson.Read(V1);
+
+        Assert.Empty(result.Problems);
+        Assert.Equal(0, result.Settings.SuccessfulExports);
+        Assert.Null(result.Settings.RatingAskedVersion);
+    }
+
+    [Fact]
+    public void TheRatingFieldsAreWrittenAndRead()
+    {
+        var json = UserSettingsJson.Write(UserSettings.Default with { SuccessfulExports = 2, RatingAskedVersion = "3.0.1.0" });
+
+        Assert.Contains("\"successfulExports\": 2", json);
+        Assert.Contains("\"ratingAskedVersion\": \"3.0.1.0\"", json);
+        var result = UserSettingsJson.Read(json);
+        Assert.Equal(2, result.Settings.SuccessfulExports);
+        Assert.Equal("3.0.1.0", result.Settings.RatingAskedVersion);
+    }
+
+    [Theory]
+    [InlineData("""{ "version": 1, "importFolder": "C:\\Photos", "successfulExports": -1 }""")]
+    [InlineData("""{ "version": 1, "importFolder": "C:\\Photos", "successfulExports": "two" }""")]
+    [InlineData("""{ "version": 1, "importFolder": "C:\\Photos", "successfulExports": 1.5 }""")]
+    [InlineData("""{ "version": 1, "importFolder": "C:\\Photos", "ratingAskedVersion": 3 }""")]
+    [InlineData("""{ "version": 1, "importFolder": "C:\\Photos", "ratingAskedVersion": "3.0\u0000" }""")]
+    public void ABadRatingFieldCostsOnlyItselfAndKeepsTheOtherFields(string text)
+    {
+        var result = UserSettingsJson.Read(text);
+
+        Assert.Single(result.Problems);
+        Assert.Equal(@"C:\Photos", result.Settings.ImportFolder);
+        Assert.Equal(0, result.Settings.SuccessfulExports);
+        Assert.Null(result.Settings.RatingAskedVersion);
     }
 
     [Fact]
