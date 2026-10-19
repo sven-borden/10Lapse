@@ -318,6 +318,12 @@ public static class ProjectText
     /// <summary>Error context (log only): an animation failed to start or finish (#35); the screen is at its end state.</summary>
     public static string MotionFailed => "An animation failed; the screen shows its end state.";
 
+    /// <summary>
+    /// Error context (log only): the system backdrop's own handling of a theme change failed (#35); the Mica tint follows
+    /// the new theme all the same.
+    /// </summary>
+    public static string BackdropThemeFailed => "The Mica backdrop's own theme change failed; its tint follows the new theme anyway.";
+
     /// <summary>Error context (log only): the arrival choreography (the preview developing, the strip filing in) failed (#35).</summary>
     public static string ArrivalFailed => "Animating the photos' arrival failed; the editor shows at rest.";
 

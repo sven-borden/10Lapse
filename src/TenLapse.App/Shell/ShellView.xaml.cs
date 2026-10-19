@@ -131,7 +131,7 @@ public sealed partial class ShellView : UserControl
         FilmstripRegion.SizeChanged += OnPanelHeightInputsChanged;
         Layout.PropertyChanged += OnLayoutPropertyChanged;
 #if DEBUG
-        Debugging.DebugExport.AutoStart(Export, viewModel, errors);
+        Debugging.DebugExport.AutoStart(Export, viewModel, errors, () => Import.IsImporting);
 #endif
 
         // The screen changes and the arrival choreography (#35). Nothing animates on launch: they go live after the first

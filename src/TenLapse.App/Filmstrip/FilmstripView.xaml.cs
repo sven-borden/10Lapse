@@ -87,6 +87,8 @@ public sealed partial class FilmstripView : UserControl
     private const float ThumbnailRise = 8f;
     private long _arrivalStart;
     private int _arrivalFirst = int.MaxValue;
+    private readonly HashSet<Guid> _cascaded = [];
+    private readonly HashSet<FilmstripThumb> _animated = [];
 
     // A press that may become a click or a drag (the rules are FilmstripPointer's, tested in Presentation).
     private FilmstripPointer? _pointer;
@@ -338,6 +340,7 @@ public sealed partial class FilmstripView : UserControl
     {
         _arrivalStart = Stopwatch.GetTimestamp();
         _arrivalFirst = int.MaxValue;
+        _cascaded.Clear();
         foreach (var thumb in RealizedThumbs().ToList())
         {
             Cascade(thumb, thumb.Item!.Number - 1);
@@ -358,6 +361,12 @@ public sealed partial class FilmstripView : UserControl
             return;
         }
 
+        // Each photo joins once: a thumbnail realized again during the cascade (the strip relaid out) appears at rest.
+        if (thumb.Item is not { } item || !_cascaded.Add(item.Id))
+        {
+            return;
+        }
+
         _arrivalFirst = Math.Min(_arrivalFirst, index);
         var step = MotionTokens.Plan(MotionCatalogue.ArrivalFilmstrip, Math.Max(0, index - _arrivalFirst));
         if (!step.Animates)
@@ -366,6 +375,7 @@ public sealed partial class FilmstripView : UserControl
         }
 
         ElementCompositionPreview.SetIsTranslationEnabled(thumb, true);
+        _animated.Add(thumb);
         var visual = ElementCompositionPreview.GetElementVisual(thumb);
         var compositor = visual.Compositor;
         var easing = MotionTokens.CreateEasing(compositor, step.Easing);
@@ -389,9 +399,15 @@ public sealed partial class FilmstripView : UserControl
         }
     }
 
-    // A recycled thumbnail starts at rest, whatever its last cascade left running.
-    private static void Settle(FilmstripThumb thumb)
+    // A recycled thumbnail starts at rest, whatever its last cascade left running. Only one the cascade animated has a
+    // Translation to stop (asking a visual that never had one throws).
+    private void Settle(FilmstripThumb thumb)
     {
+        if (!_animated.Remove(thumb))
+        {
+            return;
+        }
+
         var visual = ElementCompositionPreview.GetElementVisual(thumb);
         visual.StopAnimation(nameof(Visual.Opacity));
         visual.StopAnimation("Translation");
