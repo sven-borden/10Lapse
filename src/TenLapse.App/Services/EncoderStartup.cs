@@ -10,6 +10,7 @@ namespace TenLapse.Services;
 /// </summary>
 internal sealed class EncoderStartup
 {
+    private readonly CancellationTokenSource _cancellation = new();
     private EncoderCapabilities? _loaded;
 
     /// <summary>Starts the probe, or loads its cache file when it is still valid for this PC (about 0.25 s; a cold probe about 3.5 s).</summary>
@@ -17,18 +18,28 @@ internal sealed class EncoderStartup
     public EncoderStartup(string cachePath)
     {
         ArgumentException.ThrowIfNullOrEmpty(cachePath);
-        Probe = Task.Run(() => RunAsync(cachePath));
+        var token = _cancellation.Token;
+        Probe = Task.Run(() => RunAsync(cachePath, token), token);
     }
 
-    /// <summary>The probe's answer for the Output panel. It faults only for a bug in the probe; a missing GPU is an answer.</summary>
+    /// <summary>The probe's answer for the Output panel. It faults only for a bug in the probe; a missing GPU is an answer. It is cancelled after <see cref="Cancel"/>.</summary>
     public Task<IOutputCapabilities> Probe { get; }
+
+    /// <summary>The token that <see cref="Cancel"/> cancels: hand it to whoever waits for <see cref="Probe"/>.</summary>
+    public CancellationToken Token => _cancellation.Token;
+
+    /// <summary>
+    /// Stops the probe (the window is closing). The probe checks between its test encodes and removes the file of
+    /// the one it was writing, so a cold probe ends within one test encode and leaves nothing in the temp folder.
+    /// </summary>
+    public void Cancel() => _cancellation.Cancel();
 
     /// <summary>What this session's probe found, or null while it is still running (or failed).</summary>
     public EncoderCapabilities? Loaded => Volatile.Read(ref _loaded);
 
-    private async Task<IOutputCapabilities> RunAsync(string cachePath)
+    private async Task<IOutputCapabilities> RunAsync(string cachePath, CancellationToken cancellationToken)
     {
-        var capabilities = await EncoderProbe.LoadOrProbeAsync(cachePath).ConfigureAwait(false);
+        var capabilities = await EncoderProbe.LoadOrProbeAsync(cachePath, cancellationToken).ConfigureAwait(false);
         Volatile.Write(ref _loaded, capabilities);
         return new EncoderOutputCapabilities(capabilities);
     }

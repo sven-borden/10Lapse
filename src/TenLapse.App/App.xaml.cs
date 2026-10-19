@@ -140,8 +140,15 @@ public partial class App : Application
 #if DEBUG
         probe = Debugging.DebugOutputCapabilities.FromSwitches(Environment.GetCommandLineArgs()) ?? probe;
 #endif
-        _ = errors.GuardAsync(() => output.DeliverAsync(probe, ui, errors, OutputCapabilitiesDelivery.DefaultPatience), OutputText.ProbeFailed);
+        _ = errors.GuardAsync(() => output.DeliverAsync(probe, ui, errors, OutputCapabilitiesDelivery.DefaultPatience, encoders.Token), OutputText.ProbeFailed);
         window = new MainWindow(shell, settings, import, output, infoBars, logOnly, errors);
+
+        // Closing the window stops the probe (it ends within one test encode and removes that file) and the panel.
+        window.Closed += (_, _) =>
+        {
+            encoders.Cancel();
+            output.Dispose();
+        };
         _errors = errors;
 #if DEBUG
         errors.Guard(() => Debugging.DebugLaunch.Apply(shell, infoBars), "Applying the Debug switches failed.");
