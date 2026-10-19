@@ -1,4 +1,5 @@
 using TenLapse.Core.Import;
+using TenLapse.Core.Ordering;
 using TenLapse.Core.Projects;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Services;
@@ -297,6 +298,48 @@ public sealed class ImportViewModelTests
         await harness.ImportAsync(@"C:\Scripted");
 
         Assert.Equal(SortMode.CaptureTime, harness.Project.SortMode);
+        Assert.Equal(["IMG_3.jpg", "IMG_2.jpg", "IMG_1.jpg"], harness.Project.Frames.Select(frame => frame.FileName));
+    }
+
+    [Fact]
+    public async Task AReorderDuringTheImportOfAnEmptyProjectKeepsItsModeInsteadOfTheDefaultSort()
+    {
+        // No capture times: the default sort would switch the mode to Name.
+        var source = new ScriptedImportSource([ScriptedImportSource.Photo("IMG_1.jpg"), ScriptedImportSource.Photo("IMG_2.jpg"), ScriptedImportSource.Photo("IMG_3.jpg")]);
+        var gate = source.HoldReadBatch(0);
+        using var harness = ImportHarness.With(source);
+
+        var import = harness.ImportAsync(@"C:\Scripted");
+        await source.ReadBatchReached.Task.WaitAsync(TestContext.Current.CancellationToken);
+        await harness.Ui.InvokeAsync(() =>
+        {
+            harness.Project.ReorderFrames([.. harness.Project.Frames.Reverse().Select(frame => frame.Id)]);
+            return true;
+        });
+        gate.SetResult();
+        await import;
+
+        Assert.Equal(SortMode.CaptureTime, harness.Project.SortMode);
+    }
+
+    [Fact]
+    public async Task AManualOrderChosenDuringTheImportOfAnEmptyProjectIsKept()
+    {
+        var source = new ScriptedImportSource([ScriptedImportSource.Photo("IMG_1.jpg"), ScriptedImportSource.Photo("IMG_2.jpg"), ScriptedImportSource.Photo("IMG_3.jpg")]);
+        var gate = source.HoldReadBatch(0);
+        using var harness = ImportHarness.With(source);
+
+        var import = harness.ImportAsync(@"C:\Scripted");
+        await source.ReadBatchReached.Task.WaitAsync(TestContext.Current.CancellationToken);
+        await harness.Ui.InvokeAsync(() =>
+        {
+            harness.Project.ReorderManually([.. harness.Project.Frames.Reverse().Select(frame => frame.Id)]);
+            return true;
+        });
+        gate.SetResult();
+        await import;
+
+        Assert.Equal(SortMode.Manual, harness.Project.SortMode);
         Assert.Equal(["IMG_3.jpg", "IMG_2.jpg", "IMG_1.jpg"], harness.Project.Frames.Select(frame => frame.FileName));
     }
 

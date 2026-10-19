@@ -29,7 +29,8 @@ namespace TenLapse.Presentation;
 /// <b>Phases.</b> Listing adds frames with their file facts only, so the filmstrip fills at once (the first batch
 /// within a fraction of a second). Reading fills in pixel size and capture time with one <see cref="Project.UpdateFrames"/>
 /// per batch, and in the same batch removes the files that cannot be used and lists them as skipped. Then the
-/// frames are sorted: <see cref="ProjectOrdering.ApplyDefaultSort"/> when the project was empty before, otherwise
+/// frames are sorted: <see cref="ProjectOrdering.ApplyDefaultSort"/> when the project was empty before and the user
+/// changed neither its sort mode nor its order meanwhile, otherwise
 /// <see cref="ProjectOrdering.Resort"/>. At the end one InfoBar lists the skipped files, if any.
 /// </para>
 /// </remarks>
@@ -49,6 +50,9 @@ public sealed partial class ImportViewModel : ObservableObject
 
     private readonly Lock _gate = new();
     private readonly List<ImportRun> _runs = [];
+
+    // UI thread only: true while an import sorts its project (its Reset is not the user's reorder).
+    private bool _sorting;
 
     /// <param name="shell">The shell: the current project, and a new one when a drop asks for it.</param>
     /// <param name="source">Lists and reads the photos (the App passes Media's <c>PhotoImporter</c>).</param>
@@ -290,14 +294,41 @@ public sealed partial class ImportViewModel : ObservableObject
     private async Task ImportAsync(ImportRun run)
     {
         var target = run.Target;
-        var request = run.Request;
-        var token = run.Token;
-        var name = NameFor(request);
-        var wasEmpty = await _ui.InvokeAsync(() =>
+        var name = NameFor(run.Request);
+
+        // What the end sort needs from the start: an empty project takes the default sort only if the user has neither
+        // picked another order nor dragged frames while the import ran (#15, #20); otherwise its own order is kept.
+        var reordered = false;
+        void Watch(object? sender, ProjectChangedEventArgs e)
+        {
+            if (!_sorting && e.Frames?.Kind == FrameChangeKind.Reset)
+            {
+                reordered = true;
+            }
+        }
+
+        var (wasEmpty, modeAtStart) = await _ui.InvokeAsync(() =>
         {
             ShowProgress(run, ProjectText.ImportListingProgress(0), indeterminate: true, percent: 0);
-            return target.Frames.Length == 0;
+            target.Changed += Watch;
+            return (target.Frames.Length == 0, target.SortMode);
         }).ConfigureAwait(false);
+        try
+        {
+            await ImportAsync(run, name, wasEmpty, () => wasEmpty && !reordered && target.SortMode == modeAtStart).ConfigureAwait(false);
+        }
+        finally
+        {
+            // Removing a handler is safe on any thread.
+            target.Changed -= Watch;
+        }
+    }
+
+    private async Task ImportAsync(ImportRun run, string? name, bool wasEmpty, Func<bool> takesDefaultSort)
+    {
+        var target = run.Target;
+        var request = run.Request;
+        var token = run.Token;
 
         // Phase 1: list. Each batch is added at once; `listed` keeps the frames this import really added (a photo
         // already in the project is left out by AddFrames), in order, for phase 2.
@@ -357,7 +388,7 @@ public sealed partial class ImportViewModel : ObservableObject
                 }
             }
 
-            await _ui.RunAsync(() => Sort(target, wasEmpty)).ConfigureAwait(false);
+            await _ui.RunAsync(() => Sort(target, takesDefaultSort())).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested && !target.IsClosed)
         {
@@ -365,7 +396,7 @@ public sealed partial class ImportViewModel : ObservableObject
             await _ui.RunAsync(() =>
             {
                 target.RemoveFrames(unread);
-                Sort(target, wasEmpty);
+                Sort(target, takesDefaultSort());
             }).ConfigureAwait(false);
             ReportSkipped(skipped);
             ReportUnopened(unopened);
@@ -474,20 +505,29 @@ public sealed partial class ImportViewModel : ObservableObject
         return new Applied(updates.Count, skipped);
     }
 
-    private static void Sort(Project target, bool wasEmpty)
+    // UI thread. The import's own sorts are marked, so another import's watcher does not take them for the user's drag.
+    private void Sort(Project target, bool takesDefaultSort)
     {
         if (target.Frames.Length == 0)
         {
             return;
         }
 
-        if (wasEmpty)
+        _sorting = true;
+        try
         {
-            target.ApplyDefaultSort();
+            if (takesDefaultSort)
+            {
+                target.ApplyDefaultSort();
+            }
+            else
+            {
+                target.Resort();
+            }
         }
-        else
+        finally
         {
-            target.Resort();
+            _sorting = false;
         }
     }
 
