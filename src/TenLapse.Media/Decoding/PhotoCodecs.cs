@@ -19,7 +19,8 @@ public sealed record PhotoDecoderInfo(string Name, Guid CodecId, IReadOnlyList<s
 /// </summary>
 /// <remarks>
 /// The list is read when first needed and kept until <see cref="Refresh"/>; an import refreshes it first (#14), so an
-/// extension the user installs from the Store while 10Lapse runs is found by the next import, with no restart.
+/// extension the user installs from the Store while 10Lapse runs is listed by the next import. Whether the running
+/// process then decodes with it is not proven, so the InfoBars tell the user to restart 10Lapse after installing.
 /// A decoder can be listed and still fail on a file, such as a HEIC photo when the HEVC decoder it needs is missing;
 /// <see cref="PhotoDecoder"/> reports that per file.
 /// </remarks>
@@ -39,12 +40,16 @@ public static class PhotoCodecs
     /// <summary>
     /// True when this PC has what <paramref name="extension"/> adds, asked of Windows now (never remembered): for a
     /// decoder extension (HEIF, RAW, WebP, JPEG XL), a WIC decoder for its format's first extension; for the HEVC Video
-    /// Extensions, a Media Foundation HEVC decoder. True for anything it cannot tell (the AV1 codec): a verdict of
+    /// Extensions, a software Media Foundation HEVC decoder. True for anything it cannot tell (the AV1 codec): a verdict of
     /// "missing" must be certain, because it sends the user to the Store.
     /// </summary>
-    public static bool IsInstalled(PhotoCodecExtension extension)
+    public static bool IsInstalled(PhotoCodecExtension extension) => IsInstalled(extension, EncoderCatalog.FindDecoders);
+
+    /// <summary><see cref="IsInstalled(PhotoCodecExtension)"/> with the Media Foundation decoder lookup stood in (tests).</summary>
+    internal static bool IsInstalled(PhotoCodecExtension extension, Func<VideoFormat, IReadOnlyList<DecoderMft>> findDecoders)
     {
         ArgumentNullException.ThrowIfNull(extension);
+        ArgumentNullException.ThrowIfNull(findDecoders);
         var format = KnownPhotoFormats.All.FirstOrDefault(known => known.Container == extension);
         if (format is not null)
         {
@@ -56,7 +61,9 @@ public static class PhotoCodecs
         {
             try
             {
-                return EncoderCatalog.FindDecoders(VideoFormat.Mp4Hevc).Count > 0;
+                // Only a software decoder: the HEVC Video Extensions are one, and WIC's HEIF decoder uses the software
+                // one. A vendor's hardware HEVC decoder (Intel, AMD, an OEM) says nothing about HEIC.
+                return findDecoders(VideoFormat.Mp4Hevc).Any(decoder => !decoder.IsHardware);
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {

@@ -26,13 +26,12 @@ public sealed class ImportViewModelTests
         var reasons = PhotoFixtureCatalogue.All.Where(fixture => fixture.Reason is not null).ToDictionary(fixture => fixture.Name, fixture => fixture.Reason);
         Assert.All(project.SkippedFiles, file => Assert.Equal(reasons[Path.GetFileName(file.Path)], file.Reason));
 
-        // On a PC without the HEIF decoder, text.heic needs the extension (#14) and has its own InfoBar instead of a line in the list.
-        var needsExtension = project.SkippedFiles.Count(file => file.Reason == SkipReason.NeedsExtension);
-        var bar = harness.InfoBars.Shown[0];
-        Assert.Equal(1 + (needsExtension > 0 ? 1 : 0), harness.InfoBars.Shown.Count);
+        // text.heic is unreadable on any PC, with or without the HEIF decoder: its first bytes are no HEIF file, so it
+        // never becomes a Store prompt (#14) and stays in the list.
+        var bar = Assert.Single(harness.InfoBars.Shown);
         Assert.Equal(InfoBarSeverity.Caution, bar.Severity);
-        Assert.Equal(4 - needsExtension == 1 ? "1 photo couldn't be read and was skipped." : $"{4 - needsExtension} photos couldn't be read and were skipped.", bar.Message);
-        Assert.Equal(4 - needsExtension, bar.Details.Count);
+        Assert.Equal("4 photos couldn't be read and were skipped.", bar.Message);
+        Assert.Equal(4, bar.Details.Count);
 
         // Named after the folder; not every photo has a capture time, so the default sort is by name.
         Assert.Equal("Photos", project.Name);

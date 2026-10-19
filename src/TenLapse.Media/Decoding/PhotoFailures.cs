@@ -118,7 +118,8 @@ internal static class PhotoFailures
 
     // The Store extension whose absence explains an unreadable file, or null when it is just unreadable:
     // - no installed decoder claims the file's extension: the extension that adds the decoder (HEIF, RAW, WebP,
-    //   JPEG XL), whichever stage;
+    //   JPEG XL), whichever stage; for HEIF and AVIF only when the first bytes read (if they were) are those of a
+    //   HEIF file, so text named .heic is unreadable, not a reason to visit the Store;
     // - a component is missing and the content is HEIF or AVIF (its ftyp brands): the decoder, if it is not
     //   installed, else the codec (HEVC, AV1), whichever stage and whatever the file's name;
     // - a component is missing once the decoder took the file (the decode stage): the codec its format needs.
@@ -128,6 +129,13 @@ internal static class PhotoFailures
     {
         if (format?.Container is { } container && decoderFor(Path.GetExtension(path)) is null)
         {
+            // A HEIF or AVIF container is told by its first bytes: a file that reads as neither (text named .heic) is
+            // unreadable, whatever is installed. A RAW file has no cheap magic number, so it stays unverifiable here.
+            if (container == KnownPhotoFormats.HeifExtension && header is { Length: > 0 } && KnownPhotoFormats.ByContent(header) is null)
+            {
+                return null;
+            }
+
             return container;
         }
 
