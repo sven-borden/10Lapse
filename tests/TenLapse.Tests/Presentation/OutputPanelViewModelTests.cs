@@ -62,14 +62,17 @@ public sealed class OutputPanelViewModelTests
     }
 
     [Fact]
-    public void AProjectThatAsksForHevcOnAPcWithoutItGetsH264AndIsTold()
+    public void AProjectThatAsksForHevcOnAPcWithoutItShowsH264AndIsToldButKeepsHevcStored()
     {
         var shell = Shell();
         var project = shell.CurrentProject.Model;
         project.Output = project.Output with { Format = VideoFormat.Mp4Hevc };
+        project.MarkExported(project.Snapshot.Version);
         var panel = Panel(shell, new FakeOutputCapabilities { Hevc = false });
 
-        Assert.Equal(VideoFormat.Mp4H264, project.Output.Format);
+        Assert.Equal(VideoFormat.Mp4Hevc, project.Output.Format);
+        Assert.False(project.IsDirty);
+        Assert.Equal(VideoFormat.Mp4H264, panel.EffectiveOutput?.Format);
         Assert.Equal(VideoFormat.Mp4H264, panel.SelectedFormat?.Value);
         Assert.Equal("HEVC can't be exported on this PC, so H.264 is selected.", panel.Notice);
         Assert.True(panel.HasNotice);
@@ -100,18 +103,20 @@ public sealed class OutputPanelViewModelTests
     }
 
     [Fact]
-    public void AStoredResolutionThatIsNoLongerOfferedBecomesTheLargestOfferedOneAndIsSaid()
+    public void AStoredResolutionThatIsNoLongerOfferedShowsTheLargestOfferedOneAndIsSaidButStaysStored()
     {
         var shell = Shell();
         var project = shell.CurrentProject.Model;
         project.Output = project.Output with { Resolution = OutputResolution.Uhd2160 };
+        project.MarkExported(project.Snapshot.Version);
         var panel = Panel(shell, new FakeOutputCapabilities { Max = OutputResolution.Qhd1440 });
 
-        Assert.Equal(OutputResolution.Qhd1440, project.Output.Resolution);
+        Assert.Equal(OutputResolution.Uhd2160, project.Output.Resolution);
         Assert.Equal(OutputResolution.Qhd1440, panel.SelectedResolution?.Value);
+        Assert.Equal(OutputResolution.Qhd1440, panel.EffectiveOutput?.Resolution);
         Assert.Equal("4K can't be exported on this PC with these settings, so 1440p is selected.", panel.Notice);
         Assert.True(panel.CanExport);
-        Assert.True(project.IsDirty);
+        Assert.False(project.IsDirty);
     }
 
     [Fact]
@@ -128,7 +133,8 @@ public sealed class OutputPanelViewModelTests
 
         project.Timing = TimingSettings.PerSecond(new Fraction(120, 1));
 
-        Assert.Equal(OutputResolution.Qhd1440, project.Output.Resolution);
+        Assert.Equal(OutputResolution.Uhd2160, project.Output.Resolution);
+        Assert.Equal(OutputResolution.Qhd1440, panel.EffectiveOutput?.Resolution);
         Assert.Equal([OutputResolution.Hd720, OutputResolution.Hd1080, OutputResolution.Qhd1440], Offered(panel));
         Assert.StartsWith("4K can't be exported", panel.Notice, StringComparison.Ordinal);
     }
@@ -335,7 +341,8 @@ public sealed class OutputPanelViewModelTests
         Assert.Equal([OutputResolution.Hd720, OutputResolution.Hd1080], Offered(panel));
         Assert.Equal([VideoFormat.Mp4H264], panel.Formats.Select(option => option.Value));
         Assert.Equal(OutputText.ConservativeNote, panel.Note);
-        Assert.Equal(new OutputSettings(OutputResolution.Hd1080, VideoFormat.Mp4H264, OutputQuality.High), project.Output);
+        Assert.Equal(new OutputSettings(OutputResolution.Hd1080, VideoFormat.Mp4H264, OutputQuality.High), panel.EffectiveOutput);
+        Assert.Equal(new OutputSettings(OutputResolution.Uhd2160, VideoFormat.Mp4Hevc, OutputQuality.High), project.Output);
     }
 
     [Fact]
@@ -348,14 +355,15 @@ public sealed class OutputPanelViewModelTests
         project.MarkExported(project.Snapshot.Version);
         var panel = Panel(shell, capabilities: null);
 
-        panel.SetCapabilities(ConservativeOutputCapabilities.Instance, provisional: true);
+        panel.SetCapabilities(ConservativeOutputCapabilities.Instance);
 
         Assert.Equal(OutputResolution.Hd1080, panel.SelectedResolution?.Value);
         Assert.Equal(VideoFormat.Mp4H264, panel.SelectedFormat?.Value);
         Assert.NotEmpty(panel.Notice);
         Assert.Equal(stored, project.Output);
         Assert.False(project.IsDirty);
-        Assert.False(panel.CanExport);
+        Assert.True(panel.CanExport);
+        Assert.Equal(new OutputSettings(OutputResolution.Hd1080, VideoFormat.Mp4H264, OutputQuality.Maximum), panel.EffectiveOutput);
     }
 
     [Fact]
@@ -367,7 +375,7 @@ public sealed class OutputPanelViewModelTests
         project.Output = stored;
         project.MarkExported(project.Snapshot.Version);
         var panel = Panel(shell, capabilities: null);
-        panel.SetCapabilities(ConservativeOutputCapabilities.Instance, provisional: true);
+        panel.SetCapabilities(ConservativeOutputCapabilities.Instance);
 
         panel.SetCapabilities(new FakeOutputCapabilities());
 
@@ -381,26 +389,95 @@ public sealed class OutputPanelViewModelTests
     }
 
     [Fact]
-    public void ALateRealAnswerThatCannotDoTheStoredSizeWritesTheCorrectionOnceAndSaysSo()
+    public void ALateRealAnswerThatCannotDoTheStoredSizeShowsTheReplacementAndStillWritesNothing()
     {
         var shell = Shell();
         var project = shell.CurrentProject.Model;
         project.Output = project.Output with { Resolution = OutputResolution.Uhd2160 };
         project.MarkExported(project.Snapshot.Version);
         var panel = Panel(shell, capabilities: null);
-        panel.SetCapabilities(ConservativeOutputCapabilities.Instance, provisional: true);
-        Assert.False(project.IsDirty);
+        panel.SetCapabilities(ConservativeOutputCapabilities.Instance);
         var writes = 0;
         project.Changed += (_, e) => writes += e.Changes.HasFlag(ProjectChanges.Output) ? 1 : 0;
 
         panel.SetCapabilities(new FakeOutputCapabilities { Max = OutputResolution.Qhd1440 });
 
-        Assert.Equal(1, writes);
-        Assert.Equal(OutputResolution.Qhd1440, project.Output.Resolution);
+        Assert.Equal(0, writes);
+        Assert.Equal(OutputResolution.Uhd2160, project.Output.Resolution);
         Assert.Equal(OutputResolution.Qhd1440, panel.SelectedResolution?.Value);
         Assert.Equal("4K can't be exported on this PC with these settings, so 1440p is selected.", panel.Notice);
-        Assert.True(project.IsDirty);
+        Assert.False(project.IsDirty);
         Assert.True(panel.CanExport);
+    }
+
+    [Fact]
+    public void PickingTheEntryAlreadyShownNeedsUseSelectedAndThenStoresIt()
+    {
+        var shell = Shell();
+        var project = shell.CurrentProject.Model;
+        project.Output = project.Output with { Resolution = OutputResolution.Uhd2160 };
+        var panel = Panel(shell, new FakeOutputCapabilities { Max = OutputResolution.Qhd1440 });
+        Assert.True(panel.HasReplacement);
+
+        // A ComboBox does not report the pick of the entry it already shows; the setter sees the same item and does nothing.
+        panel.SelectedResolution = panel.Resolutions.First(option => option.Value == OutputResolution.Qhd1440);
+        Assert.Equal(OutputResolution.Uhd2160, project.Output.Resolution);
+
+        panel.UseSelected();
+
+        Assert.Equal(OutputResolution.Qhd1440, project.Output.Resolution);
+        Assert.Equal(OutputResolution.Qhd1440, panel.EffectiveOutput?.Resolution);
+        Assert.False(panel.HasReplacement);
+        Assert.Equal(string.Empty, panel.Notice);
+        Assert.True(project.IsDirty);
+    }
+
+    [Fact]
+    public void UseSelectedWithNothingReplacedDoesNothing()
+    {
+        var shell = Shell();
+        var project = shell.CurrentProject.Model;
+        var panel = Panel(shell, new FakeOutputCapabilities());
+        var writes = 0;
+        project.Changed += (_, e) => writes += e.Changes.HasFlag(ProjectChanges.Output) ? 1 : 0;
+
+        panel.UseSelected();
+
+        Assert.False(panel.HasReplacement);
+        Assert.Equal(0, writes);
+    }
+
+    [Fact]
+    public void PickingAnotherEntryStoresOnlyThatSettingAndKeepsTheOtherPreference()
+    {
+        var shell = Shell();
+        var project = shell.CurrentProject.Model;
+        project.Output = new OutputSettings(OutputResolution.Uhd2160, VideoFormat.Mp4Hevc, OutputQuality.High);
+        var panel = Panel(shell, new FakeOutputCapabilities { Hevc = false });
+
+        panel.SelectedResolution = panel.Resolutions.First(option => option.Value == OutputResolution.Hd720);
+
+        Assert.Equal(new OutputSettings(OutputResolution.Hd720, VideoFormat.Mp4Hevc, OutputQuality.High), project.Output);
+        Assert.Equal(VideoFormat.Mp4H264, panel.SelectedFormat?.Value);
+        Assert.NotEmpty(panel.Notice);
+    }
+
+    [Fact]
+    public void TheEstimateUsesTheEffectiveOutputsSize()
+    {
+        var shell = Shell();
+        var project = shell.CurrentProject.Model;
+        project.AddFrames(TestFrames.Folder("e", 3000));
+        project.Output = new OutputSettings(OutputResolution.Uhd2160, VideoFormat.Mp4H264, OutputQuality.High);
+        var panel = Panel(shell, new FakeOutputCapabilities { Max = OutputResolution.Qhd1440 });
+
+        var effective = Assert.IsType<OutputSettings>(panel.EffectiveOutput);
+        var size = OutputSize.For(effective.Resolution, FrameAspect.Ratio16x9);
+        var expected = ExportBitrate.EstimateBytes(3000, _fps30, size, effective.Format, effective.Quality);
+        var stored = ExportBitrate.EstimateBytes(3000, _fps30, project.Snapshot.VideoSize, VideoFormat.Mp4H264, OutputQuality.High);
+        Assert.Equal(new PixelSize(2560, 1440), size);
+        Assert.Equal(OutputText.Estimate(expected), panel.EstimatedSize);
+        Assert.NotEqual(OutputText.Estimate(stored), panel.EstimatedSize);
     }
 
     [Fact]

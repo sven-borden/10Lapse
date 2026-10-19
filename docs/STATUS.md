@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #22, #29, #23, #17, #14, #19 merged. Building: #18 frame panel (Sonnet), #20 filmstrip (Opus). Next: #24 export panel.
+2026-10-19: #18 merged. Building: #20 filmstrip (Opus), #21 remember settings (Sonnet). PR #81 (#32) in review. Next: #24 export panel after #20.
 
 ## Waves
 
@@ -36,10 +36,10 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 10 | #20 Filmstrip | O | filmstrip view | building |
 | 10 | #17 Timing panel | S | timing inspector section | merged #78 |
 | 11 | #24 Export panel and finished state | O | export panel | |
-| 11 | #18 Frame panel | S | frame inspector section | building |
-| 12 | #32 Golden render test | O | `tests/` golden | |
+| 11 | #18 Frame panel | S | frame inspector section | merged #80 |
+| 12 | #32 Golden render test | O | `tests/` golden | PR #81, in review |
 | 12 | #25 Export while minimized, keep awake | S | export power request | |
-| 13 | #21 Remember settings | S | settings persistence | |
+| 13 | #21 Remember settings | S | settings persistence | building |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
 | 14 | #31 Rating prompt | S | Store rating | |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | |
@@ -219,10 +219,12 @@ Nothing blocks the build loop. Everything below waits until release is near
   Daybreak loop via `DaybreakPlayback`, `DragVerdict`). Launch focus uses
   `FocusState.Pointer` (#38 to confirm). Debug `--drag-over`, `--reduce-motion`.
 - #23 PR #76: `Shell/OutputPanel` + `OutputPanelViewModel`. Unsupported sizes
-  hidden; HEVC only when available; probe at launch. A provisional answer
-  never writes the project. `CanExport` = settings supported: #24 must also
-  require frames and let Export use the displayed values under a provisional
-  replacement. `ExportBitrate` is in `Core.Projects`.
+  hidden; HEVC only when available; probe at launch. `Project.Output` is the
+  user's preference and only a user pick writes it (#80): `OutputPanelViewModel.
+  EffectiveOutput` (`OutputPlan.Resolve`) is what is shown and what #24 must
+  export with, size included (`OutputSize.For(effective.Resolution, ...)`, not
+  `snapshot.VideoSize`). `CanExport` = an effective output exists; #24 must also
+  require frames. `ExportBitrate` is in `Core.Projects`.
 - #17 PR #78: `Shell/TimingPanel`, `Shell/SegmentedControl`; inspector is a
   scrolling stack; `ShellView` owns and disposes the panel view models.
   Separator rules: dot or comma is decimal; one separator + three digits is
@@ -243,3 +245,9 @@ Nothing blocks the build loop. Everything below waits until release is near
   PRIVACY.md describes the copies. Debug `--sample-frames` writes real photos
   (pass `--sample-folder` under your branch folder, `--sample-clean`),
   `--cache-folder`, `--preview-bench`.
+- #18 PR #80: `Shell/FramePanel` between Timing and Output (shapes Match
+  photos, 16:9, 9:16, 1:1, 4:5, 4:3; Fit/Fill; `SegmentedControl.ItemNames`).
+  Portrait hint (more than half portrait in 16:9 or 4:3) with *Use 9:16* and
+  *Dismiss*, never automatic, kept in the view model only. `OutputPlan.Resolve`
+  gives the effective output; *Use these settings* stores a shown replacement.
+  `FrameText.NoSize` when Match photos has no encodable size. Debug `--frame=`.

@@ -27,6 +27,16 @@ public sealed partial class SegmentedControl : UserControl
         typeof(SegmentedControl),
         new PropertyMetadata(null, (d, _) => ((SegmentedControl)d).Rebuild()));
 
+    /// <summary>
+    /// Optional names for a screen reader, one per label, where a label is shorter than the name ("Match" for "Match
+    /// photos"). As an <c>IReadOnlyList&lt;string&gt;</c>; a missing or short list falls back to the labels.
+    /// </summary>
+    public static readonly DependencyProperty ItemNamesProperty = DependencyProperty.Register(
+        nameof(ItemNames),
+        typeof(object),
+        typeof(SegmentedControl),
+        new PropertyMetadata(null, (d, _) => ((SegmentedControl)d).Rebuild()));
+
     /// <summary>The selected segment, or -1 for none.</summary>
     public static readonly DependencyProperty SelectedIndexProperty = DependencyProperty.Register(
         nameof(SelectedIndex),
@@ -57,11 +67,30 @@ public sealed partial class SegmentedControl : UserControl
         set => SetValue(ItemsProperty, value);
     }
 
+    /// <summary>The names a screen reader says for the segments, when they differ from the labels.</summary>
+    public object? ItemNames
+    {
+        get => GetValue(ItemNamesProperty);
+        set => SetValue(ItemNamesProperty, value);
+    }
+
     /// <summary>The selected segment, or -1 for none.</summary>
     public int SelectedIndex
     {
         get => (int)GetValue(SelectedIndexProperty);
         set => SetValue(SelectedIndexProperty, value);
+    }
+
+    /// <summary>Puts keyboard focus on the selected segment (the first when none is selected); false when there are no segments.</summary>
+    public bool FocusSelected()
+    {
+        if (_buttons.Count == 0)
+        {
+            return false;
+        }
+
+        var selected = SelectedIndex;
+        return _buttons[selected >= 0 && selected < _buttons.Count ? selected : 0].Focus(FocusState.Programmatic);
     }
 
     private void Rebuild()
@@ -71,6 +100,7 @@ public sealed partial class SegmentedControl : UserControl
         _buttons.Clear();
 
         var labels = Items is IEnumerable<string> list ? list.ToList() : [];
+        var names = ItemNames is IEnumerable<string> nameList ? nameList.ToList() : [];
         for (var i = 0; i < labels.Count; i++)
         {
             Segments.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -83,7 +113,7 @@ public sealed partial class SegmentedControl : UserControl
                 Tag = i,
                 Content = text,
             };
-            AutomationProperties.SetName(button, labels[i]);
+            AutomationProperties.SetName(button, i < names.Count ? names[i] : labels[i]);
             button.Checked += OnChecked;
             button.KeyDown += OnKeyDown;
             Grid.SetColumn(button, i);

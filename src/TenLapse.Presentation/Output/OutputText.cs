@@ -37,6 +37,15 @@ public static class OutputText
     /// <summary>A resolution was replaced because this PC cannot export it with the project's settings. {0}: the old one ("4K"); {1}: the new one.</summary>
     public static string ResolutionReplaced => "{0} can't be exported on this PC with these settings, so {1} is selected.";
 
+    /// <summary>
+    /// A resolution was replaced because this PC cannot export it in the current frame shape; the choice returns with
+    /// the old shape. {0}: the chosen one ("4K"); {1}: the one selected now.
+    /// </summary>
+    public static string ResolutionReplacedByShape => "{0} isn't available for this shape on this PC, so {1} is selected. Your {0} choice comes back with a shape that allows it.";
+
+    /// <summary>The button under a replacement notice that stores the selected settings in place of the earlier choice.</summary>
+    public static string KeepSelected => "Use these settings";
+
     /// <summary>The estimate. {0}: the size from <see cref="Size"/>.</summary>
     public static string EstimateAbout => "About {0}";
 

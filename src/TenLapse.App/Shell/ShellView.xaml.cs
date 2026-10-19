@@ -38,6 +38,7 @@ public sealed partial class ShellView : UserControl
     private bool _activatedOnce;
     private readonly long _emptyRegionVisibilityToken;
     private readonly TimingPanelViewModel _timing;
+    private readonly FramePanelViewModel _frame;
 
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
@@ -65,8 +66,11 @@ public sealed partial class ShellView : UserControl
         OutputSection.ViewModel = output;
         _timing = new TimingPanelViewModel(viewModel, presenter);
         TimingSection.ViewModel = _timing;
+        _frame = new FramePanelViewModel(viewModel, presenter, output);
+        FrameSection.ViewModel = _frame;
 #if DEBUG
         Debugging.DebugTiming.Apply(_timing);
+        Debugging.DebugFrame.Apply(_frame);
 #endif
         FirstLaunch.Attach(import, presenter, errors);
         _emptyRegionVisibilityToken = EmptyRegion.RegisterPropertyChangedCallback(VisibilityProperty, OnEmptyRegionVisibilityChanged);
@@ -201,6 +205,7 @@ public sealed partial class ShellView : UserControl
         _infoBars.Detach();
         _infoBarShadow.Dispose();
         _timing.Dispose();
+        _frame.Dispose();
     }
 
     // Opening Settings puts focus on Back, leaving it puts focus back on the Settings button, so the keyboard and a
