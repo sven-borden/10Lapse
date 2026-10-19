@@ -10,7 +10,7 @@ Version 3.0 is being rebuilt on WinUI 3 and .NET 10. The current Store release, 
 
 ## Build
 
-You need Windows 10 version 1809 or later, the .NET 10 SDK, the Windows SDK 10.0.26100 and the Windows App Runtime 2. The debug build of the app and the test host start on the installed runtime, and crash at startup without it. Visual Studio is not required; the .NET command line builds the app.
+You need Windows 11 (10.0.22000 or later), the .NET 10 SDK, the Windows SDK 10.0.26100 and the Windows App Runtime 2. The debug build of the app and the test host start on the installed runtime, and crash at startup without it. Visual Studio is not required; the .NET command line builds the app.
 
 ```
 pwsh -File scripts/gate.ps1
