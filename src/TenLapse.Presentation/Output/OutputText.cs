@@ -25,6 +25,9 @@ public static class OutputText
     /// <summary>Shown in place of the lists until the startup probe has said what this PC can encode.</summary>
     public static string Checking => "Checking what this PC can encode…";
 
+    /// <summary>Said to a screen reader when the lists appear in place of <see cref="Checking"/>.</summary>
+    public static string Ready => "Output options are ready.";
+
     /// <summary>The note when the probe failed or timed out. It stands in for <c>EncoderCapabilities.Summary</c>.</summary>
     public static string ConservativeNote => "10Lapse couldn't check this PC's video encoders, so it offers H.264 up to 1080p.";
 

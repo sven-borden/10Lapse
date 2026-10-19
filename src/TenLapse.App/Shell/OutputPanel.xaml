@@ -7,7 +7,9 @@
 
   The lists hold only what this PC confirmed it can encode (OutputPanelViewModel): a size it cannot export is left
   out, never disabled, and one line under the lists says why. Until the startup probe has answered, a quiet line
-  replaces the lists in a block as tall as they are, so nothing moves when they appear.
+  replaces the lists in a block as tall as they are, so nothing moves while the lists are still empty (the note and
+  the notice add lines when they appear). The code-behind raises screen reader notifications for the pending state,
+  the lists appearing and the notice, since a Collapsed to Visible flip does not raise a live region event.
   No amber here: the selects take their colors from the control overrides (ControlOverrides.xaml).
 -->
 <UserControl
@@ -37,13 +39,12 @@
         Text="{x:Bind presentation:OutputText.Heading}" />
 
       <!--
-        Pending: as tall as the three lists and the estimate (3 x 54 px, 28 px, three 12 px gaps), so the section does not change height when
-        the probe answers. Plain Ink Secondary text, no progress bar: nothing here is an export.
+        Pending: as tall as the three lists and the estimate (3 x 54 px, 28 px, three 12 px gaps), so the lists appear without moving anything
+        (the note and the notice, when there are any, add 1 to 3 lines under them). Plain Ink Secondary text, no progress bar: nothing here is an export.
       -->
       <Border x:Name="PendingBlock" MinHeight="214" Visibility="{x:Bind ViewModel.IsPending, Mode=OneWay}">
         <TextBlock
           x:Name="PendingText"
-          AutomationProperties.LiveSetting="Polite"
           Foreground="{ThemeResource InkSecondaryBrush}"
           Style="{StaticResource BodyTextStyle}"
           Text="{x:Bind ViewModel.Status, Mode=OneWay}"
@@ -114,7 +115,6 @@
         <!-- What the panel changed on its own ("4K can't be exported on this PC with these settings, so 1440p is selected."). -->
         <TextBlock
           x:Name="NoticeText"
-          AutomationProperties.LiveSetting="Polite"
           Foreground="{ThemeResource InkBrush}"
           Style="{StaticResource CaptionTextStyle}"
           Text="{x:Bind ViewModel.Notice, Mode=OneWay}"
