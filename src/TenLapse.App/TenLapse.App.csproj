@@ -6,6 +6,8 @@
     <!-- Root namespace TenLapse, so the classes are TenLapse.App and TenLapse.MainWindow, not TenLapse.App.App. -->
     <RootNamespace>TenLapse</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- The exe's icon (Explorer, an unpackaged Debug run); the window sets the same file itself (MainWindow). -->
+    <ApplicationIcon>Assets\TenLapse.ico</ApplicationIcon>
     <Platforms>x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'x64'">win-x64</RuntimeIdentifier>
@@ -33,6 +35,8 @@
     <WindowsPackageType>MSIX</WindowsPackageType>
     <SelfContained>true</SelfContained>
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
+    <!-- Split the bundle by language and DX feature level only: every scale stays in the main package (no per-scale resource packages). -->
+    <AppxBundleAutoResourcePackageQualifiers>Language|DXFeatureLevel</AppxBundleAutoResourcePackageQualifiers>
     <!--
       Packing (GenerateAppxPackageOnBuild) warns "Path to mspdbcmf.exe could not be
       found" on a machine without Visual Studio, and the packaging tools give that
@@ -44,6 +48,10 @@
 
   <ItemGroup>
     <Content Include="Assets\*.png" />
+    <Content Include="Assets\*.ico" />
+    <!-- The SVG sources and their README are for the asset generator (tools/TenLapse.Spike), not for the package. -->
+    <Content Remove="Assets\Source\**" />
+    <None Remove="Assets\Source\**" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 

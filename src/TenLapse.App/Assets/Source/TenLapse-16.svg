@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  10Lapse app icon at 16 px, drawn on a 16 x 16 grid so that every edge lands on a pixel. TenLapse-20.svg, -24.svg and -32.svg are the same drawing on their own grids.
+  The canvas (Icon.dc.html) closes the gaps between the frames at 16 px and uses 8 px bands on the 48 grid;
+  here the tile also fills the whole canvas (the Fluent small-size guidance: no padding when every pixel
+  counts) and the five bands are 3, 3, 4, 3, 3 px. Same colours as
+  TenLapse.svg, no sheen. Used for 16 px only.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <defs>
+    <clipPath id="tile"><rect x="0" y="0" width="16" height="16" rx="3.5"/></clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect x="0" y="0" width="3" height="16" fill="#8EC0EA"/>
+    <rect x="3" y="0" width="3" height="16" fill="#F3C46B"/>
+    <rect x="6" y="0" width="4" height="16" fill="#EE8F4F"/>
+    <rect x="10" y="0" width="3" height="16" fill="#B4567A"/>
+    <rect x="13" y="0" width="3" height="16" fill="#2B3A75"/>
+  </g>
+</svg>

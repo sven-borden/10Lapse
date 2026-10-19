@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  10Lapse app icon, direction A "Five frames" (docs/design/canvas/foundations/Icon.dc.html).
+  A 48 x 48 grid: a 40 px tile with 10 px corners at (4, 4), cut into five frames from daylight to night,
+  with a soft sheen over the top half. The shapes and colours are the canvas's own; they are not the
+  DESIGN.md brand-ramp tokens, which colour Store art and the sample sequence, not this icon.
+  Used for every size from 30 px up. Sizes 16, 20 and 24 use TenLapse-16.svg, -20 and -24, drawn on their own pixel grids.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <clipPath id="tile"><rect x="4" y="4" width="40" height="40" rx="10"/></clipPath>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect x="4" y="4" width="7.4" height="40" fill="#8EC0EA"/>
+    <rect x="12.15" y="4" width="7.4" height="40" fill="#F3C46B"/>
+    <rect x="20.3" y="4" width="7.4" height="40" fill="#EE8F4F"/>
+    <rect x="28.45" y="4" width="7.4" height="40" fill="#B4567A"/>
+    <rect x="36.6" y="4" width="7.4" height="40" fill="#2B3A75"/>
+    <rect x="4" y="4" width="40" height="40" fill="url(#sheen)"/>
+  </g>
+</svg>

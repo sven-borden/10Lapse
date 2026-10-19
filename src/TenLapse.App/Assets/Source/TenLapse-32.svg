@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  10Lapse app icon at 32 px: the 16 px drawing (TenLapse-16.svg) on a 32 x 32 grid, bands of 6, 6, 8, 6, 6 px.
+  Used for 32 px only (the taskbar at 125% and 150%, Alt+Tab, file lists, the .ico).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <clipPath id="tile"><rect x="0" y="0" width="32" height="32" rx="7"/></clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect x="0" y="0" width="6" height="32" fill="#8EC0EA"/>
+    <rect x="6" y="0" width="6" height="32" fill="#F3C46B"/>
+    <rect x="12" y="0" width="8" height="32" fill="#EE8F4F"/>
+    <rect x="20" y="0" width="6" height="32" fill="#B4567A"/>
+    <rect x="26" y="0" width="6" height="32" fill="#2B3A75"/>
+  </g>
+</svg>
