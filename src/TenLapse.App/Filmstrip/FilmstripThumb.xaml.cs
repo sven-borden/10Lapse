@@ -71,6 +71,7 @@ public sealed partial class FilmstripThumb : UserControl
     {
         Width = width;
         Height = height;
+        GapLine.Height = height + 8;
     }
 
     /// <summary>Shows <paramref name="picture"/> (BGRA8 premultiplied), copied into the element's own bitmap.</summary>

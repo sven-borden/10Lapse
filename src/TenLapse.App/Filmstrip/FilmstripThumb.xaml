@@ -8,8 +8,9 @@
     Hover      2 px Layer gap, 1 px Ink Secondary ring (.impeccable/design.json, Filmstrip).
     Focus      the system's double ring, outside the playhead ring.
     Pending    35 % opacity: not yet exported (#24 sets it).
-    Gap        a 2 px Ink Secondary bar in the seam before the thumbnail, 4 px taller than it at each end: photos are
-               probably missing there (FrameGaps). A neutral mark, not a status color: DESIGN.md keeps those for InfoBars.
+    Gap        a 2 px Ink Secondary line down the seam before the thumbnail, 4 px past it at each end, with a dot on a
+               Layer halo where the seam meets the top edge: photos are probably missing there (FrameGaps). A neutral
+               mark, not a status color (DESIGN.md keeps those for InfoBars); it draws above the rings.
   A photo that cannot be read shows the Letterbox with a broken-picture glyph, as the preview's placeholder does; one
   still loading shows the Track fill. The element is recycled by the strip's ItemsRepeater (FilmstripThumb.xaml.cs).
 -->
@@ -22,15 +23,6 @@
   IsTabStop="True"
   UseSystemFocusVisuals="True">
   <Grid x:Name="Root">
-    <Rectangle
-      x:Name="GapMarker"
-      Width="2"
-      Margin="-3,-4,0,-4"
-      HorizontalAlignment="Left"
-      Fill="{ThemeResource InkSecondaryBrush}"
-      RadiusX="1"
-      RadiusY="1"
-      Visibility="Collapsed" />
     <Border x:Name="Ground" Background="{ThemeResource TrackBrush}" CornerRadius="{StaticResource RadiusThumb}" />
     <Border
       x:Name="Unreadable"
@@ -73,5 +65,33 @@
       BorderThickness="2"
       CornerRadius="7"
       Visibility="Collapsed" />
+    <!--
+      The gap marker, above the rings so a playhead or selection ring next to it never hides it: a 2 px line down the
+      seam before the thumbnail and an 8 px dot with a 2 px Layer halo where the seam meets the top edge.
+    -->
+    <Canvas
+      x:Name="GapMarker"
+      Width="0"
+      HorizontalAlignment="Left"
+      VerticalAlignment="Stretch"
+      IsHitTestVisible="False"
+      Visibility="Collapsed">
+      <Rectangle
+        x:Name="GapLine"
+        Canvas.Left="-3"
+        Canvas.Top="-4"
+        Width="2"
+        Fill="{ThemeResource InkSecondaryBrush}"
+        RadiusX="1"
+        RadiusY="1" />
+      <Ellipse
+        Canvas.Left="-7"
+        Canvas.Top="-4"
+        Width="10"
+        Height="10"
+        Fill="{ThemeResource InkSecondaryBrush}"
+        Stroke="{ThemeResource LayerBrush}"
+        StrokeThickness="2" />
+    </Canvas>
   </Grid>
 </UserControl>

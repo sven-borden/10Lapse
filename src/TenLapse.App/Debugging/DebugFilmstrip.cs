@@ -25,19 +25,61 @@ internal static partial class DebugLaunch
     private static Window? _benchWindow;
     private static ILog? _benchLog;
 
-    /// <summary>Starts the filmstrip bench when asked; called by the shell once its strip is attached.</summary>
+    /// <summary>
+    /// Starts the filmstrip bench when asked; called by the shell once its strip is attached. <c>--filmstrip-remove=10,11,12</c>
+    /// removes those frame numbers once the sample photos are in, as Delete would (selection, removal, Narrator's
+    /// notification and the gap marker it leaves), and <c>--filmstrip-undo-after=S</c> undoes it S seconds later.
+    /// </summary>
     public static void ApplyFilmstrip(FilmstripView strip, PreviewSession preview)
     {
+        var expected = Value("--sample-frames=") is { } text && int.TryParse(text, out var count) ? Math.Min(count, MaxSampleFrames) : 0;
+        if (Value("--filmstrip-remove=") is { } numbers)
+        {
+            var remove = numbers.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(number => int.TryParse(number, out var n) ? n : 0)
+                .Where(n => n > 0)
+                .ToList();
+            var undoAfter = Value("--filmstrip-undo-after=") is { } after && double.TryParse(after, CultureInfo.InvariantCulture, out var wait) ? wait : (double?)null;
+            _ = preview.Errors.GuardAsync(() => RemoveSampleFramesAsync(strip, expected, remove, undoAfter), "Removing sample frames failed.");
+        }
+
         if (!_args.Contains("--filmstrip-bench", StringComparer.OrdinalIgnoreCase))
         {
             return;
         }
 
-        var expected = Value("--sample-frames=") is { } text && int.TryParse(text, out var count) ? Math.Min(count, MaxSampleFrames) : 0;
         var seconds = Value("--filmstrip-bench-seconds=") is { } s && double.TryParse(s, CultureInfo.InvariantCulture, out var value) && value > 0 ? value : 20;
         _ = preview.Errors.GuardAsync(
             () => FilmstripBench.RunAsync(strip, preview, expected, TimeSpan.FromSeconds(seconds), Value("--filmstrip-bench-out="), () => _benchWindow, () => _benchLog),
             "The filmstrip bench failed.");
+    }
+
+    private static async Task RemoveSampleFramesAsync(FilmstripView strip, int expected, List<int> numbers, double? undoAfter)
+    {
+        while (strip.ViewModel is not { } viewModel || viewModel.Items.Count == 0 || viewModel.Items.Count < expected)
+        {
+            await Task.Delay(200);
+        }
+
+        var model = strip.ViewModel!;
+        var indices = numbers.Select(number => number - 1).Where(index => index < model.Items.Count).ToList();
+        if (indices.Count == 0)
+        {
+            return;
+        }
+
+        model.Click(indices[0], shift: false, control: false);
+        foreach (var index in indices.Skip(1))
+        {
+            model.AddToSelection(index);
+        }
+
+        model.Remove();
+        if (undoAfter is { } seconds)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(seconds));
+            model.Undo();
+        }
     }
 
     /// <summary>The window the filmstrip bench closes when done, and the log it writes to (ApplyPreview sets them).</summary>
