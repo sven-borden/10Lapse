@@ -269,6 +269,9 @@ public sealed class ThumbnailCacheTests
 
         // The replaced picture is freed after the cache's lock is released, so it can trail the new one.
         await WaitAsync(() => source.Disposed >= 1);
+
+        // A trailing second disposal would be a bug: give it a short window to show before "exactly one" is claimed.
+        await Task.Delay(100, TestContext.Current.CancellationToken);
         Assert.Equal(1, source.Disposed);
     }
 
