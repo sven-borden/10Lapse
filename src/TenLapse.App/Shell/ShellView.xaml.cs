@@ -36,6 +36,7 @@ public sealed partial class ShellView : UserControl
     private int _dragGeneration;
     private bool _activatedOnce;
     private readonly long _emptyRegionVisibilityToken;
+    private readonly TimingPanelViewModel _timing;
 
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
@@ -60,11 +61,10 @@ public sealed partial class ShellView : UserControl
         InitializeComponent();
         SettingsPage.ViewModel = settings;
         OutputSection.ViewModel = output;
-        var timing = new TimingPanelViewModel(viewModel, presenter);
-        TimingSection.ViewModel = timing;
-        Unloaded += (_, _) => timing.Dispose();
+        _timing = new TimingPanelViewModel(viewModel, presenter);
+        TimingSection.ViewModel = _timing;
 #if DEBUG
-        Debugging.DebugTiming.Apply(timing);
+        Debugging.DebugTiming.Apply(_timing);
 #endif
         FirstLaunch.Attach(import, presenter, errors);
         _emptyRegionVisibilityToken = EmptyRegion.RegisterPropertyChangedCallback(VisibilityProperty, OnEmptyRegionVisibilityChanged);
@@ -184,6 +184,7 @@ public sealed partial class ShellView : UserControl
         ShellRoot.RemoveHandler(PointerPressedEvent, new PointerEventHandler(OnShellPointerPressed));
         _infoBars.Detach();
         _infoBarShadow.Dispose();
+        _timing.Dispose();
     }
 
     // Opening Settings puts focus on Back, leaving it puts focus back on the Settings button, so the keyboard and a

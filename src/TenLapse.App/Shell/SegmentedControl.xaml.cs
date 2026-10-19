@@ -124,7 +124,7 @@ public sealed partial class SegmentedControl : UserControl
         var width = Inner.ActualWidth / _buttons.Count;
         Pill.Width = width;
         Pill.Height = Inner.ActualHeight;
-        MovePill(selected * width,animate && _pillPlaced && IsLoaded && AnimationsEnabled);
+        MovePill(selected * width, animate && _pillPlaced && IsLoaded && AnimationsEnabled);
         _pillPlaced = true;
     }
 
