@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #36 merged. In flight: PR #91 (#90 start-up hardening) and PR #95 (#37 icon assets) fix rounds. Then #35 motion, #39 strings, #38 accessibility (each alone).
+2026-10-19: #37 merged. In flight: PR #91 (#90 start-up hardening) fix round. Then #35 motion, #39 strings, #38 accessibility (each alone).
 
 ## Waves
 
@@ -47,7 +47,7 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 14 | #31 Rating prompt | S | Store rating | merged #93 |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | merged #89 |
 | 15 | #36 Narrow window layout | S | shell visual states | merged #94 |
-| 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | PR #95, fix round |
+| 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | merged #95 |
 | 16 | #35 Motion system | O | every view, alone | |
 | 17 | #39 Strings to resource files | S | every view, alone | |
 | 18 | #38 Accessibility pass | O | every view, alone | |
@@ -166,6 +166,10 @@ Nothing blocks the build loop. Everything below waits until release is near
   cancel; a failed ask is log-only (the one exception to never silent, since the
   user did not ask). Reset to defaults keeps the count. New settings fields need
   no schema bump. *Send feedback* opens GitHub issues, *Rate 10Lapse* the Store.
+- 2026-10-19 (#37): the 16, 20, 24 and 32 px icons are full-bleed pixel-grid
+  variants, not the canvas's padded tile, so they stay crisp. The splash is dark
+  Mica `#1F1E1D` in both themes. The bundle keeps every scale in the main
+  package (`AppxBundleAutoResourcePackageQualifiers` without Scale).
 - 2026-10-19 (Sven): icon direction A Five frames (#37). Design spec approved
   (#11 closed): `DESIGN.md`, the canvas, `Main.dc.html` and the motion spec are
   the spec. License stays all rights reserved; no `LICENSE` file. #29 ships
@@ -224,3 +228,6 @@ Details are in each PR's "What the next issues should know".
   with Timing/Frame/Output tabs (`ShellLayout`), selects in a row, floor
   152 px in short windows; export and finished use two columns and hide the
   tabs (deviations from the canvas, kept so the actions stay visible).
+- #37 PR #95: `Assets/Source/TenLapse*.svg` and the Spike `assets` generator
+  (deterministic) render 78 PNGs and `TenLapse.ico`; all tiles, target sizes and
+  a 620x300 splash at scales 100 to 400; window icon via a guarded `SetIcon`.
