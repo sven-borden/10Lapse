@@ -175,7 +175,7 @@ public partial class App : Application
             errors,
             preview,
             notifications,
-            exportWindow => new Presentation.Export.ExportServices(exporter, savePicker, remembered, dialogs, infoBars, new ExplorerFileReveal(), exportWindow));
+            exportWindow => new Presentation.Export.ExportServices(exporter, savePicker, remembered, dialogs, infoBars, new ExplorerFileReveal(), exportWindow, new PowerRequestKeepAwake(logOnly)));
         window.Closed += (_, _) => notifications.Dispose();
 
         // Closing the window stops the probe (it ends within one test encode and removes that file) and the panel.

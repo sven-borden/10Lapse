@@ -120,6 +120,22 @@ public interface IExportWindow
     void NotifyIfInBackground(string message);
 }
 
+/// <summary>
+/// Keeps the PC awake while an export runs (#25): Windows does not go to sleep on its own while the lease is held, but
+/// the display may still turn off. The App implements it as a power request; tests use a fake.
+/// </summary>
+public interface IKeepAwake
+{
+    /// <summary>
+    /// Asks Windows to stay awake until the returned lease is disposed. <paramref name="reason"/> is what
+    /// <c>powercfg /requests</c> shows. Never throws: when Windows refuses, it logs once and returns a lease that does
+    /// nothing, because a missing power request is no reason to stop an export. Disposing a lease twice does nothing.
+    /// </summary>
+    /// <param name="reason">Why, in a few words.</param>
+    /// <returns>The lease: dispose it to let go.</returns>
+    IDisposable Hold(string reason);
+}
+
 /// <summary>The services <see cref="ExportViewModel"/> works through; the App builds them, tests pass fakes.</summary>
 /// <param name="Exporter">Writes the video.</param>
 /// <param name="Picker">The Save dialog.</param>
@@ -128,6 +144,7 @@ public interface IExportWindow
 /// <param name="InfoBars">Says that the export was cancelled, and that edits wait.</param>
 /// <param name="Reveal">Show in folder.</param>
 /// <param name="Window">Taskbar progress and the notification.</param>
+/// <param name="KeepAwake">The power request held for the length of an export.</param>
 public sealed record ExportServices(
     IVideoExporter Exporter,
     ISaveVideoPicker Picker,
@@ -135,7 +152,8 @@ public sealed record ExportServices(
     IDialogService Dialogs,
     IInfoBarService InfoBars,
     IFileReveal Reveal,
-    IExportWindow Window);
+    IExportWindow Window,
+    IKeepAwake KeepAwake);
 
 /// <summary>How an export ended.</summary>
 public enum ExportOutcome

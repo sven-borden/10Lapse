@@ -201,6 +201,9 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
         Publish();
     }
 
+    /// <summary>False while the window is minimized or hidden (see <see cref="SetWindowShown"/>).</summary>
+    public bool IsWindowShown => _windowShown;
+
     /// <summary>
     /// The window was minimized or hidden (false), or shows again (true). Hiding pauses playback, as the first-launch
     /// timelapse stops in the background, so nothing decodes and draws unseen; showing plays on when hiding paused it.
