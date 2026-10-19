@@ -18,7 +18,9 @@ namespace TenLapse.Debugging;
 /// thumbnail to the last at an even speed (20 s by default) and back in jumps of four views, and reports the private bytes
 /// along the way, the thumbnail loads (count and time by origin, cancelled), the UI thread's frame times
 /// (CompositionTarget.Rendering intervals) and what the cache holds; then closes the window. It drives the scroller, never
-/// synthetic input.
+/// synthetic input. The baseline, the end of the sweep and the end are also measured after a full garbage collection
+/// ("settled"), so a managed leak shows apart from collection lag; the samples during the sweep are not, to keep its frame
+/// times true.
 /// </summary>
 internal static partial class DebugLaunch
 {
@@ -119,8 +121,8 @@ internal static class FilmstripBench
             scroller.ChangeView(0, null, null, disableAnimation: true);
             await Task.Delay(TimeSpan.FromSeconds(3));
             var cancelledBefore = thumbnails.Cancelled;
-            var baseline = PrivateBytes();
-            Line(report, $"Before scrolling: private bytes {Mb(baseline)} MB; thumbnails in memory {thumbnails.Count}, {Mb(thumbnails.Bytes):0.0} MB; first view loaded {loads.Count}.");
+            var baseline = SettledPrivateBytes();
+            Line(report, $"Before scrolling: settled private bytes {Mb(baseline)} MB (managed heap {Mb(GC.GetTotalMemory(false))} MB); thumbnails in memory {thumbnails.Count}, {Mb(thumbnails.Bytes):0.0} MB; first view loaded {loads.Count}.");
             loads.Clear();
 
             // 1. An even sweep from the first thumbnail to the last.
@@ -177,7 +179,7 @@ internal static class FilmstripBench
             // 2. Settle at the end: how long the last view takes to fill.
             var settle = Stopwatch.StartNew();
             await WaitAsync(() => strip.RealizedThumbs().Where(thumb => IsInView(strip, thumb)).All(thumb => thumb.HasPicture), TimeSpan.FromSeconds(30));
-            Line(report, $"Last view filled {settle.Elapsed.TotalMilliseconds:0} ms after the sweep stopped.");
+            Line(report, $"Last view filled {settle.Elapsed.TotalMilliseconds:0} ms after the sweep stopped; settled private bytes then {Mb(SettledPrivateBytes())} MB (managed heap {Mb(GC.GetTotalMemory(false))} MB).");
 
             // 3. Jumps back by one view at a time, 300 ms apart: how long each view takes to fill.
             var fills = new List<double>();
@@ -196,8 +198,8 @@ internal static class FilmstripBench
             Line(report, $"Jumps of four views ({fills.Count}): view filled after {Distribution.Of(fills)} ms; loads {Loads([.. loads])}; cancelled {thumbnails.Cancelled - cancelledJumps}.");
 
             await Task.Delay(TimeSpan.FromSeconds(2));
-            var after = PrivateBytes();
-            Line(report, $"After: private bytes {Mb(after)} MB ({Mb(after - baseline):+0;-0} MB against the baseline); thumbnails in memory {thumbnails.Count}, {Mb(thumbnails.Bytes):0.0} MB; elements realized {strip.RealizedThumbs().Count()}; working set {Mb(Environment.WorkingSet)} MB; proxies built {preview.Images.ProxyProgress.Done} of {preview.Images.ProxyProgress.Total}.");
+            var after = SettledPrivateBytes();
+            Line(report, $"After: settled private bytes {Mb(after)} MB (managed heap {Mb(GC.GetTotalMemory(false))} MB) ({Mb(after - baseline):+0;-0} MB against the baseline); thumbnails in memory {thumbnails.Count}, {Mb(thumbnails.Bytes):0.0} MB; elements realized {strip.RealizedThumbs().Count()}; working set {Mb(Environment.WorkingSet)} MB; proxies built {preview.Images.ProxyProgress.Done} of {preview.Images.ProxyProgress.Total}.");
         }
         finally
         {
@@ -228,6 +230,18 @@ internal static class FilmstripBench
             : string.Join("; ", loads.GroupBy(load => load.Origin).Select(group => string.Create(CultureInfo.InvariantCulture, $"{group.Count()} from {group.Key}, {Distribution.Of([.. group.Select(load => load.Milliseconds)])} ms")));
 
     private static double Mb(long bytes) => bytes / 1048576.0;
+
+    // After a full, compacting collection and the finalizers it queued: what the process keeps, without collection lag.
+    private static long SettledPrivateBytes()
+    {
+        for (var round = 0; round < 2; round++)
+        {
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+        }
+
+        return PrivateBytes();
+    }
 
     private static long PrivateBytes()
     {
