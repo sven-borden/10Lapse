@@ -56,6 +56,12 @@ public sealed partial class ShellViewModel : ObservableObject
     /// </summary>
     public event EventHandler<ProjectReplacedEventArgs>? ProjectReplaced;
 
+    /// <summary>
+    /// Whether the project may change now: an export (#24) closes it while it runs. <c>New project</c>, the imports and the
+    /// filmstrip's edits ask it first.
+    /// </summary>
+    public EditGate Edits { get; } = new();
+
     /// <summary>The project being edited. Only <c>New project</c> replaces it.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Title), nameof(HasUnsavedChanges), nameof(ShowsProjectName), nameof(ShowsEmpty), nameof(ShowsEditing))]
@@ -105,7 +111,7 @@ public sealed partial class ShellViewModel : ObservableObject
     {
         // AsyncRelayCommand blocks re-entry only through CanExecute, which ExecuteAsync does not check, so a
         // second caller while the question is open would ask again and replace twice. Ignore it instead.
-        if (_replacing)
+        if (_replacing || !Edits.Allow())
         {
             return;
         }
@@ -126,10 +132,10 @@ public sealed partial class ShellViewModel : ObservableObject
     /// "Start new project"). Raises <see cref="ProjectReplaced"/> and disposes the previous project like
     /// <c>New project</c>. On the UI thread.
     /// </summary>
-    /// <returns>False when <c>New project</c> is already replacing the project (its question is open), so nothing changed.</returns>
+    /// <returns>False when <c>New project</c> is already replacing the project (its question is open), or an export holds the project (<see cref="Edits"/>), so nothing changed.</returns>
     internal bool ReplaceWithoutAsking()
     {
-        if (_replacing)
+        if (_replacing || !Edits.Allow())
         {
             return false;
         }

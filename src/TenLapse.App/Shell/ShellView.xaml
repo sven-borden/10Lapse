@@ -20,8 +20,8 @@
   1 px gap above its own divider).
   The stage and the InfoBar layer stay in cell (0, 0) and need no change.
 
-  Unbuilt actions are absent, not disabled (CLAUDE.md): the command bar holds Add photos (#12), New project and
-  Settings for now, with a commented slot for each later button. Buttons for a project go in ProjectCommands (left), the Export
+  Unbuilt actions are absent, not disabled (CLAUDE.md): the command bar holds Add photos (#12), New project, Settings
+  and Export video (#24, with frames and an output to export), with a commented slot for each later button. Buttons for a project go in ProjectCommands (left), the Export
   button in WorkCommands (right): the Settings state hides both and shows Back.
 -->
 <UserControl
@@ -29,6 +29,7 @@
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:core="using:TenLapse.Core"
+  xmlns:export="using:TenLapse.Presentation.Export"
   xmlns:presentation="using:TenLapse.Presentation"
   xmlns:services="using:TenLapse.Presentation.Services"
   xmlns:shell="using:TenLapse.Shell">
@@ -46,6 +47,13 @@
     DragLeave="OnDragLeave"
     DragOver="OnDragOver"
     Drop="OnDrop">
+    <!--
+      Ctrl+E exports (the canvas keyboard map), here and not on the Export button: an accelerator on a collapsed or
+      disabled button does not fire, and the command itself decides (nothing outside the inspector).
+    -->
+    <Grid.KeyboardAccelerators>
+      <KeyboardAccelerator Key="E" Invoked="OnExportAccelerator" Modifiers="Control" />
+    </Grid.KeyboardAccelerators>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
@@ -369,7 +377,33 @@
             VerticalAlignment="Center"
             Data="F1 M2.5 4.25H8.5A0.75 0.75 0 0 1 8.5 5.75H2.5A0.75 0.75 0 0 1 2.5 4.25Z M12.5 4.25H13.5A0.75 0.75 0 0 1 13.5 5.75H12.5A0.75 0.75 0 0 1 12.5 4.25Z M2.5 10.25H3.5A0.75 0.75 0 0 1 3.5 11.75H2.5A0.75 0.75 0 0 1 2.5 10.25Z M7.5 10.25H13.5A0.75 0.75 0 0 1 13.5 11.75H7.5A0.75 0.75 0 0 1 7.5 10.25Z M10.5 2.5A2.5 2.5 0 1 1 10.5 7.5A2.5 2.5 0 1 1 10.5 2.5Z M10.5 4A1 1 0 1 0 10.5 6A1 1 0 1 0 10.5 4Z M5.5 8.5A2.5 2.5 0 1 1 5.5 13.5A2.5 2.5 0 1 1 5.5 8.5Z M5.5 10A1 1 0 1 0 5.5 12A1 1 0 1 0 5.5 10Z" />
         </Button>
-        <!-- Slot: Export video (#24). <Button Style="{StaticResource ExportButtonStyle}" />, the one amber button. -->
+        <!--
+          Export video (#24): the one amber button, shown only with frames and an output this PC can export (absent on the
+          first-launch screen). While the export panel or the finished state shows it stays, disabled at 0.6 opacity
+          (ShellView.xaml.cs), reading "Exporting…" while the export runs, as the canvas's command bar has it. Ctrl+E is on
+          ShellRoot.
+        -->
+        <Button
+          x:Name="ExportButton"
+          Height="{StaticResource ControlHeight}"
+          Padding="{StaticResource PaddingButtonAccent}"
+          AutomationProperties.AcceleratorKey="Control+E"
+          AutomationProperties.Name="{x:Bind Export.ExportButtonText, Mode=OneWay}"
+          Command="{x:Bind Export.ExportCommand}"
+          IsEnabled="{x:Bind Export.CanStartExport, Mode=OneWay}"
+          Style="{StaticResource ExportButtonStyle}"
+          ToolTipService.ToolTip="{x:Bind export:ExportText.ExportVideo}"
+          Visibility="{x:Bind Export.ShowsExportButton, Mode=OneWay}">
+          <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+            <!-- The prototype's export icon (an arrow up out of a tray), its 1.5 px strokes as a filled outline. -->
+            <PathIcon
+              Width="16"
+              Height="16"
+              VerticalAlignment="Center"
+              Data="F1 M8 1.75A0.75 0.75 0 0 1 8.53 1.97L11.53 4.97A0.75 0.75 0 0 1 10.47 6.03L8.75 4.31V10A0.75 0.75 0 0 1 7.25 10V4.31L5.53 6.03A0.75 0.75 0 0 1 4.47 4.97L7.47 1.97A0.75 0.75 0 0 1 8 1.75Z M3 8.25A0.75 0.75 0 0 1 3.75 9V12.5A0.75 0.75 0 0 0 4.5 13.25H11.5A0.75 0.75 0 0 0 12.25 12.5V9A0.75 0.75 0 0 1 13.75 9V12.5A2.25 2.25 0 0 1 11.5 14.75H4.5A2.25 2.25 0 0 1 2.25 12.5V9A0.75 0.75 0 0 1 3 8.25Z" />
+            <TextBlock VerticalAlignment="Center" Text="{x:Bind Export.ExportButtonText, Mode=OneWay}" />
+          </StackPanel>
+        </Button>
       </StackPanel>
     </Grid>
 
@@ -423,6 +457,8 @@
         -->
         <Grid x:Name="PreviewRegion" Grid.Row="0">
           <preview:PreviewView xmlns:preview="using:TenLapse.Preview" x:Name="PreviewSurface" />
+          <!-- #24: "Rendering frame 0313" while the export runs, and the finished video playing over the gate. -->
+          <shell:ExportPreviewOverlay x:Name="ExportOverlay" />
         </Grid>
         <!-- Transport (#19, Preview/TransportBar.xaml): the 36 px play button, the scrubber, the frame counter and the time code. -->
         <Grid
@@ -455,13 +491,17 @@
         BorderBrush="{ThemeResource DividerBrush}"
         BorderThickness="1,0,0,0"
         Visibility="Collapsed">
-        <ScrollViewer x:Name="InspectorScroll" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
-          <StackPanel x:Name="InspectorRegion" Padding="20,0,20,20">
-            <shell:TimingPanel x:Name="TimingSection" />
-            <shell:FramePanel x:Name="FrameSection" />
-            <shell:OutputPanel x:Name="OutputSection" />
-          </StackPanel>
-        </ScrollViewer>
+        <!-- The sections, or the export panel (#24): ShellView.xaml.cs swaps them (PanelSwap). -->
+        <Grid>
+          <ScrollViewer x:Name="InspectorScroll" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="InspectorRegion" Padding="20,0,20,20">
+              <shell:TimingPanel x:Name="TimingSection" />
+              <shell:FramePanel x:Name="FrameSection" />
+              <shell:OutputPanel x:Name="OutputSection" />
+            </StackPanel>
+          </ScrollViewer>
+          <shell:ExportPanel x:Name="ExportSection" />
+        </Grid>
       </Border>
 
       <!-- Settings (#26): the whole body, over the Empty and Editing regions, under the InfoBars. -->

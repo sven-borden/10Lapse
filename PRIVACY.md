@@ -12,6 +12,8 @@ To keep the preview fast, the app keeps small preview copies of your photos in i
 
 The app also keeps a short log of what it did, for example that an export finished or failed. The log may include the names of files and folders the app worked with, but never the photos themselves, and it is kept for 7 days. It stays on your PC unless you choose to copy it yourself from Settings (Copy diagnostics) to share it. The developer never receives these files from the app.
 
+When an export finishes while the app is in the background, Windows shows a notification that names the video file. It stays on this PC, in the Windows notification center, until you clear it.
+
 If the app crashes, Windows may send a crash report to the developer through its own error reporting. Whether that happens follows your Windows diagnostic data settings, not the app. The report describes the crash and contains no photos or videos.
 
 Questions about this policy: open an issue at https://github.com/sven-borden/10Lapse/issues.

@@ -27,6 +27,13 @@ internal static partial class DebugLaunch
     public static bool ReduceMotion => _args.Contains("--reduce-motion", StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
+    /// The unpackaged Debug app registers for the export's Windows notifications (<c>--notifications</c>). Without it, it
+    /// does not: registering unpackaged writes per-exe entries under the user's registry and shows real toasts (#24 review,
+    /// M1). With it, closing the app removes those entries again (<c>UnregisterAll</c>).
+    /// </summary>
+    public static bool Notifications => _args.Contains("--notifications", StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
     /// Where the remembered settings live (<c>--settings-folder=PATH</c>: <c>settings.json</c> in that folder), or null for the
     /// app's own folder. A test run points it under its branch folder so it leaves the user's settings alone.
     /// </summary>

@@ -173,6 +173,17 @@ public sealed record ProjectSnapshot
     /// (short side) and shape, with Match photos taking the most common photo size (<see cref="OutputSize.For(OutputResolution, FrameAspect, IEnumerable{Frame})"/>).
     /// </summary>
     public PixelSize VideoSize => OutputSize.For(Output.Resolution, FrameSettings.Aspect, Frames);
+
+    /// <summary>
+    /// This snapshot with <paramref name="output"/> in place of <see cref="Output"/>, and nothing else changed (the same
+    /// <see cref="Version"/>): what #24 hands the exporter, with the Output panel's effective output (#23), so the
+    /// export writes that resolution, codec and quality and its <see cref="VideoSize"/>, never the stored preference.
+    /// </summary>
+    public ProjectSnapshot WithOutput(OutputSettings output)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        return output == Output ? this : this with { Output = output };
+    }
 }
 
 /// <summary>

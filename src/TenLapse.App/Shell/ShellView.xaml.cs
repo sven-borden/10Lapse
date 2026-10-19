@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
+using TenLapse.Presentation.Export;
 using TenLapse.Presentation.FirstLaunch;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
@@ -40,6 +41,7 @@ public sealed partial class ShellView : UserControl
     private readonly TimingPanelViewModel _timing;
     private readonly FramePanelViewModel _frame;
     private readonly Presentation.Filmstrip.FilmstripViewModel _filmstrip;
+    private readonly PanelSwap _inspectorSwap;
 
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
@@ -49,7 +51,8 @@ public sealed partial class ShellView : UserControl
     /// <param name="errors">Logs failures of the shell's dispatcher callbacks (log only, see <see cref="DispatcherQueueExtensions"/>).</param>
     /// <param name="presenter">The error path for the drop handler.</param>
     /// <param name="preview">The preview's player, images and cache (#19), for the stage's preview and transport.</param>
-    internal ShellView(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview)
+    /// <param name="exportServices">What the export (#24) works through: the exporter, the Save dialog, the window's taskbar and notification.</param>
+    internal ShellView(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, ExportServices exportServices)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(settings);
@@ -91,12 +94,24 @@ public sealed partial class ShellView : UserControl
         ShellRoot.KeyDown += OnShellKeyDown;
 
         // The filmstrip (#20): thumbnails, selection, removal and undo, reorder and gap markers. Its Delete and Ctrl+Z
-        // also listen on ShellRoot, after the transport keys, and not on the Settings page. The export panel (#24) is
-        // built after this line and given _filmstrip (its SetPending and ClearPending dim what is not exported yet).
+        // also listen on ShellRoot, after the transport keys, and not on the Settings page.
         _filmstrip = new Presentation.Filmstrip.FilmstripViewModel(viewModel, preview.Player, presenter);
         Filmstrip.Attach(_filmstrip, preview, ShellRoot, () => !ViewModel.IsSettingsOpen);
 #if DEBUG
         Debugging.DebugLaunch.ApplyFilmstrip(Filmstrip, preview);
+#endif
+
+        // The export (#24): the Export button and Ctrl+E, the export panel and finished state that take the inspector's
+        // place, the pill and the premiere over the preview. The filmstrip dims what is not written yet, and its
+        // thumbnails pass through the film gate.
+        ArgumentNullException.ThrowIfNull(exportServices);
+        Export = new ExportViewModel(viewModel, output, preview.Player, _filmstrip, () => Import.IsImporting, exportServices, presenter);
+        ExportSection.Attach(Export, Filmstrip.Thumbnails, errors);
+        ExportOverlay.Attach(Export, preview.Player, presenter, errors, infoBars);
+        _inspectorSwap = new PanelSwap([InspectorScroll, ExportSection.Running, ExportSection.Finished], DispatcherQueue, errors);
+        Export.PropertyChanged += OnExportPropertyChanged;
+#if DEBUG
+        Debugging.DebugExport.AutoStart(Export, viewModel, errors);
 #endif
 
         // The shell leaves the tree only when the window closes; the shadow goes with it.
@@ -108,6 +123,9 @@ public sealed partial class ShellView : UserControl
 
     /// <summary>The import's view model, for x:Bind.</summary>
     public ImportViewModel Import { get; }
+
+    /// <summary>The export's view model (#24), for x:Bind and for the window's close check.</summary>
+    public ExportViewModel Export { get; }
 
     /// <summary>The title bar and command bar band, which the window makes its drag region.</summary>
     public UIElement TitleBar => DragRegion;
@@ -201,6 +219,10 @@ public sealed partial class ShellView : UserControl
     public void Detach()
     {
         ShellRoot.KeyDown -= OnShellKeyDown;
+        Export.PropertyChanged -= OnExportPropertyChanged;
+        ExportOverlay.Detach();
+        ExportSection.Detach();
+        Export.Dispose();
         PreviewSurface.Detach();
         Transport.Detach();
         if (Import.CancelCommand.CanExecute(null))
@@ -228,6 +250,58 @@ public sealed partial class ShellView : UserControl
         {
             var target = ViewModel.IsSettingsOpen ? BackButton : SettingsButton;
             DispatcherQueue.TryEnqueueGuarded(_errors, () => target.Focus(FocusState.Programmatic), ProjectText.SettingsFocusFailed);
+        }
+    }
+
+    // The inspector column follows the export (#24): the sections, the export panel or the finished state, swapped with
+    // the motion spec's Gate timing. Focus goes where the user continues: the progress bar (Narrator reads it), Play, or
+    // back to the Export button.
+    private void OnExportPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ExportViewModel.State))
+        {
+            return;
+        }
+
+        // The canvas's exportOpacity: the Export button stays in the command bar, disabled and at 0.6, outside the
+        // inspector; the change fades over 167 ms (at once with animations off).
+        ExportButton.OpacityTransition = MotionTokens.AnimationsEnabled && !ExportPanel.ReduceMotionSwitch ? new ScalarTransition { Duration = MotionTokens.Control } : null;
+        ExportButton.Opacity = Export.IsEditing ? 1 : DimmedExportOpacity;
+
+        switch (Export.State)
+        {
+            case ExportPanelState.Exporting:
+                _inspectorSwap.Show(ExportSection.Running, ExportSection.FocusRunning);
+                break;
+            case ExportPanelState.Finished:
+                _inspectorSwap.Show(ExportSection.Finished, ExportSection.ArriveFinished);
+                break;
+            default:
+                ExportSection.ResetFinished();
+                _inspectorSwap.Show(InspectorScroll, FocusExportButton);
+                break;
+        }
+    }
+
+    // The Export button's opacity while the export panel or the finished state shows (the canvas's exportOpacity).
+    private const double DimmedExportOpacity = 0.6;
+
+    private void FocusExportButton()
+    {
+        if (ExportButton.Visibility == Visibility.Visible)
+        {
+            ExportButton.Focus(FocusState.Programmatic);
+        }
+    }
+
+    // Ctrl+E: the Export button's command, also when the button is absent or disabled (the command checks what it may do,
+    // and does nothing outside the inspector).
+    private void OnExportAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        if (Export.ExportCommand.CanExecute(null))
+        {
+            Export.ExportCommand.Execute(null);
         }
     }
 

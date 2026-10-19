@@ -154,7 +154,29 @@ public partial class App : Application
 
         // The preview (#19): the proxy cache in LocalCache (beside the log unpackaged), the frame images, the player.
         var preview = new Preview.PreviewSession(shell, errors, infoBars, _log, PreviewCacheFolder());
-        window = new MainWindow(shell, settings, import, output, infoBars, logOnly, errors, preview);
+
+        // The export (#24): Media's exporter behind Presentation's interface, the Save dialog in the folder of the last
+        // export (#21), Show in folder, and the window's taskbar progress and notification. The notifications register
+        // now, before the window, as the Windows App SDK asks: packaged always, unpackaged Debug only with --notifications.
+        var notifications = new ExportNotifications(logOnly);
+        notifications.Register();
+        Presentation.Export.ISaveVideoPicker savePicker = new SaveVideoPicker(() => window!.AppWindow.Id);
+#if DEBUG
+        savePicker = Debugging.DebugExport.Picker(savePicker);
+#endif
+        var exporter = new ProjectVideoExporter();
+        window = new MainWindow(
+            shell,
+            settings,
+            import,
+            output,
+            infoBars,
+            logOnly,
+            errors,
+            preview,
+            notifications,
+            exportWindow => new Presentation.Export.ExportServices(exporter, savePicker, remembered, dialogs, infoBars, new ExplorerFileReveal(), exportWindow));
+        window.Closed += (_, _) => notifications.Dispose();
 
         // Closing the window stops the probe (it ends within one test encode and removes that file) and the panel.
         window.Closed += (_, _) =>

@@ -395,7 +395,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     /// <returns>How many frames were removed.</returns>
     public int Remove()
     {
-        if (Items.Count == 0)
+        if (Items.Count == 0 || !_shell.Edits.Allow())
         {
             return 0;
         }
@@ -435,6 +435,12 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     /// <returns>False when there was nothing to undo.</returns>
     public bool Undo()
     {
+        // With nothing to undo the export's "edits wait" InfoBar would be wrong: Narrator hears "Nothing to undo" instead.
+        if (_history.CanUndo && !_shell.Edits.Allow())
+        {
+            return false;
+        }
+
         var undone = _history.Undo();
         UpdateUndo();
         if (undone is null)
@@ -486,7 +492,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
 
         var current = Items.Select(item => item.Id).ToList();
         var order = FrameMoves.Move(current, moving.Select(item => item.Id).ToHashSet(), insertIndex);
-        if (order.SequenceEqual(current))
+        if (order.SequenceEqual(current) || !_shell.Edits.Allow())
         {
             return false;
         }
@@ -544,6 +550,9 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
         _pendingFrom = Math.Clamp(firstPending, 0, exporting.Length);
         ApplyPending(0);
     }
+
+    /// <summary>True while an export runs (<see cref="SetPending"/> until <see cref="ClearPending"/>): the strip keeps the playhead in view.</summary>
+    public bool IsExporting => _exporting is not null;
 
     /// <summary>The export ended (done, failed or cancelled): no thumbnail is dimmed.</summary>
     public void ClearPending()

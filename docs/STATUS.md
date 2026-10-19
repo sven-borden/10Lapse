@@ -235,7 +235,9 @@ Nothing blocks the build loop. Everything below waits until release is near
   minimized. Keys: Space (no repeat), arrows, Shift+arrows, Home/End.
   PRIVACY.md describes the copies. Debug `--sample-frames` writes real photos
   (pass `--sample-folder` under your branch folder, `--sample-clean`),
-  `--cache-folder`, `--preview-bench`.
+  `--cache-folder`, `--preview-bench`. #24: `--export-to=PATH`; the unpackaged
+  app registers notifications only with `--notifications` (it writes HKCU
+  entries, removed on close, and shows real toasts).
 - #18 PR #80: `Shell/FramePanel` between Timing and Output (shapes Match
   photos, 16:9, 9:16, 1:1, 4:5, 4:3; Fit/Fill; `SegmentedControl.ItemNames`).
   Portrait hint (more than half portrait in 16:9 or 4:3) with *Use 9:16* and
