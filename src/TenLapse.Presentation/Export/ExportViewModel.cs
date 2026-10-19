@@ -377,13 +377,8 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
             State = ExportPanelState.Editing;
             RaiseEnded(ExportOutcome.Cancelled, null);
 
-            // The InfoBar says the unfinished file is gone only once it is.
-            var removed = await _services.Exporter.CleanUpAsync(path);
-            if (!_closing && !_disposed)
-            {
-                _services.InfoBars.Show(InfoBarSeverity.Neutral, removed ? ExportText.Cancelled : ExportText.CancelledFileLeft);
-            }
-
+            // Not awaited here: the encoder can take seconds to let go of the file, and Export must be ready again at once.
+            _ = _errors.GuardAsync(() => SayCancelledAsync(path), ExportText.CancelFailed);
             return;
         }
         catch
@@ -399,6 +394,17 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         }
 
         Finish(project, snapshot, output, video, _clock() - started);
+    }
+
+    // The InfoBar says the unfinished file is gone only once it is (or that the next launch removes it). Not while the
+    // window closes: nobody would read it.
+    private async Task SayCancelledAsync(string path)
+    {
+        var removed = await _services.Exporter.CleanUpAsync(path);
+        if (!_closing && !_disposed)
+        {
+            _services.InfoBars.Show(InfoBarSeverity.Neutral, removed ? ExportText.Cancelled : ExportText.CancelledFileLeft);
+        }
     }
 
     // The export panel comes up: the numbers start from zero, the project holds still, the preview pauses on the first frame.
