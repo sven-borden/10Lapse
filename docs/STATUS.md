@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #24 merged. Building: #25 keep awake (Sonnet), #90 start-up crash (Opus). Next: #31 rating, #36 narrow layout, then #35 motion, #39 strings, #38 accessibility (each alone).
+2026-10-19: #25 merged. In flight: PR #91 (#90 start-up hardening) in review, PR #93 (#31 rating) fix round, #36 narrow layout building. Then #35 motion, #39 strings, #38 accessibility (each alone).
 
 ## Waves
 
@@ -38,7 +38,7 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 11 | #24 Export panel and finished state | O | export panel | merged #88 |
 | 11 | #18 Frame panel | S | frame inspector section | merged #80 |
 | 12 | #32 Golden render test | O | `tests/` golden | merged #81 |
-| 12 | #25 Export while minimized, keep awake | S | export power request | building |
+| 12 | #25 Export while minimized, keep awake | S | export power request | merged #92 |
 | 13 | #21 Remember settings | S | settings persistence | merged #83 |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
 | 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | merged #85 |
@@ -210,3 +210,6 @@ Details are in each PR's "What the next issues should know".
   disabled at 0.6 outside Editing, `ShellViewModel.Edits` blocks edits during an
   export, close asks and waits up to 2 s, taskbar progress, notifications only
   packaged or with Debug `--notifications`, `Started`/`Ended` hooks; `--export-to=`.
+- #25 PR #92: `IKeepAwake` power request (system required, not display) held
+  by `ExportViewModel` from `Begin` to `End`; minimized exports run at full
+  speed and the hidden preview is not seeked.
