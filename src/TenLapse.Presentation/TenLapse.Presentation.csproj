@@ -5,6 +5,8 @@
   -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <!-- The Strings/*.resx files are English, the neutral language (#39): no satellite lookup for English. -->
+    <NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />

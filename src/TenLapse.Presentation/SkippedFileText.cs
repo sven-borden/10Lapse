@@ -1,55 +1,58 @@
 using TenLapse.Core.Projects;
+using TenLapse.Core.Text;
 
 namespace TenLapse.Presentation;
 
 /// <summary>
 /// The words for photos that could not be read (#13): the InfoBar sentence and one short reason per file, as the
 /// prototype's list shows them ("IMG_4402.HEIC — Damaged file: it ends early"). Same rules as
-/// <see cref="ProjectText"/>: whole strings, singular and plural separate, for #39 to move to resource files.
+/// <see cref="ProjectText"/>: whole strings, singular and plural separate, read from <c>Strings/SkippedFileText.resx</c> (#39).
 /// </summary>
 public static class SkippedFileText
 {
+    private static readonly TextResources _strings = new("TenLapse.Presentation.Strings.SkippedFileText", typeof(SkippedFileText).Assembly);
+
     /// <summary>The InfoBar for one skipped photo.</summary>
-    public static string SkippedOne => "1 photo couldn't be read and was skipped.";
+    public static string SkippedOne => _strings.Get();
 
     /// <summary>The InfoBar for several skipped photos. {0} the count ("3", "1,204").</summary>
-    public static string SkippedMany => "{0} photos couldn't be read and were skipped.";
+    public static string SkippedMany => _strings.Get();
 
     /// <summary><see cref="SkipReason.UnsupportedFormat"/>.</summary>
-    public static string UnsupportedFormat => "Not a photo format Windows can read";
+    public static string UnsupportedFormat => _strings.Get();
 
     /// <summary><see cref="SkipReason.DecodeFailed"/>.</summary>
-    public static string DecodeFailed => "Damaged file";
+    public static string DecodeFailed => _strings.Get();
 
     /// <summary><see cref="SkipReason.AccessDenied"/>.</summary>
-    public static string AccessDenied => "No permission to open it";
+    public static string AccessDenied => _strings.Get();
 
     /// <summary><see cref="SkipReason.FileNotFound"/>.</summary>
-    public static string FileNotFound => "No longer there: moved, deleted or disconnected";
+    public static string FileNotFound => _strings.Get();
 
     /// <summary><see cref="SkipReason.Other"/>.</summary>
-    public static string Other => "Couldn't be read";
+    public static string Other => _strings.Get();
 
     /// <summary><see cref="SkipReason.EmptyFile"/>, the prototype's words.</summary>
-    public static string EmptyFile => "Empty file (0 bytes)";
+    public static string EmptyFile => _strings.Get();
 
     /// <summary><see cref="SkipReason.Truncated"/>, the prototype's words.</summary>
-    public static string Truncated => "Damaged file: it ends early";
+    public static string Truncated => _strings.Get();
 
     /// <summary><see cref="SkipReason.NeedsExtension"/>; #14's own InfoBar names the extension and opens the Store.</summary>
-    public static string NeedsExtension => "Needs a free extension from the Microsoft Store";
+    public static string NeedsExtension => _strings.Get();
 
     /// <summary><see cref="SkipReason.FileInUse"/>.</summary>
-    public static string FileInUse => "In use by another app";
+    public static string FileInUse => _strings.Get();
 
     /// <summary><see cref="SkipReason.ImageTooLarge"/>.</summary>
-    public static string ImageTooLarge => "Too large to open";
+    public static string ImageTooLarge => _strings.Get();
 
     /// <summary><see cref="SkipReason.CloudFileOffline"/>.</summary>
-    public static string CloudFileOffline => "In the cloud and not available offline";
+    public static string CloudFileOffline => _strings.Get();
 
     /// <summary><see cref="SkipReason.CloudOnly"/>: the user chose not to download it.</summary>
-    public static string CloudOnly => "Only in OneDrive, not on this PC";
+    public static string CloudOnly => _strings.Get();
 
     /// <summary>The short reason shown beside the file name.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A value <see cref="SkipReason"/> does not define.</exception>

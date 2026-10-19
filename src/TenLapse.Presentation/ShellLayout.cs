@@ -25,7 +25,7 @@ public enum InspectorTab
 public sealed partial class ShellLayout : ObservableObject
 {
     /// <summary>The tab row's name for a screen reader (the canvas's "Panel" radio group).</summary>
-    public static string TabsName => "Panel";
+    public static string TabsName => ProjectText.InspectorTabsName;
 
     /// <summary>The tabs' labels, in <see cref="InspectorTab"/> order.</summary>
     public static IReadOnlyList<string> TabLabels { get; } = [TimingText.Heading, FrameText.Heading, OutputText.Heading];

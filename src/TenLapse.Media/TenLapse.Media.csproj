@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>$(TenLapseWindowsTargetFramework)</TargetFramework>
     <TargetPlatformMinVersion>$(TenLapseWindowsMinVersion)</TargetPlatformMinVersion>
+    <!-- Strings/EncoderText.resx is English, the neutral language (#39). -->
+    <NeutralLanguage>en</NeutralLanguage>
     <!-- Win2D ships a native DLL per architecture, so Media builds per platform like the app. -->
     <Platforms>x64;ARM64</Platforms>
     <!-- CsWin32 generates the Media Foundation interop (NativeMethods.txt) as unsafe code. -->

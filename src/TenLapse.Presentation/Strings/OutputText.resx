@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The user-visible text of OutputText.cs (#39), read through TextResources.
+  English is the neutral language. A translation is a copy of this file named OutputText.<culture>.resx (for example
+  OutputText.de.resx) with the values translated; keep the {0} placeholders and their numbers, and keep each entry a
+  whole sentence. The comments say what each placeholder holds.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Output</value>
+    <comment>The section's heading.</comment>
+  </data>
+  <data name="ResolutionLabel" xml:space="preserve">
+    <value>Resolution</value>
+    <comment>The resolution list's label.</comment>
+  </data>
+  <data name="FormatLabel" xml:space="preserve">
+    <value>Format</value>
+    <comment>The format list's label.</comment>
+  </data>
+  <data name="QualityLabel" xml:space="preserve">
+    <value>Quality</value>
+    <comment>The quality list's label.</comment>
+  </data>
+  <data name="Checking" xml:space="preserve">
+    <value>Checking what this PC can encode…</value>
+    <comment>Shown in place of the lists until the startup probe has said what this PC can encode.</comment>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Output options are ready.</value>
+    <comment>Said to a screen reader when the lists appear in place of Checking.</comment>
+  </data>
+  <data name="ConservativeNote" xml:space="preserve">
+    <value>10Lapse couldn't check this PC's video encoders, so it offers H.264 up to 1080p.</value>
+    <comment>The note when the probe failed or timed out. It stands in for EncoderCapabilities.Summary.</comment>
+  </data>
+  <data name="FormatReplaced" xml:space="preserve">
+    <value>{0} can't be exported on this PC, so {1} is selected.</value>
+    <comment>A format was replaced because this PC cannot export it. {0}: the format's name ("HEVC"); {1}: the one selected now.</comment>
+  </data>
+  <data name="ResolutionReplaced" xml:space="preserve">
+    <value>{0} can't be exported on this PC with these settings, so {1} is selected.</value>
+    <comment>A resolution was replaced because this PC cannot export it with the project's settings. {0}: the old one ("4K"); {1}: the new one.</comment>
+  </data>
+  <data name="ResolutionReplacedByShape" xml:space="preserve">
+    <value>{0} isn't available for this shape on this PC, so {1} is selected. Your {0} choice comes back with a shape that allows it.</value>
+    <comment>A resolution was replaced because this PC cannot export it in the current frame shape; the choice returns with the old shape. {0}: the chosen one ("4K"); {1}: the one selected now.</comment>
+  </data>
+  <data name="KeepSelected" xml:space="preserve">
+    <value>Use these settings</value>
+    <comment>The button under a replacement notice that stores the selected settings in place of the earlier choice.</comment>
+  </data>
+  <data name="EstimateAbout" xml:space="preserve">
+    <value>About {0}</value>
+    <comment>The estimate. {0}: the size from Size.</comment>
+  </data>
+  <data name="Megabytes" xml:space="preserve">
+    <value>{0} MB</value>
+    <comment>A size in megabytes. {0}: the number.</comment>
+  </data>
+  <data name="Gigabytes" xml:space="preserve">
+    <value>{0} GB</value>
+    <comment>A size in gigabytes. {0}: the number.</comment>
+  </data>
+  <data name="UnderOneMegabyte" xml:space="preserve">
+    <value>Less than 1 MB</value>
+    <comment>The estimate when the file stays under a megabyte.</comment>
+  </data>
+  <data name="ResolutionOptionFormat" xml:space="preserve">
+    <value>{0} · {1} × {2}</value>
+    <comment>The list entry for a resolution. {0} its name ("1080p"), {1} the width, {2} the height, in pixels.</comment>
+  </data>
+  <data name="FormatOptionFormat" xml:space="preserve">
+    <value>MP4 · {0}</value>
+    <comment>The list entry for a format. {0} the codec ("H.264", "HEVC").</comment>
+  </data>
+  <data name="QualityStandard" xml:space="preserve">
+    <value>Standard</value>
+    <comment>The quality list's lowest bitrate.</comment>
+  </data>
+  <data name="QualityHigh" xml:space="preserve">
+    <value>High</value>
+    <comment>The quality list's default bitrate.</comment>
+  </data>
+  <data name="QualityMaximum" xml:space="preserve">
+    <value>Maximum</value>
+    <comment>The quality list's highest bitrate.</comment>
+  </data>
+</root>

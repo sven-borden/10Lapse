@@ -1,62 +1,66 @@
 using System.Globalization;
 using TenLapse.Core.Projects;
+using TenLapse.Core.Text;
 
 namespace TenLapse.Presentation;
 
 /// <summary>
-/// Every user-visible word of the Output panel (#23), as whole format strings for #39. The file size is the one
+/// Every user-visible word of the Output panel (#23), as whole format strings read from <c>Strings/OutputText.resx</c>
+/// (#39); log contexts stay here in English. The resolution and codec names are technical names and stay in code. The file size is the one
 /// number here written in the user's culture (a decimal comma in German or French); the sizes of the video are
 /// plain integers.
 /// </summary>
 public static class OutputText
 {
+    private static readonly TextResources _strings = new("TenLapse.Presentation.Strings.OutputText", typeof(OutputText).Assembly);
+
     /// <summary>The section's heading.</summary>
-    public static string Heading => "Output";
+    public static string Heading => _strings.Get();
 
     /// <summary>The resolution list's label.</summary>
-    public static string ResolutionLabel => "Resolution";
+    public static string ResolutionLabel => _strings.Get();
 
     /// <summary>The format list's label.</summary>
-    public static string FormatLabel => "Format";
+    public static string FormatLabel => _strings.Get();
 
     /// <summary>The quality list's label.</summary>
-    public static string QualityLabel => "Quality";
+    public static string QualityLabel => _strings.Get();
 
     /// <summary>Shown in place of the lists until the startup probe has said what this PC can encode.</summary>
-    public static string Checking => "Checking what this PC can encode…";
+    public static string Checking => _strings.Get();
 
     /// <summary>Said to a screen reader when the lists appear in place of <see cref="Checking"/>.</summary>
-    public static string Ready => "Output options are ready.";
+    public static string Ready => _strings.Get();
 
     /// <summary>The note when the probe failed or timed out. It stands in for <c>EncoderCapabilities.Summary</c>.</summary>
-    public static string ConservativeNote => "10Lapse couldn't check this PC's video encoders, so it offers H.264 up to 1080p.";
+    public static string ConservativeNote => _strings.Get();
 
     /// <summary>A format was replaced because this PC cannot export it. {0}: the format's name ("HEVC"); {1}: the one selected now.</summary>
-    public static string FormatReplaced => "{0} can't be exported on this PC, so {1} is selected.";
+    public static string FormatReplaced => _strings.Get();
 
     /// <summary>A resolution was replaced because this PC cannot export it with the project's settings. {0}: the old one ("4K"); {1}: the new one.</summary>
-    public static string ResolutionReplaced => "{0} can't be exported on this PC with these settings, so {1} is selected.";
+    public static string ResolutionReplaced => _strings.Get();
 
     /// <summary>
     /// A resolution was replaced because this PC cannot export it in the current frame shape; the choice returns with
     /// the old shape. {0}: the chosen one ("4K"); {1}: the one selected now.
     /// </summary>
-    public static string ResolutionReplacedByShape => "{0} isn't available for this shape on this PC, so {1} is selected. Your {0} choice comes back with a shape that allows it.";
+    public static string ResolutionReplacedByShape => _strings.Get();
 
     /// <summary>The button under a replacement notice that stores the selected settings in place of the earlier choice.</summary>
-    public static string KeepSelected => "Use these settings";
+    public static string KeepSelected => _strings.Get();
 
     /// <summary>The estimate. {0}: the size from <see cref="Size"/>.</summary>
-    public static string EstimateAbout => "About {0}";
+    public static string EstimateAbout => _strings.Get();
 
     /// <summary>A size in megabytes. {0}: the number.</summary>
-    public static string Megabytes => "{0} MB";
+    public static string Megabytes => _strings.Get();
 
     /// <summary>A size in gigabytes. {0}: the number.</summary>
-    public static string Gigabytes => "{0} GB";
+    public static string Gigabytes => _strings.Get();
 
     /// <summary>The estimate when the file stays under a megabyte.</summary>
-    public static string UnderOneMegabyte => "Less than 1 MB";
+    public static string UnderOneMegabyte => _strings.Get();
 
     /// <summary>Log context: a setting could not be written to the project.</summary>
     public static string ChangeFailed => "Changing the output settings failed.";
@@ -67,7 +71,22 @@ public static class OutputText
     /// <summary>Log context: the startup probe of the encoders failed.</summary>
     public static string ProbeFailed => "Checking this PC's video encoders failed.";
 
-    /// <summary>The resolution's usual name: 720p, 1080p, 1440p or 4K.</summary>
+    /// <summary>The list entry for a resolution. {0} its name ("1080p"), {1} the width, {2} the height, in pixels.</summary>
+    public static string ResolutionOptionFormat => _strings.Get();
+
+    /// <summary>The list entry for a format. {0} the codec ("H.264", "HEVC").</summary>
+    public static string FormatOptionFormat => _strings.Get();
+
+    /// <summary>The quality list's lowest bitrate.</summary>
+    public static string QualityStandard => _strings.Get();
+
+    /// <summary>The quality list's default bitrate.</summary>
+    public static string QualityHigh => _strings.Get();
+
+    /// <summary>The quality list's highest bitrate.</summary>
+    public static string QualityMaximum => _strings.Get();
+
+    /// <summary>The resolution's usual name: 720p, 1080p, 1440p or 4K, the same in every language (not in the resource file).</summary>
     public static string ResolutionName(OutputResolution resolution) => resolution switch
     {
         OutputResolution.Hd720 => "720p",
@@ -79,9 +98,9 @@ public static class OutputText
 
     /// <summary>The list entry for a resolution: "1080p · 1920 × 1080" (the size follows the frame shape).</summary>
     public static string ResolutionOption(OutputResolution resolution, PixelSize size) =>
-        string.Create(CultureInfo.InvariantCulture, $"{ResolutionName(resolution)} · {size.Width} × {size.Height}");
+        string.Format(CultureInfo.InvariantCulture, ResolutionOptionFormat, ResolutionName(resolution), size.Width, size.Height);
 
-    /// <summary>The codec's name: H.264 or HEVC.</summary>
+    /// <summary>The codec's name: H.264 or HEVC, the same in every language (not in the resource file).</summary>
     public static string CodecName(VideoFormat format) => format switch
     {
         VideoFormat.Mp4H264 => "H.264",
@@ -90,14 +109,14 @@ public static class OutputText
     };
 
     /// <summary>The list entry for a format: "MP4 · H.264".</summary>
-    public static string FormatOption(VideoFormat format) => "MP4 · " + CodecName(format);
+    public static string FormatOption(VideoFormat format) => string.Format(CultureInfo.InvariantCulture, FormatOptionFormat, CodecName(format));
 
     /// <summary>The list entry for a quality.</summary>
     public static string QualityOption(OutputQuality quality) => quality switch
     {
-        OutputQuality.Standard => "Standard",
-        OutputQuality.High => "High",
-        OutputQuality.Maximum => "Maximum",
+        OutputQuality.Standard => QualityStandard,
+        OutputQuality.High => QualityHigh,
+        OutputQuality.Maximum => QualityMaximum,
         _ => throw new ArgumentOutOfRangeException(nameof(quality), quality, "Unknown quality."),
     };
 

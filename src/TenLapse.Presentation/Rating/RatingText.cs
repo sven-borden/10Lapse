@@ -1,35 +1,41 @@
 using System.Globalization;
+using TenLapse.Core.Text;
 
 namespace TenLapse.Presentation.Rating;
 
-/// <summary>Every word of the rating prompt and the Settings feedback card (#31): card text, InfoBar sentences, log lines.</summary>
+/// <summary>
+/// Every word of the rating prompt and the Settings feedback card (#31): the card text and InfoBar sentences from
+/// <c>Strings/RatingText.resx</c> (#39), and the log lines, which stay here in English.
+/// </summary>
 public static class RatingText
 {
+    private static readonly TextResources _strings = new("TenLapse.Presentation.Strings.RatingText", typeof(RatingText).Assembly);
+
     // ---- Settings card
 
     /// <summary>The Settings card's title.</summary>
-    public static string CardTitle => "Feedback";
+    public static string CardTitle => _strings.Get();
 
     /// <summary>The Settings card's caption.</summary>
-    public static string CardCaption => "Rate 10Lapse opens its page in the Microsoft Store. Send feedback opens GitHub in your browser. 10Lapse sends nothing itself.";
+    public static string CardCaption => _strings.Get();
 
     /// <summary>The Rate button, and its accessible name.</summary>
-    public static string RateButton => "Rate 10Lapse";
+    public static string RateButton => _strings.Get();
 
     /// <summary>The Send feedback button, and its accessible name.</summary>
-    public static string FeedbackButton => "Send feedback";
+    public static string FeedbackButton => _strings.Get();
 
     /// <summary>The Rate button's tooltip.</summary>
-    public static string RateTip => "Opens the Microsoft Store";
+    public static string RateTip => _strings.Get();
 
     /// <summary>The Send feedback button's tooltip.</summary>
-    public static string FeedbackTip => "Opens GitHub in your browser";
+    public static string FeedbackTip => _strings.Get();
 
     /// <summary>The InfoBar when the Store would not open.</summary>
-    public static string RateFailed => "The Microsoft Store didn't open. Open the Store yourself and search for 10Lapse to rate it.";
+    public static string RateFailed => _strings.Get();
 
     /// <summary>The InfoBar when the browser would not open.</summary>
-    public static string FeedbackFailed => "Your browser didn't open. Go to github.com/sven-borden/10Lapse/issues to send your feedback.";
+    public static string FeedbackFailed => _strings.Get();
 
     /// <summary>Error context: the Rate button failed.</summary>
     public static string RateCommandFailed => "Opening the Store's review page failed.";

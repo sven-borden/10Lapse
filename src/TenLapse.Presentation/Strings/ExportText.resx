@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The user-visible text of ExportText.cs (#39), read through TextResources.
+  English is the neutral language. A translation is a copy of this file named ExportText.<culture>.resx (for example
+  ExportText.de.resx) with the values translated; keep the {0} placeholders and their numbers, and keep each entry a
+  whole sentence. The comments say what each placeholder holds.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ExportVideo" xml:space="preserve">
+    <value>Export video</value>
+    <comment>The amber button in the command bar (Ctrl+E).</comment>
+  </data>
+  <data name="ExportingButton" xml:space="preserve">
+    <value>Exporting…</value>
+    <comment>The same button, dimmed, while an export runs.</comment>
+  </data>
+  <data name="Exporting" xml:space="preserve">
+    <value>Exporting</value>
+    <comment>The caption over the file name while the export runs.</comment>
+  </data>
+  <data name="PercentFormat" xml:space="preserve">
+    <value>{0}%</value>
+    <comment>The large percent: {0} the whole percent.</comment>
+  </data>
+  <data name="ProgressName" xml:space="preserve">
+    <value>Export progress</value>
+    <comment>The progress bar's name for a screen reader.</comment>
+  </data>
+  <data name="GettingReady" xml:space="preserve">
+    <value>Getting ready…</value>
+    <comment>Before the first frame is written.</comment>
+  </data>
+  <data name="EstimatingTimeLeft" xml:space="preserve">
+    <value>Working out the time left…</value>
+    <comment>Frames are being written but the speed is not known yet.</comment>
+  </data>
+  <data name="Finishing" xml:space="preserve">
+    <value>Finishing the file…</value>
+    <comment>Every frame is in; the file is being completed.</comment>
+  </data>
+  <data name="TimeLeftSecondsFormat" xml:space="preserve">
+    <value>About {0} s left</value>
+    <comment>Time left under a minute: {0} the seconds.</comment>
+  </data>
+  <data name="TimeLeftMinutesFormat" xml:space="preserve">
+    <value>About {0} min left</value>
+    <comment>Time left from a minute, on the minute: {0} the minutes.</comment>
+  </data>
+  <data name="TimeLeftMinutesHalfFormat" xml:space="preserve">
+    <value>About {0} min 30 s left</value>
+    <comment>Time left from a minute, with a half minute: {0} the minutes.</comment>
+  </data>
+  <data name="FrameLabel" xml:space="preserve">
+    <value>Frame</value>
+    <comment>The label of the frame count row.</comment>
+  </data>
+  <data name="FramesFormat" xml:space="preserve">
+    <value>{0} of {1}</value>
+    <comment>The frame count: {0} the frames written, {1} the total, both zero-padded to the total's width ("0312 of 0742").</comment>
+  </data>
+  <data name="SpeedLabel" xml:space="preserve">
+    <value>Speed</value>
+    <comment>The label of the speed row.</comment>
+  </data>
+  <data name="SpeedFormat" xml:space="preserve">
+    <value>{0} photos per second</value>
+    <comment>The speed: {0} photos per second, one decimal.</comment>
+  </data>
+  <data name="SpeedMeasuring" xml:space="preserve">
+    <value>Measuring…</value>
+    <comment>The speed before it has been measured.</comment>
+  </data>
+  <data name="OutputLabel" xml:space="preserve">
+    <value>Output</value>
+    <comment>The label of the output row.</comment>
+  </data>
+  <data name="OutputSummaryFormat" xml:space="preserve">
+    <value>{0} · {1} · {2}</value>
+    <comment>The output summary: {0} the resolution ("4K"), {1} the codec ("H.264"), {2} the quality ("High").</comment>
+  </data>
+  <data name="MinimizeHint" xml:space="preserve">
+    <value>You can minimize 10Lapse. The export keeps going and Windows tells you when it's done.</value>
+    <comment>The hint under the numbers.</comment>
+  </data>
+  <data name="CancelExport" xml:space="preserve">
+    <value>Cancel export</value>
+    <comment>The button that stops the export.</comment>
+  </data>
+  <data name="RenderingFrameFormat" xml:space="preserve">
+    <value>Rendering frame {0}</value>
+    <comment>The label over the preview while the export runs: {0} the frame being written, zero-padded ("0313").</comment>
+  </data>
+  <data name="ReadyFormat" xml:space="preserve">
+    <value>{0} is ready</value>
+    <comment>The finished state's title and Narrator's announcement: {0} the file name ("Harbor sunset.mp4").</comment>
+  </data>
+  <data name="ReadySummaryFormat" xml:space="preserve">
+    <value>{0} · {1} · {2} · {3}</value>
+    <comment>The summary under it: {0} the length ("24.7 s"), {1} the resolution ("4K"), {2} the codec, {3} the file size ("173 MB").</comment>
+  </data>
+  <data name="ExportedInLabel" xml:space="preserve">
+    <value>Exported in</value>
+    <comment>The label of the time the export took.</comment>
+  </data>
+  <data name="SavedToLabel" xml:space="preserve">
+    <value>Saved to</value>
+    <comment>The label of the folder.</comment>
+  </data>
+  <data name="SavedToFormat" xml:space="preserve">
+    <value>{0} › {1}</value>
+    <comment>The folder, shortened to its last two names: {0} the parent folder, {1} the folder ("Videos › 10Lapse").</comment>
+  </data>
+  <data name="Play" xml:space="preserve">
+    <value>Play</value>
+    <comment>The accent button: plays the video in the preview from frame one.</comment>
+  </data>
+  <data name="PlayName" xml:space="preserve">
+    <value>Play the video</value>
+    <comment>Its name for a screen reader.</comment>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>Show in folder</value>
+    <comment>Opens File Explorer on the video.</comment>
+  </data>
+  <data name="BackToEditing" xml:space="preserve">
+    <value>Back to editing</value>
+    <comment>Back to the inspector.</comment>
+  </data>
+  <data name="DoneName" xml:space="preserve">
+    <value>Done</value>
+    <comment>The name of the check for a screen reader.</comment>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Export cancelled. The unfinished file was removed.</value>
+    <comment>The InfoBar once a cancelled export's unfinished file is gone.</comment>
+  </data>
+  <data name="CancelledFileLeft" xml:space="preserve">
+    <value>Export cancelled. The unfinished file couldn't be removed yet, so 10Lapse removes it the next time it starts.</value>
+    <comment>The InfoBar when a cancelled export's unfinished file could not be removed yet.</comment>
+  </data>
+  <data name="EditsWait" xml:space="preserve">
+    <value>The project can't change while the video exports. Wait for it to finish, or cancel the export.</value>
+    <comment>An edit tried while the export runs (a removal, a move, an import, a new project).</comment>
+  </data>
+  <data name="ImportStillRunning" xml:space="preserve">
+    <value>Photos are still being added. Export once they're all in.</value>
+    <comment>Export tried while photos are still being added.</comment>
+  </data>
+  <data name="ChangedDuringDialog" xml:space="preserve">
+    <value>The export didn't start because the project or its output changed while the Save dialog was open. Choose Export video again.</value>
+    <comment>The Save dialog was answered, but the project, its output or the screen changed while it was open.</comment>
+  </data>
+  <data name="PremiereCantPlay" xml:space="preserve">
+    <value>The video was saved, but 10Lapse couldn't play it here. Open it with Show in folder to check it.</value>
+    <comment>The finished video saved, but the preview can't play it (a codec Windows lacks, say).</comment>
+  </data>
+  <data name="CloseTitle" xml:space="preserve">
+    <value>Stop the export and close?</value>
+    <comment>The question when the window closes during an export.</comment>
+  </data>
+  <data name="CloseMessage" xml:space="preserve">
+    <value>The video isn't finished yet. 10Lapse stops the export and removes the unfinished file.</value>
+    <comment>What closing does.</comment>
+  </data>
+  <data name="CloseConfirm" xml:space="preserve">
+    <value>Stop and close</value>
+    <comment>Closes the window.</comment>
+  </data>
+  <data name="CloseCancel" xml:space="preserve">
+    <value>Keep exporting</value>
+    <comment>Keeps the window and the export.</comment>
+  </data>
+  <data name="FileTypeName" xml:space="preserve">
+    <value>MP4 video</value>
+    <comment>The Save dialog's file type.</comment>
+  </data>
+  <data name="StartedFormat" xml:space="preserve">
+    <value>Exporting {0}.</value>
+    <comment>Narrator, as the export starts: {0} the file name.</comment>
+  </data>
+  <data name="ProgressAnnouncementFormat" xml:space="preserve">
+    <value>{0} percent exported.</value>
+    <comment>Narrator, at most every ten percent: {0} the percent.</comment>
+  </data>
+  <data name="FailedAnnouncement" xml:space="preserve">
+    <value>The export stopped.</value>
+    <comment>Narrator, when the export fails (the InfoBar says why).</comment>
+  </data>
+  <data name="FailedNotificationFormat" xml:space="preserve">
+    <value>{0} couldn't be exported. Open 10Lapse to see why.</value>
+    <comment>The notification when an export in the background failed: {0} the file name.</comment>
+  </data>
+  <data name="KeepAwakeReasonFormat" xml:space="preserve">
+    <value>Exporting {0}</value>
+    <comment>What powercfg /requests shows next to 10Lapse while a video is written. {0} the file name ("Harbor sunset.mp4").</comment>
+  </data>
+</root>

@@ -1,0 +1,657 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The user-visible text of ProjectText.cs (#39), read through TextResources.
+  English is the neutral language. A translation is a copy of this file named ProjectText.<culture>.resx (for example
+  ProjectText.de.resx) with the values translated; keep the {0} placeholders and their numbers, and keep each entry a
+  whole sentence. The comments say what each placeholder holds.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NewProject" xml:space="preserve">
+    <value>New project</value>
+    <comment>The command bar button that starts a new project, and its accessible name.</comment>
+  </data>
+  <data name="UnsavedChangesName" xml:space="preserve">
+    <value>Unsaved changes</value>
+    <comment>The accessible name of the title bar's dot that shows while there are unsaved changes.</comment>
+  </data>
+  <data name="InspectorTabsName" xml:space="preserve">
+    <value>Panel</value>
+    <comment>The accessible name of the narrow layout's tab row (Timing, Frame, Output).</comment>
+  </data>
+  <data name="TimingReadoutOne" xml:space="preserve">
+    <value>1 photo → {0} at {1}</value>
+    <comment>The readout for one photo. {0} the length ("0.5 s"), {1} the rate ("30 fps").</comment>
+  </data>
+  <data name="TimingReadoutMany" xml:space="preserve">
+    <value>{0} photos → {1} at {2}</value>
+    <comment>The readout for 0 or several photos. {0} the count ("742"), {1} the length, {2} the rate.</comment>
+  </data>
+  <data name="WindowTitleSaved" xml:space="preserve">
+    <value>{0} – {1}</value>
+    <comment>The window title of a project with nothing unsaved. {0} the project name, {1} the product name.</comment>
+  </data>
+  <data name="WindowTitleUnsaved" xml:space="preserve">
+    <value>● {0} – {1}</value>
+    <comment>The window title while there are unsaved changes. {0} the project name, {1} the product name.</comment>
+  </data>
+  <data name="NewProjectTitle" xml:space="preserve">
+    <value>Start a new project?</value>
+    <comment>The title of the New project question.</comment>
+  </data>
+  <data name="NewProjectMessageNoPhotos" xml:space="preserve">
+    <value>This project's settings will be cleared.</value>
+    <comment>The New project question for a project with settings but no photos.</comment>
+  </data>
+  <data name="NewProjectMessageOne" xml:space="preserve">
+    <value>This project's photo and settings will be cleared. The photo file stays on your PC.</value>
+    <comment>The New project question for one photo.</comment>
+  </data>
+  <data name="NewProjectMessageMany" xml:space="preserve">
+    <value>This project's {0} photos and settings will be cleared. The photo files stay on your PC.</value>
+    <comment>The New project question for several photos. {0} the count ("742").</comment>
+  </data>
+  <data name="NewProjectConfirm" xml:space="preserve">
+    <value>Start new project</value>
+    <comment>The button that goes ahead with New project.</comment>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+    <comment>The button that keeps everything as it is.</comment>
+  </data>
+  <data name="InfoBarActionFailed" xml:space="preserve">
+    <value>That couldn't be done because of an unexpected problem. Try again, and restart 10Lapse if it keeps happening.</value>
+    <comment>The Critical InfoBar shown when an InfoBar's action failed, and the error context it is reported with.</comment>
+  </data>
+  <data name="InfoBarShowDetails" xml:space="preserve">
+    <value>View list</value>
+    <comment>The InfoBar button that shows its detail list (the prototype's "View list").</comment>
+  </data>
+  <data name="InfoBarHideDetails" xml:space="preserve">
+    <value>Hide list</value>
+    <comment>The same button while the list shows.</comment>
+  </data>
+  <data name="InfoBarDismiss" xml:space="preserve">
+    <value>Dismiss</value>
+    <comment>The accessible name of an InfoBar's close button.</comment>
+  </data>
+  <data name="ErrorUnexpected" xml:space="preserve">
+    <value>Something unexpected stopped that. Try again, and if it keeps happening, copy the diagnostics into a bug report.</value>
+    <comment>The generic failure: no kind the user can act on. Its InfoBar offers CopyDiagnostics.</comment>
+  </data>
+  <data name="ErrorUnhandled" xml:space="preserve">
+    <value>10Lapse ran into an unexpected problem and kept running. If something looks wrong, restart 10Lapse.</value>
+    <comment>A failure nothing caught, after which the app kept running.</comment>
+  </data>
+  <data name="ErrorFileNotFoundNamed" xml:space="preserve">
+    <value>{0} couldn't be found. It may have been moved, renamed or deleted; check that it's still there, then try again.</value>
+    <comment>A file is gone. {0} the file name ("IMG_4402.JPG").</comment>
+  </data>
+  <data name="ErrorFileNotFound" xml:space="preserve">
+    <value>A file couldn't be found. It may have been moved, renamed or deleted; check that it's still there, then try again.</value>
+    <comment>A file is gone and its name is not known.</comment>
+  </data>
+  <data name="ErrorFolderNotFound" xml:space="preserve">
+    <value>A folder couldn't be found. Check that it still exists and that its drive is connected, then try again.</value>
+    <comment>A folder, drive or network share is gone.</comment>
+  </data>
+  <data name="ErrorPathTooLong" xml:space="preserve">
+    <value>A file's path is too long for Windows. Move it to a folder with a shorter path, then try again.</value>
+    <comment>A path longer than Windows allows.</comment>
+  </data>
+  <data name="ErrorAccessDenied" xml:space="preserve">
+    <value>Windows didn't let 10Lapse open a file or folder. Check that you have access to it, or choose another place, then try again.</value>
+    <comment>Access denied, or write-protected.</comment>
+  </data>
+  <data name="ErrorFileInUse" xml:space="preserve">
+    <value>A file is open in another app. Close it there, then try again.</value>
+    <comment>A sharing or lock violation.</comment>
+  </data>
+  <data name="ErrorDiskFull" xml:space="preserve">
+    <value>The disk is full. Free up some space or choose another drive, then try again.</value>
+    <comment>The disk is full.</comment>
+  </data>
+  <data name="ErrorOutOfMemory" xml:space="preserve">
+    <value>Your PC ran out of memory. Close some other apps, then try again.</value>
+    <comment>Out of memory.</comment>
+  </data>
+  <data name="ErrorDriveDisconnected" xml:space="preserve">
+    <value>The drive or network folder was disconnected. Connect it again, then try again.</value>
+    <comment>A removable drive or network share went away while in use (not ready, device gone, network name deleted).</comment>
+  </data>
+  <data name="ErrorCannotRead" xml:space="preserve">
+    <value>A file can't be read: its drive or memory card may be damaged. Copy the photos to another drive, then try again.</value>
+    <comment>A file's data cannot be read (a CRC error): a damaged disk or card.</comment>
+  </data>
+  <data name="ErrorClipboardBusy" xml:space="preserve">
+    <value>Another app is using the clipboard. Try again in a moment.</value>
+    <comment>Another app holds the clipboard open. No Copy diagnostics: that needs the clipboard too.</comment>
+  </data>
+  <data name="ExportFailedEncoderUnavailable" xml:space="preserve">
+    <value>Windows couldn't load a video encoder. Install the latest Windows updates and graphics driver, then export again.</value>
+    <comment>Export: no H.264 encoder loads.</comment>
+  </data>
+  <data name="ExportFailedSettingsRejected" xml:space="preserve">
+    <value>The video encoder doesn't accept these settings. Choose a lower resolution or frame rate, then export again.</value>
+    <comment>Export: the encoder refused the size, frame rate or bitrate.</comment>
+  </data>
+  <data name="ExportFailedEncoder" xml:space="preserve">
+    <value>The video encoder stopped with an error. Export again, and update your graphics driver if it keeps happening.</value>
+    <comment>Export: the encoder failed for another reason.</comment>
+  </data>
+  <data name="ExportFailedEncoderStalled" xml:space="preserve">
+    <value>The video encoder stopped responding. Export again, and update your graphics driver if it keeps happening.</value>
+    <comment>Export: the encoder stopped taking frames.</comment>
+  </data>
+  <data name="ExportFailedEncoderStuck" xml:space="preserve">
+    <value>An earlier export left the video encoder stuck. Restart 10Lapse, then export again.</value>
+    <comment>Export: the encoder could not open while an earlier export's encoder call is still stuck.</comment>
+  </data>
+  <data name="ExportFailedFolderNotWritable" xml:space="preserve">
+    <value>10Lapse can't save videos in that folder. Choose another folder, then export again.</value>
+    <comment>Export: the output folder cannot be written to.</comment>
+  </data>
+  <data name="ExportFailedFileInUse" xml:space="preserve">
+    <value>The video file is open in another app. Close it there, then export again.</value>
+    <comment>Export: another app has the output file open.</comment>
+  </data>
+  <data name="ExportFailedFolderMissing" xml:space="preserve">
+    <value>The folder for the video can't be found. Connect its drive or choose another folder, then export again.</value>
+    <comment>Export: the output folder, drive or share is not there.</comment>
+  </data>
+  <data name="ExportFailedDiskFull" xml:space="preserve">
+    <value>The disk is full. Free up some space or choose a folder on another drive, then export again.</value>
+    <comment>Export: the disk is full.</comment>
+  </data>
+  <data name="ExportFailedNoGraphicsDevice" xml:space="preserve">
+    <value>This PC has no graphics device that can export video. Update your graphics driver, then export again.</value>
+    <comment>Export: no graphics device can run it.</comment>
+  </data>
+  <data name="ExportFailedGraphicsDeviceLost" xml:space="preserve">
+    <value>The graphics driver reset during the export. Export again, and update your graphics driver if it keeps happening.</value>
+    <comment>Export: the driver reset or the GPU went away.</comment>
+  </data>
+  <data name="ExportFailedOutOfMemory" xml:space="preserve">
+    <value>There isn't enough memory to export. Close some other apps or choose a lower resolution, then export again.</value>
+    <comment>Export: not enough system or video memory.</comment>
+  </data>
+  <data name="ExportFailedPhotoUnreadable" xml:space="preserve">
+    <value>A photo in the project can't be read. Remove it or fix the file, then export again.</value>
+    <comment>Export: a frame's photo could not be loaded, when the app does not know which.</comment>
+  </data>
+  <data name="ExportFailedPhotoUnreadableNamed" xml:space="preserve">
+    <value>Photo {0}, {1}, can't be read ({2}). Remove it from the project or fix the file, then export again.</value>
+    <comment>Export: frame {0} (1-based), file name {1}, short reason {2} (SkippedFileText.Reason).</comment>
+  </data>
+  <data name="ExportFailedPhotoUnreadableNamedNoReason" xml:space="preserve">
+    <value>Photo {0}, {1}, can't be read. Remove it from the project or fix the file, then export again.</value>
+    <comment>Export: frame {0} (1-based), file name {1}, no reason known.</comment>
+  </data>
+  <data name="ExportFailedDrawing" xml:space="preserve">
+    <value>10Lapse couldn't draw a frame of the video. Export again, and update your graphics driver if it keeps happening.</value>
+    <comment>Export: drawing a frame failed on the graphics device.</comment>
+  </data>
+  <data name="ExportSavedBesideFormat" xml:space="preserve">
+    <value>{0} is open in another app, so the video was saved as {1}.</value>
+    <comment>Export finished beside the target: {0} the file asked for, {1} the file written ("Harbor (2).mp4").</comment>
+  </data>
+  <data name="CopyDiagnostics" xml:space="preserve">
+    <value>Copy diagnostics</value>
+    <comment>The InfoBar action and the Settings button that copy the diagnostics.</comment>
+  </data>
+  <data name="DiagnosticsCopied" xml:space="preserve">
+    <value>Diagnostics copied. Paste them into a GitHub issue or an email.</value>
+    <comment>The Success InfoBar after Copy diagnostics.</comment>
+  </data>
+  <data name="StartupFailed" xml:space="preserve">
+    <value>10Lapse couldn't start because of an unexpected problem. Restart your PC and try again; if it keeps happening, reinstall 10Lapse from the Microsoft Store.&#xA;&#xA;The log is in {0}.</value>
+    <comment>The message box shown when the window cannot be created at startup. {0} the log folder.</comment>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Settings</value>
+    <comment>The Settings page title.</comment>
+  </data>
+  <data name="SettingsButton" xml:space="preserve">
+    <value>Settings</value>
+    <comment>The command bar button that opens Settings (its accessible name and tooltip).</comment>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Back</value>
+    <comment>The command bar button that leaves Settings.</comment>
+  </data>
+  <data name="SettingsAboutSection" xml:space="preserve">
+    <value>About</value>
+    <comment>The Settings section that holds the diagnostics card (the prototype's About, where #31's cards join it).</comment>
+  </data>
+  <data name="DiagnosticsCardTitle" xml:space="preserve">
+    <value>Diagnostics</value>
+    <comment>The diagnostics card's title.</comment>
+  </data>
+  <data name="DiagnosticsCardCaption" xml:space="preserve">
+    <value>Copies the app and Windows versions, your graphics card, the video encoders and the last 200 log lines, to paste into a bug report. The log lines can name files and folders 10Lapse worked with, never the photos themselves. Nothing is sent from your PC.</value>
+    <comment>The diagnostics card's caption.</comment>
+  </data>
+  <data name="SettingsDefaultsSection" xml:space="preserve">
+    <value>Defaults</value>
+    <comment>The Settings section that holds the reset card.</comment>
+  </data>
+  <data name="ResetCardTitle" xml:space="preserve">
+    <value>Reset to defaults</value>
+    <comment>The reset card's title.</comment>
+  </data>
+  <data name="ResetCardCaption" xml:space="preserve">
+    <value>10Lapse starts each project with your last speed, frame shape and output. This puts them back to what a fresh install has, in the project you have open too, and forgets the folders it opens in. Your photos are not touched.</value>
+    <comment>The reset card's caption.</comment>
+  </data>
+  <data name="ResetButton" xml:space="preserve">
+    <value>Reset</value>
+    <comment>The reset card's button.</comment>
+  </data>
+  <data name="ResetDone" xml:space="preserve">
+    <value>Settings are back to their defaults.</value>
+    <comment>The InfoBar that says the reset is done.</comment>
+  </data>
+  <data name="TimingHeadlineOne" xml:space="preserve">
+    <value>1 photo → {0}</value>
+    <comment>The first part of the Timing panel's readout. {0} the length ("24.7 s").</comment>
+  </data>
+  <data name="TimingHeadlineMany" xml:space="preserve">
+    <value>{0} photos → {1}</value>
+    <comment>The first part of the readout for 0 or several photos. {0} the count ("742"), {1} the length.</comment>
+  </data>
+  <data name="TimingDetail" xml:space="preserve">
+    <value>at {0}</value>
+    <comment>The second part of the readout. {0} the rate ("30 fps", "2 s per photo").</comment>
+  </data>
+  <data name="PreviewPlay" xml:space="preserve">
+    <value>Play</value>
+    <comment>The play button's name while paused.</comment>
+  </data>
+  <data name="PreviewPause" xml:space="preserve">
+    <value>Pause</value>
+    <comment>The play button's name while playing.</comment>
+  </data>
+  <data name="PreviewScrubberName" xml:space="preserve">
+    <value>Frame</value>
+    <comment>The scrubber's name.</comment>
+  </data>
+  <data name="PreviewCounterFormat" xml:space="preserve">
+    <value>{0} / {1}</value>
+    <comment>The transport's frame counter. {0} the frame number, {1} the total, both zero-padded to the same width ("0312 / 0742").</comment>
+  </data>
+  <data name="PreviewCounterNameFormat" xml:space="preserve">
+    <value>Frame {0} of {1}</value>
+    <comment>The frame counter as Narrator reads it. {0} the frame number, {1} the total ("Frame 312 of 742").</comment>
+  </data>
+  <data name="PreviewTimecodeNameFormat" xml:space="preserve">
+    <value>Time {0} of {1}</value>
+    <comment>The time code as Narrator reads it. {0} the time, {1} the length.</comment>
+  </data>
+  <data name="PreviewPlaceholderFormat" xml:space="preserve">
+    <value>{0} can't be read</value>
+    <comment>A frame whose photo cannot be read, drawn in its place. {0} the file name.</comment>
+  </data>
+  <data name="PreviewFrameUnreadableOne" xml:space="preserve">
+    <value>1 photo can't be read, so the preview shows a placeholder for it. Restore or replace it before you export.</value>
+    <comment>One photo of the project cannot be read while previewing. The detail list names it.</comment>
+  </data>
+  <data name="PreviewFrameUnreadableMany" xml:space="preserve">
+    <value>{0} photos can't be read, so the preview shows placeholders for them. Restore or replace them before you export.</value>
+    <comment>Several photos cannot be read while previewing. {0} the count ("3"). The detail list names them.</comment>
+  </data>
+  <data name="PreviewCacheFailed" xml:space="preserve">
+    <value>Preview copies of your photos can't be saved, so the preview may be slow. Your photos and the export aren't affected.</value>
+    <comment>The proxy cache cannot be written: the preview works from the photos, slower.</comment>
+  </data>
+  <data name="AddPhotos" xml:space="preserve">
+    <value>Add photos</value>
+    <comment>The command bar button that opens the import menu.</comment>
+  </data>
+  <data name="ChooseFolder" xml:space="preserve">
+    <value>Choose folder…</value>
+    <comment>The Add photos menu item that opens the folder picker.</comment>
+  </data>
+  <data name="ChoosePhotos" xml:space="preserve">
+    <value>Choose photos…</value>
+    <comment>The Add photos menu item that opens the file picker.</comment>
+  </data>
+  <data name="IncludeSubfolders" xml:space="preserve">
+    <value>Include subfolders</value>
+    <comment>The Add photos menu toggle that searches a folder's subfolders too (folders picked or dropped).</comment>
+  </data>
+  <data name="ImportLooking" xml:space="preserve">
+    <value>Looking for photos…</value>
+    <comment>The import progress while the first photos are being looked for.</comment>
+  </data>
+  <data name="ImportFoundOne" xml:space="preserve">
+    <value>Found 1 photo…</value>
+    <comment>The import progress while listing, one photo found so far.</comment>
+  </data>
+  <data name="ImportFoundMany" xml:space="preserve">
+    <value>Found {0} photos…</value>
+    <comment>The import progress while listing. {0} the photos found so far ("1,240").</comment>
+  </data>
+  <data name="ImportAddingOne" xml:space="preserve">
+    <value>Adding 1 photo…</value>
+    <comment>The import progress while reading one photo.</comment>
+  </data>
+  <data name="ImportAddingMany" xml:space="preserve">
+    <value>Adding {0} of {1} photos…</value>
+    <comment>The import progress while reading. {0} the photos read ("1,240"), {1} all of them ("5,000").</comment>
+  </data>
+  <data name="ImportCancelName" xml:space="preserve">
+    <value>Stop adding photos</value>
+    <comment>The accessible name of the progress's Cancel button.</comment>
+  </data>
+  <data name="DragCaptionAny" xml:space="preserve">
+    <value>Add photos</value>
+    <comment>The drag caption when the count is not known (folders, or items still being looked at).</comment>
+  </data>
+  <data name="DragCaptionOne" xml:space="preserve">
+    <value>Add 1 photo</value>
+    <comment>The drag caption for one photo file.</comment>
+  </data>
+  <data name="DragCaptionMany" xml:space="preserve">
+    <value>Add {0} photos</value>
+    <comment>The drag caption for several photo files. {0} the count ("120").</comment>
+  </data>
+  <data name="DragCaptionSettingsOpen" xml:space="preserve">
+    <value>Close Settings to add photos</value>
+    <comment>The drag caption while Settings is open: the drop is refused until the user goes back.</comment>
+  </data>
+  <data name="DropTitle" xml:space="preserve">
+    <value>Add these photos to this project?</value>
+    <comment>The title of the question a drop onto a project with photos asks.</comment>
+  </data>
+  <data name="DropMessageOne" xml:space="preserve">
+    <value>This project has 1 photo. Add the new photos to it, or start a new project with only the new ones. Starting a new project clears this one's photo and settings; the file stays on your PC.</value>
+    <comment>The drop question for a project with one photo.</comment>
+  </data>
+  <data name="DropMessageMany" xml:space="preserve">
+    <value>This project has {0} photos. Add the new photos to it, or start a new project with only the new ones. Starting a new project clears this one's photos and settings; the files stay on your PC.</value>
+    <comment>The drop question for a project with several photos. {0} the count ("742").</comment>
+  </data>
+  <data name="DropAddToProject" xml:space="preserve">
+    <value>Add to project</value>
+    <comment>The drop question's default button: add to the project that is open.</comment>
+  </data>
+  <data name="ImportNothingFound" xml:space="preserve">
+    <value>No photos 10Lapse can read were found there. Choose a folder or files with JPEG, PNG, TIFF or other photos, then try again.</value>
+    <comment>A Caution InfoBar: nothing to import was found.</comment>
+  </data>
+  <data name="ImportNothingFoundSubfolders" xml:space="preserve">
+    <value>No photos were found in that folder. If they're in its subfolders, turn on Include subfolders under Add photos, then try again.</value>
+    <comment>The same with subfolders off, when a folder was searched.</comment>
+  </data>
+  <data name="ImportAlreadyAdded" xml:space="preserve">
+    <value>Those photos are already in this project.</value>
+    <comment>A Neutral InfoBar: every photo found was in the project already.</comment>
+  </data>
+  <data name="ImportStoppedNone" xml:space="preserve">
+    <value>Stopped adding photos. None were added.</value>
+    <comment>A Neutral InfoBar after Cancel, when no photo was kept.</comment>
+  </data>
+  <data name="ImportStoppedOne" xml:space="preserve">
+    <value>Stopped adding photos. 1 photo was added.</value>
+    <comment>A Neutral InfoBar after Cancel, one photo kept.</comment>
+  </data>
+  <data name="ImportStoppedMany" xml:space="preserve">
+    <value>Stopped adding photos. {0} photos were added.</value>
+    <comment>A Neutral InfoBar after Cancel. {0} the photos kept ("1,240").</comment>
+  </data>
+  <data name="ImportFolderFailedOne" xml:space="preserve">
+    <value>Couldn't open the folder {0}. Check that its drive or memory card is connected and that you can open it in File Explorer, then add it again.</value>
+    <comment>A Caution InfoBar: a folder of the import would not open, or a path was no longer there. {0} the folder's name (its full path for a drive).</comment>
+  </data>
+  <data name="ImportFolderFailedMany" xml:space="preserve">
+    <value>Couldn't open {0} folders. Check that their drives or memory cards are connected and that you can open them in File Explorer, then add them again.</value>
+    <comment>The same for several folders, listed under View list. {0} the count ("3").</comment>
+  </data>
+  <data name="CloudDownloadTitle" xml:space="preserve">
+    <value>Download from OneDrive?</value>
+    <comment>The title of the question an import asks when photos are only in OneDrive (files on demand).</comment>
+  </data>
+  <data name="CloudDownloadOne" xml:space="preserve">
+    <value>1 photo is only in OneDrive. Download it now? About {0}.</value>
+    <comment>The question for one online-only photo. {0} its size ("12 MB").</comment>
+  </data>
+  <data name="CloudDownloadMany" xml:space="preserve">
+    <value>{0} photos are only in OneDrive. Download them now? About {1}.</value>
+    <comment>The question for several online-only photos. {0} the count ("1,240"), {1} their size ("2.4 GB").</comment>
+  </data>
+  <data name="CloudDownloadConfirm" xml:space="preserve">
+    <value>Download</value>
+    <comment>The question's button that downloads the photos and adds them.</comment>
+  </data>
+  <data name="CloudDownloadSkipOne" xml:space="preserve">
+    <value>Skip it</value>
+    <comment>The question's default button for one photo: leave it in the cloud and list it as skipped.</comment>
+  </data>
+  <data name="CloudDownloadSkipMany" xml:space="preserve">
+    <value>Skip them</value>
+    <comment>The question's default button for several photos.</comment>
+  </data>
+  <data name="SizeMegabytes" xml:space="preserve">
+    <value>{0} MB</value>
+    <comment>A size under 1 GB. {0} the megabytes, whole ("340").</comment>
+  </data>
+  <data name="SizeGigabytes" xml:space="preserve">
+    <value>{0} GB</value>
+    <comment>A size of 1 GB or more. {0} the gigabytes, one decimal ("2.4").</comment>
+  </data>
+  <data name="CodecGetFromStore" xml:space="preserve">
+    <value>Get it from the Store</value>
+    <comment>The button of an extension InfoBar. It opens the Store app; nothing is downloaded by 10Lapse.</comment>
+  </data>
+  <data name="CodecNeedsOneFree" xml:space="preserve">
+    <value>This photo needs the free {0} from Microsoft.</value>
+    <comment>One photo needs one free extension. {0} its Store name ("HEIF Image Extensions").</comment>
+  </data>
+  <data name="CodecNeedsManyFree" xml:space="preserve">
+    <value>These {0} photos need the free {1} from Microsoft.</value>
+    <comment>Several photos need one free extension. {0} the count, {1} its Store name.</comment>
+  </data>
+  <data name="CodecNeedsOneFee" xml:space="preserve">
+    <value>This photo needs the {0} from Microsoft, which costs a small fee.</value>
+    <comment>One photo needs one extension the Store sells (HEVC). {0} its Store name.</comment>
+  </data>
+  <data name="CodecNeedsManyFee" xml:space="preserve">
+    <value>These {0} photos need the {1} from Microsoft, which costs a small fee.</value>
+    <comment>Several photos need one extension the Store sells. {0} the count, {1} its Store name.</comment>
+  </data>
+  <data name="CodecNeedsOneSeveral" xml:space="preserve">
+    <value>This photo needs {0} extensions from Microsoft: {1}.</value>
+    <comment>One photo needs several extensions. {0} how many in words, {1} the list.</comment>
+  </data>
+  <data name="CodecNeedsManySeveral" xml:space="preserve">
+    <value>These {0} photos need {1} extensions from Microsoft: {2}.</value>
+    <comment>Several photos need several extensions. {0} the count, {1} how many in words, {2} the list ("the free HEIF Image Extensions, then the HEVC Video Extensions (a small fee)").</comment>
+  </data>
+  <data name="CodecListFree" xml:space="preserve">
+    <value>the free {0}</value>
+    <comment>One free extension inside a list. {0} its Store name.</comment>
+  </data>
+  <data name="CodecListFee" xml:space="preserve">
+    <value>the {0} (a small fee)</value>
+    <comment>One extension the Store sells, inside a list. {0} its Store name.</comment>
+  </data>
+  <data name="CodecCountTwo" xml:space="preserve">
+    <value>two</value>
+    <comment>"Two", for how many extensions a list names.</comment>
+  </data>
+  <data name="CodecCountSeveral" xml:space="preserve">
+    <value>several</value>
+    <comment>"Several", for how many extensions a list names when it is more than two.</comment>
+  </data>
+  <data name="CodecListSeparator" xml:space="preserve">
+    <value>, then </value>
+    <comment>Between the extensions of a list, in install order.</comment>
+  </data>
+  <data name="CodecNextFormat" xml:space="preserve">
+    <value>Next, get {0}. When both are installed, restart 10Lapse and add the photos again.</value>
+    <comment>The InfoBar that follows the first button of a list. {0} the next extension as CodecListFree or CodecListFee.</comment>
+  </data>
+  <data name="CodecStoreFallbackFormat" xml:space="preserve">
+    <value>Couldn't open the Microsoft Store. Search the Store for {0}, install it, then restart 10Lapse and add the photos again.</value>
+    <comment>When Windows could not open the Store page. {0} the extension's Store name, to search for.</comment>
+  </data>
+  <data name="FirstLaunchTitle" xml:space="preserve">
+    <value>Drop a folder of photos to make a timelapse</value>
+    <comment>The drop zone's title at rest.</comment>
+  </data>
+  <data name="FirstLaunchDropTitle" xml:space="preserve">
+    <value>Drop to start your timelapse</value>
+    <comment>The drop zone's title while photos are dragged over the window.</comment>
+  </data>
+  <data name="FirstLaunchExplanationFormat" xml:space="preserve">
+    <value>{0} plays your photos back as a video. Shoot one photo every few seconds, and {1} of them become a {3}-second clip at {2} frames per second.</value>
+    <comment>What a timelapse is, in one sentence after the lead: photos shot at an interval, played back as a clip (Main.dc.html, the approved copy). {0} the product name, {1} the photo count ("300"), {2} the frame rate ("30"), {3} the whole seconds of the clip ("10").</comment>
+  </data>
+  <data name="FirstLaunchPrivacy" xml:space="preserve">
+    <value>Your photos never leave this PC.</value>
+    <comment>The privacy line under the actions.</comment>
+  </data>
+  <data name="FirstLaunchChooseFolder" xml:space="preserve">
+    <value>Choose folder</value>
+    <comment>The drop zone's accent button, the same command as ChooseFolder.</comment>
+  </data>
+  <data name="FirstLaunchChoosePhotos" xml:space="preserve">
+    <value>Choose photos</value>
+    <comment>The drop zone's standard button, the same command as ChoosePhotos.</comment>
+  </data>
+  <data name="FrameOfTotal" xml:space="preserve">
+    <value>Frame {0} of {1}</value>
+    <comment>A frame's place in a sequence. {0} the frame number, {1} the total, both zero-padded to four digits ("0312", "0742").</comment>
+  </data>
+  <data name="TimecodeOfTotal" xml:space="preserve">
+    <value>{0} / {1}</value>
+    <comment>A time code and the clip length. {0} the time code ("00:10.40"), {1} the length as a time code ("00:24.73").</comment>
+  </data>
+  <data name="FilmstripName" xml:space="preserve">
+    <value>Filmstrip</value>
+    <comment>The filmstrip's name for Narrator: a list of the project's frames.</comment>
+  </data>
+  <data name="FilmstripItemNameFormat" xml:space="preserve">
+    <value>Frame {0}, {1}</value>
+    <comment>A thumbnail's name for Narrator. {0} the frame number from 1, not padded ("312"), {1} the file name ("IMG_0312.JPG").</comment>
+  </data>
+  <data name="FilmstripCaptionSelectedFormat" xml:space="preserve">
+    <value>{0} · {1} selected</value>
+    <comment>The caption with several frames selected. {0} the frame caption ("Frame 0312 of 0742"), {1} how many are selected ("3").</comment>
+  </data>
+  <data name="FilmstripFileTimeFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+    <comment>The file caption with a capture time. {0} the file name, {1} the time the photo was taken ("19:26:05").</comment>
+  </data>
+  <data name="FilmstripGapMissingOne" xml:space="preserve">
+    <value>1 photo seems to be missing before this one: the file numbers skip one.</value>
+    <comment>A gap marker's text (tooltip and Narrator) for one number skipped.</comment>
+  </data>
+  <data name="FilmstripGapMissingMany" xml:space="preserve">
+    <value>{0} photos seem to be missing before this one: the file numbers skip {0}.</value>
+    <comment>A gap marker's text for several numbers skipped. {0} how many ("3").</comment>
+  </data>
+  <data name="FilmstripGapPause" xml:space="preserve">
+    <value>Photos may be missing before this one: it was taken {0} after the one before, where about {1} was usual.</value>
+    <comment>A gap marker's text for a long interval. {0} the interval ("2 min 10 s"), {1} the usual one ("5.0 s").</comment>
+  </data>
+  <data name="FilmstripPlayheadStatus" xml:space="preserve">
+    <value>Shown in the preview</value>
+    <comment>Narrator's state of the thumbnail at the playhead.</comment>
+  </data>
+  <data name="FilmstripRemove" xml:space="preserve">
+    <value>Remove from project</value>
+    <comment>The context menu's removal; Delete does the same. The photos stay on disk.</comment>
+  </data>
+  <data name="FilmstripUndo" xml:space="preserve">
+    <value>Undo</value>
+    <comment>The context menu's undo; Ctrl+Z does the same.</comment>
+  </data>
+  <data name="FilmstripMoveEarlier" xml:space="preserve">
+    <value>Move earlier</value>
+    <comment>The context menu's move one place earlier; Alt+Left does the same.</comment>
+  </data>
+  <data name="FilmstripMoveLater" xml:space="preserve">
+    <value>Move later</value>
+    <comment>The context menu's move one place later; Alt+Right does the same.</comment>
+  </data>
+  <data name="FilmstripRemoveKeys" xml:space="preserve">
+    <value>Delete</value>
+    <comment>The key shown beside the context menu's removal.</comment>
+  </data>
+  <data name="FilmstripUndoKeys" xml:space="preserve">
+    <value>Ctrl+Z</value>
+    <comment>The keys shown beside the context menu's undo.</comment>
+  </data>
+  <data name="FilmstripMoveEarlierKeys" xml:space="preserve">
+    <value>Alt+Left</value>
+    <comment>The keys shown beside the context menu's move earlier.</comment>
+  </data>
+  <data name="FilmstripMoveLaterKeys" xml:space="preserve">
+    <value>Alt+Right</value>
+    <comment>The keys shown beside the context menu's move later.</comment>
+  </data>
+  <data name="FilmstripThumbnailSize" xml:space="preserve">
+    <value>Thumbnail size</value>
+    <comment>The thumbnail size slider's name.</comment>
+  </data>
+  <data name="FilmstripRemovedOne" xml:space="preserve">
+    <value>Removed 1 frame from the project. The photo stays on your PC. Ctrl+Z puts it back.</value>
+    <comment>Narrator after removing one frame.</comment>
+  </data>
+  <data name="FilmstripRemovedMany" xml:space="preserve">
+    <value>Removed {0} frames from the project. The photos stay on your PC. Ctrl+Z puts them back.</value>
+    <comment>Narrator after removing several frames. {0} how many ("3").</comment>
+  </data>
+  <data name="FilmstripRestoredOne" xml:space="preserve">
+    <value>Put 1 frame back.</value>
+    <comment>Narrator after an undo put one frame back.</comment>
+  </data>
+  <data name="FilmstripRestoredMany" xml:space="preserve">
+    <value>Put {0} frames back.</value>
+    <comment>Narrator after an undo put several frames back. {0} how many.</comment>
+  </data>
+  <data name="FilmstripRestoredNone" xml:space="preserve">
+    <value>Nothing to put back: those photos are in the project again.</value>
+    <comment>An undo of a removal that found every photo back in the project already (imported again).</comment>
+  </data>
+  <data name="FilmstripUndoRemoveOne" xml:space="preserve">
+    <value>Undo removing 1 frame</value>
+    <comment>The context menu's Undo of a removal of one frame.</comment>
+  </data>
+  <data name="FilmstripUndoRemoveMany" xml:space="preserve">
+    <value>Undo removing {0} frames</value>
+    <comment>The context menu's Undo of a removal of several frames.</comment>
+  </data>
+  <data name="FilmstripUndoMove" xml:space="preserve">
+    <value>Undo move</value>
+    <comment>The context menu's Undo of a move.</comment>
+  </data>
+  <data name="FilmstripReorderUndone" xml:space="preserve">
+    <value>Put the frames back in their earlier order.</value>
+    <comment>Narrator after an undo of a move.</comment>
+  </data>
+  <data name="FilmstripNothingToUndo" xml:space="preserve">
+    <value>Nothing to undo.</value>
+    <comment>Narrator when Ctrl+Z has nothing to undo.</comment>
+  </data>
+  <data name="FilmstripMovedOne" xml:space="preserve">
+    <value>Moved frame {0} to place {1}.</value>
+    <comment>Narrator after moving one frame. {0} its number before, {1} its place now.</comment>
+  </data>
+  <data name="FilmstripMovedMany" xml:space="preserve">
+    <value>Moved {0} frames to place {1}.</value>
+    <comment>Narrator after moving several frames. {0} how many, {1} the first one's place now.</comment>
+  </data>
+</root>
