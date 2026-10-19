@@ -278,8 +278,11 @@ public sealed class FrameImageCacheTests
 
         source.Next().Throw(new InvalidOperationException("The device is gone."));
 
+        // The event is raised before the cache records the attempt, so wait for the cache to go quiet (it has no
+        // signal of its own for that) and only then check that nothing was recorded as unreadable.
         Eventually(() => unexpected.Count == 1);
-        Assert.Equal(0, unreadable);
+        Assert.True(source.Quiet());
+        Assert.Equal(0, Volatile.Read(ref unreadable));
 
         // No placeholder: the photo may be fine. The render thread keeps the picture it had.
         Assert.Null(cache.FailureOf(frames[0].Id));
