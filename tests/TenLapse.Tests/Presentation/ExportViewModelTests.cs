@@ -356,6 +356,35 @@ public sealed class ExportViewModelTests
     }
 
     [Fact]
+    public void ResetToDefaultsDuringTheExportChangesNothingAndSaysWhy()
+    {
+        using var app = new ExportHarness(
+            capabilities: _everything,
+            setup: project => project.Output = new OutputSettings(OutputResolution.Qhd1440, VideoFormat.Mp4H264, OutputQuality.Maximum));
+        var remembered = app.On(() =>
+        {
+            var settings = new RememberedSettings(new TenLapse.Core.Settings.MemorySettingsStore(), app.Errors, new FakeLog());
+            settings.Attach(app.Shell);
+            return settings;
+        });
+        var before = app.On(() => (app.Project.Timing, app.Project.FrameSettings, app.Project.Output));
+        app.StartExport();
+
+        Assert.False(app.On(remembered.ResetToDefaults));
+
+        Assert.Equal(before, app.On(() => (app.Project.Timing, app.Project.FrameSettings, app.Project.Output)));
+        var bar = Assert.Single(app.InfoBars.Shown);
+        Assert.Equal((InfoBarSeverity.Caution, ExportText.EditsWait), (bar.Severity, bar.Message));
+
+        // Once the export ends, Reset works again.
+        app.Exporter.Finish(app.Video());
+        app.Settle();
+        Assert.True(app.On(remembered.ResetToDefaults));
+        Assert.Equal(OutputSettings.Default, app.On(() => app.Project.Output));
+        app.On(remembered.Dispose);
+    }
+
+    [Fact]
     public void ExportWaitsForAnImportToFinish()
     {
         using var app = new ExportHarness(capabilities: _everything);

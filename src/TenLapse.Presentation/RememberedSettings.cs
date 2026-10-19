@@ -134,10 +134,18 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
     /// <i>Reset to defaults</i>: forgets everything remembered (the folders too), writes that at once, and sets the
     /// current project's timing, frame shape and output to the defaults through the project, so the panels follow.
     /// The frames and the project's order are not touched. On the UI thread. Returns whether the file was written;
-    /// a failure has been reported already.
+    /// a failure has been reported already. While an export runs (<see cref="ShellViewModel.Edits"/> closed) nothing
+    /// changes and it returns false.
     /// </summary>
     public bool ResetToDefaults()
     {
+        // While an export holds the project (#24) nothing is reset: the export says why (its EditsWait InfoBar), and the
+        // remembered file and the open project stay as they are together.
+        if (_shell is { } shell && !shell.Edits.Allow())
+        {
+            return false;
+        }
+
         var project = _shell?.CurrentProject.Model;
         lock (_gate)
         {
