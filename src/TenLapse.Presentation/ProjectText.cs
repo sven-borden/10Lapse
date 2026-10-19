@@ -272,17 +272,49 @@ public static class ProjectText
     /// </summary>
     public static string TimingReadout(int frameCount, TimingSettings timing)
     {
+        var (length, rate) = TimingLengthAndRate(frameCount, timing);
+        return frameCount == 1
+            ? Format(TimingReadoutOne, length, rate)
+            : Format(TimingReadoutMany, Count(frameCount), length, rate);
+    }
+
+    /// <summary>The first part of the Timing panel's readout. {0} the length ("24.7 s").</summary>
+    public static string TimingHeadlineOne => "1 photo → {0}";
+
+    /// <summary>The first part of the readout for 0 or several photos. {0} the count ("742"), {1} the length.</summary>
+    public static string TimingHeadlineMany => "{0} photos → {1}";
+
+    /// <summary>The second part of the readout. {0} the rate ("30 fps", "2 s per photo").</summary>
+    public static string TimingDetail => "at {0}";
+
+    /// <summary>
+    /// <see cref="TimingReadout"/> in two parts for the Timing panel, which sets the first in the larger type:
+    /// ("742 photos → 24.7 s", "at 30 fps"). Joined with a space they read exactly as <see cref="TimingReadout"/>.
+    /// </summary>
+    /// <param name="frameCount">The number of photos.</param>
+    /// <param name="timing">The speed.</param>
+    /// <param name="culture">The culture of the numbers (decimal separator, grouping); invariant when null, as <see cref="TimingReadout"/> is.</param>
+    public static (string Headline, string Detail) TimingReadoutParts(int frameCount, TimingSettings timing, CultureInfo? culture = null)
+    {
+        var (length, rate) = TimingLengthAndRate(frameCount, timing, culture);
+        var headline = frameCount == 1
+            ? Format(TimingHeadlineOne, length)
+            : Format(TimingHeadlineMany, Count(frameCount, culture), length);
+        return (headline, Format(TimingDetail, rate));
+    }
+
+    // The clip length and the rate label at the effective rate for this count.
+    private static (string Length, string Rate) TimingLengthAndRate(int frameCount, TimingSettings timing, CultureInfo? culture = null)
+    {
         ArgumentOutOfRangeException.ThrowIfNegative(frameCount);
         ArgumentNullException.ThrowIfNull(timing);
 
         var effective = timing.EffectiveRate(frameCount).Rate;
-        var length = TimingFormat.Duration(FrameTiming.Duration(frameCount, effective));
+        var length = TimingFormat.Duration(FrameTiming.Duration(frameCount, effective), culture);
         var rate = timing.Mode == SpeedMode.PerPhoto
-            ? TimingFormat.SecondsPerPhoto(effective)
-            : TimingFormat.FrameRate(effective);
-        return frameCount == 1
-            ? Format(TimingReadoutOne, length, rate)
-            : Format(TimingReadoutMany, Count(frameCount), length, rate);
+            ? TimingFormat.SecondsPerPhoto(effective, culture)
+            : TimingFormat.FrameRate(effective, culture);
+        return (length, rate);
     }
 
     /// <summary>
@@ -719,7 +751,7 @@ public static class ProjectText
     // ---- End of the first-launch block (#29). ----
 
     // "5,000": grouped, invariant until #39 localizes numbers with the words.
-    private static string Count(int count) => count.ToString("N0", CultureInfo.InvariantCulture);
+    private static string Count(int count, CultureInfo? culture = null) => count.ToString("N0", culture ?? CultureInfo.InvariantCulture);
 
     /// <summary>Fills a format string with the invariant culture (numbers stay unlocalized until #39).</summary>
     internal static string Format(string format, params object[] values) =>

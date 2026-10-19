@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #22, #29, #23 merged. PR #77 (#19 preview) in review. Next: wave 10, #17 timing panel (now), #20 filmstrip (after #77).
+2026-10-19: #22, #29, #23, #17 merged. Fix rounds: PR #77 (#19), PR #79 (#14, pulled forward). Next: #20 filmstrip after #77, then #24 and #18.
 
 ## Waves
 
@@ -31,16 +31,16 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | merged #72 |
 | 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | merged #74 |
 | 8 | #29 First launch drop zone | O | App empty state view | merged #75 |
-| 9 | #19 Preview with proxy cache | O | preview view and cache | PR #77, in review |
+| 9 | #19 Preview with proxy cache | O | preview view and cache | PR #77, fix round |
 | 9 | #23 Output panel | S | output inspector section | merged #76 |
 | 10 | #20 Filmstrip | O | filmstrip view | |
-| 10 | #17 Timing panel | S | timing inspector section | |
+| 10 | #17 Timing panel | S | timing inspector section | merged #78 |
 | 11 | #24 Export panel and finished state | O | export panel | |
 | 11 | #18 Frame panel | S | frame inspector section | |
 | 12 | #32 Golden render test | O | `tests/` golden | |
 | 12 | #25 Export while minimized, keep awake | S | export power request | |
 | 13 | #21 Remember settings | S | settings persistence | |
-| 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | |
+| 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | PR #79, fix round |
 | 14 | #31 Rating prompt | S | Store rating | |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | |
 | 15 | #36 Narrow window layout | S | shell visual states | |
@@ -264,3 +264,13 @@ Nothing blocks the build loop. Everything below waits until release is near
   entry). `ExportBitrate` moved to `Core.Projects`. The select pip is Deep
   Amber Indicator for every ComboBox. Debug `--max-resolution`, `--no-hevc`,
   `--probe-delay`, `--probe-failed`, `--output`.
+- #17 PR #78: `Shell/TimingPanel` above Output; `InspectorRegion` is now a
+  `StackPanel` in `InspectorScroll` (#18 adds Frame). Reusable
+  `Shell/SegmentedControl` (neutral pill, Move easing, one tab stop).
+  `ShellView` owns `TimingPanelViewModel` and disposes it in `Detach()`.
+  Length stores the target, Per photo the seconds; the rate is derived.
+  Input: a dot or comma is the decimal point; one separator plus exactly three
+  digits is refused unless it is a fraction below 1 or an NTSC rate; NTSC snaps
+  say so; clamps and rounding always say so. The panel formats in the user's
+  culture (`TimingFormat`/`TimingReadoutParts` take an optional culture; Core
+  stays invariant by default). Debug `--timing=`, `--timing-value=`.

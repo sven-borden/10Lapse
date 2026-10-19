@@ -440,7 +440,9 @@
 
       <!--
         Inspector (#17, #18, #23, Look; #24 swaps in the export panel): 320 px, one divider on its left. The 1 px
-        top margin clears the Layer's divider; #36's narrow state must set Margin to 0 along with the rest.
+        top margin clears the Layer's divider; #36's narrow state must set Margin to 0 along with the rest. The
+        sections (Timing #17, Output #23; #18's Frame panel goes between them) stack in InspectorRegion, which
+        scrolls when the window is short.
       -->
       <Border
         x:Name="InspectorPane"
@@ -451,9 +453,12 @@
         BorderBrush="{ThemeResource DividerBrush}"
         BorderThickness="1,0,0,0"
         Visibility="Collapsed">
-        <Grid x:Name="InspectorRegion" Padding="20,0,20,20">
-          <shell:OutputPanel x:Name="OutputSection" VerticalAlignment="Top" />
-        </Grid>
+        <ScrollViewer x:Name="InspectorScroll" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel x:Name="InspectorRegion" Padding="20,0,20,20">
+            <shell:TimingPanel x:Name="TimingSection" />
+            <shell:OutputPanel x:Name="OutputSection" />
+          </StackPanel>
+        </ScrollViewer>
       </Border>
 
       <!-- Settings (#26): the whole body, over the Empty and Editing regions, under the InfoBars. -->

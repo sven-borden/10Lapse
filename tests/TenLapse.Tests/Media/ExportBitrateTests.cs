@@ -99,4 +99,17 @@ public sealed class ExportBitrateTests
         Assert.Equal(FitMode.Fit, settings.Fit);
         Assert.Equal(ExportBitrate.For(new PixelSize(1440, 2560), new Fraction(24, 1), VideoFormat.Mp4Hevc, OutputQuality.Maximum), settings.EffectiveBitrate);
     }
+
+    [Fact]
+    public void TenSecondsPerPhotoExportsAtOneTenthOfAFramePerSecond()
+    {
+        var project = new Project(TimingSettings.PerPhoto(new Fraction(10, 1)), FrameSettings.Default, OutputSettings.Default, SortMode.Manual);
+        project.AddFrames(Enumerable.Range(0, 842).Select(i => new Frame($@"C:\photos\{i}.jpg", 1, DateTime.UtcNow)));
+
+        var settings = ProjectExporter.SettingsFor(project.Snapshot);
+
+        Assert.Equal(new Fraction(1, 10), settings.FrameRate);
+        Assert.Equal(ExportBitrate.For(project.Snapshot.VideoSize, new Fraction(1, 10), OutputSettings.Default.Format, OutputSettings.Default.Quality), settings.EffectiveBitrate);
+        Assert.True(settings.EffectiveBitrate > 0);
+    }
 }
