@@ -73,6 +73,8 @@ public sealed partial class FilmstripView : UserControl
     private int _flushQueued;
     private bool _wantQueued;
     private int _lastPlayhead = -1;
+    private XamlRoot? _scaleRoot;
+    private double _scale;
 
     // A press that may become a click or a drag (the rules are FilmstripPointer's, tested in Presentation).
     private FilmstripPointer? _pointer;
@@ -87,6 +89,8 @@ public sealed partial class FilmstripView : UserControl
         Repeater.ElementClearing += OnElementClearing;
         Repeater.KeyDown += OnStripKeyDown;
         Repeater.GettingFocus += OnRepeaterGettingFocus;
+        Loaded += (_, _) => Guarded(WatchScale);
+        Unloaded += (_, _) => Guarded(StopWatchingScale);
         Scroller.ViewChanged += (_, _) => ScheduleWant();
         Scroller.SizeChanged += (_, _) => ScheduleWant();
         ListHost.AddHandler(PointerPressedEvent, new PointerEventHandler(OnPointerPressed), handledEventsToo: true);
@@ -166,6 +170,7 @@ public sealed partial class FilmstripView : UserControl
         Repeater.ItemsSource = viewModel.Items;
         viewModel.RefreshGaps();
         Bindings.Update();
+        WatchScale();
     }
 
     /// <summary>Lets go of the view model and frees the thumbnails (the window closes).</summary>
@@ -212,6 +217,7 @@ public sealed partial class FilmstripView : UserControl
         _recheckTimer = null;
         _keyRoot = null;
         _pointer = null;
+        StopWatchingScale();
         ViewModel = null;
     }
 
@@ -396,6 +402,41 @@ public sealed partial class FilmstripView : UserControl
             .ToList();
         thumbnails.Want(wanted, ThumbnailSize.For(viewModel.ThumbnailHeight, XamlRoot?.RasterizationScale ?? 1));
     }
+
+    // The window moved to a screen of another scale: thumbnails are asked for again at the new pixel size (#82 review,
+    // minor 7), not only at the next scroll.
+    private void WatchScale()
+    {
+        if (XamlRoot is not { } root || ReferenceEquals(root, _scaleRoot))
+        {
+            return;
+        }
+
+        StopWatchingScale();
+        _scaleRoot = root;
+        _scale = root.RasterizationScale;
+        root.Changed += OnXamlRootChanged;
+    }
+
+    private void StopWatchingScale()
+    {
+        if (_scaleRoot is { } root)
+        {
+            root.Changed -= OnXamlRootChanged;
+        }
+
+        _scaleRoot = null;
+    }
+
+    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => Guarded(
+        () =>
+        {
+            if (sender.RasterizationScale != _scale)
+            {
+                _scale = sender.RasterizationScale;
+                ScheduleWant();
+            }
+        });
 
     private void OnFramesChanged(object? sender, ImmutableArray<Frame> frames)
     {
