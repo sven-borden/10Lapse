@@ -453,6 +453,7 @@
         <ScrollViewer x:Name="InspectorScroll" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
           <StackPanel x:Name="InspectorRegion" Padding="20,0,20,20">
             <shell:TimingPanel x:Name="TimingSection" />
+            <shell:FramePanel x:Name="FrameSection" />
             <shell:OutputPanel x:Name="OutputSection" />
           </StackPanel>
         </ScrollViewer>
