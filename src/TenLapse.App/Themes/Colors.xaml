@@ -51,8 +51,8 @@
       <Color x:Key="SegmentPillColor">#FEFDFC</Color>
       <Color x:Key="TrackColor">#E4E2DE</Color>
       <Color x:Key="DropZoneStrokeColor">#CFCCC6</Color>
-      <!-- The drag-over wash of the drop zone (#29): Golden Hour Amber at 8 %, as GoldenHourAmberTint, kept apart so amber stays the Export fill only. -->
-      <Color x:Key="DropZoneTintColor">#14E8962E</Color>
+      <!-- The drag-over wash of the drop zone (#29, Main.dc.html accentTint): Golden Hour Amber Tint under the drop zone's own name, one value. -->
+      <StaticResource x:Key="DropZoneTintColor" ResourceKey="GoldenHourAmberTintColor" />
       <!-- Subtle buttons (command bar): an Ink wash, 6% on hover and 4% pressed -->
       <Color x:Key="SubtleFillHoverColor">#0F1C1B19</Color>
       <Color x:Key="SubtleFillPressedColor">#0A1C1B19</Color>
@@ -135,7 +135,7 @@
       <Color x:Key="SegmentPillColor">#4A4743</Color>
       <Color x:Key="TrackColor">#3F3D3A</Color>
       <Color x:Key="DropZoneStrokeColor">#5A5651</Color>
-      <Color x:Key="DropZoneTintColor">#1AF0A54A</Color>
+      <StaticResource x:Key="DropZoneTintColor" ResourceKey="GoldenHourAmberTintColor" />
       <!-- Subtle buttons (command bar): an Ink wash, 6% on hover and 4% pressed -->
       <Color x:Key="SubtleFillHoverColor">#0FF4F2EE</Color>
       <Color x:Key="SubtleFillPressedColor">#0AF4F2EE</Color>
@@ -219,6 +219,7 @@
       <StaticResource x:Key="SegmentPillColor" ResourceKey="SystemColorWindowColor" />
       <StaticResource x:Key="TrackColor" ResourceKey="SystemColorButtonFaceColor" />
       <StaticResource x:Key="DropZoneStrokeColor" ResourceKey="SystemColorButtonTextColor" />
+      <!-- No wash in high contrast, as GoldenHourAmberTint: the outline turns Highlight instead. -->
       <Color x:Key="DropZoneTintColor">#00000000</Color>
       <!-- Subtle buttons keep the system button colors in high contrast (the shell scopes its washes to Light and Dark) -->
       <Color x:Key="SubtleFillHoverColor">#00000000</Color>
