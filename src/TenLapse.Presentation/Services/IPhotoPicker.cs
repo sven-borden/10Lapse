@@ -13,9 +13,8 @@ public interface IPhotoPicker
 }
 
 /// <summary>
-/// Where the pickers open next: the folder the user last chose photos from. <see cref="SessionImportFolders"/> keeps it
-/// for the session; #21 keeps it across launches by passing its own implementation (ApplicationData local settings,
-/// with a path that works unpackaged) to <see cref="ImportViewModel"/>.
+/// Where the pickers open next: the folder the user last chose photos from. The app passes <see cref="RememberedSettings"/>,
+/// which keeps it across launches (#21); <see cref="SessionImportFolders"/> keeps it for the session, for tests.
 /// </summary>
 public interface IImportFolderMemory
 {

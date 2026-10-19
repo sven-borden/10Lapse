@@ -26,6 +26,12 @@ internal static partial class DebugLaunch
     /// <summary>The first-launch drop zone acts as with Windows animations off (<c>--reduce-motion</c>).</summary>
     public static bool ReduceMotion => _args.Contains("--reduce-motion", StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Where the remembered settings live (<c>--settings-folder=PATH</c>: <c>settings.json</c> in that folder), or null for the
+    /// app's own folder. A test run points it under its branch folder so it leaves the user's settings alone.
+    /// </summary>
+    public static string? SettingsFolder => Value("--settings-folder=");
+
     /// <summary>Applies the switches to a freshly built shell, on the UI thread.</summary>
     public static void Apply(ShellViewModel shell, IInfoBarService infoBars)
     {
