@@ -11,8 +11,14 @@ namespace TenLapse.Core.Text;
 /// and the only one in 3.0). Each text class (<c>ProjectText</c>, <c>ExportText</c>, <see cref="Timing.TimingWords"/>, ...)
 /// holds one and reads every sentence through it, named after the property that asks:
 /// <code>public static string AddPhotos => _strings.Get();</code>
-/// so call sites and tests read the same properties as before. A translation later is only new files beside the
-/// English ones (<c>ProjectText.de.resx</c>); no code changes.
+/// so call sites and tests read the same properties as before.
+/// <para>
+/// A translation adds files: an <c>X.&lt;lang&gt;.resx</c> beside each <c>Strings/X.resx</c> (<c>ProjectText.de.resx</c>),
+/// and <c>src/TenLapse.App/Strings/&lt;lang&gt;/Resources.resw</c>, which carries the manifest's description and declares
+/// the language to the package and the Store. The first translation also changes code, as <c>docs/STATUS.md</c> lists:
+/// the UI culture taken from the app's language list (not the Windows display language), plural forms beyond
+/// one and many, and numbers written in the user's culture where they are invariant now.
+/// </para>
 /// <para>
 /// Log lines, error contexts, Copy diagnostics and exception messages stay in code, in English: the log is for the
 /// developer and for bug reports, not for the user. Debug-only text stays in code too.
