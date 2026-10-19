@@ -68,6 +68,85 @@ public sealed class JsonFileSettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void AFileOverTheSizeCapIsTheDefaultsWithAProblemAndIsNotRead()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
+        // Valid JSON padded past the cap: if it were read, the folder would come back.
+        var padding = new string(' ', (int)JsonFileSettingsStore.MaxFileBytes + 1);
+        System.IO.File.WriteAllText(SettingsPath, "{ \"version\": 1, \"importFolder\": \"C:\\\\Photos\" }" + padding);
+
+        var result = new JsonFileSettingsStore(SettingsPath).Load();
+
+        Assert.Equal(UserSettings.Default, result.Settings);
+        Assert.Single(result.Problems);
+        Assert.Contains("not read", result.Problems[0]);
+    }
+
+    [Fact]
+    public void AFileJustUnderTheCapStillReads()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
+        var text = "{ \"version\": 1, \"importFolder\": \"C:\\\\Photos\" }";
+        System.IO.File.WriteAllText(SettingsPath, text + new string(' ', (int)JsonFileSettingsStore.MaxFileBytes - text.Length));
+
+        var result = new JsonFileSettingsStore(SettingsPath).Load();
+
+        Assert.Equal(@"C:\Photos", result.Settings.ImportFolder);
+    }
+
+    [Fact]
+    public void TwoStoresSavingToOnePathNeverCollideAndLeaveNoTemporaryFile()
+    {
+        var first = new JsonFileSettingsStore(SettingsPath);
+        var second = new JsonFileSettingsStore(SettingsPath);
+        first.Save(UserSettings.Default);
+        var collisions = 0;
+
+        Parallel.For(0, 200, i =>
+        {
+            try
+            {
+                (i % 2 == 0 ? first : second).Save(new UserSettings { ImportFolder = @"C:\Folder" + i });
+            }
+            catch (IOException exception) when (exception.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase))
+            {
+                // The temporary file's own name was taken: what a fixed ".tmp" name would do.
+                Interlocked.Increment(ref collisions);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // Two writers replacing the file in the same instant can make one fail on Windows; the app shows that
+                // once and the next change writes again. The file itself must stay whole.
+            }
+        });
+
+        Assert.Equal(0, collisions);
+        var loaded = first.Load();
+        Assert.Empty(loaded.Problems);
+        Assert.StartsWith(@"C:\Folder", loaded.Settings.ImportFolder);
+        Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(SettingsPath)!, "*.tmp"));
+    }
+
+    [Fact]
+    public void AFailedSaveLeavesNoTemporaryFile()
+    {
+        // A folder where the file should be: the replace fails after the temporary file was written.
+        Directory.CreateDirectory(SettingsPath);
+
+        Assert.ThrowsAny<Exception>(() => new JsonFileSettingsStore(SettingsPath).Save(UserSettings.Default));
+
+        Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(SettingsPath)!, "*.tmp"));
+    }
+
+    [Theory]
+    [InlineData(@"C:\Users\me\AppData\Local\Packages\Id\LocalState\Logs", @"C:\Users\me\AppData\Local\Packages\Id\LocalState\settings.json")]
+    [InlineData(@"C:\Users\me\AppData\Local\10Lapse\Logs\", @"C:\Users\me\AppData\Local\10Lapse\settings.json")]
+    public void TheSettingsFileSitsBesideTheLogFolder(string logFolder, string expected)
+    {
+        Assert.Equal(expected, SettingsLocation.BesideLogFolder(logFolder, "settings.json"));
+    }
+
+    [Fact]
     public void APathThatCannotBeReadIsTheDefaultsWithAProblem()
     {
         // A folder where the file should be: reading it fails like a file that is locked or denied.

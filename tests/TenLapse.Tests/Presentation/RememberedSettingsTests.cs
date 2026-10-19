@@ -492,6 +492,134 @@ public sealed class RememberedSettingsTests
     }
 
     [Fact]
+    public void AStoreThatThrowsOnLoadGivesTheDefaultsAndOneLogLine()
+    {
+        var remembered = Remembered(new ThrowingStore());
+
+        Assert.Equal(UserSettings.Default, remembered.Current);
+        Assert.Single(_log.Entries, entry => entry.Level == TenLapse.Core.Diagnostics.LogLevel.Error);
+        Assert.Empty(_errors.Shown);
+        Assert.Equal(OutputSettings.Default, remembered.CreateProject().Output);
+    }
+
+    [Fact]
+    public void AHostileFileOnDiskStartsTheAppWithDefaults()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "claude", "feat-21-remember-settings", "hostile-" + Guid.NewGuid().ToString("N"), "settings.json");
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, """{ "version": 1, "timing": { "framesPerSecond": [null, 1] } }""");
+
+            var remembered = Remembered(new JsonFileSettingsStore(path));
+
+            Assert.Equal(UserSettings.Default, remembered.Current);
+            Assert.Single(_log.Entries, entry => entry.Level == TenLapse.Core.Diagnostics.LogLevel.Warning);
+        }
+        finally
+        {
+            Directory.Delete(Path.GetDirectoryName(path)!, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ResetReportsWhetherTheFileWasWritten()
+    {
+        var remembered = Remembered(new MemorySettingsStore(new SettingsLoadResult(_saved, [])));
+        Assert.True(remembered.ResetToDefaults());
+
+        _store.FailWith = new IOException("Locked.");
+        var failing = Remembered();
+        failing.LastFolder = @"C:\Photos";
+        Assert.False(failing.ResetToDefaults());
+        Assert.Single(_errors.Shown);
+    }
+
+    [Fact]
+    public void TheResetCommandSaysNothingWhenTheWriteFailed()
+    {
+        _store.FailWith = new IOException("Locked.");
+        var remembered = Remembered();
+        var infoBars = new FakeInfoBarService();
+        var collector = new DiagnosticsCollector([], _log);
+        var settings = new SettingsViewModel(_errors, new DiagnosticsCopier(collector, new FakeClipboard(), infoBars), remembered, infoBars);
+
+        settings.ResetToDefaultsCommand.Execute(null);
+
+        Assert.Empty(infoBars.Shown);
+        Assert.Single(_errors.Shown);
+    }
+
+    [Fact]
+    public void AWriteThatHangsDoesNotHangClosingOrReset()
+    {
+        using var release = new ManualResetEventSlim();
+        var store = new BlockingStore(release);
+        var remembered = new RememberedSettings(store, _errors, _log, _time, _debounce, TimeSpan.FromMilliseconds(100));
+        remembered.LastFolder = @"C:\Photos";
+
+        var started = System.Diagnostics.Stopwatch.GetTimestamp();
+        var written = remembered.ResetToDefaults();
+        var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(started);
+
+        Assert.False(written);
+        Assert.InRange(elapsed.TotalMilliseconds, 90, 1500);
+        Assert.Contains(_log.Entries, entry => entry.Level == TenLapse.Core.Diagnostics.LogLevel.Warning && entry.Message.Contains("longer than", StringComparison.Ordinal));
+        release.Set();
+    }
+
+    [Fact]
+    public async Task RealTimersWithParallelChangesAndADisposeRacingThemKeepTheLastWrittenStateConsistent()
+    {
+        for (var round = 0; round < 5; round++)
+        {
+            var store = new MemorySettingsStore();
+            var errors = new FakeErrorSink();
+            var remembered = new RememberedSettings(store, errors, new FakeLog(), TimeProvider.System, TimeSpan.FromMilliseconds(1));
+            using var go = new ManualResetEventSlim();
+            var workers = Enumerable.Range(0, 4).Select(worker => Task.Run(() =>
+            {
+                go.Wait();
+                for (var i = 0; i < 300; i++)
+                {
+                    remembered.LastFolder = @"C:\Folder" + worker + @"\" + i;
+                    remembered.ExportFolder = @"D:\Out" + worker + @"\" + i;
+                    if (i % 50 == 0)
+                    {
+                        remembered.Flush();
+                    }
+                }
+            })).ToArray();
+
+            go.Set();
+            await Task.Delay(2, TestContext.Current.CancellationToken);
+            remembered.Dispose();
+            await Task.WhenAll(workers);
+
+            // Changes after the dispose are ignored; everything before it is on disk, in order.
+            Assert.Equal(remembered.Current, store.Stored);
+            Assert.Empty(errors.Shown);
+            Assert.Empty(errors.Reported);
+        }
+    }
+
+    private sealed class ThrowingStore : ISettingsStore
+    {
+        public SettingsLoadResult Load() => throw new NullReferenceException("a store that broke its promise");
+
+        public void Save(UserSettings settings)
+        {
+        }
+    }
+
+    private sealed class BlockingStore(ManualResetEventSlim release) : ISettingsStore
+    {
+        public SettingsLoadResult Load() => SettingsLoadResult.Fresh;
+
+        public void Save(UserSettings settings) => release.Wait(TimeSpan.FromSeconds(10));
+    }
+
+    [Fact]
     public void ALoadTakesNoNoticeableTime()
     {
         var path = Path.Combine(Path.GetTempPath(), "claude", "feat-21-remember-settings", "load-" + Guid.NewGuid().ToString("N"), "settings.json");
