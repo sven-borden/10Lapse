@@ -546,8 +546,10 @@ internal sealed class PreviewRenderLoop : IDisposable
     // it (the old places no longer mean anything). Returns the gate and the photo to draw now.
     private (Rect Gate, Rect Photo) Reframing(Rect gate, Rect photo, bool hasPicture, PixelSize video, FitMode fit, Size panel, long now)
     {
-        if (panel != _shownPanel)
+        if (panel != _shownPanel || _develop is not null)
         {
+            // A resize, or the arrival: while the photos develop, a shape that settles as their sizes become known (Match
+            // photos) is not a reframe; the gate takes it at once.
             _reframe = null;
         }
         else if (hasPicture && _shownPicture && (video != _shownVideo || fit != _shownFit) && (gate != _aimedGate || photo != _aimedPhoto))
