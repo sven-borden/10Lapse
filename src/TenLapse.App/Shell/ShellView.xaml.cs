@@ -60,6 +60,9 @@ public sealed partial class ShellView : UserControl
         InitializeComponent();
         SettingsPage.ViewModel = settings;
         OutputSection.ViewModel = output;
+        var timing = new TimingPanelViewModel(viewModel, presenter);
+        TimingSection.ViewModel = timing;
+        Unloaded += (_, _) => timing.Dispose();
         FirstLaunch.Attach(import, presenter, errors);
         _emptyRegionVisibilityToken = EmptyRegion.RegisterPropertyChangedCallback(VisibilityProperty, OnEmptyRegionVisibilityChanged);
 

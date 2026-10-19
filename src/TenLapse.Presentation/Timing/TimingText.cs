@@ -56,6 +56,15 @@ public static class TimingText
     /// <summary>A preset of the Length mode. {0}: the seconds ("30").</summary>
     public static string LengthPreset => "{0} s";
 
+    /// <summary>The bar's left end: no time.</summary>
+    public static string BarStart => "0 s";
+
+    /// <summary>The bar's middle: half a minute.</summary>
+    public static string BarMiddle => "30 s";
+
+    /// <summary>The bar's right end: a minute, the longest clip it can show.</summary>
+    public static string BarEnd => "60 s";
+
     /// <summary>The Per second box was left with something that is not a number.</summary>
     public static string NotANumberFramesPerSecond => "Type a frame rate from {0} to {1} fps, like 24 or 29.97.";
 

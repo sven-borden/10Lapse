@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The segmented control of DESIGN.md (Components, Segmented control), after docs/design/canvas/components/Controls.dc.html:
+  a 32 px Segment Track with a Control Stroke border, 5 px corners and 2 px inside, equal segments, and a neutral Card
+  pill with the Pill shadow behind the selected one. The selected segment is Body strong in Ink, the others Ink
+  Secondary. The pill is never amber: it marks a setting, not an action. The pill slides 250 ms (Move easing), or
+  jumps when Windows animations are off.
+
+  Each segment is a RadioButton with its own template, so a screen reader gets radio buttons with selection (the
+  selection item pattern) and a group named by AutomationProperties.Name on this control. Keyboard: Tab enters on
+  the selected segment, the arrow keys, Home and End move the selection and the focus (no wrapping), Space selects
+  the focused one. SelectedIndex is -1 for "none" (no pill). Used by the Timing panel; #18's Frame panel reuses it.
+-->
+<UserControl
+  x:Class="TenLapse.Shell.SegmentedControl"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <UserControl.Resources>
+    <!-- A segment: no radio glyph, centered text on a transparent ground, a hover wash, the system double focus ring. -->
+    <Style x:Key="SegmentStyle" TargetType="RadioButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{ThemeResource InkSecondaryBrush}" />
+      <Setter Property="FontFamily" Value="{StaticResource TextFontFamily}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="UseSystemFocusVisuals" Value="True" />
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusThumb}" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Grid x:Name="RootGrid" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+              <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="CommonStates">
+                  <VisualState x:Name="Normal" />
+                  <VisualState x:Name="PointerOver">
+                    <VisualState.Setters>
+                      <Setter Target="RootGrid.Background" Value="{ThemeResource SubtleFillHoverBrush}" />
+                    </VisualState.Setters>
+                  </VisualState>
+                  <VisualState x:Name="Pressed">
+                    <VisualState.Setters>
+                      <Setter Target="RootGrid.Background" Value="{ThemeResource SubtleFillHoverBrush}" />
+                    </VisualState.Setters>
+                  </VisualState>
+                  <VisualState x:Name="Disabled">
+                    <VisualState.Setters>
+                      <Setter Target="ContentPresenter.Opacity" Value="0.4" />
+                    </VisualState.Setters>
+                  </VisualState>
+                </VisualStateGroup>
+                <VisualStateGroup x:Name="CheckStates">
+                  <VisualState x:Name="Unchecked" />
+                  <VisualState x:Name="Indeterminate" />
+                  <VisualState x:Name="Checked">
+                    <VisualState.Setters>
+                      <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource InkBrush}" />
+                      <Setter Target="ContentPresenter.FontWeight" Value="SemiBold" />
+                    </VisualState.Setters>
+                  </VisualState>
+                </VisualStateGroup>
+              </VisualStateManager.VisualStateGroups>
+              <ContentPresenter
+                x:Name="ContentPresenter"
+                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                Content="{TemplateBinding Content}"
+                Foreground="{TemplateBinding Foreground}" />
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </UserControl.Resources>
+
+  <Border
+    x:Name="Track"
+    Height="{StaticResource ControlHeight}"
+    Padding="{StaticResource PaddingSegmentedTrack}"
+    Background="{ThemeResource SegmentTrackBrush}"
+    BorderBrush="{ThemeResource ControlStrokeBrush}"
+    BorderThickness="1"
+    CornerRadius="{StaticResource RadiusSegmentedTrack}">
+    <Grid x:Name="Inner">
+      <!--
+        The pill: two rectangles of the same size, the lower one casts the shadow (a child visual draws above its own
+        element, so the upper one covers the caster's inside). 3 px corners are RadiusThumb. Translation is animated.
+      -->
+      <Grid
+        x:Name="Pill"
+        HorizontalAlignment="Left"
+        IsHitTestVisible="False"
+        Visibility="Collapsed">
+        <Rectangle
+          x:Name="PillShadowCaster"
+          Fill="{ThemeResource SegmentPillBrush}"
+          RadiusX="3"
+          RadiusY="3" />
+        <Rectangle
+          Fill="{ThemeResource SegmentPillBrush}"
+          RadiusX="3"
+          RadiusY="3"
+          Stroke="{ThemeResource ShadowPillRingBrush}"
+          StrokeThickness="1" />
+      </Grid>
+      <Grid x:Name="Segments" />
+    </Grid>
+  </Border>
+</UserControl>
