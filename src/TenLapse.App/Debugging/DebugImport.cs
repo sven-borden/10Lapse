@@ -67,6 +67,7 @@ internal static class ImportBench
             double? firstFrames = null;
             double? firstThumbnail = null;
             double? viewFilled = null;
+            var importFinished = false;
             var peak = baseline;
             var lastSample = TimeSpan.Zero;
             void OnRendering(object? sender, object e)
@@ -85,8 +86,13 @@ internal static class ImportBench
 
                 if (viewFilled is null && firstThumbnail is not null)
                 {
+                    // Filled means every realized thumbnail in view has its picture AND they reach the right edge of the
+                    // viewport (or, for a project shorter than the viewport, are all of its frames once the import is done):
+                    // a few thumbnails realized while frames are still arriving must not count as a full view.
                     var inView = realized.Where(thumb => IsInView(strip, thumb)).ToList();
-                    if (inView.Count > 0 && inView.All(thumb => thumb.HasPicture))
+                    var covered = inView.Count > 0 && inView.Max(thumb => RightEdge(strip, thumb)) >= strip.ScrollHost.ViewportWidth - 1;
+                    var allFrames = importFinished && inView.Count >= project.Frames.Length;
+                    if (inView.Count > 0 && inView.All(thumb => thumb.HasPicture) && (covered || allFrames))
                     {
                         viewFilled = now.TotalMilliseconds;
                     }
@@ -107,6 +113,7 @@ internal static class ImportBench
                 await import.ImportAsync([folder]);
                 await import.WhenIdleAsync();
                 done = clock.Elapsed.TotalMilliseconds;
+                importFinished = true;
                 peak = Math.Max(peak, PrivateBytes());
 
                 // The first view may still be filling when the import ends (a 24 MP proxy takes a moment): wait for it.
@@ -152,10 +159,14 @@ internal static class ImportBench
 
     private static bool IsInView(FilmstripView strip, FilmstripThumb thumb)
     {
-        var scroller = strip.ScrollHost;
-        var bounds = thumb.TransformToVisual(scroller).TransformBounds(new Windows.Foundation.Rect(0, 0, thumb.ActualWidth, thumb.ActualHeight));
-        return bounds.Right > 0 && bounds.Left < scroller.ViewportWidth;
+        var bounds = BoundsIn(strip, thumb);
+        return bounds.Right > 0 && bounds.Left < strip.ScrollHost.ViewportWidth;
     }
+
+    private static double RightEdge(FilmstripView strip, FilmstripThumb thumb) => BoundsIn(strip, thumb).Right;
+
+    private static Windows.Foundation.Rect BoundsIn(FilmstripView strip, FilmstripThumb thumb) =>
+        thumb.TransformToVisual(strip.ScrollHost).TransformBounds(new Windows.Foundation.Rect(0, 0, thumb.ActualWidth, thumb.ActualHeight));
 
     private static string Origins((ThumbnailOrigin Origin, double Milliseconds, double At)[] loads) =>
         loads.Length == 0

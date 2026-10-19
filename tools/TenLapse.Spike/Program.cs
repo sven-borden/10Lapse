@@ -15,6 +15,7 @@ using TenLapse.Spike;
 //   TenLapse.Spike export-project --dir D [--distinct N] [--frames 1000] [--resolution 2160] [--aspect 16x9]
 //                         [--fit fill|fit] [--quality high] [--format h264|hevc] [--fps 30] [--out file.mp4]
 //                         (#22: ProjectExporter, the product's entry point, through the .partial file)
+//                         [--decode-ahead N] [--decode-threads N] force the decode depth (the tight-memory profile is 4 and 3)
 //                         [--photos D] exports every JPEG of D as it is (no links, --distinct is ignored; #34's folder), and the last line
 //                         is a BENCH line of key=value pairs for scripts/bench.ps1
 //   TenLapse.Spike bench-photos --dir D [--count 1000] [--size 6000x4000] [--bases 24] [--noise 25] [--no-thumbnail]
@@ -285,7 +286,18 @@ static async Task<int> ExportProjectAsync(Options options)
         }
     });
     var clock = Stopwatch.StartNew();
-    var result = await ProjectExporter.ExportAsync(snapshot, output, progress);
+    // The product picks the decode depth itself (8 ahead and up to 6 threads, or 4 and 3 on 8 GB of RAM or less or an
+    // integrated GPU). --decode-ahead and --decode-threads force it, to measure the tight-memory profile on a big PC.
+    var decodeAhead = options.Flag("decode-ahead") ? options.Int("decode-ahead", 0) : (int?)null;
+    var decodeThreads = options.Flag("decode-threads") ? options.Int("decode-threads", 0) : (int?)null;
+    if (decodeAhead is not null || decodeThreads is not null)
+    {
+        Console.WriteLine($"decode depth forced: ahead {decodeAhead?.ToString(CultureInfo.InvariantCulture) ?? "auto"}, threads {decodeThreads?.ToString(CultureInfo.InvariantCulture) ?? "auto"}");
+    }
+
+    var result = decodeAhead is null && decodeThreads is null
+        ? await ProjectExporter.ExportAsync(snapshot, output, progress)
+        : await ExportWithDecodeDepthAsync(snapshot, output, progress, decodeAhead, decodeThreads);
     var wall = clock.Elapsed;
     await stopSampling.CancelAsync();
     await sampler;
@@ -301,6 +313,22 @@ static async Task<int> ExportProjectAsync(Options options)
         $"baselinePrivateMB={baselinePrivate / 1048576.0:0} sampledPrivateMB={maxPrivate / 1048576.0:0} sampledWorkingSetMB={maxWorkingSet / 1048576.0:0} peakManagedMB={maxManaged / 1048576.0:0} " +
         $"fileMB={result.FileBytes / 1e6:0} encoder={result.Encoder?.Name.Replace(' ', '_')} hardware={result.Encoder?.IsHardware} width={settings.Width} height={settings.Height}"));
     return 0;
+}
+
+// ProjectExporter's test seam (ProjectExportOptions.Tune) is internal to TenLapse.Media; an InternalsVisibleTo would also
+// expose its internal PInvoke class and clash with the Spike's own, so the seam is reached by reflection. Spike only.
+static Task<ProjectExportResult> ExportWithDecodeDepthAsync(ProjectSnapshot snapshot, string output, IProgress<ExportProgress> progress, int? ahead, int? threads)
+{
+    var exporter = typeof(ProjectExporter);
+    var optionsType = exporter.Assembly.GetType($"{exporter.Namespace}.ProjectExportOptions", throwOnError: true)!;
+    var options = Activator.CreateInstance(optionsType)!;
+    Func<VideoExportSettings, VideoExportSettings> tune = settings => settings with { DecodeAhead = ahead, DecodeThreads = threads };
+    optionsType.GetProperty("Tune")!.SetValue(options, tune);
+    var method = exporter.GetMethod(
+        "ExportAsync",
+        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+        [typeof(ProjectSnapshot), typeof(string), typeof(IProgress<ExportProgress>), typeof(CancellationToken), optionsType])!;
+    return (Task<ProjectExportResult>)method.Invoke(null, [snapshot, output, progress, CancellationToken.None, options])!;
 }
 
 static string ReadBack(string path, Fraction rate)
