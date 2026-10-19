@@ -66,6 +66,8 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     private Guid? _playhead;
     private int _suppressFollow;
     private int? _pendingFrom;
+    private List<Guid>? _dragIds;
+    private bool _followed;
     private bool _gapsStale;
     private bool _disposed;
     private double _thumbnailHeight = MinThumbnailHeight;
@@ -256,11 +258,13 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
             case FilmstripAction.None:
                 return new(false, focused);
             case FilmstripAction.Remove:
-                Remove();
-                return new(true, PlayheadIndex);
+                // Paused first: playing, a single selection follows the playhead, so the frame removed is the one on
+                // screen when the key went down, and the preview stays on what replaced it.
+                _player.Pause();
+                TakeFocused(focused);
+                return new(Remove() > 0, PlayheadIndex);
             case FilmstripAction.Undo:
-                Undo();
-                return new(true, PlayheadIndex);
+                return new(Undo(), PlayheadIndex);
         }
 
         if (count == 0)
@@ -315,11 +319,59 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
                 return new(true, PlayheadIndex);
             case FilmstripAction.MoveEarlier:
             case FilmstripAction.MoveLater:
+                // Paused first, or the selection would walk on with the video and the next Alt+arrow move another frame.
+                _player.Pause();
+                TakeFocused(focused);
                 var id = Items[focused].Id;
                 MoveBy(action == FilmstripAction.MoveEarlier ? -1 : 1);
                 return new(true, _byId.TryGetValue(id, out var moved) ? moved.Number - 1 : focused);
             default:
                 return new(false, focused);
+        }
+    }
+
+    /// <summary>
+    /// A drag starts on thumbnail <paramref name="index"/>: the video pauses, the frame is selected alone unless it is
+    /// selected already, and the selected frames are taken as the ones that move. Until <see cref="EndDrag"/> the selection
+    /// stays put whatever the playhead does, and the drop moves exactly these frames.
+    /// </summary>
+    public void BeginDrag(int index)
+    {
+        _player.Pause();
+        if (ItemAt(index) is { IsSelected: false })
+        {
+            Click(index, shift: false, control: false);
+        }
+
+        _dragIds = [.. Items.Where(item => _selected.Contains(item.Id)).Select(item => item.Id)];
+    }
+
+    /// <summary>
+    /// The drag ends: the frames taken by <see cref="BeginDrag"/> move to the seam <paramref name="insertIndex"/>
+    /// (see <see cref="MoveTo"/>), or nothing moves when it is null (Escape, a lost pointer).
+    /// </summary>
+    /// <returns>True when the order changed.</returns>
+    public bool EndDrag(int? insertIndex)
+    {
+        var ids = _dragIds;
+        _dragIds = null;
+        return ids is not null && insertIndex is { } seam && MoveTo(seam, ids);
+    }
+
+    /// <summary>True between <see cref="BeginDrag"/> and <see cref="EndDrag"/>.</summary>
+    public bool IsDragging => _dragIds is not null;
+
+    /// <summary>
+    /// The context menu is about to act: the video pauses, so the selection stops following the playhead, and a
+    /// right-click on thumbnail <paramref name="index"/> outside the selection selects it alone first, as in File
+    /// Explorer. Null when the menu opens from the keyboard.
+    /// </summary>
+    public void PrepareContextMenu(int? index)
+    {
+        _player.Pause();
+        if (index is { } at && ItemAt(at) is { IsSelected: false })
+        {
+            Click(at, shift: false, control: false);
         }
     }
 
@@ -395,21 +447,28 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// A drop: moves the selected frames as one block to the seam <paramref name="insertIndex"/> (0 before the first frame,
-    /// <c>Count</c> after the last), switching the sort to manual. Nothing happens when the order would not change.
+    /// A drop: moves the selected frames (or the frames <paramref name="ids"/>, those of them still in the project) as one
+    /// block to the seam <paramref name="insertIndex"/> (0 before the first frame, <c>Count</c> after the last), switching
+    /// the sort to manual. Nothing happens when the order would not change.
     /// </summary>
     /// <returns>True when the order changed.</returns>
-    public bool MoveTo(int insertIndex)
+    public bool MoveTo(int insertIndex, IReadOnlyCollection<Guid>? ids = null)
     {
         if (Items.Count == 0)
         {
             return false;
         }
 
-        var moving = Items.Where(item => _selected.Contains(item.Id)).ToList();
-        if (moving.Count == 0 && _playhead is { } playhead && _byId.TryGetValue(playhead, out var shown))
+        var wanted = ids is null ? _selected : ids.ToHashSet();
+        var moving = Items.Where(item => wanted.Contains(item.Id)).ToList();
+        if (moving.Count == 0 && ids is null && _playhead is { } playhead && _byId.TryGetValue(playhead, out var shown))
         {
             moving.Add(shown);
+        }
+
+        if (moving.Count == 0)
+        {
+            return false;
         }
 
         var current = Items.Select(item => item.Id).ToList();
@@ -494,6 +553,16 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
         _player.StateChanged -= OnPlayerStateChanged;
     }
 
+    // Keys on a focused thumbnail act from the focus ring: a single selection that only followed the playhead (the video
+    // played on after the user picked the focused frame) gives way to the focused frame. A selection the user made stays.
+    private void TakeFocused(int focused)
+    {
+        if (_followed && ItemAt(focused) is { } item && !(_selected.Count == 1 && _selected.Contains(item.Id)))
+        {
+            SelectOnly(item.Id);
+        }
+    }
+
     private FilmstripKeyResult Navigate(int index)
     {
         _player.Pause();
@@ -555,6 +624,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
 
     private void ApplySelection()
     {
+        _followed = false;
         foreach (var id in _flagged.Where(id => !_selected.Contains(id)).ToList())
         {
             _flagged.Remove(id);
@@ -625,11 +695,13 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
             }
         }
 
-        // A selection of the one frame at the playhead follows it; an empty selection falls back to it.
-        if (_suppressFollow == 0 && id is { } playhead
+        // A selection of the one frame at the playhead follows it; an empty selection falls back to it. Not during a
+        // drag: the frames that move were taken when it started.
+        if (_suppressFollow == 0 && _dragIds is null && id is { } playhead
             && (_selected.Count == 0 || (_selected.Count == 1 && previous is { } was && was != playhead && _selected.Contains(was))))
         {
             SelectOnly(playhead);
+            _followed = true;
         }
 
         if (previous != id)
@@ -670,6 +742,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
                 _gapItems.Clear();
                 _anchor = null;
                 _playhead = null;
+                _dragIds = null;
                 _byId.Clear();
                 Rebuild(_project.Frames);
                 InvalidateGaps();

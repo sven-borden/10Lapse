@@ -239,6 +239,116 @@ public sealed class FilmstripViewModelTests
         Assert.Equal(new FilmstripKeyResult(true, 0), strip.Handle(FilmstripAction.MoveEarlier, 0));
     }
 
+    // #82 review, M1: a drag started while the video plays moves the frame that was grabbed, not the one on screen at the drop.
+    [Fact]
+    public void ADragWhilePlayingMovesTheGrabbedFrame()
+    {
+        var (shell, player, strip) = Strip(30);
+        var pointer = new FilmstripPointer(strip);
+        var grabbed = strip.Items[3].Id;
+        player.Play();
+        _now += 100;
+        player.Tick();
+
+        pointer.Press(3, 100, 10, 1, shift: false, control: false, touch: false);
+        Assert.Equal(FilmstripPointerResult.DragStarted, pointer.Move(1, 120, 10));
+        Assert.False(player.IsPlaying);
+        Assert.Equal([3], Selected(strip));
+
+        // Even when the video plays again during the drag (Space), the selection stays and the drop moves frame 3.
+        player.Play();
+        _now += 200;
+        player.Tick();
+        Assert.NotEqual(3, player.CurrentFrame);
+        Assert.Equal([3], Selected(strip));
+        pointer.Over(0);
+        Assert.Equal(FilmstripPointerResult.Dropped, pointer.Release(1));
+
+        Assert.Equal(grabbed, shell.CurrentProject.Model.Frames[0].Id);
+        Assert.False(strip.IsDragging);
+    }
+
+    [Fact]
+    public void AltArrowWhilePlayingMovesTheChosenFrame()
+    {
+        var (shell, player, strip) = Strip(30);
+        strip.Click(10, false, false);
+        var chosen = strip.Items[10].Id;
+        player.Play();
+        _now += 300;
+        player.Tick();
+        Assert.NotEqual([10], Selected(strip));
+
+        strip.Handle(FilmstripAction.MoveEarlier, 10);
+
+        Assert.False(player.IsPlaying);
+        Assert.Equal(chosen, shell.CurrentProject.Model.Frames[9].Id);
+    }
+
+    [Fact]
+    public void DeleteOnAFocusedThumbnailWhilePlayingRemovesThatFrame()
+    {
+        var (shell, player, strip) = Strip(30);
+        strip.Click(10, false, false);
+        var chosen = strip.Items[10].Id;
+        player.Play();
+        _now += 300;
+        player.Tick();
+
+        Assert.True(strip.Handle(FilmstripAction.Remove, 10).Handled);
+
+        Assert.False(player.IsPlaying);
+        Assert.Equal(29, strip.Items.Count);
+        Assert.DoesNotContain(shell.CurrentProject.Model.Frames, frame => frame.Id == chosen);
+    }
+
+    [Fact]
+    public void AStripKeyActsOnASelectionTheUserMadeNotOnTheFocus()
+    {
+        var (shell, _, strip) = Strip(30);
+        strip.Click(4, false, false);
+        strip.Click(6, false, control: true);
+        var picked = new[] { strip.Items[4].Id, strip.Items[6].Id };
+
+        strip.Handle(FilmstripAction.Remove, 12);
+
+        Assert.Equal(28, strip.Items.Count);
+        Assert.All(picked, id => Assert.DoesNotContain(shell.CurrentProject.Model.Frames, frame => frame.Id == id));
+    }
+
+    [Fact]
+    public void DeleteWhilePlayingRemovesTheFrameOnScreenAndPauses()
+    {
+        var (shell, player, strip) = Strip(30);
+        strip.Click(5, false, false);
+        player.Play();
+        _now += 100;
+        player.Tick();
+        var shown = strip.Items[player.CurrentFrame].Id;
+
+        Assert.True(strip.Handle(FilmstripAction.Remove, -1).Handled);
+
+        Assert.False(player.IsPlaying);
+        Assert.DoesNotContain(shell.CurrentProject.Model.Frames, frame => frame.Id == shown);
+        Assert.Equal(29, strip.Items.Count);
+    }
+
+    [Fact]
+    public void TheContextMenuPausesAndSelectsTheFrameUnderTheRightClick()
+    {
+        var (_, player, strip) = Strip(30);
+        strip.Click(2, false, false);
+        strip.Click(4, false, control: true);
+        player.Play();
+
+        strip.PrepareContextMenu(4);
+        Assert.False(player.IsPlaying);
+        Assert.Equal([2, 4], Selected(strip));
+
+        strip.PrepareContextMenu(9);
+        Assert.Equal([9], Selected(strip));
+    }
+
     [Fact]
     public void TheArrowsSelectShowAndPauseAndShiftExtends()
     {

@@ -56,7 +56,6 @@ public sealed partial class FilmstripView : UserControl
     // DIPs: the repeater's spacing and its inset in the scroller, as FilmstripView.xaml sets them.
     private const double Seam = 4;
     private const double Inset = 4;
-    private const double DragThreshold = 6;
     private const double AutoScrollEdge = 40;
     private const double AutoScrollSpeed = 24;
 
@@ -74,12 +73,10 @@ public sealed partial class FilmstripView : UserControl
     private bool _wantQueued;
     private int _lastPlayhead = -1;
 
-    // A press that may become a click or a drag.
-    private (int Index, Point At, uint PointerId, VirtualKeyModifiers Modifiers)? _press;
-    private bool _dragging;
+    // A press that may become a click or a drag (the rules are FilmstripPointer's, tested in Presentation).
+    private FilmstripPointer? _pointer;
     private bool _autoScrolling;
     private double _dragX;
-    private int _dropSeam = -1;
 
     public FilmstripView()
     {
@@ -94,8 +91,9 @@ public sealed partial class FilmstripView : UserControl
         ListHost.AddHandler(PointerPressedEvent, new PointerEventHandler(OnPointerPressed), handledEventsToo: true);
         ListHost.PointerMoved += OnPointerMoved;
         ListHost.PointerReleased += OnPointerReleased;
-        ListHost.PointerCanceled += (_, _) => CancelPress();
-        ListHost.PointerCaptureLost += (_, _) => CancelPress();
+        ListHost.PointerCanceled += (_, _) => Guarded(CancelPress);
+        ListHost.PointerCaptureLost += (_, _) => Guarded(CancelPress);
+        StripMenu.Opening += OnStripMenuOpening;
     }
 
     /// <summary>How a UI Automation client changes the selection.</summary>
@@ -132,6 +130,7 @@ public sealed partial class FilmstripView : UserControl
     {
         Detach();
         ViewModel = viewModel;
+        _pointer = new FilmstripPointer(viewModel);
         _preview = preview;
         _errors = preview.Errors;
         _log = preview.Log;
@@ -196,6 +195,7 @@ public sealed partial class FilmstripView : UserControl
         _thumbnails = null;
         _gapTimer = null;
         _keyRoot = null;
+        _pointer = null;
         ViewModel = null;
     }
 
@@ -439,7 +439,7 @@ public sealed partial class FilmstripView : UserControl
         var index = viewModel.PlayheadIndex;
         var previous = _lastPlayhead;
         _lastPlayhead = index;
-        if (index < 0 || _dragging || (previous >= 0 && !InView(previous)) || InView(index))
+        if (index < 0 || _pointer?.IsDragging == true || (previous >= 0 && !InView(previous)) || InView(index))
         {
             return;
         }
@@ -472,9 +472,16 @@ public sealed partial class FilmstripView : UserControl
             return;
         }
 
-        if (_dragging && e.Key == VirtualKey.Escape)
+        // Escape while the button is down: the drag (or the click to come) is cancelled and the pointer let go, so neither
+        // a later move nor the release does anything.
+        if (e.Key == VirtualKey.Escape && _pointer is { IsPressed: true })
         {
-            EndDrag(commit: false);
+            Guarded(
+                () =>
+                {
+                    CancelPress();
+                    ListHost.ReleasePointerCaptures();
+                });
             e.Handled = true;
             return;
         }
@@ -580,7 +587,7 @@ public sealed partial class FilmstripView : UserControl
 
     private void OnPointerPressed(object sender, PointerRoutedEventArgs e)
     {
-        if (ViewModel is not { } viewModel)
+        if (ViewModel is not { } viewModel || _pointer is not { } pointer)
         {
             return;
         }
@@ -594,12 +601,8 @@ public sealed partial class FilmstripView : UserControl
 
         if (point.Properties.IsRightButtonPressed)
         {
-            // The context menu acts on the selection: a frame outside it is selected first, as in File Explorer.
-            if (viewModel.ItemAt(index) is { IsSelected: false })
-            {
-                _errors?.Guard(() => viewModel.Click(index, shift: false, control: false), ProjectText.FilmstripSelectFailed);
-            }
-
+            // The context menu acts on the selection, with the video paused so the selection stays where it is.
+            _errors?.Guard(() => viewModel.PrepareContextMenu(index), ProjectText.FilmstripSelectFailed);
             return;
         }
 
@@ -608,83 +611,102 @@ public sealed partial class FilmstripView : UserControl
             return;
         }
 
-        _press = (index, e.GetCurrentPoint(ListHost).Position, e.Pointer.PointerId, e.KeyModifiers);
-        Repeater.TryGetElement(index)?.Focus(FocusState.Pointer);
-        if (e.Pointer.PointerDeviceType != PointerDeviceType.Touch)
-        {
-            ListHost.CapturePointer(e.Pointer);
-            e.Handled = true;
-        }
+        Guarded(
+            () =>
+            {
+                var at = e.GetCurrentPoint(ListHost).Position;
+                var modifiers = e.KeyModifiers;
+                var touch = e.Pointer.PointerDeviceType == PointerDeviceType.Touch;
+                pointer.Press(index, at.X, at.Y, e.Pointer.PointerId, modifiers.HasFlag(VirtualKeyModifiers.Shift), modifiers.HasFlag(VirtualKeyModifiers.Control), touch);
+                Repeater.TryGetElement(index)?.Focus(FocusState.Pointer);
+                if (!touch)
+                {
+                    ListHost.CapturePointer(e.Pointer);
+                    e.Handled = true;
+                }
+            });
     }
 
     private void OnPointerMoved(object sender, PointerRoutedEventArgs e)
     {
-        if (_press is not { } press || press.PointerId != e.Pointer.PointerId)
+        if (_pointer is not { IsPressed: true } pointer)
         {
             return;
         }
 
-        var position = e.GetCurrentPoint(ListHost).Position;
-        if (!_dragging)
-        {
-            var distance = Math.Abs(position.X - press.At.X) + Math.Abs(position.Y - press.At.Y);
-            if (distance < DragThreshold || e.Pointer.PointerDeviceType == PointerDeviceType.Touch)
+        Guarded(
+            () =>
             {
-                return;
-            }
+                var position = e.GetCurrentPoint(ListHost).Position;
+                var result = FilmstripPointerResult.Ignored;
+                _errors?.Guard(() => result = pointer.Move(e.Pointer.PointerId, position.X, position.Y), ProjectText.FilmstripMoveFailed);
+                if (result is not (FilmstripPointerResult.DragStarted or FilmstripPointerResult.Dragging))
+                {
+                    return;
+                }
 
-            BeginDrag(press.Index);
-        }
+                if (result == FilmstripPointerResult.DragStarted)
+                {
+                    ShowDrag();
+                }
 
-        _dragX = position.X;
-        PlaceInsertionMarker();
-        e.Handled = true;
+                _dragX = position.X;
+                PlaceInsertionMarker();
+                e.Handled = true;
+            });
     }
 
     private void OnPointerReleased(object sender, PointerRoutedEventArgs e)
     {
-        if (_press is not { } press || press.PointerId != e.Pointer.PointerId || ViewModel is not { } viewModel)
+        if (_pointer is not { IsPressed: true } pointer)
         {
             return;
         }
 
-        if (_dragging)
-        {
-            EndDrag(commit: true);
-        }
-        else
-        {
-            var shift = press.Modifiers.HasFlag(VirtualKeyModifiers.Shift);
-            var control = press.Modifiers.HasFlag(VirtualKeyModifiers.Control);
-            _errors?.Guard(() => viewModel.Click(press.Index, shift, control), ProjectText.FilmstripSelectFailed);
-        }
+        Guarded(
+            () =>
+            {
+                var result = FilmstripPointerResult.Ignored;
+                var context = pointer.IsDragging ? ProjectText.FilmstripMoveFailed : ProjectText.FilmstripSelectFailed;
+                _errors?.Guard(() => result = pointer.Release(e.Pointer.PointerId), context);
+                if (!pointer.IsDragging)
+                {
+                    HideDrag();
+                }
 
-        _press = null;
-        ListHost.ReleasePointerCapture(e.Pointer);
-        e.Handled = true;
+                if (result != FilmstripPointerResult.Ignored)
+                {
+                    ListHost.ReleasePointerCapture(e.Pointer);
+                    e.Handled = true;
+                }
+            });
     }
 
+    // The menu opens from a right-click or from the keyboard: the video pauses so the selection stays where it is.
+    private void OnStripMenuOpening(object? sender, object e)
+    {
+        if (ViewModel is { } viewModel)
+        {
+            _errors?.Guard(() => viewModel.PrepareContextMenu(null), ProjectText.FilmstripSelectFailed);
+        }
+    }
+
+    // Forgets the press; a drag ends without moving anything.
     private void CancelPress()
     {
-        if (_dragging)
+        if (_pointer is { } pointer)
         {
-            EndDrag(commit: false);
+            _errors?.Guard(() => pointer.Cancel(), ProjectText.FilmstripMoveFailed);
         }
 
-        _press = null;
+        HideDrag();
     }
 
-    private void BeginDrag(int index)
+    private void ShowDrag()
     {
         if (ViewModel is not { } viewModel)
         {
             return;
-        }
-
-        _dragging = true;
-        if (viewModel.ItemAt(index) is { IsSelected: false })
-        {
-            _errors?.Guard(() => viewModel.Click(index, shift: false, control: false), ProjectText.FilmstripSelectFailed);
         }
 
         InsertionMarker.Height = viewModel.ThumbnailHeight + (2 * Inset);
@@ -696,48 +718,45 @@ public sealed partial class FilmstripView : UserControl
         }
     }
 
-    private void EndDrag(bool commit)
+    private void HideDrag()
     {
-        _dragging = false;
         InsertionMarker.Visibility = Visibility.Collapsed;
         if (_autoScrolling)
         {
             _autoScrolling = false;
             CompositionTarget.Rendering -= OnDragRendering;
         }
-
-        var seam = _dropSeam;
-        _dropSeam = -1;
-        if (commit && seam >= 0 && ViewModel is { } viewModel)
-        {
-            _errors?.Guard(() => viewModel.MoveTo(seam), ProjectText.FilmstripMoveFailed);
-        }
     }
 
     // While dragging near an end, the strip scrolls a little on every frame, faster nearer the edge.
     private void OnDragRendering(object? sender, object e)
     {
-        if (!_dragging)
+        if (_pointer is not { IsDragging: true })
         {
             return;
         }
 
-        var width = ListHost.ActualWidth;
-        var step = _dragX < AutoScrollEdge
-            ? -AutoScrollSpeed * (1 - (Math.Max(0, _dragX) / AutoScrollEdge))
-            : _dragX > width - AutoScrollEdge ? AutoScrollSpeed * (1 - (Math.Max(0, width - _dragX) / AutoScrollEdge)) : 0;
-        if (step != 0)
-        {
-            Scroller.ChangeView(Math.Clamp(Scroller.HorizontalOffset + step, 0, Scroller.ScrollableWidth), null, null, disableAnimation: true);
-            PlaceInsertionMarker();
-        }
+        Guarded(
+            () =>
+            {
+                var width = ListHost.ActualWidth;
+                var step = _dragX < AutoScrollEdge
+                    ? -AutoScrollSpeed * (1 - (Math.Max(0, _dragX) / AutoScrollEdge))
+                    : _dragX > width - AutoScrollEdge ? AutoScrollSpeed * (1 - (Math.Max(0, width - _dragX) / AutoScrollEdge)) : 0;
+                if (step != 0)
+                {
+                    Scroller.ChangeView(Math.Clamp(Scroller.HorizontalOffset + step, 0, Scroller.ScrollableWidth), null, null, disableAnimation: true);
+                    PlaceInsertionMarker();
+                }
+            });
     }
 
     private void PlaceInsertionMarker()
     {
         var toRepeater = ListHost.TransformToVisual(Repeater).TransformPoint(new Point(_dragX, 0));
-        _dropSeam = SeamAt(toRepeater.X);
-        var seamX = (_dropSeam * Stride) - (Seam / 2);
+        var seam = SeamAt(toRepeater.X);
+        _pointer?.Over(seam);
+        var seamX = (seam * Stride) - (Seam / 2);
         var inHost = Repeater.TransformToVisual(ListHost).TransformPoint(new Point(seamX, -Inset));
         Canvas.SetLeft(InsertionMarker, inHost.X - (InsertionMarker.Width / 2));
         Canvas.SetTop(InsertionMarker, inHost.Y);
