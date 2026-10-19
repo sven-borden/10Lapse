@@ -5,9 +5,10 @@
     filmstrip sweep, on generated photos. A person runs it on demand; it is not part of the gate.
 
 .DESCRIPTION
-        pwsh -File scripts/bench.ps1 -Quick          # 500 photos of 12 MP: a few minutes, about 2 GB of disk
-        pwsh -File scripts/bench.ps1 -Full           # 5,000 photos of 24 MP: about 45 minutes, about 55 GB of disk
+        pwsh -File scripts/bench.ps1 -Quick          # 500 photos of 12 MP: QUICKTIME, writes about 5 GB, needs 11 GB free
+        pwsh -File scripts/bench.ps1 -Full           # 5,000 photos of 24 MP: FULLTIME, writes about 52 GB, needs 56 GB free
         pwsh -File scripts/bench.ps1 -Photos 2000 -Size 5472x3648 -Keep
+        pwsh -File scripts/bench.ps1 -Full -TightMemory   # the export with 4 frames decoded ahead and 3 threads
 
     Without a profile it runs -Quick. It builds the Spike (Release) and the app (Debug configuration, optimised, because
     the Debug switches are compiled out of Release), writes the photos with the Spike's bench-photos command (EXIF capture
@@ -16,7 +17,10 @@
       1. the first thumbnails of a 1,000-photo folder (app, --import-bench). Target: the filmstrip shows within 2 s.
       2. the full index time, import done and metadata read, for 1,000 and for all the photos (app, --import-bench).
       3. export frames per second, all the photos to 4K H.264 (Spike, export-project).
-      4. peak working set and private bytes during that export. Target: under 1 GB.
+      4. peak working set and private bytes during that export. Target: under 1 GB on PCs with 8 GB of RAM or less or an
+         integrated GPU, which get 4 frames decoded ahead and 3 decode threads. Larger PCs decode 8 ahead on up to 6
+         threads and may use more memory for speed, so their default-profile private bytes are reported as information.
+         -TightMemory runs the export with 4 and 3 to measure the profile the target applies to, on any PC.
       5. preview playback pacing and the filmstrip sweep (app, --preview-bench and --filmstrip-bench, on 1,000 sample
          photos of 2400 x 1600; 300 with -Quick).
 
@@ -25,7 +29,14 @@
     then reuses them). The app opens its window while it measures and closes it itself; touch nothing while it runs, and
     close other GPU work first: the export is the most sensitive (the script prints the GPU load it saw before it).
 
-    Nothing is written outside -Folder.
+    Photos, the exported video, caches and the bench logs are written only under -Folder. The app also writes its
+    normal log to %LOCALAPPDATA%Lapse\Logs, and the builds write bin and obj folders in the repository.
+
+    A failed app start (some runs of the Debug app die at start-up, see issue #90) is reported with its exit code and the
+    last line of the app log, and that run is tried once more. If it fails twice, rerun the script.
+
+    The GPU load check before the export uses nvidia-smi, so it only works with an NVIDIA GPU; with any other GPU the
+    script says nothing about it, so close other GPU work yourself.
 #>
 [CmdletBinding()]
 param(
@@ -33,6 +44,9 @@ param(
     [switch]$Quick,
     # 5,000 photos of 24 MP.
     [switch]$Full,
+    # Run the export with 4 frames decoded ahead and 3 decode threads, the profile of PCs with 8 GB of RAM or less or an
+    # integrated GPU (the default picks 8 and up to 6 on bigger PCs).
+    [switch]$TightMemory,
     # Overrides the profile's number of photos.
     [int]$Photos = 0,
     # Overrides the profile's photo size, like 6000x4000.
@@ -70,7 +84,6 @@ foreach ($step in $Skip) { if ($step -notin 'import', 'noembedded', 'export', 'p
 $root = Split-Path -Parent $PSScriptRoot
 $data = Join-Path $Folder '10Lapse-bench-data'
 $logs = Join-Path $Folder "10Lapse-bench-logs\$stamp"
-New-Item -ItemType Directory -Force -Path $logs | Out-Null
 
 $userDotnet = Join-Path $env:LOCALAPPDATA 'Microsoft\dotnet'
 if (Test-Path (Join-Path $userDotnet 'dotnet.exe')) {
@@ -90,7 +103,7 @@ function Write-Step([string]$Text) { Write-Host "bench: $Text" -ForegroundColor 
 $photoBytes = [long]($Photos * $width * $height * 0.36)
 $extraBytes = if ($Skip -contains 'noembedded') { 0 } else { [long]($firstCount * $width * $height * 0.36) }
 $needBytes = $photoBytes + $extraBytes + 2GB + 5GB
-$drive = [System.IO.Path]::GetPathRoot((New-Item -ItemType Directory -Force -Path $Folder).FullName)
+$drive = [System.IO.Path]::GetPathRoot([System.IO.Path]::GetFullPath($Folder))
 $freeBytes = (New-Object System.IO.DriveInfo $drive).AvailableFreeSpace
 Write-Step ("{0}: {1:N0} photos of {2}x{3} ({4:0.#} MP). Needs about {5:0.0} GB free on {6}; {7:0.0} GB free." -f $profileName, $Photos, $width, $height, $megapixels, ($needBytes / 1GB), $drive, ($freeBytes / 1GB))
 if ($freeBytes -lt $needBytes) {
@@ -99,6 +112,8 @@ if ($freeBytes -lt $needBytes) {
         throw ("Not enough disk space on {0}: {1:0.0} GB needed, {2:0.0} GB free. Use -Quick, a smaller -Photos or another -Folder." -f $drive, ($needBytes / 1GB), ($freeBytes / 1GB))
     }
 }
+# Only now, so a refusal leaves nothing behind.
+New-Item -ItemType Directory -Force -Path $logs | Out-Null
 
 # ---------------------------------------------------------------- helpers
 
@@ -114,21 +129,36 @@ function Invoke-Dotnet([string]$What, [string[]]$Arguments) {
 function ConvertTo-Argument([string]$Text) { if ($Text -match '\s') { '"' + $Text + '"' } else { $Text } }
 
 # Starts the app with the given Debug switches, waits for it to close its own window (the bench does), and kills only
-# the process it started if it takes longer than $TimeoutMinutes.
+# the process it started if it takes longer than $TimeoutMinutes. Some starts of the Debug app die before the bench
+# reports (issue #90): when the app exits nonzero and wrote no report, the exit code and the last line of its log are
+# printed and the run is tried once more.
 function Invoke-App([string[]]$Arguments, [string]$ReportPath, [int]$TimeoutMinutes) {
-    if (Test-Path $ReportPath) { Remove-Item $ReportPath -Force }
     $quoted = $Arguments | ForEach-Object { ConvertTo-Argument $_ }
-    $process = Start-Process -FilePath $script:appExe -ArgumentList $quoted -PassThru
-    try {
-        if (-not $process.WaitForExit($TimeoutMinutes * 60 * 1000)) {
-            throw "The app did not finish within $TimeoutMinutes minutes."
+    for ($attempt = 1; $attempt -le 2; $attempt++) {
+        if (Test-Path $ReportPath) { Remove-Item $ReportPath -Force }
+        $process = Start-Process -FilePath $script:appExe -ArgumentList $quoted -PassThru
+        try {
+            if (-not $process.WaitForExit($TimeoutMinutes * 60 * 1000)) {
+                throw "The app did not finish within $TimeoutMinutes minutes."
+            }
         }
+        finally {
+            if (-not $process.HasExited) { $process.Kill(); $process.WaitForExit(10000) | Out-Null }
+        }
+        if (Test-Path $ReportPath) { return (Get-Content $ReportPath -Raw) }
+
+        $exitCode = $process.ExitCode
+        $logLine = '(no log file found)'
+        $logFile = Get-ChildItem (Join-Path $env:LOCALAPPDATA '10Lapse\Logs') -Filter "*.p$($process.Id).log" -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($logFile) { $logLine = "$logFile`: " + (Get-Content $logFile.FullName -Tail 5 | Where-Object { $_.Trim() } | Select-Object -Last 1) }
+        $message = "The app wrote no report to $ReportPath (exit code $exitCode, hex 0x$('{0:X8}' -f $exitCode)). Last line of its log, $logLine"
+        if ($attempt -eq 1 -and $exitCode -ne 0) {
+            Write-Host "bench: WARNING $message" -ForegroundColor Yellow
+            Write-Host 'bench: the app died at start-up (known issue #90); trying this run once more.' -ForegroundColor Yellow
+            continue
+        }
+        throw $message
     }
-    finally {
-        if (-not $process.HasExited) { $process.Kill(); $process.WaitForExit(10000) | Out-Null }
-    }
-    if (-not (Test-Path $ReportPath)) { throw "The app wrote no report to $ReportPath (exit code $($process.ExitCode)); see the log in $env:LOCALAPPDATA\10Lapse\Logs." }
-    return (Get-Content $ReportPath -Raw)
 }
 
 function ConvertFrom-BenchLine([string]$Text, [string]$Kind) {
