@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-Wave 8 (2026-10-19): #22 merged. PR #75 (#29 first launch) in review. Next: #19 preview and #23 output panel.
+2026-10-19: #22 merged. PR #75 (#29 first launch) in review; #19 preview (Opus) building. Next: #23 output panel.
 
 ## Waves
 
@@ -31,7 +31,7 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 7 | #33 Broken-photo fixtures | S | `tests/` fixtures | merged #72 |
 | 8 | #22 Export pipeline | O | `TenLapse.Media/Export` | merged #74 |
 | 8 | #29 First launch drop zone | O | App empty state view | PR #75, in review |
-| 9 | #19 Preview with proxy cache | O | preview view and cache | |
+| 9 | #19 Preview with proxy cache | O | preview view and cache | building |
 | 9 | #23 Output panel | S | output inspector section | |
 | 10 | #20 Filmstrip | O | filmstrip view | |
 | 10 | #17 Timing panel | S | timing inspector section | |
