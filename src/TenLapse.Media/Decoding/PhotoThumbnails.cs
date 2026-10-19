@@ -9,8 +9,10 @@ namespace TenLapse.Media.Decoding;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The embedded picture is stored as the sensor saw it, like the photo's own pixels: the photo's EXIF orientation is
-/// applied here by hand (WIC turns only the main image), so a portrait photo's thumbnail stands upright.
+/// The embedded picture is stored as the sensor saw it, like the photo's own pixels, but Windows' BitmapDecoder hands it
+/// out already turned by the photo's EXIF orientation (found out by a test: a picture stored with orientation 3 and its
+/// tag patched to 1 reads unturned). So it is decoded as it comes, and its shape is compared with the photo's turned
+/// shape; turning it again here would turn it twice.
 /// </para>
 /// <para>
 /// A picture is used only when it shows the same thing the photo does: its shape must match the photo's within 3 %
@@ -54,30 +56,25 @@ public static class PhotoThumbnails
                 return null;
             }
 
-            var photoAspect = (double)decoder.PixelWidth / decoder.PixelHeight;
+            var photoAspect = (double)decoder.OrientedPixelWidth / decoder.OrientedPixelHeight;
             var pictureAspect = (double)width / height;
             if (Math.Abs((pictureAspect / photoAspect) - 1) > AspectTolerance)
             {
                 return null;
             }
 
-            var orientation = await PhotoDecoder.OrientationAsync(decoder, cancellationToken).ConfigureAwait(false);
-            var turned = orientation is >= 5 and <= 8;
-            var (uprightWidth, uprightHeight) = turned ? (height, width) : (width, height);
-            var scale = Math.Max((double)cover.Width / uprightWidth, (double)cover.Height / uprightHeight);
+            var scale = Math.Max((double)cover.Width / width, (double)cover.Height / height);
             if (scale > 1)
             {
                 return null;
             }
 
-            var (rotation, flip) = Turn(orientation);
+            var orientation = await PhotoDecoder.OrientationAsync(decoder, cancellationToken).ConfigureAwait(false);
             var transform = new BitmapTransform
             {
                 InterpolationMode = BitmapInterpolationMode.Fant,
                 ScaledWidth = (uint)Math.Max(1, (int)Math.Round(width * scale)),
                 ScaledHeight = (uint)Math.Max(1, (int)Math.Round(height * scale)),
-                Rotation = rotation,
-                Flip = flip,
             };
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -104,20 +101,4 @@ public static class PhotoThumbnails
             return null;
         }
     }
-
-    /// <summary>
-    /// The turn that stands a picture stored with EXIF <paramref name="orientation"/> upright. WIC flips before it
-    /// rotates, so the mirrored orientations (5, 7) flip horizontally and then turn.
-    /// </summary>
-    internal static (BitmapRotation Rotation, BitmapFlip Flip) Turn(int orientation) => orientation switch
-    {
-        2 => (BitmapRotation.None, BitmapFlip.Horizontal),
-        3 => (BitmapRotation.Clockwise180Degrees, BitmapFlip.None),
-        4 => (BitmapRotation.None, BitmapFlip.Vertical),
-        5 => (BitmapRotation.Clockwise270Degrees, BitmapFlip.Horizontal),
-        6 => (BitmapRotation.Clockwise90Degrees, BitmapFlip.None),
-        7 => (BitmapRotation.Clockwise90Degrees, BitmapFlip.Horizontal),
-        8 => (BitmapRotation.Clockwise270Degrees, BitmapFlip.None),
-        _ => (BitmapRotation.None, BitmapFlip.None),
-    };
 }

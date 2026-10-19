@@ -81,9 +81,9 @@ public sealed class FilmstripViewModelTests
         Assert.Equal(Selected(strip), [13]);
 
         player.Play();
-        _now += 1000;
+        _now += 500;
         player.Tick();
-        Assert.True(player.CurrentFrame > 13);
+        Assert.Equal(28, player.CurrentFrame);
         Assert.Equal(Selected(strip), [player.CurrentFrame]);
         Assert.True(strip.Items[player.CurrentFrame].IsPlayhead);
         player.Pause();
@@ -101,11 +101,12 @@ public sealed class FilmstripViewModelTests
     {
         var (shell, player, strip) = Strip(100);
         var announced = Announcements(strip);
-        strip.Click(50, false, false);
+        strip.Click(10, false, false);
+        strip.Click(12, shift: true, control: false);
+        strip.Click(30, false, control: true);
         var shown = strip.Items[50].Id;
-        strip.Click(10, false, control: true);
-        strip.Click(12, shift: true, control: true);
         player.Seek(50);
+        Assert.Equal(Selected(strip), [10, 11, 12, 30]);
 
         Assert.Equal(4, strip.Remove());
 
@@ -114,6 +115,7 @@ public sealed class FilmstripViewModelTests
         Assert.Equal(shown, strip.Items[player.CurrentFrame].Id);
         Assert.Equal(46, player.CurrentFrame);
         Assert.Equal(Selected(strip), [46]);
+        Assert.True(strip.Items[46].IsPlayhead);
         Assert.Equal(Enumerable.Range(1, 96), strip.Items.Select(item => item.Number));
         Assert.Equal(["Removed 4 frames from the project. The photos stay on your PC. Ctrl+Z puts them back."], announced);
         Assert.True(strip.CanUndo);
@@ -365,6 +367,7 @@ public sealed class FilmstripViewModelTests
         Assert.Equal(Enumerable.Range(1, 200), strip.Items.Select(item => item.Number));
         Assert.Equal(shell.CurrentProject.Model.Frames.Select(frame => frame.Id), strip.Items.Select(item => item.Id));
         Assert.Equal(100, player.CurrentFrame);
+        Assert.Equal(Selected(strip), [100]);
 
         strip.Undo();
         Assert.Equal(2, resets);

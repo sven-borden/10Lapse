@@ -341,8 +341,23 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
             ids.Add(playhead);
         }
 
+        // When the frame on screen goes, the preview shows the first frame after it that stays (or the last one before).
+        Guid? next = null;
+        var removing = ids.ToHashSet();
+        if (_playhead is { } shown && removing.Contains(shown) && _byId.TryGetValue(shown, out var shownItem))
+        {
+            var after = Items.Skip(shownItem.Number).FirstOrDefault(item => !removing.Contains(item.Id))
+                ?? Items.Take(shownItem.Number - 1).LastOrDefault(item => !removing.Contains(item.Id));
+            next = after?.Id;
+        }
+
         var count = _history.Remove(ids);
         CanUndo = _history.CanUndo;
+        if (next is { } stay && _byId.TryGetValue(stay, out var stayItem))
+        {
+            _player.Seek(stayItem.Number - 1);
+        }
+
         if (count > 0)
         {
             Announced?.Invoke(this, ProjectText.FilmstripRemoved(count));
