@@ -24,9 +24,14 @@ namespace TenLapse.Debugging;
 /// The preview's Debug switches (#19):
 /// <list type="bullet">
 /// <item><c>--sample-frames=N</c> (parsed in DebugLaunch.cs) generates N photos of a sunset with their frame number
-/// burnt in, into <c>--sample-folder=PATH</c> (default %TEMP%\10Lapse debug samples), <c>--sample-size=WxH</c> (default
-/// 2400x1600), and adds them in batches of 100 as they are written. Files already there are reused.</item>
-/// <item><c>--cache-folder=PATH</c> puts the proxy cache there instead of the app's own.</item>
+/// burnt in, <c>--sample-size=WxH</c> (default 2400x1600), and adds them in batches of 100 as they are written. They go
+/// into a folder named after the count and the size (<c>Harbor sunset 742 grain 2400x1600</c>) under
+/// <c>--sample-folder=PATH</c> (default %TEMP%\10Lapse debug samples). Files already there are reused, so the folder
+/// grows with every count and size tried (up to about 4 GB for 10,000 photos) until <c>--sample-clean</c> deletes it
+/// when the window closes. An agent passes <c>--sample-folder</c> under its own branch folder
+/// (%LOCALAPPDATA%\Temp\claude\&lt;branch&gt;\), never the shared default.</item>
+/// <item><c>--cache-folder=PATH</c> puts the proxy cache there instead of the app's own. Point it at an empty folder of
+/// its own: the cache only ever deletes its own proxies, but they are the only files it expects there.</item>
 /// <item><c>--preview-bench</c> measures the player on those photos: playback before the proxies exist, the time the
 /// background pass takes, playback at the project's rate with the proxies, and two scrubs (a fast sweep over the whole
 /// project and a slow drag), then writes the report to the log and to <c>--preview-bench-out=PATH</c> and closes the
@@ -37,7 +42,9 @@ internal static partial class DebugLaunch
 {
     private const int SampleBatch = 100;
 
+    private static readonly CancellationTokenSource _closing = new();
     private static IErrorSink? _previewLog;
+    private static string? _sampleFolder;
 
     /// <summary>The proxy cache folder from <c>--cache-folder=PATH</c>, or null.</summary>
     public static string? CacheFolder => Value("--cache-folder=");
@@ -46,6 +53,16 @@ internal static partial class DebugLaunch
     public static void ApplyPreview(PreviewSession preview, Window window, ILog log)
     {
         _previewLog = new LogErrorSink(log);
+
+        // Closing stops the sample generator; with --sample-clean it also deletes the generated photos.
+        window.Closed += (_, _) =>
+        {
+            _closing.Cancel();
+            if (_args.Contains("--sample-clean", StringComparer.OrdinalIgnoreCase) && _sampleFolder is { } folder)
+            {
+                CleanSamples(folder, log);
+            }
+        };
         if (_args.Contains("--preview-bench", StringComparer.OrdinalIgnoreCase))
         {
             var expected = Value("--sample-frames=") is { } text && int.TryParse(text, out var count) ? Math.Min(count, MaxSampleFrames) : 0;
@@ -62,7 +79,11 @@ internal static partial class DebugLaunch
         var dispatcher = DispatcherQueue.GetForCurrentThread();
         var (width, height) = SampleSize();
         var root = Value("--sample-folder=") ?? Path.Combine(Path.GetTempPath(), "10Lapse debug samples");
-        var folder = Path.Combine(root, string.Create(CultureInfo.InvariantCulture, $"Harbor sunset grain {width}x{height}"));
+
+        // Each photo is drawn from its place in the sequence (index / count), so a folder holds one count only.
+        var folder = Path.Combine(root, string.Create(CultureInfo.InvariantCulture, $"Harbor sunset {count} grain {width}x{height}"));
+        _sampleFolder = folder;
+        var stop = _closing.Token;
 
         // The brand's day-to-night ramp is for the sample sequence (DESIGN.md, Brand ramp); read on the UI thread.
         var ramp = new[] { "DaylightColor", "GoldenColor", "AmberColor", "RoseColor", "DuskColor", "BlueHourColor", "NightColor" }
@@ -81,7 +102,7 @@ internal static partial class DebugLaunch
                     var batch = new Frame[Math.Min(SampleBatch, count - first)];
                     await Parallel.ForEachAsync(
                         Enumerable.Range(first, batch.Length),
-                        new ParallelOptions { MaxDegreeOfParallelism = 4 },
+                        new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = stop },
                         async (index, _) =>
                         {
                             var path = Path.Combine(folder, string.Create(CultureInfo.InvariantCulture, $"IMG_{index + 1:0000}.JPG"));
@@ -109,12 +130,32 @@ internal static partial class DebugLaunch
                         "Adding the sample photos failed.");
                 }
             }
+            catch (OperationCanceledException) when (stop.IsCancellationRequested)
+            {
+                // The window closed.
+            }
             catch (Exception exception)
             {
                 log.Report(exception, "Generating the sample photos failed.");
                 infoBars.Show(InfoBarSeverity.Critical, "The sample photos could not be generated. The log says why.");
             }
         });
+    }
+
+    // Best effort: a photo a load still holds open stays, and the log says so.
+    private static void CleanSamples(string folder, ILog log)
+    {
+        try
+        {
+            if (Directory.Exists(folder))
+            {
+                Directory.Delete(folder, recursive: true);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            log.Warning($"--sample-clean could not delete every sample photo in {folder}.", exception);
+        }
     }
 
     private static (int Width, int Height) SampleSize()
@@ -167,7 +208,9 @@ internal static partial class DebugLaunch
             session.DrawText(string.Create(CultureInfo.InvariantCulture, $"{index + 1:0000}"), height * 0.04f, height * 0.03f, ramp[0], format);
         }
 
-        var temporary = path + ".tmp";
+        // A name of its own: two runs on the same folder never write the same file, and never move a half-written one
+        // into place.
+        var temporary = string.Create(CultureInfo.InvariantCulture, $"{path}.{Guid.NewGuid():N}.tmp");
         await target.SaveAsync(temporary, CanvasBitmapFileFormat.Jpeg, 0.9f);
         File.Move(temporary, path, overwrite: true);
     }
