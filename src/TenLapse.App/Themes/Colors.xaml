@@ -295,10 +295,13 @@
   -->
   <Color x:Key="PreviewPillColor">#9E0C0C0D</Color>
   <Color x:Key="PreviewPillTextColor">#F4F2EE</Color>
+  <!-- The pill's dot: the dark theme's Deep Amber Indicator in both themes, as the pill sits on the photo. -->
+  <Color x:Key="DeepAmberIndicatorOnPhotoColor">#F0A54A</Color>
 
   <SolidColorBrush x:Key="LetterboxBrush" Color="{StaticResource LetterboxColor}" />
   <SolidColorBrush x:Key="PreviewPillBrush" Color="{StaticResource PreviewPillColor}" />
   <SolidColorBrush x:Key="PreviewPillTextBrush" Color="{StaticResource PreviewPillTextColor}" />
+  <SolidColorBrush x:Key="DeepAmberIndicatorOnPhotoBrush" Color="{StaticResource DeepAmberIndicatorOnPhotoColor}" />
   <SolidColorBrush x:Key="DaylightBrush" Color="{StaticResource DaylightColor}" />
   <SolidColorBrush x:Key="GoldenBrush" Color="{StaticResource GoldenColor}" />
   <SolidColorBrush x:Key="AmberBrush" Color="{StaticResource AmberColor}" />

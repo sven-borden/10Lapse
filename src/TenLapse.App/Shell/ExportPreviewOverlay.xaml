@@ -41,7 +41,7 @@
           Width="8"
           Height="8"
           VerticalAlignment="Center"
-          Fill="{ThemeResource DeepAmberIndicatorBrush}" />
+          Fill="{StaticResource DeepAmberIndicatorOnPhotoBrush}" />
         <TextBlock
           x:Name="PillText"
           VerticalAlignment="Center"
