@@ -219,7 +219,7 @@ public sealed class ExportViewModelTests
 
         Assert.Equal(ExportPanelState.Finished, app.On(() => app.Export.State));
         Assert.Equal("Harbor sunset.mp4 is ready", app.On(() => app.Export.FinishedTitle));
-        Assert.Equal("4.0 s · 1080p · H.264 · 170 MB", app.On(() => app.Export.FinishedSummary));
+        Assert.Equal("4.0 s · 1080p · H.264 · 173 MB", app.On(() => app.Export.FinishedSummary));
         Assert.Equal("2 min 51 s", app.On(() => app.Export.ExportedInText));
         Assert.Equal("Videos › 10Lapse", app.On(() => app.Export.SavedToText));
         Assert.False(app.On(() => app.Export.HasSavedBeside));
@@ -666,6 +666,17 @@ public sealed class ExportViewModelTests
     [InlineData(@"D:\Harbor.mp4", @"D:\")]
     public void SavedToNamesTheLastTwoFolders(string path, string expected) =>
         Assert.Equal(expected, ExportText.SavedTo(path));
+
+    [Theory]
+    [InlineData(500L << 10, "Less than 1 MB")]
+    [InlineData(4L << 20, "4 MB")]
+    [InlineData(4_435_476L, "4.23 MB")]
+    [InlineData(19_293_798L, "18.4 MB")]
+    [InlineData(173L << 20, "173 MB")]
+    [InlineData(1_048_051_712L, "1 GB")]
+    [InlineData(1_320_702_444L, "1.23 GB")]
+    public void TheFinishedSizeHasThreeFigures(long bytes, string expected) =>
+        Assert.Equal(expected, ExportText.FileSize(bytes, System.Globalization.CultureInfo.InvariantCulture));
 
     [Fact]
     public void ThePercentReachesAHundredOnlyAtTheEnd()

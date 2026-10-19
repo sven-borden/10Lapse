@@ -107,7 +107,7 @@ public sealed partial class ShellView : UserControl
         ArgumentNullException.ThrowIfNull(exportServices);
         Export = new ExportViewModel(viewModel, output, preview.Player, _filmstrip, () => Import.IsImporting, exportServices, presenter);
         ExportSection.Attach(Export, Filmstrip.Thumbnails, errors);
-        ExportOverlay.Attach(Export, preview.Player, presenter, errors);
+        ExportOverlay.Attach(Export, preview.Player, presenter, errors, infoBars);
         _inspectorSwap = new PanelSwap([InspectorScroll, ExportSection.Running, ExportSection.Finished], DispatcherQueue, errors);
         Export.PropertyChanged += OnExportPropertyChanged;
 #if DEBUG

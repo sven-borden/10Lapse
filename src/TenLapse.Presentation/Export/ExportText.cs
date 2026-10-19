@@ -262,8 +262,33 @@ public static class ExportText
     {
         ArgumentNullException.ThrowIfNull(video);
         culture ??= CultureInfo.CurrentCulture;
-        return string.Format(culture, ReadySummaryFormat, TimingFormat.Duration(video.Duration, culture), OutputText.ResolutionName(resolution), OutputText.CodecName(video.Format), OutputText.Size(video.FileBytes, culture));
+        return string.Format(culture, ReadySummaryFormat, TimingFormat.Duration(video.Duration, culture), OutputText.ResolutionName(resolution), OutputText.CodecName(video.Format), FileSize(video.FileBytes, culture));
     }
+
+    /// <summary>
+    /// The finished file's real size to three significant figures, trailing zeros left out ("173 MB", "18.4 MB",
+    /// "1.23 GB"), in units of 1,024 as Explorer counts them; "Less than 1 MB" below a megabyte. The Output panel's
+    /// estimate keeps two figures (<see cref="OutputText.Size"/>): it is a guess, this is the file.
+    /// </summary>
+    public static string FileSize(long bytes, CultureInfo? culture = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(bytes);
+        culture ??= CultureInfo.CurrentCulture;
+        const double megabyte = 1L << 20;
+        const double gigabyte = 1L << 30;
+        if (bytes < megabyte)
+        {
+            return OutputText.UnderOneMegabyte;
+        }
+
+        var megabytes = bytes / megabyte;
+        return Math.Round(megabytes) < 1000
+            ? string.Format(culture, OutputText.Megabytes, ThreeFigures(megabytes, culture))
+            : string.Format(culture, OutputText.Gigabytes, ThreeFigures(Math.Max(1, bytes / gigabyte), culture));
+    }
+
+    private static string ThreeFigures(double value, CultureInfo culture) =>
+        value.ToString(value < 9.995 ? "0.##" : value < 99.95 ? "0.#" : "0", culture);
 
     /// <summary>"Videos › 10Lapse": the video's folder by its last two names (one when it is a drive's root).</summary>
     public static string SavedTo(string videoPath)

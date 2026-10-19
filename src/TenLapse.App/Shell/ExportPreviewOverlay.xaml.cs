@@ -34,6 +34,7 @@ public sealed partial class ExportPreviewOverlay : UserControl
     private PlayerViewModel? _player;
     private IErrorPresenter? _errors;
     private IErrorSink? _log;
+    private IInfoBarService? _infoBars;
     private MediaPlayer? _media;
     private MediaSource? _source;
     private int _premiere;
@@ -43,16 +44,17 @@ public sealed partial class ExportPreviewOverlay : UserControl
     public ExportPreviewOverlay()
     {
         InitializeComponent();
-        SizeChanged += (_, _) => Place();
+        SizeChanged += (_, _) => Guarded(Place);
     }
 
-    /// <summary>Follows the export and the preview's player.</summary>
-    internal void Attach(ExportViewModel export, PlayerViewModel player, IErrorPresenter errors, IErrorSink log)
+    /// <summary>Follows the export and the preview's player; <paramref name="infoBars"/> says when the video can't play here.</summary>
+    internal void Attach(ExportViewModel export, PlayerViewModel player, IErrorPresenter errors, IErrorSink log, IInfoBarService infoBars)
     {
         _export = export;
         _player = player;
         _errors = errors;
         _log = log;
+        _infoBars = infoBars;
         export.PropertyChanged += OnExportPropertyChanged;
         export.PremiereRequested += OnPremiereRequested;
         player.PropertyChanged += OnPlayerPropertyChanged;
@@ -84,14 +86,19 @@ public sealed partial class ExportPreviewOverlay : UserControl
         }
     }
 
-    private void OnExportPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    // An event handler that throws would end the process (a stowed exception): logged instead. Nothing runs before Attach.
+    private void Guarded(Action action) => _log?.RunLogged(action, ExportText.PremiereFailed);
+
+    private void OnExportPropertyChanged(object? sender, PropertyChangedEventArgs e) => Guarded(() => FollowExport(e.PropertyName));
+
+    private void FollowExport(string? property)
     {
         if (_export is not { } export)
         {
             return;
         }
 
-        switch (e.PropertyName)
+        switch (property)
         {
             case nameof(ExportViewModel.IsExporting):
                 Pill.Visibility = export.IsExporting ? Visibility.Visible : Visibility.Collapsed;
@@ -185,14 +192,15 @@ public sealed partial class ExportPreviewOverlay : UserControl
     {
         if (_playing && e.PropertyName is nameof(PlayerViewModel.IsPlaying) or nameof(PlayerViewModel.CurrentFrame))
         {
-            StopPremiere();
+            Guarded(StopPremiere);
         }
     }
 
     // A new shape or size moves the gate.
-    private void OnPlayerStateChanged(object? sender, EventArgs e) => Place();
+    private void OnPlayerStateChanged(object? sender, EventArgs e) => Guarded(Place);
 
-    // Raised on a media thread: back on the UI thread, the preview plays the frames instead.
+    // Raised on a media thread: back on the UI thread, the preview plays the frames instead, and a Caution InfoBar says the
+    // video is saved but did not play here (never silent: the user would take the frames for the file).
     private void OnMediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
     {
         var log = _log;
@@ -214,6 +222,7 @@ public sealed partial class ExportPreviewOverlay : UserControl
                 StopPremiere();
                 player.Seek(0);
                 player.Play();
+                _infoBars?.Show(Presentation.Services.InfoBarSeverity.Caution, ExportText.PremiereCantPlay);
             },
             ExportText.PremiereFailed);
     }
