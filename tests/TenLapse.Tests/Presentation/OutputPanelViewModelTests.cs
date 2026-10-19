@@ -2,6 +2,7 @@ using System.Globalization;
 using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 using TenLapse.Presentation;
+using TenLapse.Presentation.Services;
 using TenLapse.Tests.Import;
 using TenLapse.Tests.Projects;
 
@@ -209,9 +210,10 @@ public sealed class OutputPanelViewModelTests
         var raised = new List<string?>();
         panel.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
 
-        // A write from another thread throws (the project belongs to the UI thread); the panel must not.
+        // A write from another thread throws (the project belongs to the thread that made it); the panel must not.
+        using var other = new UiThread();
         var pick = panel.Resolutions.First(option => option.Value == OutputResolution.Qhd1440);
-        await Task.Run(() => panel.SelectedResolution = pick);
+        await other.RunAsync(() => panel.SelectedResolution = pick);
 
         Assert.Equal(OutputResolution.Hd1080, project.Output.Resolution);
         var shown = Assert.Single(errors.Shown);
