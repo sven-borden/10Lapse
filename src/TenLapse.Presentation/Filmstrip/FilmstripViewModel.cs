@@ -435,7 +435,8 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     /// <returns>False when there was nothing to undo.</returns>
     public bool Undo()
     {
-        if (!_shell.Edits.Allow())
+        // With nothing to undo the export's "edits wait" InfoBar would be wrong: Narrator hears "Nothing to undo" instead.
+        if (_history.CanUndo && !_shell.Edits.Allow())
         {
             return false;
         }

@@ -422,6 +422,40 @@ public sealed class ExportViewModelTests
     }
 
     [Fact]
+    public void CtrlZWithNothingToUndoDuringTheExportShowsNoInfoBar()
+    {
+        using var app = new ExportHarness(capabilities: _everything);
+        app.StartExport();
+
+        Assert.False(app.On(() => app.Strip.Undo()));
+
+        Assert.Empty(app.InfoBars.Shown);
+    }
+
+    [Fact]
+    public async Task ImportsDropsAndPickersAreRefusedWhileTheExportRuns()
+    {
+        using var app = new ExportHarness(capabilities: _everything);
+        var source = new TenLapse.Tests.Import.ScriptedImportSource(Projects.TestFrames.Folder("more", 4));
+        var picker = new TenLapse.Tests.Import.FakePhotoPicker { Folder = @"C:\Photos\More", Photos = [@"C:\Photos\More\a.jpg"] };
+        var import = app.On(() => new ImportViewModel(app.Shell, source, picker, new SessionImportFolders(), app.Ui, app.Dialogs, app.InfoBars, new FakeCodecExtensions(), app.Errors));
+        app.StartExport();
+
+        await app.Ui.RunAsync(() => import.ImportAsync([@"C:\Photos\More"]));
+        await app.Ui.RunAsync(() => import.DropAsync([@"C:\Photos\More"]));
+        app.On(() => import.ChooseFolderCommand.Execute(null));
+        app.On(() => import.ChoosePhotosCommand.Execute(null));
+        app.Settle();
+        await import.WhenIdleAsync();
+
+        Assert.Equal(120, app.On(() => app.Project.Frames.Length));
+        Assert.Empty(picker.StartFolders);
+        Assert.Empty(app.Dialogs.Asked);
+        Assert.Equal(4, app.InfoBars.Shown.Count);
+        Assert.All(app.InfoBars.Shown, bar => Assert.Equal(ExportText.EditsWait, bar.Message));
+    }
+
+    [Fact]
     public void ExportWaitsForAnImportToFinish()
     {
         using var app = new ExportHarness(capabilities: _everything);
