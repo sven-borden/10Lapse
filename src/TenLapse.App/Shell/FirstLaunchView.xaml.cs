@@ -246,7 +246,7 @@ public sealed partial class FirstLaunchView : UserControl
         {
             DaybreakRenderer.DrawFrame(sender, args.DrawingSession, (float)sender.ActualWidth, (float)sender.ActualHeight, _palette.SkyAt(Daybreak.Phase(_frame)), _palette);
         }
-        catch (Exception exception)
+        catch (Exception exception) when (!sender.Device.IsDeviceLost(exception.HResult))
         {
             Break(exception, ProjectText.DaybreakDrawFailed);
         }
@@ -273,13 +273,15 @@ public sealed partial class FirstLaunchView : UserControl
                 ring,
                 _palette);
         }
-        catch (Exception exception)
+        catch (Exception exception) when (!sender.Device.IsDeviceLost(exception.HResult))
         {
             Break(exception, ProjectText.DaybreakDrawFailed);
         }
     }
 
-    // Daybreak failed: stop it, hide it (after the draw that failed has returned) and say so once.
+    // Daybreak failed: stop it, hide it (after the draw that failed has returned) and say so once. A lost device is
+    // not a failure: the draw handlers let it through, so the CanvasControl makes a new device and draws again
+    // (a driver update, a GPU reset, sleep and resume, a remote desktop reconnect).
     private void Break(Exception exception, string context)
     {
         if (_broken)
