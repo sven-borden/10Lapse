@@ -97,7 +97,8 @@ public sealed partial class ExportPanel : UserControl
             CheckStroke.StrokeDashOffset = 0;
         }
 
-        // The title rises 6 px; with animations off it fades in.
+        // The title rises 6 px and fades in (the canvas's ent: opacity and movement together); with animations off it only
+        // fades in.
         var title = MotionTokens.Plan(MotionCatalogue.FinishedTitle);
         if (title.Moves)
         {
@@ -109,7 +110,8 @@ public sealed partial class ExportPanel : UserControl
             Storyboard.SetTargetProperty(rise, nameof(Microsoft.UI.Xaml.Media.TranslateTransform.Y));
             _arrival.Children.Add(rise);
         }
-        else if (title.Animates)
+
+        if (title.Animates)
         {
             var fade = new DoubleAnimationUsingKeyFrames { BeginTime = title.Delay, FillBehavior = FillBehavior.Stop };
             fade.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.Zero), Value = 0 });
