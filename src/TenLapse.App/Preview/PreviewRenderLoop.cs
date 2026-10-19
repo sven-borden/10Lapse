@@ -19,11 +19,12 @@ using Windows.UI;
 
 namespace TenLapse.Preview;
 
-/// <summary>The colors the render thread draws with, read from the tokens on the UI thread.</summary>
+/// <summary>What the render thread draws with, read from the tokens on the UI thread.</summary>
 /// <param name="Ground">Around the gate: the Layer the stage sits on (drawn, not left transparent, so the corners blend the same everywhere).</param>
 /// <param name="Gate">The gate behind a frame that has no picture yet, or cannot be read (Letterbox).</param>
 /// <param name="Text">The placeholder's text on the gate.</param>
-internal readonly record struct PreviewColors(Color Ground, Color Gate, Color Text);
+/// <param name="Radius">The gate's corners (RadiusCard), in DIPs.</param>
+internal readonly record struct PreviewLook(Color Ground, Color Gate, Color Text, float Radius);
 
 /// <summary>
 /// The preview's render thread (#19): draws the frame the player says belongs on screen into a swap chain, through
@@ -35,19 +36,28 @@ internal readonly record struct PreviewColors(Color Ground, Color Gate, Color Te
 /// While playing it wakes on every vertical blank, asks the <see cref="PlaybackClock"/> which frame belongs on screen
 /// now and draws it when it changed, so a slow moment drops frames instead of drifting. A frame whose image is not
 /// in memory yet keeps the previous picture (counted as held). While paused it sleeps until something changes: a
-/// seek, an image arriving, a resize, the theme.
+/// seek, an image arriving, a resize, the theme. A minimized or hidden window pauses the player
+/// (<see cref="PlayerViewModel.SetWindowShown"/>), so nothing is drawn unseen.
 /// </para>
 /// <para>
 /// The swap chain is made and given to the panel on the UI thread; everything else happens here. The image drawn
 /// last stays leased, so the cache cannot free it while it may be drawn again (a resize). A lost graphics device frees
-/// the images and makes a new swap chain on the new device; any other drawing failure is told once.
+/// the images, starts a new generation in the cache (loads in flight on the old device are dropped) and makes a new
+/// swap chain on the new device, trying again with a growing pause when that fails; any other drawing failure is told
+/// once.
 /// </para>
 /// </remarks>
 internal sealed class PreviewRenderLoop : IDisposable
 {
-    private const float GateRadius = 6;
     private const int MinLookahead = 6;
     private const int MaxLookahead = 30;
+
+    // A vertical blank that returns at once again and again means there is none to wait for (a display that is off):
+    // after this many in a row the loop sleeps a moment instead of spinning. One quick return is normal (a blank had
+    // just passed), so a single one never sleeps and no blank is skipped on a fast display.
+    private const int QuickBlanksBeforeSleep = 3;
+
+    private static readonly TimeSpan _longestRetry = TimeSpan.FromSeconds(30);
 
     private readonly CanvasSwapChainPanel _panel;
     private readonly PlayerViewModel _player;
@@ -62,12 +72,18 @@ internal sealed class PreviewRenderLoop : IDisposable
     // Shared with the UI thread, under _gate.
     private Size _size;
     private float _dpi = 96;
-    private PreviewColors _colors;
+    private PreviewLook _look;
     private CanvasSwapChain? _offered;
-    private bool _recreating;
     private bool _chainMade;
     private long _changes;
     private volatile bool _stop;
+
+    // A new swap chain is needed (the device was lost); one is being made on the UI thread; when the next try may
+    // start (Stopwatch ticks); how many tries in a row failed.
+    private bool _needsChain;
+    private bool _recreating;
+    private long _recreateDue;
+    private int _recreateFailures;
 
     // The render thread's own.
     private CanvasSwapChain? _swapChain;
@@ -82,6 +98,7 @@ internal sealed class PreviewRenderLoop : IDisposable
     private long _shownVersion = -1;
     private ImmutableArray<Frame> _frames = [];
     private bool _drawFailureTold;
+    private int _quickBlanks;
 
     public PreviewRenderLoop(CanvasSwapChainPanel panel, PlayerViewModel player, FrameImageCache<CanvasBitmap> images, IErrorPresenter errors, IErrorSink log)
     {
@@ -132,12 +149,12 @@ internal sealed class PreviewRenderLoop : IDisposable
         _wake.Set();
     }
 
-    /// <summary>New colors (theme or high contrast changed; UI thread).</summary>
-    public void SetColors(PreviewColors colors)
+    /// <summary>New colors and corners (theme or high contrast changed; UI thread).</summary>
+    public void SetLook(PreviewLook look)
     {
         lock (_gate)
         {
-            _colors = colors;
+            _look = look;
             _changes++;
         }
 
@@ -158,6 +175,10 @@ internal sealed class PreviewRenderLoop : IDisposable
 
     private static int Lookahead(Core.Timing.Fraction rate) =>
         Math.Clamp((int)Math.Ceiling(rate.ToDouble() / 2), MinLookahead, MaxLookahead);
+
+    // 1, 2, 4, 8 and 16 s, then every 30 s.
+    private static long RetryDelay(int failures) =>
+        (long)(Math.Min(_longestRetry.TotalSeconds, Math.Pow(2, Math.Min(failures - 1, 5))) * Stopwatch.Frequency);
 
     private void OnChanged(object? sender, EventArgs e) => _wake.Set();
 
@@ -202,7 +223,7 @@ internal sealed class PreviewRenderLoop : IDisposable
     {
         Size size;
         float dpi;
-        PreviewColors colors;
+        PreviewLook look;
         long changes;
         lock (_gate)
         {
@@ -215,7 +236,7 @@ internal sealed class PreviewRenderLoop : IDisposable
 
             size = _size;
             dpi = _dpi;
-            colors = _colors;
+            look = _look;
             changes = _changes;
         }
 
@@ -223,6 +244,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         var state = _player.State;
         if (chain is null || size.Width < 1 || size.Height < 1)
         {
+            RequestChain();
             _wake.WaitOne(250);
             return;
         }
@@ -248,7 +270,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         {
             if (resized || changes != _drawnChanges || _shownVersion != state.Version)
             {
-                using (chain.CreateDrawingSession(colors.Ground))
+                using (chain.CreateDrawingSession(look.Ground))
                 {
                 }
 
@@ -266,12 +288,16 @@ internal sealed class PreviewRenderLoop : IDisposable
         _images.SetFocus(index, state.IsPlaying, Lookahead(state.Clock?.Rate ?? state.Snapshot.EffectiveRate.Rate));
 
         var lease = _images.Acquire(frame.Id);
+
+        // Only a photo that cannot be read has a failure here; a load that threw (a lost device, a bug) keeps the
+        // previous picture, as a frame still loading does.
         var failure = lease is null ? _images.FailureOf(frame.Id) : null;
         var settingsChanged = state.Version != _shownVersion || changes != _drawnChanges || resized;
         bool draw;
         if (lease is not null)
         {
-            draw = settingsChanged || frame.Id != _shownId || _shownPlaceholder || lease.Quality > _shownQuality;
+            // A new image for the same frame (better, or the photo changed on disk) is drawn too.
+            draw = settingsChanged || frame.Id != _shownId || _shownPlaceholder || !ReferenceEquals(lease.Image, _shown?.Image);
         }
         else if (failure is not null)
         {
@@ -285,7 +311,7 @@ internal sealed class PreviewRenderLoop : IDisposable
 
         if (draw)
         {
-            Draw(chain, state.Snapshot, lease?.Image ?? (lease is null && failure is null ? _shown?.Image : null), failure, frame, colors);
+            Draw(chain, state.Snapshot, lease?.Image ?? (lease is null && failure is null ? _shown?.Image : null), failure, frame, look);
             chain.Present();
             var presented = Stopwatch.GetTimestamp();
             _drewAnything = true;
@@ -325,43 +351,53 @@ internal sealed class PreviewRenderLoop : IDisposable
         lease?.Dispose();
         if (state.IsPlaying)
         {
-            var before = Stopwatch.GetTimestamp();
             if (!draw)
             {
-                chain.WaitForVerticalBlank();
-            }
-
-            // A minimized window has no vertical blank to wait for: do not spin.
-            if (Stopwatch.GetTimestamp() - before < Stopwatch.Frequency / 1000 && !draw)
-            {
-                Thread.Sleep(8);
+                WaitForBlank(chain);
             }
         }
         else
         {
+            _quickBlanks = 0;
             _wake.WaitOne(500);
         }
     }
 
-    private void Draw(CanvasSwapChain chain, ProjectSnapshot snapshot, CanvasBitmap? image, FrameLoadFailure? failure, Frame frame, PreviewColors colors)
+    // Playing and nothing new to present: wait for the next vertical blank (a present waits by itself).
+    private void WaitForBlank(CanvasSwapChain chain)
+    {
+        var before = Stopwatch.GetTimestamp();
+        chain.WaitForVerticalBlank();
+        if (Stopwatch.GetTimestamp() - before >= Stopwatch.Frequency / 1000)
+        {
+            _quickBlanks = 0;
+        }
+        else if (++_quickBlanks >= QuickBlanksBeforeSleep)
+        {
+            _wake.WaitOne(8);
+        }
+    }
+
+    private void Draw(CanvasSwapChain chain, ProjectSnapshot snapshot, CanvasBitmap? image, FrameLoadFailure? failure, Frame frame, PreviewLook look)
     {
         var video = snapshot.VideoSize;
         var size = chain.Size;
-        using var session = chain.CreateDrawingSession(colors.Ground);
-        var gate = GateRect(size, video);
-        if (gate.Width < 1 || gate.Height < 1)
+        using var session = chain.CreateDrawingSession(look.Ground);
+        var place = PreviewLayout.Gate(size.Width, size.Height, video);
+        if (place.IsEmpty)
         {
             return;
         }
 
-        using var clip = CanvasGeometry.CreateRoundedRectangle(session, gate, GateRadius, GateRadius);
+        var gate = new Rect(place.X, place.Y, place.Width, place.Height);
+        using var clip = CanvasGeometry.CreateRoundedRectangle(session, gate, look.Radius, look.Radius);
         using var layer = session.CreateLayer(1f, clip);
         if (image is null)
         {
-            session.FillRectangle(gate, colors.Gate);
+            session.FillRectangle(gate, look.Gate);
             if (failure is not null)
             {
-                DrawPlaceholder(session, gate, frame, colors);
+                DrawPlaceholder(session, gate, frame, look);
             }
 
             return;
@@ -374,7 +410,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         FrameRenderer.Draw(session, image, snapshot.FrameSettings, video);
     }
 
-    private static void DrawPlaceholder(CanvasDrawingSession session, Rect gate, Frame frame, PreviewColors colors)
+    private static void DrawPlaceholder(CanvasDrawingSession session, Rect gate, Frame frame, PreviewLook look)
     {
         using var glyph = new CanvasTextFormat
         {
@@ -393,23 +429,9 @@ internal sealed class PreviewRenderLoop : IDisposable
             TrimmingGranularity = CanvasTextTrimmingGranularity.Character,
         };
         var middle = gate.Y + (gate.Height / 2);
-        session.DrawText("", new Rect(gate.X, gate.Y, gate.Width, middle - gate.Y - 4), colors.Text, glyph);
+        session.DrawText("", new Rect(gate.X, gate.Y, gate.Width, middle - gate.Y - 4), look.Text, glyph);
         var text = ProjectText.PreviewPlaceholder(frame.FileName);
-        session.DrawText(text, new Rect(gate.X + 16, middle + 4, Math.Max(1, gate.Width - 32), 20), colors.Text, caption);
-    }
-
-    /// <summary>The frame's place in a <paramref name="area"/> (DIPs): as large as fits at the video's shape, centred.</summary>
-    internal static Rect GateRect(Size area, PixelSize video)
-    {
-        if (area.Width <= 0 || area.Height <= 0 || video.Width <= 0 || video.Height <= 0)
-        {
-            return default;
-        }
-
-        var scale = Math.Min(area.Width / video.Width, area.Height / video.Height);
-        var width = Math.Round(video.Width * scale);
-        var height = Math.Round(video.Height * scale);
-        return new Rect(Math.Round((area.Width - width) / 2), Math.Round((area.Height - height) / 2), width, height);
+        session.DrawText(text, new Rect(gate.X + 16, middle + 4, Math.Max(1, gate.Width - 32), 20), look.Text, caption);
     }
 
     private void RecoverFromDeviceLoss(CanvasSwapChain chain)
@@ -421,9 +443,9 @@ internal sealed class PreviewRenderLoop : IDisposable
         _shownPlaceholder = false;
         _drewAnything = false;
         _swapChain = null;
-        _images.Clear();
         try
         {
+            // First, so the shared device is a new one from here on.
             chain.Device.RaiseDeviceLost();
         }
         catch (Exception exception)
@@ -431,9 +453,24 @@ internal sealed class PreviewRenderLoop : IDisposable
             _log.Report(exception, ProjectText.PreviewDrawFailed);
         }
 
+        // Then a new generation: loads still in flight made their images on the old device, and are freed when they
+        // come back (review M3).
+        _images.Clear();
         lock (_gate)
         {
-            if (_recreating)
+            _needsChain = true;
+            _recreateDue = 0;
+        }
+
+        RequestChain();
+    }
+
+    // Render thread: asks the UI thread for a new swap chain when one is needed and its retry time has come.
+    private void RequestChain()
+    {
+        lock (_gate)
+        {
+            if (!_needsChain || _recreating || _stop || Stopwatch.GetTimestamp() < _recreateDue)
             {
                 return;
             }
@@ -441,34 +478,77 @@ internal sealed class PreviewRenderLoop : IDisposable
             _recreating = true;
         }
 
-        _dispatcher.TryEnqueueGuarded(_log, Recreate, ProjectText.PreviewDrawFailed);
+        if (!_dispatcher.TryEnqueueGuarded(_log, Recreate, ProjectText.PreviewRestartFailed))
+        {
+            // The window is closing.
+            lock (_gate)
+            {
+                _recreating = false;
+            }
+        }
     }
 
-    // UI thread: a new swap chain on the new shared device.
+    // UI thread: a new swap chain on the new shared device. A failure is told once (and logged after that) and tried
+    // again later, 1 s at first, then less often, up to every 30 s; the render thread asks for it.
     private void Recreate()
     {
         Size size;
         float dpi;
         lock (_gate)
         {
-            _recreating = false;
             size = _size;
             dpi = _dpi;
         }
 
         if (_stop || size.Width < 1 || size.Height < 1)
         {
+            // Nothing to make yet; the render thread asks again.
+            lock (_gate)
+            {
+                _recreating = false;
+            }
+
             return;
         }
 
-        var created = new CanvasSwapChain(GraphicsDevice.Shared, (float)size.Width, (float)size.Height, dpi);
+        CanvasSwapChain? created = null;
+        try
+        {
+            created = new CanvasSwapChain(GraphicsDevice.Shared, (float)size.Width, (float)size.Height, dpi);
+            _panel.SwapChain = created;
+        }
+        catch (Exception exception)
+        {
+            created?.Dispose();
+            int failures;
+            lock (_gate)
+            {
+                _recreating = false;
+                failures = ++_recreateFailures;
+                _recreateDue = Stopwatch.GetTimestamp() + RetryDelay(failures);
+            }
+
+            if (failures == 1)
+            {
+                _errors.Show(exception, ProjectText.PreviewRestartFailed);
+            }
+            else
+            {
+                _log.Report(exception, ProjectText.PreviewRestartFailed);
+            }
+
+            return;
+        }
+
         lock (_gate)
         {
+            _recreating = false;
+            _needsChain = false;
+            _recreateFailures = 0;
             _offered = created;
             _changes++;
         }
 
-        _panel.SwapChain = created;
         _wake.Set();
     }
 }

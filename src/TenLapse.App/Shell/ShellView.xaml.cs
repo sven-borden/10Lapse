@@ -128,6 +128,10 @@ public sealed partial class ShellView : UserControl
         }
     }
 
+    /// <summary>The window was minimized or hidden (false), or shows again: the preview pauses, and plays on (#19).</summary>
+    public void SetWindowShown(bool shown) =>
+        _presenter.Guard(() => _player.SetWindowShown(shown), ProjectText.PreviewPlayFailed);
+
     private void OnFirstLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= OnFirstLoaded;

@@ -131,12 +131,18 @@ public sealed partial class MainWindow : Window
     private void OnActivated(object sender, WindowActivatedEventArgs args) =>
         _shell.SetWindowActive(args.WindowActivationState != WindowActivationState.Deactivated);
 
-    // A minimum size measured while maximized waits for the window to be restored.
+    // A minimum size measured while maximized waits for the window to be restored. Minimized or hidden, the preview
+    // pauses (and plays on when the window shows again): nothing should decode and draw unseen.
     private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
     {
         if (_minimumPending && (args.DidPresenterChange || args.DidSizeChange) && IsRestored)
         {
             ApplyMinimumSize(Scale);
+        }
+
+        if (!_closed)
+        {
+            _shell.SetWindowShown(sender.IsVisible && sender.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Minimized });
         }
     }
 

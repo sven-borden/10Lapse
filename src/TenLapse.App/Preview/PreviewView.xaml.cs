@@ -61,14 +61,16 @@ public sealed partial class PreviewView : UserControl
         }
 
         // On the gate (dark Letterbox) the placeholder's text is the dark theme's Ink Secondary; high contrast uses
-        // the system's window and text colors.
-        var colors = ThemeTokens.IsHighContrast
-            ? new PreviewColors(ThemeTokens.Color("LayerColor", this), ThemeTokens.Color("CardColor", this), ThemeTokens.Color("InkColor", this))
-            : new PreviewColors(
+        // the system's window and text colors. The gate's corners are the card radius token.
+        var radius = (float)((CornerRadius)Application.Current.Resources["RadiusCard"]).TopLeft;
+        var look = ThemeTokens.IsHighContrast
+            ? new PreviewLook(ThemeTokens.Color("LayerColor", this), ThemeTokens.Color("CardColor", this), ThemeTokens.Color("InkColor", this), radius)
+            : new PreviewLook(
                 ThemeTokens.Color("LayerColor", this),
                 (Windows.UI.Color)Application.Current.Resources["LetterboxColor"],
-                ThemeTokens.Color("InkSecondaryColor", ElementTheme.Dark));
-        _loop.SetColors(colors);
+                ThemeTokens.Color("InkSecondaryColor", ElementTheme.Dark),
+                radius);
+        _loop.SetLook(look);
     }
 
     private void Start()
