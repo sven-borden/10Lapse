@@ -301,7 +301,7 @@ Stock WinUI 3 controls with these tokens. The filmstrip, scrubber, preview gate 
 - **Used for:** speed mode (Per second, Length, Per photo), speed value (24, 25, 30, 50, 60), shape (3:2, 16:9, 9:16, 1:1), Fit or Fill, and the narrow-window panel tabs.
 
 ### Inputs and toggles
-- **Select:** Card fill, Control Stroke border, 4 px corners, 32 px. Options the hardware can't encode are left out, with one caption line saying why.
+- **Select:** Card fill, Control Stroke border, 4 px corners, 32 px. Options the hardware can't encode are left out, with one caption line saying why. The selected entry's 3 px pip in the open list is Deep Amber Indicator, and it applies to every ComboBox in the app (`ComboBoxItemPillFill` in `ControlOverrides.xaml`). The dropdown flyout can't be captured with PrintWindow, so the pip is unverified on screen.
 - **Toggle:** 40 × 20 px pill. Off: Ink Secondary outline and knob. On: Deep Amber Indicator track, Card knob. The knob slides 167 ms Move.
 
 ### Cards and InfoBars
