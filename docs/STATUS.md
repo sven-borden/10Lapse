@@ -51,7 +51,7 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 16 | #35 Motion system | O | every view | merged #100 |
 | 16 | #96 Minimum Windows 11 | S | build props, manifest, README | merged #97 |
 | 16 | #98 Flaky cache test (bug) | S | `tests/` Preview | merged #99 |
-| 17 | #39 Strings to resource files | S | every view | in progress |
+| 17 | #39 Strings to resource files | O | every view (Opus: resw/resx split) | in progress |
 | 17 | #101 Flaky timing lower bound (bug) | S | `tests/` timing asserts | in progress |
 | 18 | #38 Accessibility pass | O | every view, alone | |
 
