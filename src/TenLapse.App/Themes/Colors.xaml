@@ -11,7 +11,8 @@
   Keys follow the DESIGN.md token names in PascalCase: golden-hour-amber is GoldenHourAmberColor and
   GoldenHourAmberBrush; the "-light" and "-dark" variants are the same key in the Light and Dark dictionaries.
 
-  Amber rule: GoldenHourAmber* is the Export fill only (ExportButtonStyle). DeepAmberIndicator* is the state
+  Amber rule: GoldenHourAmber* is the fill of the one accent button per screen (DESIGN.md): ExportButtonStyle,
+  and AccentActionButtonStyle on a screen without Export (Choose folder). DeepAmberIndicator* is the state
   indicator (progress, scrubber, playhead ring, toggles that are on, selection). Never use GoldenHourAmber for
   an indicator in the light theme (2.26:1 on the layer).
 
