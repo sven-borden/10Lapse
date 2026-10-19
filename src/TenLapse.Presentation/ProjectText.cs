@@ -308,6 +308,9 @@ public static class ProjectText
     /// <summary>The drag caption for several photo files. {0} the count ("120").</summary>
     public static string DragCaptionMany => "Add {0} photos";
 
+    /// <summary>The drag caption while Settings is open: the drop is refused until the user goes back.</summary>
+    public static string DragCaptionSettingsOpen => "Close Settings to add photos";
+
     /// <summary>The title of the question a drop onto a project with photos asks.</summary>
     public static string DropTitle => "Add these photos to this project?";
 

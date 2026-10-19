@@ -25,8 +25,11 @@ public sealed partial class ShellView : UserControl
     private readonly IErrorSink _errors;
     private readonly IErrorPresenter _presenter;
 
-    // What the drag over the window holds, counted once when it enters: the photo files, null while not known (still
-    // counting, or folders among them), 0 when nothing in it can be imported.
+    // What the drag over the window holds, counted once per drag: the photo files, null while not known (still
+    // counting, or folders among them), 0 when nothing in it can be imported. DragEnter bubbles up from every child the
+    // pointer crosses, so the count is kept for the drag's DataView (by reference) until the drop or until the pointer
+    // leaves the window.
+    private DataPackageView? _countedView;
     private int? _draggedPhotos;
     private int _dragGeneration;
 
@@ -147,11 +150,32 @@ public sealed partial class ShellView : UserControl
 
     // Drag and drop (#12). A drag that enters is counted once in the background (the photo files it holds), so the
     // caption can say "Add 120 photos"; until then, and when it holds folders, it says "Add photos". A drag with
-    // nothing to import (no folder, no photo file) is refused, so the cursor says so before the drop.
+    // nothing to import (no folder, no photo file) is refused, so the cursor says so before the drop. While Settings is
+    // open every drop is refused, with a caption that says how to add the photos.
     private async void OnDragEnter(object sender, DragEventArgs e) => await ErrorPath.GuardAsync(_presenter, () => CountDraggedAsync(e), ProjectText.DragCountFailed);
+
+    // DragLeave bubbles from the children too: only a pointer that has left the window ends this drag's count.
+    private void OnDragLeave(object sender, DragEventArgs e)
+    {
+        var point = e.GetPosition(ShellRoot);
+        if (point.X <= 0 || point.Y <= 0 || point.X >= ShellRoot.ActualWidth || point.Y >= ShellRoot.ActualHeight)
+        {
+            ForgetDrag();
+        }
+    }
 
     private void OnDragOver(object sender, DragEventArgs e)
     {
+        if (ViewModel.IsSettingsOpen)
+        {
+            e.AcceptedOperation = DataPackageOperation.None;
+            e.DragUIOverride.Caption = ProjectText.DragCaptionSettingsOpen;
+            e.DragUIOverride.IsCaptionVisible = true;
+            e.DragUIOverride.IsGlyphVisible = false;
+            e.Handled = true;
+            return;
+        }
+
         if (!e.DataView.Contains(StandardDataFormats.StorageItems) || _draggedPhotos == 0)
         {
             e.AcceptedOperation = DataPackageOperation.None;
@@ -170,16 +194,24 @@ public sealed partial class ShellView : UserControl
     // Never throws: a drag that cannot be counted keeps the generic caption, and the drop still works.
     private async Task CountDraggedAsync(DragEventArgs e)
     {
-        var generation = ++_dragGeneration;
-        _draggedPhotos = null;
-        if (!e.DataView.Contains(StandardDataFormats.StorageItems))
+        var view = e.DataView;
+        if (ReferenceEquals(view, _countedView))
+        {
+            // The same drag entering a child element: counted already (or being counted).
+            return;
+        }
+
+        ForgetDrag();
+        _countedView = view;
+        var generation = _dragGeneration;
+        if (!view.Contains(StandardDataFormats.StorageItems))
         {
             return;
         }
 
         try
         {
-            var items = await e.DataView.GetStorageItemsAsync();
+            var items = await view.GetStorageItemsAsync();
             int? count = items.Count(item => item is IStorageFile && Import.IsPhotoFile(item.Path));
             if (items.Any(item => item is IStorageFolder))
             {
@@ -199,9 +231,8 @@ public sealed partial class ShellView : UserControl
 
     private async Task DropAsync(DragEventArgs e)
     {
-        _dragGeneration++;
-        _draggedPhotos = null;
-        if (!e.DataView.Contains(StandardDataFormats.StorageItems))
+        ForgetDrag();
+        if (ViewModel.IsSettingsOpen || !e.DataView.Contains(StandardDataFormats.StorageItems))
         {
             return;
         }
@@ -221,6 +252,15 @@ public sealed partial class ShellView : UserControl
         // Items without a path (a phone's photos over MTP, files inside a zip) cannot be read from disk: left out,
         // and DropAsync says so when nothing is left.
         await Import.DropAsync([.. items.Select(item => item.Path).Where(path => !string.IsNullOrEmpty(path))]);
+    }
+
+    // The drag is over (dropped, or gone from the window): the next one is counted afresh, and a count still running
+    // for this one is dropped.
+    private void ForgetDrag()
+    {
+        _dragGeneration++;
+        _countedView = null;
+        _draggedPhotos = null;
     }
 
     // Walks the panels down to the controls, skipping what is collapsed; a control's own parts are its business.

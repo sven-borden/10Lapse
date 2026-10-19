@@ -43,6 +43,7 @@
     AllowDrop="True"
     Background="Transparent"
     DragEnter="OnDragEnter"
+    DragLeave="OnDragLeave"
     DragOver="OnDragOver"
     Drop="OnDrop">
     <Grid.RowDefinitions>
