@@ -377,7 +377,7 @@ public sealed class SettingsFeedbackTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task ALinkThatWouldNotOpenGivesOneCriticalSentenceThatSaysWhatToDo(bool rate)
+    public async Task ALinkThatWouldNotOpenGivesOneCautionSentenceThatSaysWhatToDo(bool rate)
     {
         _launcher.Result = false;
         var settings = Settings();
@@ -385,7 +385,7 @@ public sealed class SettingsFeedbackTests
         await (rate ? settings.RateCommand : settings.SendFeedbackCommand).ExecuteAsync(null);
 
         var bar = Assert.Single(_infoBars.Shown);
-        Assert.Equal(InfoBarSeverity.Critical, bar.Severity);
+        Assert.Equal(InfoBarSeverity.Caution, bar.Severity);
         Assert.Equal(rate ? RatingText.RateFailed : RatingText.FeedbackFailed, bar.Message);
         Assert.Empty(_errors.Shown);
     }
@@ -402,7 +402,7 @@ public sealed class SettingsFeedbackTests
 
         Assert.Equal("Launch refused.", Assert.Single(_errors.Reported).Exception.Message);
         var bar = Assert.Single(_infoBars.Shown);
-        Assert.Equal(InfoBarSeverity.Critical, bar.Severity);
+        Assert.Equal(InfoBarSeverity.Caution, bar.Severity);
         Assert.Equal(rate ? RatingText.RateFailed : RatingText.FeedbackFailed, bar.Message);
     }
 }

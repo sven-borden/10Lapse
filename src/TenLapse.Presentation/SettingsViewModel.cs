@@ -75,7 +75,7 @@ public sealed class SettingsViewModel
 
         if (!opened)
         {
-            infoBars.Show(InfoBarSeverity.Critical, failed);
+            infoBars.Show(InfoBarSeverity.Caution, failed);
         }
     }
 }
