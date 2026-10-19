@@ -121,6 +121,9 @@ internal sealed class PreviewRenderLoop : IDisposable
     private Size _shownPanel;
     private bool _shownPicture;
 
+    // The snapshot the last pass drew for: a project with no photos or another project forgets what was shown.
+    private ProjectSnapshot? _drawnSnapshot;
+
     public PreviewRenderLoop(CanvasSwapChainPanel panel, PlayerViewModel player, FrameImageCache<CanvasBitmap> images, IErrorPresenter errors, IErrorSink log)
     {
         _panel = panel;
@@ -266,6 +269,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         float dpi;
         PreviewLook look;
         long changes;
+        var developTaken = false;
         lock (_gate)
         {
             if (_offered is not null)
@@ -285,11 +289,20 @@ internal sealed class PreviewRenderLoop : IDisposable
                 _developStart = _developAskedAt;
                 _developDeadline = _developAskedAt + (long)(DevelopPatience.TotalSeconds * Stopwatch.Frequency);
                 _developAsked = null;
+                developTaken = true;
             }
         }
 
         var chain = _swapChain;
         var state = _player.State;
+
+        // The photos landed, or the project has none or is another one: nothing shown before is held or reframed from.
+        if (developTaken || PreviewContinuity.StartsAfresh(_drawnSnapshot, state.Snapshot))
+        {
+            ForgetShown();
+        }
+
+        _drawnSnapshot = state.Snapshot;
         if (chain is null || size.Width < 1 || size.Height < 1)
         {
             RequestChain();
@@ -364,7 +377,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         draw |= animating;
         if (draw)
         {
-            Draw(chain, state.Snapshot, lease?.Image ?? (lease is null && failure is null ? _shown?.Image : null), failure, frame, look, now);
+            Draw(chain, state.Snapshot, lease?.Image ?? (lease is null && failure is null ? _shown?.Image : null), lease is not null, failure, frame, look, now);
             chain.Present();
             var presented = Stopwatch.GetTimestamp();
             _drewAnything = true;
@@ -439,7 +452,8 @@ internal sealed class PreviewRenderLoop : IDisposable
         }
     }
 
-    private void Draw(CanvasSwapChain chain, ProjectSnapshot snapshot, CanvasBitmap? image, FrameLoadFailure? failure, Frame frame, PreviewLook look, long now)
+    // image: the frame's own picture (current), or the previous frame's, held while this one loads.
+    private void Draw(CanvasSwapChain chain, ProjectSnapshot snapshot, CanvasBitmap? image, bool current, FrameLoadFailure? failure, Frame frame, PreviewLook look, long now)
     {
         var video = snapshot.VideoSize;
         var fit = snapshot.FrameSettings.Fit;
@@ -455,7 +469,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         var gate = new Rect(place.X, place.Y, place.Width, place.Height);
         var photo = image is null ? gate : PhotoRect(gate, video, fit, image);
         var (shownGate, shownPhoto) = Reframing(gate, photo, image is not null, video, fit, size, now);
-        var (opacity, blur, grow) = Developing(image is not null, now);
+        var (opacity, blur, grow) = Developing(current, now);
         _shownGate = shownGate;
         _shownPhoto = shownPhoto;
         _aimedGate = gate;
@@ -557,7 +571,8 @@ internal sealed class PreviewRenderLoop : IDisposable
         return (Lerp(reframe.FromGate, gate, eased), Lerp(reframe.FromPhoto, photo, eased));
     }
 
-    // The develop now: the gate's opacity, the blur in DIPs and the scale. Its clock waits for the first picture.
+    // The develop now: the gate's opacity, the blur in DIPs and the scale. Its clock waits for the first picture of the
+    // frame on screen (a picture held from another frame does not count).
     private (float Opacity, float Blur, float Scale) Developing(bool hasPicture, long now)
     {
         if (_develop is not { } develop)
@@ -594,6 +609,27 @@ internal sealed class PreviewRenderLoop : IDisposable
         return develop.Moves
             ? (eased, DevelopBlur * (1 - eased), DevelopScale - ((DevelopScale - 1) * eased))
             : (eased, 0f, 1f);
+    }
+
+    // Forgets the picture on screen and where the gate and the photo were: the next draw starts afresh, with no picture
+    // held from the old photos and no reframe from their shape.
+    private void ForgetShown()
+    {
+        _shown?.Dispose();
+        _shown = null;
+        _shownId = Guid.Empty;
+        _shownQuality = FrameImageQuality.None;
+        _shownPlaceholder = false;
+        _drewAnything = false;
+        _shownPicture = false;
+        _shownVideo = default;
+        _shownFit = default;
+        _shownPanel = default;
+        _shownGate = default;
+        _shownPhoto = default;
+        _aimedGate = default;
+        _aimedPhoto = default;
+        _reframe = null;
     }
 
     // Where the whole photo lies on screen when FrameRenderer draws it into the gate (Fill overflows the gate, Fit fits in it).
