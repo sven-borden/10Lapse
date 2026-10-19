@@ -860,7 +860,7 @@
       "name": "Filmstrip",
       "kind": "custom",
       "refersTo": "filmstrip-thumb",
-      "description": "Signature: thumbnails are buttons; the amber ring marks where the video is now.",
+      "description": "Signature: thumbnails are the items of one selectable list (not buttons: plain Space plays or pauses, Shift+arrows extend the selection); the amber ring marks where the video is now.",
       "html": "<div class=\"ds-film\"><button aria-label=\"Go to frame 1\" style=\"background:linear-gradient(180deg,#86A6D1 0%,#F2C08A 62%,#2A3449 62%)\"></button><button aria-label=\"Go to frame 312\" aria-current=\"true\" style=\"background:linear-gradient(180deg,#8C83B5 0%,#F29A55 62%,#1E2638 62%)\"></button><button aria-label=\"Go to frame 520\" class=\"pending\" style=\"background:linear-gradient(180deg,#584C8C 0%,#D9677A 62%,#141A28 62%)\"></button><button aria-label=\"Go to frame 742\" class=\"pending\" style=\"background:linear-gradient(180deg,#2B3268 0%,#6D5A9E 62%,#0E1220 62%)\"></button></div>",
       "css": ".ds-film { display: grid; grid-template-columns: repeat(4, 64px); gap: 4px; padding: 6px; background: #FAF9F7; } .ds-film button { aspect-ratio: 3 / 2; padding: 0; border: 0; border-radius: 3px; cursor: pointer; transition: box-shadow 167ms cubic-bezier(0.16, 1, 0.3, 1), opacity 167ms linear; } .ds-film button:hover { box-shadow: 0 0 0 2px #FAF9F7, 0 0 0 3px #5D5A55; } .ds-film button[aria-current=\"true\"] { box-shadow: 0 0 0 2px #FAF9F7, 0 0 0 4px #B5620D; } .ds-film button.pending { opacity: 0.35; } .ds-film button:focus-visible { outline: none; box-shadow: 0 0 0 2px #FAF9F7, 0 0 0 4px #1C1B19; }"
     }
