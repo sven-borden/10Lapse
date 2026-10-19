@@ -14,8 +14,8 @@
     stacks the catcher takes before it is stopped).
 
     Everything the app writes is the test's own, through Debug switches: settings, sample photos, proxy cache, encoder
-    cache (always: with -ColdProbe a new file per launch, otherwise one the launches share) and the log folder (one per
-    launch). The user's %LOCALAPPDATA%\10Lapse is not written to. -Load starts a CPU burner (pwsh) and/or a GPU encode
+    cache (always: with -ColdProbe a new file per launch, otherwise one the launches share, which the first launch
+    fills by staying open until its probe answers) and the log folder (one per launch). The user's %LOCALAPPDATA%\10Lapse is not written to. -Load starts a CPU burner (pwsh) and/or a GPU encode
     loop (TenLapse.Spike) and stops them at the end. Only processes this script started are stopped, each checked by
     its start time first.
 
@@ -156,7 +156,9 @@ try {
         $windowMs = if ($window) { [int]$started.Elapsed.TotalMilliseconds } else { -1 }
         $closeError = ''
         $outcome = 'closed'
-        if ($window -and $WaitForProbe) {
+        # The shared warm cache is written only by a probe that finishes: the launch that would fill it waits for it.
+        $waitThis = $WaitForProbe -or (-not $ColdProbe -and -not (Test-Path $warmCache))
+        if ($window -and $waitThis) {
             $waited = [Diagnostics.Stopwatch]::StartNew()
             while (-not $p.HasExited -and $waited.Elapsed.TotalSeconds -lt 30) {
                 $text = Get-ChildItem $logFolder -Filter '*.log' -ErrorAction SilentlyContinue | Get-Content -Raw -ErrorAction SilentlyContinue
