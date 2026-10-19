@@ -119,7 +119,7 @@ public partial class App : Application
         // passes an IImportFolderMemory that lasts across launches instead of SessionImportFolders.
         var import = new ImportViewModel(
             shell,
-            new PhotoImporter(),
+            new PhotoImporter { Log = _log },
             new PhotoPickerService(() => window!.AppWindow.Id),
             new SessionImportFolders(),
             new DispatcherQueueUiDispatcher(DispatcherQueue.GetForCurrentThread(), logOnly),

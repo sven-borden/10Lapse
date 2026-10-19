@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO.Enumeration;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
+using TenLapse.Core.Diagnostics;
 using TenLapse.Core.Import;
 using TenLapse.Core.Ordering;
 using TenLapse.Core.Projects;
@@ -90,6 +91,12 @@ public sealed class PhotoImporter : IPhotoImportSource
     /// </summary>
     public static bool IsCloudOnly(FileAttributes attributes) => (attributes & CloudOnlyAttributes) != 0;
 
+    /// <summary>Where a reader's failure goes when it comes after the import stopped listening (the App passes its log).</summary>
+    public ILog? Log { get; init; }
+
+    /// <summary>Reads one listed frame (<see cref="ReadOneAsync"/>; tests pass a slow or stuck one).</summary>
+    internal Func<Frame, CancellationToken, Task<FrameReading>> ReadOne { get; init; } = ReadOneAsync;
+
     /// <inheritdoc />
     public bool IsPhotoFile(string path) => !string.IsNullOrEmpty(path) && _isPhoto(path);
 
@@ -118,6 +125,7 @@ public sealed class PhotoImporter : IPhotoImportSource
                 frames.Add(new Frame(file.Path, file.Length, file.LastWriteTimeUtc));
                 if (frames.Count >= limit)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     yield return listing.Take(frames);
                     frames = new List<Frame>(_listBatch);
                     limit = _listBatch;
@@ -127,6 +135,7 @@ public sealed class PhotoImporter : IPhotoImportSource
 
         if (frames.Count > 0 || listing.HasNews)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             yield return listing.Take(frames);
         }
     }
@@ -140,9 +149,10 @@ public sealed class PhotoImporter : IPhotoImportSource
             yield break;
         }
 
-        // The readers stop when the caller stops listening, as well as when it cancels.
-        using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        // The readers stop when the caller stops listening, as well as when it cancels. Disposed when they end.
+        var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var results = Channel.CreateUnbounded<FrameReading>(new UnboundedChannelOptions { SingleReader = true });
+        var readOne = ReadOne;
         var readers = Task.Run(
             async () =>
             {
@@ -151,11 +161,16 @@ public sealed class PhotoImporter : IPhotoImportSource
                     await Parallel.ForEachAsync(
                         frames,
                         new ParallelOptions { MaxDegreeOfParallelism = _readers, CancellationToken = stop.Token },
-                        async (frame, token) => results.Writer.TryWrite(await ReadOneAsync(frame, token).ConfigureAwait(false))).ConfigureAwait(false);
+                        async (frame, token) => results.Writer.TryWrite(await readOne(frame, token).ConfigureAwait(false))).ConfigureAwait(false);
                     results.Writer.TryComplete();
                 }
-                catch (Exception exception)
+                catch (OperationCanceledException) when (stop.IsCancellationRequested)
                 {
+                    results.Writer.TryComplete();
+                }
+                catch (Exception exception) when (!stop.IsCancellationRequested)
+                {
+                    // The caller still listens: it meets the failure on its next read.
                     results.Writer.TryComplete(exception);
                 }
             },
@@ -172,6 +187,7 @@ public sealed class PhotoImporter : IPhotoImportSource
                     batch.Add(reading);
                     if (batch.Count >= _readBatch || clock.Elapsed >= _readBatchInterval)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         yield return batch;
                         batch = new List<FrameReading>(_readBatch);
                         clock.Restart();
@@ -181,13 +197,29 @@ public sealed class PhotoImporter : IPhotoImportSource
 
             if (batch.Count > 0)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 yield return batch;
             }
         }
         finally
         {
-            await stop.CancelAsync().ConfigureAwait(false);
-            await readers.ConfigureAwait(false);
+            // Not awaited: a reader stuck in a slow open (a sleeping network drive) must not hold up Cancel. The readers
+            // stop at their next check; a failure after the caller left faults the task and is logged here.
+            stop.Cancel();
+            _ = readers.ContinueWith(
+                static (task, state) =>
+                {
+                    var (source, log) = ((CancellationTokenSource, ILog?))state!;
+                    source.Dispose();
+                    if (task.Exception is { } exception)
+                    {
+                        log?.Warning("Reading photos for an import failed after the import had stopped.", exception.GetBaseException());
+                    }
+                },
+                (stop, Log),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -330,7 +362,7 @@ public sealed class PhotoImporter : IPhotoImportSource
             var refused = false;
             try
             {
-                foreach (var entry in Entries(folder, ignoreInaccessible: !isRoot, walkSubfolders))
+                foreach (var entry in Entries(folder, ignoreInaccessible: !isRoot, walkSubfolders, cancellationToken))
                 {
                     if (!entry.IsDirectory)
                     {
@@ -376,7 +408,7 @@ public sealed class PhotoImporter : IPhotoImportSource
 
     // One pass over a folder: its photo files and, when asked, its subfolders. Hidden and system entries are left out
     // (the enumeration's default, kept explicit).
-    private IEnumerable<ListedEntry> Entries(string folder, bool ignoreInaccessible, bool includeSubfolders)
+    private IEnumerable<ListedEntry> Entries(string folder, bool ignoreInaccessible, bool includeSubfolders, CancellationToken cancellationToken)
     {
         var options = new EnumerationOptions
         {
@@ -389,7 +421,12 @@ public sealed class PhotoImporter : IPhotoImportSource
             (ref FileSystemEntry entry) => new ListedEntry(entry.ToFullPath(), entry.IsDirectory, entry.Length, entry.LastWriteTimeUtc.UtcDateTime, entry.Attributes),
             options)
         {
-            ShouldIncludePredicate = (ref FileSystemEntry entry) => entry.IsDirectory ? includeSubfolders : _isPhoto(entry.FileName.ToString()),
+            ShouldIncludePredicate = (ref FileSystemEntry entry) =>
+            {
+                // Checked per entry, so a Cancel during a folder of 50,000 files stops the listing at once.
+                cancellationToken.ThrowIfCancellationRequested();
+                return entry.IsDirectory ? includeSubfolders : _isPhoto(entry.FileName.ToString());
+            },
         };
     }
 

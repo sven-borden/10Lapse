@@ -227,7 +227,7 @@ public sealed partial class ImportViewModel : ObservableObject
     // or the project closing) shows nothing, anything else shows an InfoBar.
     private Task Start(ProjectViewModel target, IReadOnlyList<string> paths)
     {
-        var run = new ImportRun(target.Model, new ImportRequest([.. paths], IncludeSubfolders));
+        var run = new ImportRun(target.Model, new ImportRequest([.. paths], IncludeSubfolders), OnRunCancelled);
         target.AddResource(run);
         lock (_gate)
         {
@@ -253,6 +253,18 @@ public sealed partial class ImportViewModel : ObservableObject
         await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
         var token = run.Token;
         await _turn.WaitAsync(token).ConfigureAwait(false);
+
+        // A cancelled run gives up its turn at once: the next import starts while this one only tidies up (one UI step).
+        var released = 0;
+        void Release()
+        {
+            if (Interlocked.Exchange(ref released, 1) == 0)
+            {
+                _turn.Release();
+            }
+        }
+
+        var registration = token.Register(Release);
         try
         {
             await ImportAsync(run).ConfigureAwait(false);
@@ -265,10 +277,15 @@ public sealed partial class ImportViewModel : ObservableObject
         }
         finally
         {
-            _turn.Release();
-            await EndProgressAsync().ConfigureAwait(false);
+            await registration.DisposeAsync().ConfigureAwait(false);
+            Release();
+            await EndProgressAsync(run).ConfigureAwait(false);
         }
     }
+
+    // Cancel (or New project) clears the progress at once, unless another import is still going; the run itself ends
+    // a moment later. Any thread.
+    private void OnRunCancelled(ImportRun run) => _ = EndProgressAsync(run);
 
     private async Task ImportAsync(ImportRun run)
     {
@@ -278,7 +295,7 @@ public sealed partial class ImportViewModel : ObservableObject
         var name = NameFor(request);
         var wasEmpty = await _ui.InvokeAsync(() =>
         {
-            ShowProgress(ProjectText.ImportListingProgress(0), indeterminate: true, percent: 0);
+            ShowProgress(run, ProjectText.ImportListingProgress(0), indeterminate: true, percent: 0);
             return target.Frames.Length == 0;
         }).ConfigureAwait(false);
 
@@ -298,7 +315,7 @@ public sealed partial class ImportViewModel : ObservableObject
             await foreach (var batch in _source.ListAsync(request, token).ConfigureAwait(false))
             {
                 found += batch.Frames.Count + batch.CloudOnly.Count;
-                var added = await _ui.InvokeAsync(() => AddListed(target, batch, wasEmpty ? name : null, listed.Count)).ConfigureAwait(false);
+                var added = await _ui.InvokeAsync(() => AddListed(run, batch, wasEmpty ? name : null, listed.Count)).ConfigureAwait(false);
                 listed.AddRange(added);
                 unread.UnionWith(added.Select(frame => frame.Id));
                 skipped.AddRange(batch.Skipped);
@@ -312,7 +329,7 @@ public sealed partial class ImportViewModel : ObservableObject
                 var pending = await _ui.InvokeAsync(() => NotInProject(target, cloudOnly)).ConfigureAwait(false);
                 if (pending.Count > 0 && await AskToDownloadAsync(pending, token).ConfigureAwait(false))
                 {
-                    var added = await _ui.InvokeAsync(() => AddListed(target, new ImportListBatch(pending, []), wasEmpty ? name : null, listed.Count)).ConfigureAwait(false);
+                    var added = await _ui.InvokeAsync(() => AddListed(run, new ImportListBatch(pending, []), wasEmpty ? name : null, listed.Count)).ConfigureAwait(false);
                     listed.AddRange(added);
                     unread.UnionWith(added.Select(frame => frame.Id));
                 }
@@ -331,7 +348,7 @@ public sealed partial class ImportViewModel : ObservableObject
             {
                 read += readings.Count;
                 var progress = read;
-                var applied = await _ui.InvokeAsync(() => ApplyReadings(target, readings, progress, listed.Count)).ConfigureAwait(false);
+                var applied = await _ui.InvokeAsync(() => ApplyReadings(run, readings, progress, listed.Count)).ConfigureAwait(false);
                 kept += applied.Kept;
                 skipped.AddRange(applied.Skipped);
                 foreach (var reading in readings)
@@ -389,8 +406,9 @@ public sealed partial class ImportViewModel : ObservableObject
 
     // UI thread. Adds one listing batch and returns the frames really added (AddFrames appends them, so they are the
     // last ones), naming an empty project after the folder with the first photo.
-    private Frame[] AddListed(Project target, ImportListBatch batch, string? name, int listedSoFar)
+    private Frame[] AddListed(ImportRun run, ImportListBatch batch, string? name, int listedSoFar)
     {
+        var target = run.Target;
         if (batch.Skipped.Count > 0)
         {
             target.AddSkippedFiles(batch.Skipped);
@@ -405,14 +423,15 @@ public sealed partial class ImportViewModel : ObservableObject
             target.Name = name;
         }
 
-        ShowProgress(ProjectText.ImportListingProgress(listedSoFar + count), indeterminate: true, percent: 0);
+        ShowProgress(run, ProjectText.ImportListingProgress(listedSoFar + count), indeterminate: true, percent: 0);
         return added;
     }
 
     // UI thread. One reading batch: the frames that cannot be used leave and join the skipped list, the others get
     // their facts, each in one change. A frame the user removed meanwhile (#20) is left alone.
-    private Applied ApplyReadings(Project target, IReadOnlyList<FrameReading> readings, int read, int total)
+    private Applied ApplyReadings(ImportRun run, IReadOnlyList<FrameReading> readings, int read, int total)
     {
+        var target = run.Target;
         var present = new Dictionary<Guid, string>(target.Frames.Length);
         foreach (var frame in target.Frames)
         {
@@ -451,7 +470,7 @@ public sealed partial class ImportViewModel : ObservableObject
             target.UpdateFrames(updates);
         }
 
-        ShowProgress(ProjectText.ImportReadingProgress(read, total), indeterminate: false, percent: total == 0 ? 100 : 100.0 * read / total);
+        ShowProgress(run, ProjectText.ImportReadingProgress(read, total), indeterminate: false, percent: total == 0 ? 100 : 100.0 * read / total);
         return new Applied(updates.Count, skipped);
     }
 
@@ -510,17 +529,23 @@ public sealed partial class ImportViewModel : ObservableObject
             : null;
     }
 
-    // UI thread.
-    private void ShowProgress(string text, bool indeterminate, double percent)
+    // UI thread. A cancelled run shows nothing more: a batch still in flight must not bring back a stale "Adding…".
+    private void ShowProgress(ImportRun run, string text, bool indeterminate, double percent)
     {
+        if (run.IsCancelled)
+        {
+            return;
+        }
+
         ProgressText = text;
         IsProgressIndeterminate = indeterminate;
         ProgressPercent = percent;
         IsImporting = true;
     }
 
-    // Hides the progress when no other import is waiting for its turn. Never throws: it runs in a finally.
-    private async Task EndProgressAsync()
+    // Hides the progress unless another import is still going or waiting for its turn (one not cancelled). Never
+    // throws: it runs in a finally and from Cancel.
+    private async Task EndProgressAsync(ImportRun ending)
     {
         try
         {
@@ -528,8 +553,8 @@ public sealed partial class ImportViewModel : ObservableObject
             {
                 lock (_gate)
                 {
-                    // This run is still in the list (FinishAsync removes it after), so "only this one" means idle.
-                    if (_runs.Count(run => !run.Finished) > 1)
+                    // The ending run is still in the list (FinishAsync removes it after).
+                    if (_runs.Any(run => run != ending && !run.Finished && !run.IsCancelled))
                     {
                         return;
                     }
@@ -552,13 +577,16 @@ public sealed partial class ImportViewModel : ObservableObject
     /// One import: its target project, its request and its cancellation. Registered with the project, which disposes
     /// it when <c>New project</c> replaces it: that cancels the import.
     /// </summary>
-    private sealed class ImportRun(Project target, ImportRequest request) : IDisposable
+    private sealed class ImportRun(Project target, ImportRequest request, Action<ImportRun> cancelled) : IDisposable
     {
         // Never disposed: a source without timers or linked tokens holds nothing that needs it, and leaving it alive
         // means Cancel can never race a dispose.
         private readonly CancellationTokenSource _cancellation = new();
+        private int _cancelled;
 
         public Project Target { get; } = target;
+
+        public bool IsCancelled => _cancellation.IsCancellationRequested;
 
         public ImportRequest Request { get; } = request;
 
@@ -568,7 +596,15 @@ public sealed partial class ImportViewModel : ObservableObject
 
         public bool Finished => Completion.IsCompleted;
 
-        public void Cancel() => _cancellation.Cancel();
+        // Any thread. The first Cancel also tells the view model, which clears the progress at once.
+        public void Cancel()
+        {
+            _cancellation.Cancel();
+            if (Interlocked.Exchange(ref _cancelled, 1) == 0)
+            {
+                cancelled(this);
+            }
+        }
 
         public void Dispose() => Cancel();
     }
