@@ -56,6 +56,13 @@
           Text="{x:Bind ViewModel.MatchLine, Mode=OneWay}"
           TextWrapping="Wrap"
           Visibility="{x:Bind ViewModel.HasMatchLine, Mode=OneWay}" />
+        <TextBlock
+          x:Name="NoSizeText"
+          Foreground="{ThemeResource InkBrush}"
+          Style="{StaticResource CaptionTextStyle}"
+          Text="{x:Bind ViewModel.NoSizeLine, Mode=OneWay}"
+          TextWrapping="Wrap"
+          Visibility="{x:Bind ViewModel.HasNoSizeLine, Mode=OneWay}" />
       </StackPanel>
 
       <!-- Most photos are portrait and the shape is landscape: one quiet line and the action. Never applied by itself. -->
@@ -65,6 +72,7 @@
         Visibility="{x:Bind ViewModel.HasPortraitHint, Mode=OneWay}">
         <TextBlock
           x:Name="PortraitHintText"
+          AutomationProperties.LiveSetting="Polite"
           Foreground="{ThemeResource InkBrush}"
           Style="{StaticResource CaptionTextStyle}"
           Text="{x:Bind presentation:FrameText.PortraitHint}"

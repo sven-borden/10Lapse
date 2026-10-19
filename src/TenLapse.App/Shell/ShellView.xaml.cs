@@ -66,7 +66,7 @@ public sealed partial class ShellView : UserControl
         OutputSection.ViewModel = output;
         _timing = new TimingPanelViewModel(viewModel, presenter);
         TimingSection.ViewModel = _timing;
-        _frame = new FramePanelViewModel(viewModel, presenter);
+        _frame = new FramePanelViewModel(viewModel, presenter, output);
         FrameSection.ViewModel = _frame;
 #if DEBUG
         Debugging.DebugTiming.Apply(_timing);

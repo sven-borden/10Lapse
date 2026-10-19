@@ -57,6 +57,9 @@ public static class FrameText
     /// <summary>Match photos is chosen but no photo size is known yet (no photos, or none read), so the video is 16:9.</summary>
     public static string MatchingNoPhotos => "Matching your photos. Until their sizes are known the shape is 16:9.";
 
+    /// <summary>Match photos gives a shape so wide or tall that no size can be exported on this PC; says what to do instead.</summary>
+    public static string NoSize => "Photos this wide or tall are too large to export on this PC. Pick a fixed shape such as 16:9.";
+
     /// <summary>The quiet line when most photos are portrait and the shape is landscape.</summary>
     public static string PortraitHint => "Most of your photos are portrait, so 9:16 suits them better.";
 

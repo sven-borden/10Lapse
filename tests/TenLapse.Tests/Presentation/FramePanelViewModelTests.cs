@@ -373,6 +373,63 @@ public sealed class FramePanelViewModelTests
     }
 
     [Fact]
+    public void ADismissedSuggestionStaysGoneWhenAllPhotosAreRemovedAndPortraitOnesAreAddedAgain()
+    {
+        var shell = Shell();
+        var project = shell.CurrentProject.Model;
+        var portrait = Portrait(5);
+        project.AddFrames(portrait);
+        var panel = Panel(shell);
+        panel.DismissPortraitHint();
+        Assert.False(panel.HasPortraitHint);
+
+        project.RemoveFramesAndSkip(portrait.Select(frame => frame.Id).ToHashSet(), []);
+        Assert.Empty(project.Snapshot.Frames);
+        project.AddFrames(Portrait(6, "again"));
+
+        Assert.False(panel.HasPortraitHint);
+    }
+
+    [Fact]
+    public void MatchPhotosWithAShapeNoSizeCanEncodeSaysSoAndSuggestsAFixedShape()
+    {
+        var shell = Shell();
+        var project = shell.CurrentProject.Model;
+        project.AddFrames(Photos(4, 10000, 1000, "wide"));
+        var output = new OutputPanelViewModel(shell, new FakeErrorSink());
+        var panel = new FramePanelViewModel(shell, new FakeErrorSink(), output);
+        output.SetCapabilities(new PanoramaLimitedCapabilities());
+        Assert.False(panel.HasNoSizeLine);
+
+        panel.SelectedShapeIndex = 0;
+
+        Assert.True(panel.HasNoSizeLine);
+        Assert.Equal(FrameText.NoSize, panel.NoSizeLine);
+        Assert.False(output.CanExport);
+        Assert.Empty(output.Resolutions);
+
+        // A fixed shape exports, and the sentence goes.
+        panel.SelectedShapeIndex = 1;
+        Assert.False(panel.HasNoSizeLine);
+        Assert.True(output.CanExport);
+    }
+
+    [Fact]
+    public void NoSizeSentenceIsNotShownWhenThePcCannotExportAnythingAtAll()
+    {
+        var shell = Shell();
+        var project = shell.CurrentProject.Model;
+        project.AddFrames(Photos(4, 10000, 1000, "wide"));
+        project.FrameSettings = new FrameSettings(FrameAspect.MatchPhotos, FitMode.Fill);
+        var output = new OutputPanelViewModel(shell, new FakeErrorSink());
+        var panel = new FramePanelViewModel(shell, new FakeErrorSink(), output);
+
+        output.SetCapabilities(new FakeOutputCapabilities { Max = null });
+
+        Assert.False(panel.HasNoSizeLine);
+    }
+
+    [Fact]
     public void TheSuggestionAppearingWithTheImportIsAnnouncedButNotOneThatAppearsWithAnEdit()
     {
         var shell = Shell();
@@ -509,7 +566,43 @@ public sealed class FramePanelViewModelTests
     }
 
     [Fact]
-    public void TheOutputPanelRunsItsCapabilityFilterAgainWhenTheShapeChanges()
+    public void TheOutputPanelRunsItsCapabilityFilterAgainWhenTheShapeChangesAndTheStoredSizeComesBack()
+    {
+        var shell = Shell();
+        var project = shell.CurrentProject.Model;
+        project.Output = new OutputSettings(OutputResolution.Uhd2160, VideoFormat.Mp4H264, OutputQuality.High);
+        project.MarkExported(project.Snapshot.Version);
+        var frame = Panel(shell);
+        var output = new OutputPanelViewModel(shell, new FakeErrorSink());
+        output.SetCapabilities(new PortraitLimitedCapabilities());
+        var outputWrites = 0;
+        project.Changed += (_, e) => outputWrites += e.Changes.HasFlag(ProjectChanges.Output) ? 1 : 0;
+        Assert.Equal(OutputResolution.Uhd2160, output.SelectedResolution?.Value);
+        Assert.Equal(4, output.Resolutions.Count);
+
+        frame.SelectedShapeIndex = 2;
+
+        // 9:16 cannot do 4K here: the list loses it and shows the largest size still offered with the shape named as
+        // the reason; the project keeps 4K and its output is never written (the shape pick itself is the one edit).
+        Assert.Equal([OutputResolution.Hd720, OutputResolution.Hd1080, OutputResolution.Qhd1440], output.Resolutions.Select(option => option.Value));
+        Assert.Equal(OutputResolution.Qhd1440, output.SelectedResolution?.Value);
+        Assert.Equal(OutputResolution.Qhd1440, output.EffectiveOutput?.Resolution);
+        Assert.Equal(OutputResolution.Uhd2160, project.Output.Resolution);
+        Assert.Equal(0, outputWrites);
+        Assert.True(output.CanExport);
+        Assert.Contains("this shape", output.Notice, StringComparison.Ordinal);
+
+        // Back to 16:9: 4K again and no notice.
+        frame.SelectedShapeIndex = 1;
+        Assert.Equal(4, output.Resolutions.Count);
+        Assert.Equal(OutputResolution.Uhd2160, output.SelectedResolution?.Value);
+        Assert.Equal(OutputResolution.Uhd2160, output.EffectiveOutput?.Resolution);
+        Assert.False(output.HasNotice);
+        Assert.Equal(0, outputWrites);
+    }
+
+    [Fact]
+    public void UsingTheShownReplacementAtANarrowShapeStoresIt()
     {
         var shell = Shell();
         var project = shell.CurrentProject.Model;
@@ -517,18 +610,49 @@ public sealed class FramePanelViewModelTests
         var frame = Panel(shell);
         var output = new OutputPanelViewModel(shell, new FakeErrorSink());
         output.SetCapabilities(new PortraitLimitedCapabilities());
-        Assert.Equal(OutputResolution.Uhd2160, output.SelectedResolution?.Value);
-        Assert.Equal(4, output.Resolutions.Count);
-
         frame.SelectedShapeIndex = 2;
 
-        // 9:16 cannot do 4K here: the list loses it, the project gets the largest size still offered, and the panel says so.
-        Assert.Equal([OutputResolution.Hd720, OutputResolution.Hd1080, OutputResolution.Qhd1440], output.Resolutions.Select(option => option.Value));
-        Assert.Equal(OutputResolution.Qhd1440, project.Output.Resolution);
-        Assert.True(output.HasNotice);
+        output.UseSelected();
 
+        Assert.Equal(OutputResolution.Qhd1440, project.Output.Resolution);
+        Assert.False(output.HasNotice);
         frame.SelectedShapeIndex = 1;
-        Assert.Equal(4, output.Resolutions.Count);
+        Assert.Equal(OutputResolution.Qhd1440, output.SelectedResolution?.Value);
+    }
+
+    [Theory]
+    [InlineData(OutputResolution.Hd720)]
+    [InlineData(OutputResolution.Hd1080)]
+    [InlineData(OutputResolution.Qhd1440)]
+    [InlineData(OutputResolution.Uhd2160)]
+    public void EveryResolutionAtEveryShapeGivesEvenSidesAndTheRightRatio(OutputResolution resolution)
+    {
+        var photoSizes = new PixelSize?[] { new(4032, 3024), new(3024, 4032), new(1001, 999), new(5000, 1667), new(1667, 5000), new(1, 1) };
+        var shortSide = OutputSize.ShortSide(resolution);
+        foreach (var aspect in _aspects)
+        {
+            foreach (var photo in aspect == FrameAspect.MatchPhotos ? photoSizes : [null])
+            {
+                var size = OutputSize.For(resolution, aspect, photo);
+                var label = $"{resolution} {aspect} {photo}";
+                Assert.True(size.Width % 2 == 0 && size.Height % 2 == 0, $"{label}: {size.Width}x{size.Height} has an odd side.");
+                var (ratioW, ratioH) = aspect switch
+                {
+                    FrameAspect.Ratio16x9 => (16.0, 9.0),
+                    FrameAspect.Ratio9x16 => (9.0, 16.0),
+                    FrameAspect.Ratio1x1 => (1.0, 1.0),
+                    FrameAspect.Ratio4x5 => (4.0, 5.0),
+                    FrameAspect.Ratio4x3 => (4.0, 3.0),
+                    _ => (photo!.Value.Width, photo.Value.Height),
+                };
+
+                // The short side is the resolution; the long side follows the ratio to within the rounding to even (1 px).
+                Assert.Equal(shortSide, Math.Min(size.Width, size.Height));
+                var expectedLong = shortSide * Math.Max(ratioW, ratioH) / Math.Min(ratioW, ratioH);
+                Assert.True(Math.Abs(Math.Max(size.Width, size.Height) - expectedLong) <= 1, $"{label}: {size.Width}x{size.Height}, long side expected about {expectedLong}.");
+                Assert.Equal(ratioW >= ratioH, size.Width >= size.Height);
+            }
+        }
     }
 
     [Fact]
@@ -547,6 +671,20 @@ public sealed class FramePanelViewModelTests
         var expected = ExportBitrate.EstimateBytes(3000, new Fraction(30, 1), new PixelSize(1080, 1080), VideoFormat.Mp4H264, OutputQuality.High);
         Assert.Equal(OutputText.Estimate(expected), output.EstimatedSize);
         Assert.NotEqual(wide, output.EstimatedSize);
+    }
+
+    // Everything at 16:9 and the fixed shapes; a Match photos shape wider or taller than 4:1 is too large for any size.
+    private sealed class PanoramaLimitedCapabilities : IOutputCapabilities
+    {
+        public bool IsAvailable(VideoFormat format) => format == VideoFormat.Mp4H264;
+
+        public bool Supports(VideoFormat format, OutputResolution resolution, FrameAspect aspect, Fraction frameRate, PixelSize? photoSize) =>
+            IsAvailable(format) && (photoSize is not { } photo || Math.Max(photo.Width, photo.Height) <= 4L * Math.Min(photo.Width, photo.Height));
+
+        public bool UsesHardware(VideoFormat format, OutputResolution resolution, FrameAspect aspect, Fraction frameRate, PixelSize? photoSize) =>
+            Supports(format, resolution, aspect, frameRate, photoSize);
+
+        public string Summary(VideoFormat format, FrameAspect aspect, Fraction frameRate, PixelSize? photoSize) => "Not every shape.";
     }
 
     // 4K is possible at every shape except 9:16.

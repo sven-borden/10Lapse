@@ -13,7 +13,7 @@ internal static class DebugFrame
 {
     private static readonly string[] _shapes = ["match", "16:9", "9:16", "1:1", "4:5", "4:3"];
 
-    /// <summary>Applies the switch to the panel's view model, on the UI thread, once the project has its sample frames.</summary>
+    /// <summary>Applies the switch to the panel's view model, on the UI thread, while the shell is built. The shape is only a write to the project, so the sample frames need not exist yet; the panel follows them as they arrive.</summary>
     public static void Apply(FramePanelViewModel frame)
     {
         var value = Environment.GetCommandLineArgs()

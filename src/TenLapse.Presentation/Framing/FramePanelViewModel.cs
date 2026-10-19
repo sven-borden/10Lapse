@@ -33,6 +33,7 @@ public sealed class FramePanelViewModel : ObservableObject, IDisposable
 
     private readonly ShellViewModel _shell;
     private readonly IErrorPresenter _errors;
+    private readonly OutputPanelViewModel? _output;
     private Project _project;
     private int _shapeIndex;
     private int _fitIndex;
@@ -42,16 +43,27 @@ public sealed class FramePanelViewModel : ObservableObject, IDisposable
     private bool _hintClosed;
     private bool _editing;
     private bool _disposed;
+    private bool _noSize;
 
     /// <summary>Follows the shell's current project, also across <c>New project</c>.</summary>
     /// <param name="shell">The shell whose <see cref="ShellViewModel.CurrentProject"/> the panel edits.</param>
     /// <param name="errors">The error path: a failed edit is shown and logged.</param>
-    public FramePanelViewModel(ShellViewModel shell, IErrorPresenter errors)
+    /// <param name="output">
+    /// The Output panel, when there is one: Match photos can give a shape that no size can encode (a 10:1 panorama),
+    /// and the Frame panel is where the person can fix that, so it says so. The caller owns and disposes it.
+    /// </param>
+    public FramePanelViewModel(ShellViewModel shell, IErrorPresenter errors, OutputPanelViewModel? output = null)
     {
         ArgumentNullException.ThrowIfNull(shell);
         ArgumentNullException.ThrowIfNull(errors);
         _shell = shell;
         _errors = errors;
+        _output = output;
+        if (_output is not null)
+        {
+            _output.PropertyChanged += OnOutputPropertyChanged;
+        }
+
         _project = shell.CurrentProject.Model;
         _project.Changed += OnProjectChanged;
         _shell.ProjectReplaced += OnProjectReplaced;
@@ -109,6 +121,12 @@ public sealed class FramePanelViewModel : ObservableObject, IDisposable
     /// <summary>True when <see cref="MatchLine"/> has something to show.</summary>
     public bool HasMatchLine => _matchLine.Length > 0;
 
+    /// <summary>True when Match photos gives a shape no size can be exported in on this PC (an extreme panorama or tall strip): <see cref="NoSizeLine"/> says what to do.</summary>
+    public bool HasNoSizeLine => _noSize;
+
+    /// <summary>"Photos this wide or tall are too large to export on this PC. Pick a fixed shape." Empty unless <see cref="HasNoSizeLine"/>.</summary>
+    public string NoSizeLine => _noSize ? FrameText.NoSize : string.Empty;
+
     /// <summary>True while 9:16 is suggested for a mostly portrait set in a landscape shape.</summary>
     public bool HasPortraitHint => _portraitHint;
 
@@ -136,8 +154,30 @@ public sealed class FramePanelViewModel : ObservableObject, IDisposable
         }
 
         _disposed = true;
+        if (_output is not null)
+        {
+            _output.PropertyChanged -= OnOutputPropertyChanged;
+        }
+
         _project.Changed -= OnProjectChanged;
         _shell.ProjectReplaced -= OnProjectReplaced;
+    }
+
+    private void OnOutputPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(OutputPanelViewModel.ShapeCannotBeExported))
+        {
+            UpdateNoSize();
+        }
+    }
+
+    private void UpdateNoSize()
+    {
+        var wanted = _output is { ShapeCannotBeExported: true } && _project.FrameSettings.Aspect == FrameAspect.MatchPhotos;
+        if (SetProperty(ref _noSize, wanted, nameof(HasNoSizeLine)))
+        {
+            OnPropertyChanged(nameof(NoSizeLine));
+        }
     }
 
     private void OnProjectChanged(object? sender, ProjectChangedEventArgs e)
@@ -227,6 +267,7 @@ public sealed class FramePanelViewModel : ObservableObject, IDisposable
                 }
 
                 UpdateHint();
+                UpdateNoSize();
             },
             FrameText.RefreshFailed);
 
