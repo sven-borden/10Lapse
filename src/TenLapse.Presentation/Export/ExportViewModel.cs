@@ -127,6 +127,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         _shell.PropertyChanged += OnShellPropertyChanged;
         _output.PropertyChanged += OnOutputPropertyChanged;
         _shell.Edits.Refused += OnEditRefused;
+        _shell.ProjectReplaced += OnProjectReplaced;
     }
 
     /// <summary>Raised as an export starts, after the Save dialog (#25 takes its power request here).</summary>
@@ -303,6 +304,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         _shell.PropertyChanged -= OnShellPropertyChanged;
         _output.PropertyChanged -= OnOutputPropertyChanged;
         _shell.Edits.Refused -= OnEditRefused;
+        _shell.ProjectReplaced -= OnProjectReplaced;
         if (IsExporting)
         {
             _closing = true;
@@ -559,6 +561,9 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
             State = ExportPanelState.Editing;
         }
     }
+
+    // A new project after a finished export: the finished state belonged to the old one.
+    private void OnProjectReplaced(object? sender, ProjectReplacedEventArgs e) => BackToEditing();
 
     // One sentence per refused edit (the queue folds repeats while one shows).
     private void OnEditRefused(object? sender, EventArgs e)

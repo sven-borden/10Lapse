@@ -23,6 +23,9 @@ public sealed partial class AmberRuleTests
         // The Export video slot in the command bar (#24).
         ["src/TenLapse.App/Shell/ShellView.xaml"] = 1,
 
+        // #24: Play on the finished state; the Export button is absent while it shows.
+        ["src/TenLapse.App/Shell/ExportPanel.xaml"] = 1,
+
         // #29: Choose folder on the first-launch drop zone, which has no Export button.
         ["src/TenLapse.App/Shell/FirstLaunchView.xaml"] = 1,
 
@@ -46,6 +49,10 @@ public sealed partial class AmberRuleTests
 
         // #20: the playhead ring on the filmstrip thumbnail the preview shows.
         "src/TenLapse.App/Filmstrip/FilmstripThumb.xaml",
+
+        // #24: the export's film gate frame, and the dot on the "Rendering frame" pill over the preview.
+        "src/TenLapse.App/Shell/FilmGate.xaml",
+        "src/TenLapse.App/Shell/ExportPreviewOverlay.xaml",
     ];
 
     [Fact]

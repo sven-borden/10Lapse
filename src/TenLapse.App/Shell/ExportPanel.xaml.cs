@@ -1,0 +1,137 @@
+using System.ComponentModel;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Animation;
+using TenLapse.Core.Preview;
+using TenLapse.Presentation.Export;
+using TenLapse.Presentation.Services;
+using TenLapse.Themes;
+using Windows.Graphics.Imaging;
+
+namespace TenLapse.Shell;
+
+/// <summary>
+/// The export panel and the finished state (see the comment at the top of ExportPanel.xaml). The shell swaps it in and
+/// out; this view keeps the film gate moving with the progress, draws the check in, raises what Narrator should hear and
+/// puts focus where the user continues.
+/// </summary>
+public sealed partial class ExportPanel : UserControl
+{
+    private IErrorSink? _log;
+
+    public ExportPanel()
+    {
+        InitializeComponent();
+    }
+
+    /// <summary>The view model, for x:Bind. Set once, before the panel is loaded.</summary>
+    public ExportViewModel? ViewModel { get; private set; }
+
+    /// <summary>The running export's part, which the shell swaps in.</summary>
+    internal UIElement Running => RunningScroll;
+
+    /// <summary>The finished state's part, which the shell swaps in.</summary>
+    internal UIElement Finished => FinishedScroll;
+
+    /// <summary>Connects the panel to its view model and to the filmstrip's thumbnails, which the film gate shows.</summary>
+    internal void Attach(ExportViewModel viewModel, ThumbnailCache<SoftwareBitmap>? thumbnails, IErrorSink log)
+    {
+        ViewModel = viewModel;
+        _log = log;
+        Gate.Attach(thumbnails, log);
+        viewModel.Announced += OnAnnounced;
+        viewModel.PropertyChanged += OnViewModelPropertyChanged;
+    }
+
+    /// <summary>Lets go of the view model and stops the gate (the window closes).</summary>
+    internal void Detach()
+    {
+        if (ViewModel is { } viewModel)
+        {
+            viewModel.Announced -= OnAnnounced;
+            viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+
+        Gate.Detach();
+    }
+
+    /// <summary>The running part is on screen: focus goes to the progress bar, where Narrator reads the progress.</summary>
+    internal void FocusRunning() => Progress.Focus(FocusState.Programmatic);
+
+    /// <summary>
+    /// The finished part is on screen: focus goes to Play, the check draws in (500 ms Enter after 200 ms; at once with
+    /// animations off) and the title rises 6 px.
+    /// </summary>
+    internal void ArriveFinished()
+    {
+        PlayButton.Focus(FocusState.Programmatic);
+        var animate = MotionTokens.AnimationsEnabled && !ReduceMotionSwitch;
+        if (!animate)
+        {
+            CheckStroke.StrokeDashOffset = 0;
+            return;
+        }
+
+        CheckStroke.StrokeDashOffset = CheckDash;
+        var draw = new DoubleAnimationUsingKeyFrames { EnableDependentAnimation = true, BeginTime = TimeSpan.FromMilliseconds(200) };
+        draw.KeyFrames.Add(new SplineDoubleKeyFrame
+        {
+            KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(500)),
+            Value = 0,
+            KeySpline = new KeySpline { ControlPoint1 = new(0.16, 1), ControlPoint2 = new(0.3, 1) },
+        });
+        Storyboard.SetTarget(draw, CheckStroke);
+        Storyboard.SetTargetProperty(draw, nameof(Microsoft.UI.Xaml.Shapes.Shape.StrokeDashOffset));
+
+        var rise = new DoubleAnimationUsingKeyFrames();
+        FinishedHeading.RenderTransform = new Microsoft.UI.Xaml.Media.TranslateTransform { Y = 6 };
+        rise.KeyFrames.Add(new SplineDoubleKeyFrame
+        {
+            KeyTime = KeyTime.FromTimeSpan(MotionTokens.Scene),
+            Value = 0,
+            KeySpline = new KeySpline { ControlPoint1 = new(0.16, 1), ControlPoint2 = new(0.3, 1) },
+        });
+        Storyboard.SetTarget(rise, FinishedHeading.RenderTransform);
+        Storyboard.SetTargetProperty(rise, "Y");
+
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(draw);
+        storyboard.Children.Add(rise);
+        storyboard.Begin();
+    }
+
+    /// <summary>The finished part left: the check is undrawn for next time.</summary>
+    internal void ResetFinished() => CheckStroke.StrokeDashOffset = CheckDash;
+
+    // The stroke's dash in units of its thickness (28 px / 3 px), as in ExportPanel.xaml.
+    private const double CheckDash = 9.34;
+
+    /// <summary>Debug <c>--reduce-motion</c> acts as Windows' animation setting off.</summary>
+    internal static bool ReduceMotionSwitch =>
+#if DEBUG
+        Debugging.DebugLaunch.ReduceMotion;
+#else
+        false;
+#endif
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (ViewModel is not { } viewModel || _log is not { } log)
+        {
+            return;
+        }
+
+        if (e.PropertyName is nameof(ExportViewModel.CurrentFrame) or nameof(ExportViewModel.ExportFrames) or nameof(ExportViewModel.FramesText))
+        {
+            log.RunLogged(() => Gate.Show(viewModel.ExportFrames, viewModel.CurrentFrame), ExportText.ProgressFailed);
+        }
+    }
+
+    // Narrator hears the start, every ten percent at most, and the end (the view model decides when).
+    private void OnAnnounced(object? sender, string message)
+    {
+        var peer = FrameworkElementAutomationPeer.FromElement(this) ?? FrameworkElementAutomationPeer.CreatePeerForElement(this);
+        peer?.RaiseNotificationEvent(AutomationNotificationKind.Other, AutomationNotificationProcessing.MostRecent, message, "Export");
+    }
+}

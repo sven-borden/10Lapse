@@ -289,7 +289,16 @@
   <Color x:Key="BlueHourColor">#2E3A72</Color>
   <Color x:Key="NightColor">#10162E</Color>
 
+  <!--
+    The pill over the picture while an export runs (#24, "Rendering frame 0313"): the Letterbox at 62 % with Ink Dark
+    text, the same in both themes because it sits on the photo, not on the chrome.
+  -->
+  <Color x:Key="PreviewPillColor">#9E0C0C0D</Color>
+  <Color x:Key="PreviewPillTextColor">#F4F2EE</Color>
+
   <SolidColorBrush x:Key="LetterboxBrush" Color="{StaticResource LetterboxColor}" />
+  <SolidColorBrush x:Key="PreviewPillBrush" Color="{StaticResource PreviewPillColor}" />
+  <SolidColorBrush x:Key="PreviewPillTextBrush" Color="{StaticResource PreviewPillTextColor}" />
   <SolidColorBrush x:Key="DaylightBrush" Color="{StaticResource DaylightColor}" />
   <SolidColorBrush x:Key="GoldenBrush" Color="{StaticResource GoldenColor}" />
   <SolidColorBrush x:Key="AmberBrush" Color="{StaticResource AmberColor}" />

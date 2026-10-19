@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Over the preview gate during and after an export (#24), after the prototype's pill in docs/design/canvas/Main.dc.html:
+
+    Pill   while the export runs, 12 px inside the gate's top-left corner: a Deep Amber Indicator dot and "Rendering frame
+           0313" in Caption on the PreviewPill fill (the Letterbox at 62 %), the same in both themes because it sits on
+           the picture. The preview under it shows the frame being written.
+    Video  the premiere: once the export is done (after 1.1 s, motion spec Wrap) and on Play, the finished MP4 itself
+           plays from frame one, exactly over the gate, so what the user sees is the file, not a re-render. Touching the
+           transport, Back to editing or a new export take it away and let go of the file.
+
+  Nothing here takes input: the preview's own clicks and keys pass through.
+-->
+<UserControl
+  x:Class="TenLapse.Shell.ExportPreviewOverlay"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  IsHitTestVisible="False">
+
+  <Grid>
+    <MediaPlayerElement
+      x:Name="Video"
+      HorizontalAlignment="Left"
+      VerticalAlignment="Top"
+      AreTransportControlsEnabled="False"
+      AutoPlay="False"
+      Stretch="Uniform"
+      Visibility="Collapsed" />
+
+    <Border
+      x:Name="Pill"
+      Height="28"
+      Padding="10,0,10,0"
+      HorizontalAlignment="Left"
+      VerticalAlignment="Top"
+      Background="{ThemeResource PreviewPillBrush}"
+      CornerRadius="14"
+      Visibility="Collapsed">
+      <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+        <Ellipse
+          Width="8"
+          Height="8"
+          VerticalAlignment="Center"
+          Fill="{ThemeResource DeepAmberIndicatorBrush}" />
+        <TextBlock
+          x:Name="PillText"
+          VerticalAlignment="Center"
+          Foreground="{ThemeResource PreviewPillTextBrush}"
+          Style="{StaticResource CaptionTabularTextStyle}" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>
