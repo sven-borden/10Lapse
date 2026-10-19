@@ -22,9 +22,6 @@ public static class OutputText
     /// <summary>The quality list's label.</summary>
     public static string QualityLabel => "Quality";
 
-    /// <summary>The name a screen reader gives the estimated size.</summary>
-    public static string EstimateName => "Estimated file size";
-
     /// <summary>Shown in place of the lists until the startup probe has said what this PC can encode.</summary>
     public static string Checking => "Checking what this PC can encode…";
 

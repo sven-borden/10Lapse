@@ -37,10 +37,10 @@
         Text="{x:Bind presentation:OutputText.Heading}" />
 
       <!--
-        Pending: as tall as the three lists (3 x 54 px and two 12 px gaps), so the section does not change height when
+        Pending: as tall as the three lists and the estimate (3 x 54 px, 28 px, three 12 px gaps), so the section does not change height when
         the probe answers. Plain Ink Secondary text, no progress bar: nothing here is an export.
       -->
-      <Border x:Name="PendingBlock" MinHeight="186" Visibility="{x:Bind ViewModel.IsPending, Mode=OneWay}">
+      <Border x:Name="PendingBlock" MinHeight="214" Visibility="{x:Bind ViewModel.IsPending, Mode=OneWay}">
         <TextBlock
           x:Name="PendingText"
           AutomationProperties.LiveSetting="Polite"
@@ -94,10 +94,9 @@
             Style="{StaticResource OutputSelectStyle}" />
         </StackPanel>
 
-        <!-- "About 180 MB": empty without photos. -->
+        <!-- "About 180 MB": empty without photos. No automation name of its own: a screen reader reads the text itself. -->
         <TextBlock
           x:Name="EstimateText"
-          AutomationProperties.Name="{x:Bind presentation:OutputText.EstimateName}"
           Foreground="{ThemeResource InkSecondaryBrush}"
           Style="{StaticResource CaptionTabularTextStyle}"
           Text="{x:Bind ViewModel.EstimatedSize, Mode=OneWay}"
