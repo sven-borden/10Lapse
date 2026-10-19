@@ -187,6 +187,59 @@ public sealed class ThumbnailCacheTests
         Assert.Null(cache.Acquire(frames[0].Id));
     }
 
+    // #82 review, M3: Want, SetFrames and Dispose cancel loads a worker may be finishing. A cancel that met a disposed
+    // source returned a faulted task nobody observed, which the app shows as an unexpected error.
+    [Fact]
+    public async Task ScrollingNeverLeavesAnUnobservedFaultedCancel()
+    {
+        var unobserved = 0;
+        void OnUnobserved(object? sender, UnobservedTaskExceptionEventArgs e)
+        {
+            if (e.Exception.InnerExceptions.Any(exception => exception is ObjectDisposedException))
+            {
+                Interlocked.Increment(ref unobserved);
+                e.SetObserved();
+            }
+        }
+
+        TaskScheduler.UnobservedTaskException += OnUnobserved;
+        try
+        {
+            var frames = TestFrames.Folder("a", 4000);
+            var source = new QuickSource();
+            using (var cache = new ThumbnailCache<FakeImage>(source, new ThumbnailCacheOptions { Workers = 3, MemoryBudgetBytes = 1 << 30 }))
+            {
+                cache.SetFrames([.. frames]);
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                for (var i = 0; clock.Elapsed < TimeSpan.FromSeconds(3); i++)
+                {
+                    // A scroll: a view of 40 frames that moves 3 frames a call, and now and then a new frame list.
+                    var start = (i * 3) % (frames.Length - 40);
+                    cache.Want(frames.Skip(start).Take(40).ToList(), _small);
+                    if (i % 500 == 0)
+                    {
+                        cache.SetFrames([.. frames]);
+                    }
+                }
+
+                Assert.True(source.Loads > 100, $"only {source.Loads} loads ran");
+            }
+
+            await Task.Delay(200, TestContext.Current.CancellationToken);
+            for (var round = 0; round < 3; round++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            Assert.Equal(0, Volatile.Read(ref unobserved));
+        }
+        finally
+        {
+            TaskScheduler.UnobservedTaskException -= OnUnobserved;
+        }
+    }
+
     private static ThumbnailSize SizeOf(ThumbnailCache<FakeImage> cache, Frame frame)
     {
         using var lease = cache.Acquire(frame.Id);
@@ -260,6 +313,21 @@ public sealed class ThumbnailCacheTests
             return Unreadable
                 ? ThumbnailResult<FakeImage>.Failed(new FrameLoadFailure(new SkippedFile(frame.SourcePath, SkipReason.DecodeFailed, "Damaged.")))
                 : ThumbnailResult<FakeImage>.Loaded(new FakeImage(() => Interlocked.Increment(ref _disposed)), BytesEach, ThumbnailOrigin.Photo);
+        }
+    }
+
+    // A source that answers at once, after one hop to the thread pool.
+    private sealed class QuickSource : IThumbnailSource<FakeImage>
+    {
+        private int _loads;
+
+        public int Loads => Volatile.Read(ref _loads);
+
+        public async Task<ThumbnailResult<FakeImage>> LoadAsync(Frame frame, ThumbnailSize size, CancellationToken cancellationToken)
+        {
+            await Task.Yield();
+            Interlocked.Increment(ref _loads);
+            return ThumbnailResult<FakeImage>.Loaded(new FakeImage(() => { }), 1, ThumbnailOrigin.Proxy);
         }
     }
 

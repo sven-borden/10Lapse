@@ -217,7 +217,6 @@ public sealed class ThumbnailCache<TImage> : IDisposable
     public void SetFrames(ImmutableArray<Frame> frames)
     {
         var dispose = new List<TImage>();
-        var cancel = new List<CancellationTokenSource>();
         lock (_gate)
         {
             if (_disposed)
@@ -238,10 +237,9 @@ public sealed class ThumbnailCache<TImage> : IDisposable
                 _reported.Remove(id);
             }
 
-            cancel.AddRange(_loading.Where(pair => !known.Contains(pair.Key)).Select(pair => pair.Value));
+            CancelLoads(id => !known.Contains(id));
         }
 
-        cancel.ForEach(CancelQuietly);
         DisposeAll(dispose);
     }
 
@@ -254,7 +252,6 @@ public sealed class ThumbnailCache<TImage> : IDisposable
         ArgumentNullException.ThrowIfNull(frames);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(size.Width);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(size.Height);
-        var cancel = new List<CancellationTokenSource>();
         var dispose = new List<TImage>();
         lock (_gate)
         {
@@ -264,13 +261,13 @@ public sealed class ThumbnailCache<TImage> : IDisposable
             }
 
             _wanted = [.. frames];
-            _wantedIds = frames.Select(frame => frame.Id).ToHashSet();
+            var wanted = frames.Select(frame => frame.Id).ToHashSet();
+            _wantedIds = wanted;
             _size = size;
-            cancel.AddRange(_loading.Where(pair => !_wantedIds.Contains(pair.Key)).Select(pair => pair.Value));
+            CancelLoads(id => !wanted.Contains(id));
             Trim(dispose);
         }
 
-        cancel.ForEach(CancelQuietly);
         DisposeAll(dispose);
         Wake();
     }
@@ -307,7 +304,6 @@ public sealed class ThumbnailCache<TImage> : IDisposable
     public void Dispose()
     {
         var dispose = new List<TImage>();
-        List<CancellationTokenSource> cancel;
         lock (_gate)
         {
             if (_disposed)
@@ -321,10 +317,9 @@ public sealed class ThumbnailCache<TImage> : IDisposable
                 Evict(entry, dispose);
             }
 
-            cancel = [.. _loading.Values];
+            CancelLoads(_ => true);
         }
 
-        cancel.ForEach(CancelQuietly);
         _ = _disposing.CancelAsync();
         DisposeAll(dispose);
         Wake();
@@ -351,8 +346,21 @@ public sealed class ThumbnailCache<TImage> : IDisposable
 
     private static TaskCompletionSource NewWake() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    // Cancels on the thread pool, never inline: the load's continuations would otherwise run on the caller's thread.
-    private static void CancelQuietly(CancellationTokenSource source) => _ = source.CancelAsync();
+    // Under the lock: cancels the loads of the frames that match. The cancellation runs on the thread pool, never inline
+    // (the load's continuations would otherwise run on this thread, holding the lock). It must be asked for under the
+    // lock: a worker takes its source out of _loading under the lock and only then disposes it, so a source still in
+    // _loading is never disposed yet. Outside the lock, CancelAsync could meet a disposed source and return a faulted
+    // task that nobody observes, which the app reports as an unexpected error (#82 review, M3).
+    private void CancelLoads(Func<Guid, bool> which)
+    {
+        foreach (var (id, source) in _loading)
+        {
+            if (which(id))
+            {
+                _ = source.CancelAsync();
+            }
+        }
+    }
 
     private static void DisposeQuietly(TImage image)
     {
