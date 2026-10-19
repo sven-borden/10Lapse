@@ -88,6 +88,7 @@ public sealed partial class MainWindow : Window
         Title = ViewModel.Title;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "TenLapse.ico")); // The taskbar and Alt+Tab icon, packaged or not (#37).
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(_shell.TitleBar);
         if (MicaController.IsSupported())

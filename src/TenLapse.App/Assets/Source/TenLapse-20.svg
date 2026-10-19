@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  10Lapse app icon at 20 px: the 16 px drawing (TenLapse-16.svg) on a 20 x 20 grid, bands of 4 px each.
+  Used for 20 px only.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20">
+  <defs>
+    <clipPath id="tile"><rect x="0" y="0" width="20" height="20" rx="4.5"/></clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect x="0" y="0" width="4" height="20" fill="#8EC0EA"/>
+    <rect x="4" y="0" width="4" height="20" fill="#F3C46B"/>
+    <rect x="8" y="0" width="4" height="20" fill="#EE8F4F"/>
+    <rect x="12" y="0" width="4" height="20" fill="#B4567A"/>
+    <rect x="16" y="0" width="4" height="20" fill="#2B3A75"/>
+  </g>
+</svg>

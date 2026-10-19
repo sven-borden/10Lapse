@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  10Lapse app icon at 24 px: the 16 px drawing (TenLapse-16.svg) on a 24 x 24 grid, bands of 5, 5, 4, 5, 5 px.
+  Used for 24 px only (the taskbar at 100%).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <clipPath id="tile"><rect x="0" y="0" width="24" height="24" rx="5"/></clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect x="0" y="0" width="5" height="24" fill="#8EC0EA"/>
+    <rect x="5" y="0" width="5" height="24" fill="#F3C46B"/>
+    <rect x="10" y="0" width="4" height="24" fill="#EE8F4F"/>
+    <rect x="14" y="0" width="5" height="24" fill="#B4567A"/>
+    <rect x="19" y="0" width="5" height="24" fill="#2B3A75"/>
+  </g>
+</svg>

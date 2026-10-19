@@ -6,6 +6,8 @@
     <!-- Root namespace TenLapse, so the classes are TenLapse.App and TenLapse.MainWindow, not TenLapse.App.App. -->
     <RootNamespace>TenLapse</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- The exe's icon (Explorer, an unpackaged Debug run); the window sets the same file itself (MainWindow). -->
+    <ApplicationIcon>Assets\TenLapse.ico</ApplicationIcon>
     <Platforms>x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'x64'">win-x64</RuntimeIdentifier>
@@ -44,6 +46,7 @@
 
   <ItemGroup>
     <Content Include="Assets\*.png" />
+    <Content Include="Assets\*.ico" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 

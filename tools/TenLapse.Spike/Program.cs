@@ -24,6 +24,8 @@ using TenLapse.Spike;
 // last line is a Markdown table row. Large files belong in %TEMP%, never in the repository.
 // --noise adds grain so the JPEGs compress like real photos (#13); --distinct N cycles the export over the
 // first N files of --dir, so a few realistic JPEGs make a 1,000-frame run.
+//   TenLapse.Spike assets [--contact-sheet F.png] [--source D] [--out D]   (#37: renders the app icon, tile and splash
+//                         PNGs and the .ico from src/TenLapse.App/Assets/Source)
 //   TenLapse.Spike inspect FILE [--decode]
 //   TenLapse.Spike decode-bench PHOTO [--runs 5] [--output-size 3840x2160]   (#13: ms per decode for each choice)
 //   TenLapse.Spike probe [--cache file.json] [--fresh] [--software]   (#9: what this PC can encode, as Markdown;
@@ -40,6 +42,7 @@ try
         "export-project" => await ExportProjectAsync(options),
         "bench-photos" => await BenchPhotos.RunAsync(options),
         "inspect" => Inspect(options),
+        "assets" => await AssetGenerator.RunAsync(options),
         "decode-bench" => await DecodeBench.RunAsync(
             options.Positional ?? throw new ArgumentException("decode-bench needs a photo."),
             options.Int("runs", 5),
