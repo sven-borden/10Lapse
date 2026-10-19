@@ -477,8 +477,19 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         _filmstrip.SetPending(snapshot.Frames, 0);
         _services.Window.ShowProgress(null);
         HoldAwake(fileName);
-        Announced?.Invoke(this, ExportText.Started(fileName));
-        Started?.Invoke(this, EventArgs.Empty);
+        try
+        {
+            Announced?.Invoke(this, ExportText.Started(fileName));
+            Started?.Invoke(this, EventArgs.Empty);
+        }
+        catch
+        {
+            // A subscriber threw before the exporter began: take the export back out (the power request goes, the panel
+            // is not left on "Exporting") and let the command's guard show the failure.
+            End(failed: true);
+            State = ExportPanelState.Editing;
+            throw;
+        }
     }
 
     // Shown at most every MinProgressInterval; a new phase and the last frame always. Reports of an export that has ended

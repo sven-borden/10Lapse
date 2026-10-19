@@ -156,6 +156,23 @@ public sealed class ExportKeepAwakeTests
     }
 
     [Fact]
+    public void ASubscriberThatThrowsOnStartedLeavesNoRequestAndNoExportBehind()
+    {
+        using var app = new ExportHarness(capabilities: _everything);
+        app.On(() => app.Export.Started += (_, _) => throw new InvalidOperationException("A subscriber failed."));
+
+        app.StartExport();
+
+        // The request was taken before Started, and let go when Started threw; the exporter never began.
+        Assert.Equal(["Exporting Harbor sunset.mp4"], app.KeepAwake.Reasons);
+        Assert.Equal(0, app.KeepAwake.Held);
+        Assert.Equal(1, app.KeepAwake.DisposeCalls);
+        Assert.False(app.On(() => app.Export.IsExporting));
+        Assert.Empty(app.Exporter.Calls);
+        Assert.Single(app.Errors.Shown);
+    }
+
+    [Fact]
     public void AMinimizedWindowNeitherSlowsNorStopsTheExport()
     {
         using var app = new ExportHarness(capabilities: _everything);
