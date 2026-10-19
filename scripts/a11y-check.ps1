@@ -18,6 +18,13 @@
         export-running        the export panel at 1280 x 800
         close-question        the close-during-export dialog (skipped when the export finished first)
         finished, finished-narrow   the finished state
+        new-project-question  New project's question on a project with changes (the shortcuts run)
+
+    The fourth run (shortcuts) proves the keyboard-only path without pressing a key: Debug --shortcut-after runs Ctrl+O,
+    Ctrl+N, Ctrl+E, Ctrl+N, Ctrl+E and Ctrl+O at fixed seconds through the method each keyboard accelerator calls, on
+    Editing, the question, the finished state, the Empty screen and the Settings page; focus-keys.log says which applied.
+    Each scan also lists the screen's accelerator keys (UIA AcceleratorKey) in summary.txt. -Only empty,editing,export,keys
+    runs just those runs.
 
     With --focus-walk the app writes focus.log into each run's log folder: after each screen change it records where
     focus landed, walks the Tab order (FocusManager.TryMoveFocus, in the app) with each stop's name, and puts focus back.
