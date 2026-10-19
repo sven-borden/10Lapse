@@ -88,7 +88,7 @@ public sealed partial class MainWindow : Window
         Title = ViewModel.Title;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 
-        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "TenLapse.ico")); // The taskbar and Alt+Tab icon, packaged or not (#37).
+        SetWindowIcon();
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(_shell.TitleBar);
         if (MicaController.IsSupported())
@@ -138,6 +138,20 @@ public sealed partial class MainWindow : Window
 
     /// <summary>The window's handle, for the Store's rating dialog (#31).</summary>
     internal nint Handle => Win32Interop.GetWindowFromWindowId(AppWindow.Id);
+
+    // The taskbar and Alt+Tab icon, packaged or not (#37). Decorative: a missing or unreadable .ico is logged and the window
+    // keeps the default icon; it must never stop the app from starting.
+    private void SetWindowIcon()
+    {
+        try
+        {
+            AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "TenLapse.ico"));
+        }
+        catch (Exception exception) when (exception is IOException or ArgumentException or UnauthorizedAccessException or COMException)
+        {
+            _errors.Report(exception, ProjectText.WindowIconFailed);
+        }
+    }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

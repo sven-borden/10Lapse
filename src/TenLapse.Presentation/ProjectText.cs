@@ -424,6 +424,9 @@ public static class ProjectText
     /// <summary>Error context (log only): a transport key or the scrubber failed.</summary>
     public static string PreviewSeekFailed => "Moving the preview's playhead failed.";
 
+    /// <summary>Error context (log only): setting the window's icon failed; the window keeps the default icon.</summary>
+    public static string WindowIconFailed => "Setting the window icon failed; the default icon stays.";
+
     /// <summary>Error context (log only): following a change of the project in the preview failed.</summary>
     public static string PreviewProjectFailed => "Following the project in the preview failed.";
 
