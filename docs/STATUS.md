@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #97 merged (minimum Windows 11). Paused by Sven: #35 motion (two commits pushed on `feat/35-motion`, rest in its worktree) waits for his go. Queued: #98 flaky test, then #39 strings, #38 accessibility (each alone).
+2026-10-19: #97 merged (minimum Windows 11). In flight: #35 motion, with #98 flaky test beside it (test code only). Then #39 strings, #38 accessibility (each alone).
 
 ## Waves
 
@@ -48,9 +48,9 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | merged #89 |
 | 15 | #36 Narrow window layout | S | shell visual states | merged #94 |
 | 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | merged #95 |
-| 16 | #35 Motion system | O | every view | paused (Sven) |
+| 16 | #35 Motion system | O | every view | in progress |
 | 16 | #96 Minimum Windows 11 | S | build props, manifest, README | merged #97 |
-| 16 | #98 Flaky cache test (bug) | S | `tests/` Preview | |
+| 16 | #98 Flaky cache test (bug) | S | `tests/` Preview | in progress |
 | 17 | #39 Strings to resource files | S | every view, alone | |
 | 18 | #38 Accessibility pass | O | every view, alone | |
 
