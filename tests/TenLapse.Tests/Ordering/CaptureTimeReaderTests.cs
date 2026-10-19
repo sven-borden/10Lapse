@@ -282,17 +282,45 @@ public static class CaptureTimeReaderTests
     internal const long AllocationLimitPerRead = 64 * 1024;
 
     /// <summary>
-    /// Reads <paramref name="file"/> twice and returns what the second read allocated on this thread: the first fills
-    /// the array pool (and the JIT), so the second shows what every later read of such a file costs.
+    /// What one read of <paramref name="file"/> allocates once the array pool and the JIT are warm: the least that
+    /// repeated reads on this thread allocated, never more than <see cref="MeasuredReads"/> of them.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A single measurement depends on more than the reader (#104). While another test class runs on another thread,
+    /// the thread's own count (<see cref="GC.GetAllocatedBytesForCurrentThread"/>) now and then rises by 5 to 8 KB
+    /// across one read of a file whose steady cost is a few hundred bytes, in one read of the first few dozen and
+    /// never in the same read twice. It is no GC (the collection count does not move), no pooled buffer (a TIFF
+    /// rents none), and not the counter itself (a 200-byte allocation measured next to it stays exact); switching
+    /// tiered compilation or ReadyToRun off changes how often it happens, not whether. A reader that allocated in
+    /// proportion to its input would allocate that much on every read, so the least of a few reads keeps what the
+    /// bound is about and drops what is not the read's own. The loop stops at the first value seen twice.
+    /// </para>
+    /// <para>Every read is of a fresh stream over the same bytes, so a read cannot be cheaper because of the previous one.</para>
+    /// </remarks>
     internal static long AllocatedByRead(byte[] file, out CaptureTimeReading? reading)
     {
-        _ = CaptureTimeReader.Read(new MemoryStream(file));
-        var stream = new MemoryStream(file);
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        reading = CaptureTimeReader.Read(stream);
-        return GC.GetAllocatedBytesForCurrentThread() - before;
+        // The first read fills the array pool and the JIT; it is not measured.
+        reading = CaptureTimeReader.Read(new MemoryStream(file));
+        var least = long.MaxValue;
+        for (var attempt = 0; attempt < MeasuredReads; attempt++)
+        {
+            var stream = new MemoryStream(file);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            reading = CaptureTimeReader.Read(stream);
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            if (allocated == least)
+            {
+                break;
+            }
+
+            least = Math.Min(least, allocated);
+        }
+
+        return least;
     }
+
+    private const int MeasuredReads = 8;
 
     [Fact]
     public static void NeverThrowsOnEveryTruncationOrCorruptionOfARealisticFile()
