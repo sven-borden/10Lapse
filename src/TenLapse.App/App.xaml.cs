@@ -157,7 +157,7 @@ public partial class App : Application
 
         // The export (#24): Media's exporter behind Presentation's interface, the Save dialog in the folder of the last
         // export (#21), Show in folder, and the window's taskbar progress and notification. The notifications register
-        // now, before the window, as the Windows App SDK asks.
+        // now, before the window, as the Windows App SDK asks: packaged always, unpackaged Debug only with --notifications.
         var notifications = new ExportNotifications(logOnly);
         notifications.Register();
         Presentation.Export.ISaveVideoPicker savePicker = new SaveVideoPicker(() => window!.AppWindow.Id);
