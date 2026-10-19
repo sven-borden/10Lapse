@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #86 merged. Building: #24 export panel (Opus), #34 benchmark (Sonnet). Queued: #31 rating and #25 export while minimized (after #24), then #36 narrow layout.
+2026-10-19: in flight: PR #88 (#24 export panel) in review, PR #89 (#34 bench) fix round, #90 (new bug: intermittent start-up crash 0xC000027B) building. Queued after #88: #31, #25, #36.
 
 ## Waves
 
@@ -35,7 +35,7 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 9 | #23 Output panel | S | output inspector section | merged #76 |
 | 10 | #20 Filmstrip | O | filmstrip view | merged #82 |
 | 10 | #17 Timing panel | S | timing inspector section | merged #78 |
-| 11 | #24 Export panel and finished state | O | export panel | building |
+| 11 | #24 Export panel and finished state | O | export panel | PR #88, in review |
 | 11 | #18 Frame panel | S | frame inspector section | merged #80 |
 | 12 | #32 Golden render test | O | `tests/` golden | merged #81 |
 | 12 | #25 Export while minimized, keep awake | S | export power request | |
@@ -43,8 +43,9 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
 | 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | merged #85 |
 | 13 | #86 Flaky memory assertion (bug) | S | `tests/` | merged #87 |
+| 13 | #90 Start-up crash 0xC000027B (bug) | O | App start-up | building |
 | 14 | #31 Rating prompt | S | Store rating | |
-| 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | building |
+| 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | PR #89, fix round |
 | 15 | #36 Narrow window layout | S | shell visual states | |
 | 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | |
 | 16 | #35 Motion system | O | every view, alone | |
@@ -157,6 +158,9 @@ Nothing blocks the build loop. Everything below waits until release is near
   exists. Folders that will not open get their own InfoBar, not a skipped
   photo. `ApplyDefaultSort` only on a project that was empty and unsorted by
   the user during the import. Drops are refused while Settings is open.
+- 2026-10-19 (#34): the 1 GB export memory target applies on PCs with 8 GB RAM
+  or less or an iGPU (decode 4 ahead, 3 threads: 932 MB peak private at 24 MP
+  to 4K, thin margin). Larger PCs use 8 and 6 for speed (about 1.3 GB).
 - 2026-10-19 (Sven): icon direction A Five frames (#37). Design spec approved
   (#11 closed): `DESIGN.md`, the canvas, `Main.dc.html` and the motion spec are
   the spec. License stays all rights reserved; no `LICENSE` file. #29 ships
