@@ -1,4 +1,6 @@
 using System.Collections.Frozen;
+using TenLapse.Core.Projects;
+using TenLapse.Media.Encoding;
 using Windows.Graphics.Imaging;
 
 namespace TenLapse.Media.Decoding;
@@ -16,23 +18,68 @@ public sealed record PhotoDecoderInfo(string Name, Guid CodecId, IReadOnlyList<s
 /// by <see cref="IsReadable"/>; #14 explains <see cref="MissingFormats"/>.
 /// </summary>
 /// <remarks>
-/// The list is read once per process and kept: installing an extension while 10Lapse runs takes a restart to show.
+/// The list is read when first needed and kept until <see cref="Refresh"/>; an import refreshes it first (#14), so an
+/// extension the user installs from the Store while 10Lapse runs is listed by the next import. Whether the running
+/// process then decodes with it is not proven, so the InfoBars tell the user to restart 10Lapse after installing.
 /// A decoder can be listed and still fail on a file, such as a HEIC photo when the HEVC decoder it needs is missing;
 /// <see cref="PhotoDecoder"/> reports that per file.
 /// </remarks>
 public static class PhotoCodecs
 {
-    private static readonly Lazy<Snapshot> _installed = new(Read);
+    private static Lazy<Snapshot> _installed = new(Read);
 
     /// <summary>The installed decoders, in the order Windows lists them.</summary>
-    public static IReadOnlyList<PhotoDecoderInfo> Decoders => _installed.Value.Decoders;
+    public static IReadOnlyList<PhotoDecoderInfo> Decoders => Volatile.Read(ref _installed).Value.Decoders;
+
+    /// <summary>
+    /// Forgets the decoder list, so the next use asks Windows again. Called when the user retries an import: a
+    /// "no decoder" answer is never kept for the session (#14).
+    /// </summary>
+    public static void Refresh() => Volatile.Write(ref _installed, new Lazy<Snapshot>(Read));
+
+    /// <summary>
+    /// True when this PC has what <paramref name="extension"/> adds, asked of Windows now (never remembered): for a
+    /// decoder extension (HEIF, RAW, WebP, JPEG XL), a WIC decoder for its format's first extension; for the HEVC Video
+    /// Extensions, a software Media Foundation HEVC decoder. True for anything it cannot tell (the AV1 codec): a verdict of
+    /// "missing" must be certain, because it sends the user to the Store.
+    /// </summary>
+    public static bool IsInstalled(PhotoCodecExtension extension) => IsInstalled(extension, EncoderCatalog.FindDecoders);
+
+    /// <summary><see cref="IsInstalled(PhotoCodecExtension)"/> with the Media Foundation decoder lookup stood in (tests).</summary>
+    internal static bool IsInstalled(PhotoCodecExtension extension, Func<VideoFormat, IReadOnlyList<DecoderMft>> findDecoders)
+    {
+        ArgumentNullException.ThrowIfNull(extension);
+        ArgumentNullException.ThrowIfNull(findDecoders);
+        var format = KnownPhotoFormats.All.FirstOrDefault(known => known.Container == extension);
+        if (format is not null)
+        {
+            return BitmapDecoder.GetDecoderInformationEnumerator()
+                .Any(info => info.FileExtensions.Any(e => string.Equals(NormalizeExtension(e), format.Extensions[0], StringComparison.Ordinal)));
+        }
+
+        if (extension == KnownPhotoFormats.HevcExtension)
+        {
+            try
+            {
+                // Only a software decoder: the HEVC Video Extensions are one, and WIC's HEIF decoder uses the software
+                // one. A vendor's hardware HEVC decoder (Intel, AMD, an OEM) says nothing about HEIC.
+                return findDecoders(VideoFormat.Mp4Hevc).Any(decoder => !decoder.IsHardware);
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                return true;
+            }
+        }
+
+        return true;
+    }
 
     /// <summary>
     /// The file extensions 10Lapse reads as photos on this PC, lower case with the dot: those of the known photo
     /// formats (<see cref="KnownPhotoFormats.All"/>) that an installed decoder registers. Not every extension a
     /// decoder registers: icons (.ico), cursors (.cur), textures (.dds) and RLE bitmaps (.rle) are no photos.
     /// </summary>
-    public static IReadOnlySet<string> Extensions => _installed.Value.Extensions;
+    public static IReadOnlySet<string> Extensions => Volatile.Read(ref _installed).Value.Extensions;
 
     /// <summary>The known formats (<see cref="KnownPhotoFormats.All"/>) no installed decoder reads, with the extension that adds each.</summary>
     public static IReadOnlyList<KnownPhotoFormat> MissingFormats => KnownPhotoFormats.Missing(Extensions);

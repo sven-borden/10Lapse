@@ -53,6 +53,27 @@ public static class FrameTiming
     /// <summary>The length of a clip of <paramref name="frameCount"/> frames, which is where frame number <paramref name="frameCount"/> would start.</summary>
     public static long Duration(long frameCount, Fraction rate) => FrameStart(frameCount, rate);
 
+    /// <summary>
+    /// The frame on screen at <paramref name="ticks"/> into a clip: the last frame whose <see cref="FrameStart"/> is at
+    /// or before it, the exact inverse of <see cref="FrameStart"/> (so <c>FrameAt(FrameStart(n)) == n</c> and
+    /// <c>FrameAt(FrameStart(n + 1) - 1) == n</c>). Playback (#19) asks this of the wall clock instead of counting frames,
+    /// so it never drifts.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The time is negative, or the rate is zero or above 10 million fps.</exception>
+    public static long FrameAt(long ticks, Fraction rate)
+    {
+        if (ticks < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ticks), ticks, "A clip time cannot be negative.");
+        }
+
+        RequireUsable(rate);
+
+        // FrameStart(n) <= t  <=>  n * T * den < (t + 1) * num  <=>  n <= ((t + 1) * num - 1) / (T * den).
+        var index = (((Int128)ticks + 1) * rate.Numerator - 1) / ((Int128)TicksPerSecond * rate.Denominator);
+        return (long)index;
+    }
+
     private static void RequireUsable(Fraction rate)
     {
         if (rate.Numerator <= 0)

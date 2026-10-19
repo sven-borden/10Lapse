@@ -8,7 +8,8 @@ namespace TenLapse.Presentation.Services;
 /// <remarks>
 /// The queue stays short on purpose: at most <see cref="MaxWaiting"/> InfoBars wait, and one that reads the
 /// same as one visible or waiting is folded into it. Callers gather per-item failures into one InfoBar with a
-/// detail list (<see cref="InfoBarServiceExtensions.ShowWithDetails"/>) instead of raising one per item.
+/// detail list (<see cref="InfoBarServiceExtensions.ShowWithDetails"/>) instead of raising one per item. An InfoBar
+/// that continues an action (<see cref="InfoBarRequest.ShowsNext"/>) shows at once, ahead of the others.
 /// </remarks>
 public sealed class InfoBarQueue : IInfoBarService
 {
@@ -84,8 +85,9 @@ public sealed class InfoBarQueue : IInfoBarService
                 return ticket;
             }
 
-            _tickets.Add(ticket);
-            becameCurrent = _tickets.Count == 1;
+            var position = request.ShowsNext ? 0 : _tickets.Count;
+            _tickets.Insert(position, ticket);
+            becameCurrent = position == 0;
         }
 
         if (becameCurrent)

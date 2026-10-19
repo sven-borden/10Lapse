@@ -234,7 +234,7 @@ Restrained: warm-tinted neutrals plus one amber, with a day-to-night ramp reserv
 - **Segment Track** and **Track** (`segment-track-*`, `track-*`): the recessed ground of segmented controls; the unfilled part of bars and scrubbers.
 - **Ink** (`ink`, `ink-dark`): all primary text, 16.4:1 and 13.3:1 on layer.
 - **Ink Secondary** (`ink-secondary`, `ink-secondary-dark`): labels, captions, readout detail, 6.5:1 and 8.1:1. There is no lighter grey for text.
-- **Letterbox** (`letterbox`): the bars inside the preview gate when Fit leaves space. Same in both themes.
+- **Letterbox** (`letterbox`): the preview gate behind a frame that has no picture yet or cannot be read. The bars Fit leaves inside the frame are the export's black (#000000), because the preview draws through the export's renderer. Same in both themes.
 
 ### Status
 Fluent's status set, used only in InfoBars and the finished state, always paired with an icon: **Success** (`success`, `success-fill`, dark variants), **Caution** (`caution`, `caution-fill`), **Critical** (`critical`, `critical-fill`).

@@ -8,7 +8,7 @@ Your photos and videos are processed on your PC and never leave it. The app has 
 
 The app remembers a few settings, such as your last export options. They stay on your PC, in the app's own storage, and are removed when you uninstall the app.
 
-To keep the preview fast, the app keeps small preview copies of your photos in its own cache on your PC. They never leave your PC, and they are removed when you uninstall the app.
+To keep the preview fast, the app keeps small preview copies of your photos in its own cache on your PC. They never leave your PC, and they are removed when you uninstall the app. The copies are at most 1280 pixels on the longer side, carry no metadata such as the date or location, and a copy the app has not used for 30 days is deleted.
 
 The app also keeps a short log of what it did, for example that an export finished or failed. The log may include the names of files and folders the app worked with, but never the photos themselves, and it is kept for 7 days. It stays on your PC unless you choose to copy it yourself from Settings (Copy diagnostics) to share it. The developer never receives these files from the app.
 

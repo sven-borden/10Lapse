@@ -345,6 +345,110 @@ public static class ProjectText
         return new Confirmation(NewProjectTitle, message, NewProjectConfirm, Cancel);
     }
 
+    // ---- Preview (#19): the player, its transport and its cache. One block so other issues' strings merge around it. ----
+
+    /// <summary>The play button's name while paused.</summary>
+    public static string PreviewPlay => "Play";
+
+    /// <summary>The play button's name while playing.</summary>
+    public static string PreviewPause => "Pause";
+
+    /// <summary>The scrubber's name.</summary>
+    public static string PreviewScrubberName => "Frame";
+
+    /// <summary>The transport's frame counter. {0} the frame number, {1} the total, both zero-padded to the same width ("0312 / 0742").</summary>
+    public static string PreviewCounterFormat => "{0} / {1}";
+
+    /// <summary>The frame counter as Narrator reads it. {0} the frame number, {1} the total ("Frame 312 of 742").</summary>
+    public static string PreviewCounterNameFormat => "Frame {0} of {1}";
+
+    /// <summary>The time code as Narrator reads it. {0} the time, {1} the length.</summary>
+    public static string PreviewTimecodeNameFormat => "Time {0} of {1}";
+
+    /// <summary>A frame whose photo cannot be read, drawn in its place. {0} the file name.</summary>
+    public static string PreviewPlaceholderFormat => "{0} can't be read";
+
+    /// <summary>One photo of the project cannot be read while previewing. The detail list names it.</summary>
+    public static string PreviewFrameUnreadableOne => "1 photo can't be read, so the preview shows a placeholder for it. Restore or replace it before you export.";
+
+    /// <summary>Several photos cannot be read while previewing. {0} the count ("3"). The detail list names them.</summary>
+    public static string PreviewFrameUnreadableMany => "{0} photos can't be read, so the preview shows placeholders for them. Restore or replace them before you export.";
+
+    /// <summary>The proxy cache cannot be written: the preview works from the photos, slower.</summary>
+    public static string PreviewCacheFailed => "Preview copies of your photos can't be saved, so the preview may be slow. Your photos and the export aren't affected.";
+
+    /// <summary>Error context (log only): play or pause failed.</summary>
+    public static string PreviewPlayFailed => "Playing or pausing the preview failed.";
+
+    /// <summary>Error context (log only): a transport key or the scrubber failed.</summary>
+    public static string PreviewSeekFailed => "Moving the preview's playhead failed.";
+
+    /// <summary>Error context (log only): following a change of the project in the preview failed.</summary>
+    public static string PreviewProjectFailed => "Following the project in the preview failed.";
+
+    /// <summary>Error context: drawing the preview failed.</summary>
+    public static string PreviewDrawFailed => "Drawing the preview failed.";
+
+    /// <summary>Error context: the preview's drawing surface could not be made again after the graphics device was lost; it keeps trying.</summary>
+    public static string PreviewRestartFailed => "Starting the preview again after the graphics driver reset failed. It keeps trying by itself.";
+
+    /// <summary>Error context (log only): advancing the counter during playback failed.</summary>
+    public static string PreviewTickFailed => "Advancing the preview's counter failed.";
+
+    /// <summary>Error context (log only): a frame could not be read for the preview. {0} the path.</summary>
+    public static string PreviewFrameFailedLog => "The preview could not read {0}.";
+
+    /// <summary>Error context (log only): the proxy cache failed.</summary>
+    public static string PreviewCacheFailedLog => "The preview cache could not save a proxy.";
+
+    /// <summary>Error context (log only): the preview's frame cache failed in its own code.</summary>
+    public static string PreviewCacheUnexpected => "The preview's frame cache failed.";
+
+    /// <summary>Error context (log only): showing the preview's problems failed.</summary>
+    public static string PreviewProblemsFailed => "Telling about a preview problem failed.";
+
+    /// <summary>Error context (log only): cleaning up the proxy cache failed.</summary>
+    public static string PreviewCacheCleanupFailed => "Cleaning up the preview cache failed.";
+
+    /// <summary>"0312 / 0742": frame <paramref name="number"/> (from 1) of <paramref name="total"/>, zero-padded to four digits or the total's width.</summary>
+    public static string PreviewCounter(int number, int total)
+    {
+        var (padded, paddedTotal) = PadFrames(number, total);
+        return Format(PreviewCounterFormat, padded, paddedTotal);
+    }
+
+    /// <summary>"Frame 312 of 742": the counter for Narrator.</summary>
+    public static string PreviewCounterName(int number, int total)
+    {
+        PadFrames(number, total);
+        return Format(PreviewCounterNameFormat, number, total);
+    }
+
+    /// <summary>"Time 00:10.40 of 00:24.73": the time code for Narrator.</summary>
+    public static string PreviewTimecodeName(long ticks, long lengthTicks) =>
+        Format(PreviewTimecodeNameFormat, TimingFormat.Timecode(ticks), TimingFormat.Timecode(lengthTicks));
+
+    /// <summary>"IMG_4402.JPG can't be read", drawn in the frame's place.</summary>
+    public static string PreviewPlaceholder(string fileName) => Format(PreviewPlaceholderFormat, fileName);
+
+    /// <summary>The InfoBar message for <paramref name="count"/> photos the preview cannot read.</summary>
+    public static string PreviewFrameUnreadable(int count)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+        return count == 1 ? PreviewFrameUnreadableOne : Format(PreviewFrameUnreadableMany, Count(count));
+    }
+
+    private static (string Number, string Total) PadFrames(int number, int total)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(total);
+        ArgumentOutOfRangeException.ThrowIfLessThan(number, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(number, total);
+        var digits = "D" + Math.Max(4, total.ToString(CultureInfo.InvariantCulture).Length).ToString(CultureInfo.InvariantCulture);
+        return (number.ToString(digits, CultureInfo.InvariantCulture), total.ToString(digits, CultureInfo.InvariantCulture));
+    }
+
+    // ---- End of the preview block (#19). ----
+
     // ---- Import (#12): Add photos, drag and drop, progress. One block so other issues' strings merge around it. ----
 
     /// <summary>The command bar button that opens the import menu.</summary>
@@ -562,6 +666,96 @@ public static class ProjectText
     }
 
     // ---- End of the import block (#12). ----
+
+    // ---- Photo extensions (#14): the InfoBars that send the user to the Microsoft Store. One block. ----
+
+    /// <summary>The button of an extension InfoBar. It opens the Store app; nothing is downloaded by 10Lapse.</summary>
+    public static string CodecGetFromStore => "Get it from the Store";
+
+    /// <summary>One photo needs one free extension. {0} its Store name ("HEIF Image Extensions").</summary>
+    public static string CodecNeedsOneFree => "This photo needs the free {0} from Microsoft.";
+
+    /// <summary>Several photos need one free extension. {0} the count, {1} its Store name.</summary>
+    public static string CodecNeedsManyFree => "These {0} photos need the free {1} from Microsoft.";
+
+    /// <summary>One photo needs one extension the Store sells (HEVC). {0} its Store name.</summary>
+    public static string CodecNeedsOneFee => "This photo needs the {0} from Microsoft, which costs a small fee.";
+
+    /// <summary>Several photos need one extension the Store sells. {0} the count, {1} its Store name.</summary>
+    public static string CodecNeedsManyFee => "These {0} photos need the {1} from Microsoft, which costs a small fee.";
+
+    /// <summary>One photo needs several extensions. {0} how many in words, {1} the list.</summary>
+    public static string CodecNeedsOneSeveral => "This photo needs {0} extensions from Microsoft: {1}.";
+
+    /// <summary>Several photos need several extensions. {0} the count, {1} how many in words, {2} the list ("the free HEIF Image Extensions, then the HEVC Video Extensions (a small fee)").</summary>
+    public static string CodecNeedsManySeveral => "These {0} photos need {1} extensions from Microsoft: {2}.";
+
+    /// <summary>One free extension inside a list. {0} its Store name.</summary>
+    public static string CodecListFree => "the free {0}";
+
+    /// <summary>One extension the Store sells, inside a list. {0} its Store name.</summary>
+    public static string CodecListFee => "the {0} (a small fee)";
+
+    /// <summary>"Two", for how many extensions a list names.</summary>
+    public static string CodecCountTwo => "two";
+
+    /// <summary>"Several", for how many extensions a list names when it is more than two.</summary>
+    public static string CodecCountSeveral => "several";
+
+    /// <summary>Between the extensions of a list, in install order.</summary>
+    public static string CodecListSeparator => ", then ";
+
+    /// <summary>The InfoBar that follows the first button of a list. {0} the next extension as <see cref="CodecListFree"/> or <see cref="CodecListFee"/>.</summary>
+    public static string CodecNextFormat => "Next, get {0}. When both are installed, restart 10Lapse and add the photos again.";
+
+    /// <summary>When Windows could not open the Store page. {0} the extension's Store name, to search for.</summary>
+    public static string CodecStoreFallbackFormat => "Couldn't open the Microsoft Store. Search the Store for {0}, install it, then restart 10Lapse and add the photos again.";
+
+    /// <summary>The log context when opening the Store page threw.</summary>
+    public static string CodecStoreOpenFailed => "Opening the Microsoft Store page of a photo extension failed.";
+
+    /// <summary>The words of the InfoBar for <paramref name="count"/> photos that need <paramref name="needed"/>, in install order.</summary>
+    public static string CodecNeeded(int count, IReadOnlyList<PhotoCodecExtension> needed)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(count, 1);
+        ArgumentNullException.ThrowIfNull(needed);
+        ArgumentOutOfRangeException.ThrowIfZero(needed.Count);
+        var number = count.ToString("N0", CultureInfo.InvariantCulture);
+        if (needed.Count == 1)
+        {
+            var extension = needed[0];
+            return (count == 1, extension.HasFee) switch
+            {
+                (true, false) => Format(CodecNeedsOneFree, extension.Name),
+                (true, true) => Format(CodecNeedsOneFee, extension.Name),
+                (false, false) => Format(CodecNeedsManyFree, number, extension.Name),
+                (false, true) => Format(CodecNeedsManyFee, number, extension.Name),
+            };
+        }
+
+        var list = string.Join(CodecListSeparator, needed.Select(CodecListed));
+        var words = needed.Count == 2 ? CodecCountTwo : CodecCountSeveral;
+        return count == 1 ? Format(CodecNeedsOneSeveral, words, list) : Format(CodecNeedsManySeveral, number, words, list);
+    }
+
+    /// <summary>The InfoBar raised after the button for an earlier extension of a list was pressed.</summary>
+    public static string CodecNext(PhotoCodecExtension next)
+    {
+        ArgumentNullException.ThrowIfNull(next);
+        return Format(CodecNextFormat, CodecListed(next));
+    }
+
+    /// <summary>The InfoBar for a Store page that would not open, naming the extension to search for.</summary>
+    public static string CodecStoreFallback(PhotoCodecExtension extension)
+    {
+        ArgumentNullException.ThrowIfNull(extension);
+        return Format(CodecStoreFallbackFormat, extension.Name);
+    }
+
+    private static string CodecListed(PhotoCodecExtension extension) =>
+        Format(extension.HasFee ? CodecListFee : CodecListFree, extension.Name);
+
+    // ---- End of the photo extensions block (#14). ----
 
     // ---- First launch (#29): the drop zone and its small timelapse. ----
 

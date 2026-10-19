@@ -49,6 +49,13 @@ public enum SkipReason
     CloudOnly,
 }
 
+/// <summary>A free (or cheap) Windows extension from the Microsoft Store that adds a WIC decoder or a codec one needs (#14 offers it).</summary>
+/// <param name="Name">The Store name, as the user will find it ("HEIF Image Extensions").</param>
+/// <param name="StoreProductId">The Store product ID for <c>ms-windows-store://pdp/?ProductId=…</c>.</param>
+/// <param name="HasFee">True when the Store sells it (the HEVC Video Extensions); the InfoBar then does not call it free.</param>
+/// <param name="IsCodec">True for a codec a decoder needs inside a file (HEVC, AV1), false for the extension that adds a decoder. A "missing" verdict on a codec is checked against the PC before the InfoBar speaks.</param>
+public sealed record PhotoCodecExtension(string Name, string StoreProductId, bool HasFee = false, bool IsCodec = false);
+
 /// <summary>A file import could not use, kept so the user can see which and why.</summary>
 public sealed record SkippedFile
 {
@@ -59,7 +66,13 @@ public sealed record SkippedFile
     /// What happened in detail, for the log (may be empty). The list shows the text of <paramref name="reason"/>
     /// (Presentation's <c>SkippedFileText</c>), not this.
     /// </param>
-    public SkippedFile(string path, SkipReason reason, string message)
+    /// <param name="missingExtensions">
+    /// With <see cref="SkipReason.NeedsExtension"/>, the Store extensions the file may need, in the order to install them
+    /// (the decoder before the codec): the first is known to be missing, the later ones are needed too unless this PC
+    /// already has them (a HEIC photo without the HEIF decoder needs the HEVC codec as well, which only the InfoBar's
+    /// check of the PC can tell). Null or empty for any other reason.
+    /// </param>
+    public SkippedFile(string path, SkipReason reason, string message, IReadOnlyList<PhotoCodecExtension>? missingExtensions = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(message);
@@ -71,6 +84,7 @@ public sealed record SkippedFile
         Path = path;
         Reason = reason;
         Message = message;
+        MissingExtensions = missingExtensions is { Count: > 0 } ? [.. missingExtensions] : [];
     }
 
     /// <summary>The file's full path.</summary>
@@ -81,4 +95,10 @@ public sealed record SkippedFile
 
     /// <summary>What happened in detail, for the log.</summary>
     public string Message { get; }
+
+    /// <summary>
+    /// The Store extensions that would make the file readable, in install order (see the constructor); empty unless
+    /// <see cref="Reason"/> is <see cref="SkipReason.NeedsExtension"/> and the cause is known.
+    /// </summary>
+    public IReadOnlyList<PhotoCodecExtension> MissingExtensions { get; }
 }
