@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #20 merged. Building: #24 export panel (Opus). PR #85 (#84) fix round. Queued: #86 flaky test fix, #34 benchmark, #31 rating, #25 export while minimized.
+2026-10-19: #84 merged. Building: #24 export panel (Opus), #86 flaky test (Sonnet). Queued: #34 benchmark, #31 rating, #25 export while minimized, then #36.
 
 ## Waves
 
@@ -41,8 +41,8 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 12 | #25 Export while minimized, keep awake | S | export power request | |
 | 13 | #21 Remember settings | S | settings persistence | merged #83 |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
-| 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | PR #85, fix round |
-| 13 | #86 Flaky memory assertion (bug) | S | `tests/` | |
+| 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | merged #85 |
+| 13 | #86 Flaky memory assertion (bug) | S | `tests/` | building |
 | 14 | #31 Rating prompt | S | Store rating | |
 | 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | |
 | 15 | #36 Narrow window layout | S | shell visual states | |
@@ -86,14 +86,10 @@ Nothing blocks the build loop. Everything below waits until release is near
   new project needs the same three platform mappings in the slnx (Any CPU maps
   Windows projects to x64), and the gate fails if a tracked csproj is missing
   from it. App root namespace is `TenLapse`; Core's is `TenLapse.Core`.
-- 2026-10-18 (#3): Release is an MSIX that carries the .NET runtime
-  (`SelfContained`, there is no Store framework package for .NET) and depends on
-  the Windows App Runtime 2 framework package. Pack builds
-  (`GenerateAppxPackageOnBuild=true`) do not treat MSBuild warnings as errors,
-  because the uncoded `mspdbcmf.exe` warning cannot be exempted; every other
-  build does.
-- 2026-10-18 (#3): NuGet audit: NU1900 to NU1902 stay warnings, NU1903 (high)
-  and NU1904 (critical) fail the build.
+- 2026-10-18 (#3): Release MSIX is self-contained for .NET and depends on the
+  Windows App Runtime 2 package. Pack builds allow warnings (`mspdbcmf.exe`);
+  every other build has warnings as errors. NuGet audit fails on high and
+  critical (NU1903, NU1904).
 - 2026-10-18 (#3): tests never reference the App exe (NETSDK1151 against the
   self-contained Release App). View models live in a separate `net10.0`
   library, `src/TenLapse.Presentation`, created in #16.
@@ -281,3 +277,10 @@ Nothing blocks the build loop. Everything below waits until release is near
   updated: thumbnails are list items). Gap markers vanish in Manual order.
   #24 uses `SetPending(snapshot, first)` / `ClearPending()` (dims the picture
   only). Debug `--filmstrip-bench`, `--filmstrip-remove=`.
+- #84 PR #85: MetadataExtractor removed. `Core/Ordering` reads capture times
+  with bounded walkers (`ExifContainers`, `ExifTimeTags`, `ByteWindow`): JPEG,
+  TIFF/RAW, PNG (`eXIf` and raw-profile text chunks), WebP, HEIF/AVIF, CR3,
+  RAF. Pooled 64 KB buffers, at most 4 Exif blocks, every count checked
+  against the bytes; worst read about 0.5 ms and a few KB. Matches the old
+  reader on 1,289+ real files. Real fixtures (MetadataExtractor samples,
+  raw.pixls.us CC0) with licences in `tests/.../Ordering/Fixtures/README.md`.
