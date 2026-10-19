@@ -55,7 +55,9 @@ public sealed class TransportTextTests
     [InlineData(FocusedControl.AutoSuggestBox, KeyFocus.TextInput)]
     [InlineData(FocusedControl.NumberBox, KeyFocus.TextInput)]
     [InlineData(FocusedControl.EditableComboBox, KeyFocus.TextInput)]
+    [InlineData(FocusedControl.None, KeyFocus.Free)]
     [InlineData(FocusedControl.ComboBox, KeyFocus.ArrowControl)]
+    [InlineData(FocusedControl.ComboBoxItem, KeyFocus.ArrowControl)]
     [InlineData(FocusedControl.RangeBase, KeyFocus.ArrowControl)]
     [InlineData(FocusedControl.ListViewBase, KeyFocus.ArrowControl)]
     [InlineData(FocusedControl.ListBox, KeyFocus.ArrowControl)]
@@ -75,7 +77,7 @@ public sealed class TransportTextTests
     {
         // A new kind added without a rule would fall to Free and lose its arrows to the transport.
         var free = Enum.GetValues<FocusedControl>().Where(control => TransportKeys.Classify(control) == KeyFocus.Free);
-        Assert.Equal([FocusedControl.Other], free);
+        Assert.Equal([FocusedControl.Other, FocusedControl.None], free);
     }
 
     [Theory]

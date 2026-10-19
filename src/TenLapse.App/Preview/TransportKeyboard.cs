@@ -53,6 +53,8 @@ internal static class TransportKeyboard
     // and the lists before Selector, their base). The filmstrip (#20) asks it too.
     internal static FocusedControl Describe(object? focused) => focused switch
     {
+        null => FocusedControl.None,
+        PreviewView => FocusedControl.None,
         Filmstrip.FilmstripThumb => FocusedControl.FilmstripItem,
         TextBox => FocusedControl.TextBox,
         PasswordBox => FocusedControl.PasswordBox,
@@ -61,6 +63,7 @@ internal static class TransportKeyboard
         NumberBox => FocusedControl.NumberBox,
         ComboBox { IsEditable: true } => FocusedControl.EditableComboBox,
         ComboBox => FocusedControl.ComboBox,
+        ComboBoxItem => FocusedControl.ComboBoxItem,
         RangeBase => FocusedControl.RangeBase,
         ListViewBase => FocusedControl.ListViewBase,
         ListBox => FocusedControl.ListBox,

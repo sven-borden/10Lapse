@@ -5,7 +5,7 @@ namespace TenLapse.Tests.Presentation;
 
 /// <summary>
 /// The key routing between the filmstrip (#20) and the transport (#19): the strip's own keys while a thumbnail has the
-/// focus, Delete and Ctrl+Z anywhere but a text input, and plain Space always the transport's.
+/// focus, Delete and Ctrl+Z there or with nothing focused only, and plain Space always the transport's.
 /// </summary>
 public sealed class FilmstripKeysTests
 {
@@ -34,48 +34,62 @@ public sealed class FilmstripKeysTests
     [InlineData(FilmstripKey.Z, true, true, false, FilmstripAction.None)]
     [InlineData(FilmstripKey.Other, false, false, false, FilmstripAction.None)]
     public void OnAThumbnailTheStripTakesItsKeys(FilmstripKey key, bool shift, bool control, bool alt, FilmstripAction action) =>
-        Assert.Equal(action, FilmstripKeys.Resolve(key, shift, control, alt, inStrip: true, Focus(FocusedControl.FilmstripItem)));
+        Assert.Equal(action, FilmstripKeys.Resolve(key, shift, control, alt, FocusedControl.FilmstripItem));
 
-    [Theory]
-    [InlineData(FocusedControl.Other)]
-    [InlineData(FocusedControl.ComboBox)]
-    [InlineData(FocusedControl.RangeBase)]
-    [InlineData(FocusedControl.RadioButton)]
-    public void ElsewhereOnlyDeleteAndUndoAreTheStrips(FocusedControl focused)
+    [Fact]
+    public void WithNothingFocusedOnlyDeleteAndUndoAreTheStrips()
     {
-        var focus = Focus(focused);
-
-        Assert.Equal(FilmstripAction.Remove, FilmstripKeys.Resolve(FilmstripKey.Delete, false, false, false, inStrip: false, focus));
-        Assert.Equal(FilmstripAction.Undo, FilmstripKeys.Resolve(FilmstripKey.Z, false, true, false, inStrip: false, focus));
+        Assert.Equal(FilmstripAction.Remove, FilmstripKeys.Resolve(FilmstripKey.Delete, false, false, false, FocusedControl.None));
+        Assert.Equal(FilmstripAction.Undo, FilmstripKeys.Resolve(FilmstripKey.Z, false, true, false, FocusedControl.None));
         foreach (var key in new[] { FilmstripKey.Left, FilmstripKey.Right, FilmstripKey.Home, FilmstripKey.End, FilmstripKey.Space, FilmstripKey.Enter, FilmstripKey.Escape })
         {
-            Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(key, false, false, false, inStrip: false, focus));
+            Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(key, false, false, false, FocusedControl.None));
         }
 
         // Alt+Left is Back on the Settings page and nothing in the editor outside the strip.
-        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.Left, false, false, true, inStrip: false, focus));
-        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.A, false, true, false, inStrip: false, focus));
+        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.Left, false, false, true, FocusedControl.None));
+        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.A, false, true, false, FocusedControl.None));
+        Assert.Equal(KeyFocus.Free, Focus(FocusedControl.None));
     }
 
+    // #82 review, minor 2: Delete and Ctrl+Z never act behind a focused control: an inspector's slider, segmented
+    // control, switch or ComboBox (closed, or open on one of its items), a button, a text input.
     [Theory]
+    [InlineData(FocusedControl.Other)]
+    [InlineData(FocusedControl.ComboBox)]
+    [InlineData(FocusedControl.ComboBoxItem)]
+    [InlineData(FocusedControl.RangeBase)]
+    [InlineData(FocusedControl.RadioButton)]
+    [InlineData(FocusedControl.RadioButtons)]
+    [InlineData(FocusedControl.ToggleSwitch)]
+    [InlineData(FocusedControl.ListViewBase)]
+    [InlineData(FocusedControl.MenuItem)]
     [InlineData(FocusedControl.TextBox)]
     [InlineData(FocusedControl.NumberBox)]
     [InlineData(FocusedControl.EditableComboBox)]
-    public void ATextInputKeepsDeleteAndUndo(FocusedControl focused)
+    public void AFocusedControlKeepsDeleteAndUndo(FocusedControl focused)
     {
-        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.Delete, false, false, false, inStrip: false, Focus(focused)));
-        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.Z, false, true, false, inStrip: false, Focus(focused)));
+        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.Delete, false, false, false, focused));
+        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.Z, false, true, false, focused));
+    }
+
+    [Fact]
+    public void AnOpenComboBoxItemKeepsItsArrows()
+    {
+        Assert.Equal(KeyFocus.ArrowControl, Focus(FocusedControl.ComboBoxItem));
+        Assert.Equal(TransportAction.None, TransportKeys.Resolve(TransportKey.Left, shift: false, otherModifier: false, Focus(FocusedControl.ComboBoxItem)));
     }
 
     [Fact]
     public void HoldingDeleteOrCtrlZDoesNotRepeat()
     {
-        var focus = Focus(FocusedControl.FilmstripItem);
+        var focus = FocusedControl.FilmstripItem;
 
-        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.Delete, false, false, false, true, focus, repeat: true));
-        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.Z, false, true, false, true, focus, repeat: true));
-        Assert.Equal(FilmstripAction.Next, FilmstripKeys.Resolve(FilmstripKey.Right, false, false, false, true, focus, repeat: true));
-        Assert.Equal(FilmstripAction.MoveLater, FilmstripKeys.Resolve(FilmstripKey.Right, false, false, true, true, focus, repeat: true));
+        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.Delete, false, false, false, focus, repeat: true));
+        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.Z, false, true, false, focus, repeat: true));
+        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.Delete, false, false, false, FocusedControl.None, repeat: true));
+        Assert.Equal(FilmstripAction.Next, FilmstripKeys.Resolve(FilmstripKey.Right, false, false, false, focus, repeat: true));
+        Assert.Equal(FilmstripAction.MoveLater, FilmstripKeys.Resolve(FilmstripKey.Right, false, false, true, focus, repeat: true));
     }
 
     [Fact]
@@ -86,7 +100,7 @@ public sealed class FilmstripKeysTests
         var focus = Focus(FocusedControl.FilmstripItem);
 
         Assert.Equal(KeyFocus.ArrowControl, focus);
-        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.Space, false, false, false, inStrip: true, focus));
+        Assert.Equal(FilmstripAction.None, FilmstripKeys.Resolve(FilmstripKey.Space, false, false, false, FocusedControl.FilmstripItem));
         Assert.Equal(TransportAction.TogglePlay, TransportKeys.Resolve(TransportKey.Space, shift: false, otherModifier: false, focus));
         Assert.Equal(TransportAction.None, TransportKeys.Resolve(TransportKey.Left, shift: false, otherModifier: false, focus));
         Assert.Equal(TransportAction.None, TransportKeys.Resolve(TransportKey.Right, shift: true, otherModifier: false, focus));

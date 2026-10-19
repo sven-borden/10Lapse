@@ -69,8 +69,11 @@ public enum KeyFocus
 /// </summary>
 public enum FocusedControl
 {
-    /// <summary>Nothing, or a control none of the others describe (a button, the stage, the scrubber).</summary>
+    /// <summary>A control none of the others describe (a button, the scrubber).</summary>
     Other,
+
+    /// <summary>Nothing has the focus (the user clicked the preview's stage, which takes none, or nothing yet).</summary>
+    None,
 
     /// <summary>A TextBox.</summary>
     TextBox,
@@ -92,6 +95,9 @@ public enum FocusedControl
 
     /// <summary>A ComboBox that only selects (the Output panel's).</summary>
     ComboBox,
+
+    /// <summary>An item of an open ComboBox's list.</summary>
+    ComboBoxItem,
 
     /// <summary>A slider or another RangeBase.</summary>
     RangeBase,
@@ -169,7 +175,7 @@ public static class TransportKeys
     {
         FocusedControl.TextBox or FocusedControl.PasswordBox or FocusedControl.RichEditBox or FocusedControl.AutoSuggestBox
             or FocusedControl.NumberBox or FocusedControl.EditableComboBox => KeyFocus.TextInput,
-        FocusedControl.ComboBox or FocusedControl.RangeBase or FocusedControl.ListViewBase or FocusedControl.ListBox
+        FocusedControl.ComboBox or FocusedControl.ComboBoxItem or FocusedControl.RangeBase or FocusedControl.ListViewBase or FocusedControl.ListBox
             or FocusedControl.Selector or FocusedControl.RadioButton or FocusedControl.RadioButtons or FocusedControl.ToggleSwitch
             or FocusedControl.ScrollViewer or FocusedControl.MenuItem or FocusedControl.FilmstripItem => KeyFocus.ArrowControl,
         _ => KeyFocus.Free,

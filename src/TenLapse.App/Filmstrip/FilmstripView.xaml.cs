@@ -491,7 +491,7 @@ public sealed partial class FilmstripView : UserControl
             return;
         }
 
-        var action = FilmstripKeyboard.Resolve(e, inStrip: true, XamlRoot);
+        var action = FilmstripKeyboard.Resolve(e, XamlRoot);
         if (action == FilmstripAction.None)
         {
             return;
@@ -510,18 +510,20 @@ public sealed partial class FilmstripView : UserControl
             ProjectText.FilmstripSelectFailed);
     }
 
-    // Delete and Ctrl+Z from anywhere else in the window (the strip's own keys were handled above).
+    // Delete and Ctrl+Z with nothing focused (the user clicked the preview's stage). Keys pressed in the strip were the
+    // strip's handler's, and any other focused control keeps them (FilmstripKeys). Handled only when something changed.
     private void OnRootKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Handled || ViewModel is not { } viewModel || _canEdit?.Invoke() != true)
+        if (e.Handled || ViewModel is not { } viewModel || _canEdit?.Invoke() != true
+            || FocusManager.GetFocusedElement(XamlRoot) is FilmstripThumb)
         {
             return;
         }
 
-        var action = FilmstripKeyboard.Resolve(e, inStrip: false, XamlRoot);
+        var action = FilmstripKeyboard.Resolve(e, XamlRoot);
         if (action is FilmstripAction.Remove or FilmstripAction.Undo)
         {
-            _errors?.Guard(() => e.Handled = viewModel.Handle(action, -1).Handled, ProjectText.FilmstripSelectFailed);
+            _errors?.Guard(() => e.Handled = viewModel.Handle(action, -1).Handled, action == FilmstripAction.Remove ? ProjectText.FilmstripRemoveFailed : ProjectText.FilmstripUndoFailed);
         }
     }
 

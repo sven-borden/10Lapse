@@ -15,9 +15,8 @@ internal static class FilmstripKeyboard
 {
     /// <summary>The filmstrip's action for <paramref name="e"/>; <see cref="FilmstripAction.None"/> when the key is not its.</summary>
     /// <param name="e">The key.</param>
-    /// <param name="inStrip">A thumbnail has the focus (the strip's own handler); false for the window's.</param>
     /// <param name="root">The window's content, for the focused element.</param>
-    public static FilmstripAction Resolve(KeyRoutedEventArgs e, bool inStrip, XamlRoot? root)
+    public static FilmstripAction Resolve(KeyRoutedEventArgs e, XamlRoot? root)
     {
         var key = e.Key switch
         {
@@ -46,7 +45,7 @@ internal static class FilmstripKeyboard
             return FilmstripAction.None;
         }
 
-        var focus = root is null ? KeyFocus.Free : TransportKeys.Classify(TransportKeyboard.Describe(FocusManager.GetFocusedElement(root)));
-        return FilmstripKeys.Resolve(key, shift, control, alt, inStrip, focus, repeat: e.KeyStatus.WasKeyDown);
+        var focused = root is null ? FocusedControl.None : TransportKeyboard.Describe(FocusManager.GetFocusedElement(root));
+        return FilmstripKeys.Resolve(key, shift, control, alt, focused, repeat: e.KeyStatus.WasKeyDown);
     }
 }

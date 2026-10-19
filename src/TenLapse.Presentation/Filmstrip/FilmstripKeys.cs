@@ -106,13 +106,15 @@ public enum FilmstripAction
 /// <summary>
 /// The filmstrip's keys (#20), beside the transport's (#19, <see cref="TransportKeys"/>). Two places ask:
 /// <list type="bullet">
-/// <item>The strip itself, for keys pressed while a thumbnail has the focus (<c>inStrip</c>). The strip is a list, so
+/// <item>The strip itself, for keys pressed while a thumbnail has the focus. The strip is a list, so
 /// the arrows, Home and End are its own: they select a frame and show it (Shift extends the selection, Ctrl moves only
 /// the focus), and the transport never sees them. Ctrl+Space toggles the focused frame, Shift+Space selects up to it,
 /// Enter selects it alone, Ctrl+A selects all, Escape goes back to one frame, and Alt+Left and Alt+Right move the
 /// selected frames one place (the keyboard's reorder).</item>
-/// <item>The window, for keys no control handled: Delete removes and Ctrl+Z undoes wherever the focus is, except in a
-/// text input, whose Delete and Ctrl+Z are the user's typing.</item>
+/// <item>The window, for keys no control handled: Delete removes and Ctrl+Z undoes when nothing has the focus (the user
+/// clicked the preview's stage, which takes none). With any other control focused (a text input, a button, a slider, a
+/// ComboBox open or closed, a segmented control, a switch) they are not the strip's: removing frames out of sight of the
+/// strip, behind an inspector control, would surprise (#82 review, minor 2).</item>
 /// </list>
 /// Plain Space is never the strip's: it plays or pauses everywhere outside a text input, as the canvas's keyboard map
 /// says ("Play or pause: Space"), so it reaches the transport even with a thumbnail focused. Delete and Ctrl+Z do not
@@ -125,17 +127,17 @@ public static class FilmstripKeys
     /// <param name="shift">Shift is down.</param>
     /// <param name="control">Ctrl is down.</param>
     /// <param name="alt">Alt is down.</param>
-    /// <param name="inStrip">A thumbnail has the focus.</param>
-    /// <param name="focus">What kind of control has the focus (<see cref="TransportKeys.Classify"/>).</param>
+    /// <param name="focused">What has the focus: <see cref="FocusedControl.FilmstripItem"/> for a thumbnail.</param>
     /// <param name="repeat">The key is held and Windows repeats it.</param>
-    public static FilmstripAction Resolve(FilmstripKey key, bool shift, bool control, bool alt, bool inStrip, KeyFocus focus, bool repeat = false)
+    public static FilmstripAction Resolve(FilmstripKey key, bool shift, bool control, bool alt, FocusedControl focused, bool repeat = false)
     {
-        if (focus == KeyFocus.TextInput)
+        var inStrip = focused == FocusedControl.FilmstripItem;
+        if (!inStrip && focused != FocusedControl.None)
         {
             return FilmstripAction.None;
         }
 
-        // Anywhere: remove and undo, once per press.
+        // In the strip, or with nothing focused: remove and undo, once per press.
         if (key == FilmstripKey.Delete && !shift && !control && !alt)
         {
             return repeat ? FilmstripAction.None : FilmstripAction.Remove;
