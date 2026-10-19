@@ -13,11 +13,15 @@ public static class MotionCatalogue
     // ---- Screens: Empty, Editing and Settings (prototype, go) ----
 
     /// <summary>The screen that leaves (drop zone, editor, Settings): fades out and shrinks to 98.5 %, 167 ms Exit.</summary>
-    public static readonly MotionTransition SceneOut = new("Scene.Out", Control, MotionEasing.Exit, MotionDirection.Out, Moves: true, ReducedMotion.Fade, "scales to 0.985");
+    public static readonly MotionTransition SceneOut = new("Scene.Out", Control, MotionEasing.Exit, MotionDirection.Out, Moves: true, ReducedMotion.Fade, "scales to 0.985")
+    {
+        HoldsInfoBars = true,
+    };
 
     /// <summary>The screen that arrives, once the old one is gone: rises 8 px and fades in, 400 ms Enter.</summary>
     public static readonly MotionTransition SceneIn = new("Scene.In", Scene, MotionEasing.Enter, MotionDirection.In, Moves: true, ReducedMotion.Fade, "rises 8 px")
     {
+        HoldsInfoBars = true,
         Delay = Control,
         ReducedDelay = ReducedFadeOut,
     };
@@ -27,6 +31,7 @@ public static class MotionCatalogue
     /// <summary>The editor's surface (the Layer, the transport, the inspector's frame) fades in after the drop zone's exit.</summary>
     public static readonly MotionTransition ArrivalSurface = new("Arrival.Surface", Scene, MotionEasing.Enter, MotionDirection.In, Moves: false, ReducedMotion.Fade, "fades in")
     {
+        HoldsInfoBars = true,
         Delay = Control,
         ReducedDelay = ReducedFadeOut,
     };
@@ -34,6 +39,7 @@ public static class MotionCatalogue
     /// <summary>The first frame develops like a print: blur 14 to 0 px, scale 1.03 to 1, opacity in, 700 ms Enter.</summary>
     public static readonly MotionTransition ArrivalDevelop = new("Arrival.Develop", Cinema, MotionEasing.Enter, MotionDirection.In, Moves: true, ReducedMotion.Fade, "blur 14 to 0 px, scale 1.03 to 1")
     {
+        HoldsInfoBars = true,
         Delay = Control,
         ReducedDelay = ReducedFadeOut,
     };
@@ -41,6 +47,7 @@ public static class MotionCatalogue
     /// <summary>The thumbnails rise 8 px into place, 400 ms Enter, 18 ms apart from 220 ms.</summary>
     public static readonly MotionTransition ArrivalFilmstrip = new("Arrival.Filmstrip", Scene, MotionEasing.Enter, MotionDirection.In, Moves: true, ReducedMotion.Fade, "rises 8 px")
     {
+        HoldsInfoBars = true,
         Delay = ThumbnailCascadeStart,
         Stagger = ThumbnailStagger,
     };
@@ -48,6 +55,7 @@ public static class MotionCatalogue
     /// <summary>The inspector's sections slide 16 px in from the right, 400 ms Enter, 60 ms apart from 160 ms.</summary>
     public static readonly MotionTransition ArrivalInspector = new("Arrival.Inspector", Scene, MotionEasing.Enter, MotionDirection.In, Moves: true, ReducedMotion.Fade, "slides 16 px")
     {
+        HoldsInfoBars = true,
         Delay = SectionCascadeStart,
         Stagger = SectionStagger,
     };
@@ -74,10 +82,16 @@ public static class MotionCatalogue
     // ---- Gate: the export runs ----
 
     /// <summary>The inspector's part that leaves for the export panel or back: to -12 px, 167 ms Exit.</summary>
-    public static readonly MotionTransition PanelOut = new("Export.PanelOut", Control, MotionEasing.Exit, MotionDirection.Out, Moves: true, ReducedMotion.Fade, "to -12 px");
+    public static readonly MotionTransition PanelOut = new("Export.PanelOut", Control, MotionEasing.Exit, MotionDirection.Out, Moves: true, ReducedMotion.Fade, "to -12 px")
+    {
+        HoldsInfoBars = true,
+    };
 
     /// <summary>The part that arrives: from +16 px, 400 ms Enter.</summary>
-    public static readonly MotionTransition PanelIn = new("Export.PanelIn", Scene, MotionEasing.Enter, MotionDirection.In, Moves: true, ReducedMotion.Fade, "from +16 px");
+    public static readonly MotionTransition PanelIn = new("Export.PanelIn", Scene, MotionEasing.Enter, MotionDirection.In, Moves: true, ReducedMotion.Fade, "from +16 px")
+    {
+        HoldsInfoBars = true,
+    };
 
     /// <summary>The film gate's strip glides linearly to each new progress; with animations off it stands still.</summary>
     public static readonly MotionTransition GateStrip = new("Export.GateStrip", GateGlide, MotionEasing.Linear, MotionDirection.Change, Moves: true, ReducedMotion.Cut, "slides with the progress");
@@ -119,7 +133,10 @@ public static class MotionCatalogue
     // ---- Theme: Windows changes mode ----
 
     /// <summary>The colors crossfade to the new theme, 250 ms linear; the photos never change. At once with animations off.</summary>
-    public static readonly MotionTransition ThemeChange = new("Theme.Crossfade", ThemeCrossfade, MotionEasing.Linear, MotionDirection.Change, Moves: false, ReducedMotion.Cut, "crossfades");
+    public static readonly MotionTransition ThemeChange = new("Theme.Crossfade", ThemeCrossfade, MotionEasing.Linear, MotionDirection.Change, Moves: false, ReducedMotion.Cut, "crossfades")
+    {
+        HoldsInfoBars = true,
+    };
 
     // ---- First launch (Daybreak, the drop zone) ----
 

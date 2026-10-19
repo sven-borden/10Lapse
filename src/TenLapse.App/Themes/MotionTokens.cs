@@ -63,14 +63,21 @@ public static class MotionTokens
 #endif
 
     /// <summary>
+    /// When the running screen, arrival, panel and theme transitions end: an InfoBar does not come in before (motion spec,
+    /// InfoBar). <see cref="Plan"/> pushes it forward.
+    /// </summary>
+    public static MotionQuiet Quiet { get; } = new(TimeProvider.System);
+
+    /// <summary>
     /// What <paramref name="transition"/> does now: the spec's timing with animations on, the reduced fade or nothing with
     /// them off. The <paramref name="index"/>-th of a cascade starts its stagger later. Written to the Debug motion log
-    /// (<c>--motion-log</c>). Any thread.
+    /// (<c>--motion-log</c>), and held in <see cref="Quiet"/> when an InfoBar must wait for it. Any thread.
     /// </summary>
     public static MotionStep Plan(MotionTransition transition, int index = 0)
     {
         ArgumentNullException.ThrowIfNull(transition);
         var step = transition.Plan(AnimationsEnabled, index);
+        Quiet.Hold(step);
 #if DEBUG
         Debugging.DebugMotion.Record(step);
 #endif

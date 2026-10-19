@@ -78,6 +78,12 @@ public sealed record MotionTransition(
     public bool IsWait { get; init; }
 
     /// <summary>
+    /// True for the transitions an InfoBar waits for (screens, the arrival, the panel swap, the theme change): the motion
+    /// spec's InfoBar "never appears during a transition" (<see cref="MotionQuiet"/>).
+    /// </summary>
+    public bool HoldsInfoBars { get; init; }
+
+    /// <summary>
     /// What to do now: with <paramref name="animationsEnabled"/> the spec's timing (the <paramref name="index"/>-th of a
     /// cascade starts <see cref="Stagger"/> times later); without, the reduced fade or nothing.
     /// </summary>

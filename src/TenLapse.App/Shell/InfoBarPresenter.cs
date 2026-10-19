@@ -38,6 +38,9 @@ internal sealed class InfoBarPresenter
     private readonly Visual _visual;
     private readonly Compositor _compositor;
 
+    // Syncs again once the running transition has ended, for an InfoBar that waits for it.
+    private readonly DispatcherQueueTimer _held;
+
     // The ticket on screen (also while it animates out), and whether it is leaving.
     private InfoBarTicket? _shown;
     private bool _leaving;
@@ -72,6 +75,9 @@ internal sealed class InfoBarPresenter
         _compositor = _visual.Compositor;
         _layer.Visibility = Visibility.Collapsed;
         NameCloseButton();
+        _held = _dispatcher.CreateTimer();
+        _held.IsRepeating = false;
+        _held.Tick += OnHeldTick;
 
         // The close button would collapse the InfoBar at once; the queue decides instead, and the exit animates.
         _bar.Closing += OnClosing;
@@ -86,6 +92,8 @@ internal sealed class InfoBarPresenter
         _queue.CurrentChanged -= OnCurrentChanged;
         _bar.Closing -= OnClosing;
         _layer.GettingFocus -= OnLayerGettingFocus;
+        _held.Stop();
+        _held.Tick -= OnHeldTick;
     }
 
     // The queue may change on any thread; the layer is touched only on the UI thread.
@@ -173,24 +181,34 @@ internal sealed class InfoBarPresenter
             "InfoBarOpenedActivityId");
     }
 
-    // Brings the screen in line with the queue: one step at a time, each animation finishing before the next.
+    // Brings the screen in line with the queue: one step at a time, each animation finishing before the next, and no
+    // entrance while a screen, arrival, panel or theme transition runs (motion spec, InfoBar: never appears during a
+    // transition). A held InfoBar stays the queue's current one, so nothing is lost or reordered; the timer syncs again
+    // when the transition has ended, and a newer transition holds it longer.
     private void Sync()
     {
         var current = _queue.Current;
-        if (_leaving || ReferenceEquals(current, _shown))
+        var untilQuiet = MotionTokens.Quiet.Remaining;
+        switch (InfoBarSync.Next(current, _shown, _leaving, untilQuiet))
         {
-            return;
-        }
-
-        if (_shown is not null)
-        {
-            Leave();
-        }
-        else if (current is not null)
-        {
-            Enter(current);
+            case InfoBarMove.Leave:
+                Leave();
+                break;
+            case InfoBarMove.Enter:
+                _held.Stop();
+                Enter(current!);
+                break;
+            case InfoBarMove.Wait:
+#if DEBUG
+                Debugging.DebugMotion.Note(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"InfoBar.In held {untilQuiet.TotalMilliseconds:0} ms (a transition runs)"));
+#endif
+                _held.Interval = untilQuiet;
+                _held.Start();
+                break;
         }
     }
+
+    private void OnHeldTick(DispatcherQueueTimer sender, object args) => _errors.RunLogged(Sync, ProjectText.InfoBarSyncFailed);
 
     private void Enter(InfoBarTicket ticket)
     {

@@ -144,7 +144,7 @@ public sealed partial class ShellView : UserControl
 #endif
         ThemeFade = new ThemeCrossfade(this, ShellRoot, ThemeSnapshot, DispatcherQueue, errors, followsWindows, PhotosOnScreen);
 #if DEBUG
-        Debugging.DebugMotion.Apply(this, import, errors);
+        Debugging.DebugMotion.Apply(this, import, infoBars, errors);
 #endif
         Loaded += (_, _) => _errors.RunLogged(() => DispatcherQueue.TryEnqueueGuarded(_errors, _screens.GoLive, ProjectText.MotionFailed), ProjectText.MotionFailed);
 

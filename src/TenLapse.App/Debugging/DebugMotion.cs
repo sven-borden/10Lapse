@@ -35,9 +35,10 @@ internal static class DebugMotion
     /// <c>--motion-import=FOLDER</c> imports FOLDER's photos (through the same view model as Choose folder) after
     /// <c>--motion-import-delay=S</c> seconds (3 by default), so the arrival plays on the Empty screen;
     /// <c>--theme-flip-after=S[,S...]</c> crossfades the shell to the other theme at each of those seconds after launch, as a
-    /// Windows mode change would, without touching Windows' setting.
+    /// Windows mode change would, without touching Windows' setting; <c>--motion-infobar-after=S[,S...]</c> raises an InfoBar at
+    /// each of those seconds after launch (to see it wait for a running transition).
     /// </summary>
-    public static void Apply(ShellView shell, ImportViewModel import, IErrorSink log)
+    public static void Apply(ShellView shell, ImportViewModel import, IInfoBarService infoBars, IErrorSink log)
     {
         var args = Environment.GetCommandLineArgs();
         if (Value(args, "--motion-import=") is { Length: > 0 } folder)
@@ -51,6 +52,18 @@ internal static class DebugMotion
             foreach (var at in flips.Split(',').Select(Seconds).OfType<double>())
             {
                 After(shell.DispatcherQueue, at, log, () => _ = shell.ThemeFade.SwitchAsync(shell.ThemeFade.Current == ElementTheme.Dark ? ElementTheme.Light : ElementTheme.Dark));
+            }
+        }
+
+        if (Value(args, "--motion-infobar-after=") is { Length: > 0 } raises)
+        {
+            foreach (var at in raises.Split(',').Select(Seconds).OfType<double>())
+            {
+                After(shell.DispatcherQueue, at, log, () =>
+                {
+                    Note(string.Create(CultureInfo.InvariantCulture, $"InfoBar raised (--motion-infobar-after={at})"));
+                    infoBars.Show(InfoBarSeverity.Neutral, string.Create(CultureInfo.InvariantCulture, $"Motion check: an InfoBar raised at {at} s."));
+                });
             }
         }
     }
@@ -72,7 +85,10 @@ internal static class DebugMotion
         args.FirstOrDefault(arg => arg.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))?[prefix.Length..];
 
     /// <summary>Writes one started transition (any thread). A failure to write is dropped: this is a Debug aid.</summary>
-    public static void Record(MotionStep step)
+    public static void Record(MotionStep step) => Note(step.ToLogLine());
+
+    /// <summary>Writes one line about the motion that is not a transition (an InfoBar held for one). Any thread.</summary>
+    public static void Note(string text)
     {
         if (_path is null)
         {
@@ -80,7 +96,7 @@ internal static class DebugMotion
         }
 
         var elapsed = TimeSpan.FromTicks(DateTime.UtcNow.Ticks - _start).TotalMilliseconds;
-        var line = string.Create(CultureInfo.InvariantCulture, $"{elapsed,9:0} {step.ToLogLine()}{Environment.NewLine}");
+        var line = string.Create(CultureInfo.InvariantCulture, $"{elapsed,9:0} {text}{Environment.NewLine}");
         lock (_gate)
         {
             try

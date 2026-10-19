@@ -73,6 +73,9 @@ internal sealed class PanelSwap
         }
 
         var step = MotionTokens.Plan(MotionCatalogue.PanelOut);
+
+        // The swap runs out, then in: an InfoBar waits for both (the entrance holds its own time again as it starts).
+        MotionTokens.Quiet.Hold(step.Duration + MotionCatalogue.PanelIn.Plan(step.AnimationsEnabled).Duration);
         if (!step.Animates)
         {
             Settle(leaving, Visibility.Collapsed);
