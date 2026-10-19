@@ -351,7 +351,7 @@ public sealed partial class ShellView : UserControl
         if (step.Moves)
         {
             var slide = compositor.CreateVector3KeyFrameAnimation();
-            slide.InsertKeyFrame(0f, new Vector3(SectionTravel, 0, 0));
+            slide.InsertKeyFrame(0f, new Vector3(MotionSpec.SectionSlide, 0, 0));
             slide.InsertKeyFrame(1f, Vector3.Zero, easing);
             Time(slide, step);
             visual.StartAnimation("Translation", slide);
@@ -364,9 +364,6 @@ public sealed partial class ShellView : UserControl
         animation.DelayTime = step.Delay;
         animation.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
     }
-
-    // The inspector's sections arrive from this far right (motion spec, Arrival: slides 16 px).
-    private const float SectionTravel = 16f;
 
     // Opening Settings puts focus on Back, leaving it puts focus back on the Settings button, so the keyboard and a
     // screen reader stay where the user is. After the state change has shown the button.

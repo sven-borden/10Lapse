@@ -18,9 +18,6 @@ namespace TenLapse.Shell;
 /// </summary>
 internal sealed class PanelSwap
 {
-    private const float OutTravel = -12f;
-    private const float InTravel = 16f;
-
     private readonly UIElement[] _parts;
     private readonly DispatcherQueue _dispatcher;
     private readonly IErrorSink _log;
@@ -85,7 +82,7 @@ internal sealed class PanelSwap
 
         var visual = ElementCompositionPreview.GetElementVisual(leaving);
         var batch = visual.Compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
-        Animate(visual, 0f, OutTravel, step);
+        Animate(visual, 0f, MotionSpec.PanelOutTravel, step);
         batch.End();
         batch.Completed += (_, _) => _dispatcher.TryEnqueueGuarded(
             _log,
@@ -107,7 +104,7 @@ internal sealed class PanelSwap
         var step = MotionTokens.Plan(MotionCatalogue.PanelIn);
         var visual = ElementCompositionPreview.GetElementVisual(next);
         visual.Opacity = step.Animates ? 0f : 1f;
-        visual.Properties.InsertVector3("Translation", new Vector3(step.Moves ? InTravel : 0f, 0, 0));
+        visual.Properties.InsertVector3("Translation", new Vector3(step.Moves ? MotionSpec.PanelInTravel : 0f, 0, 0));
         next.Visibility = Visibility.Visible;
         if (step.Animates)
         {

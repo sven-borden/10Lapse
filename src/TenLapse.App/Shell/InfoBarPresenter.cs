@@ -25,9 +25,6 @@ namespace TenLapse.Shell;
 /// </summary>
 internal sealed class InfoBarPresenter
 {
-    private const float Travel = -8f;
-    private const float DetailsTravel = -4f;
-
     private readonly InfoBarQueue _queue;
     private readonly FrameworkElement _layer;
     private readonly InfoBar _bar;
@@ -221,7 +218,7 @@ internal sealed class InfoBarPresenter
         var step = MotionTokens.Plan(MotionCatalogue.InfoBarIn);
         _visual.Opacity = step.Animates ? 0f : 1f;
         _layer.Visibility = Visibility.Visible;
-        _visual.Properties.InsertVector3("Translation", new Vector3(0, step.Moves ? Travel : 0, 0));
+        _visual.Properties.InsertVector3("Translation", new Vector3(0, step.Moves ? MotionSpec.InfoBarTravel : 0, 0));
         Animate(_visual, toOpacity: 1f, toY: 0f, step, completed: null);
     }
 
@@ -235,7 +232,7 @@ internal sealed class InfoBarPresenter
         Animate(
             _visual,
             toOpacity: 0f,
-            toY: Travel,
+            toY: MotionSpec.InfoBarTravel,
             MotionTokens.Plan(MotionCatalogue.InfoBarOut),
             completed: () =>
             {
@@ -268,7 +265,7 @@ internal sealed class InfoBarPresenter
         if (step.Animates)
         {
             visual.Opacity = 0f;
-            visual.Properties.InsertVector3("Translation", new Vector3(0, step.Moves ? DetailsTravel : 0, 0));
+            visual.Properties.InsertVector3("Translation", new Vector3(0, step.Moves ? MotionSpec.InfoBarDetailsTravel : 0, 0));
             Animate(visual, toOpacity: 1f, toY: 0f, step, completed: null, own: false);
         }
     }

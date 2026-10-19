@@ -607,7 +607,7 @@ internal sealed class PreviewRenderLoop : IDisposable
 
         var eased = (float)MotionSpec.Ease(develop.Easing, share);
         return develop.Moves
-            ? (eased, DevelopBlur * (1 - eased), DevelopScale - ((DevelopScale - 1) * eased))
+            ? (eased, MotionSpec.DevelopBlur * (1 - eased), MotionSpec.DevelopScale - ((MotionSpec.DevelopScale - 1) * eased))
             : (eased, 0f, 1f);
     }
 
@@ -657,10 +657,6 @@ internal sealed class PreviewRenderLoop : IDisposable
         from.Y + ((to.Y - from.Y) * share),
         Math.Max(0, from.Width + ((to.Width - from.Width) * share)),
         Math.Max(0, from.Height + ((to.Height - from.Height) * share)));
-
-    // The develop starts this blurred (DIPs, the canvas's blur(14px)) and this much larger (the canvas's scale(1.03)).
-    private const float DevelopBlur = 14f;
-    private const float DevelopScale = 1.03f;
 
     // A reframe running: where the gate and the photo were on screen when it began, when, and its step.
     private sealed record Reframe(Rect FromGate, Rect FromPhoto, long Start, MotionStep Step);

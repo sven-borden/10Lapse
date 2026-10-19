@@ -84,7 +84,6 @@ public sealed partial class FilmstripView : UserControl
     private double _scale;
 
     // The arrival cascade: when it began (Stopwatch ticks, 0 when none runs) and the first index it showed.
-    private const float ThumbnailRise = 8f;
     private long _arrivalStart;
     private int _arrivalFirst = int.MaxValue;
     private readonly HashSet<Guid> _cascaded = [];
@@ -390,7 +389,7 @@ public sealed partial class FilmstripView : UserControl
         if (step.Moves)
         {
             var rise = compositor.CreateVector3KeyFrameAnimation();
-            rise.InsertKeyFrame(0f, new Vector3(0, ThumbnailRise, 0));
+            rise.InsertKeyFrame(0f, new Vector3(0, MotionSpec.ThumbnailRise, 0));
             rise.InsertKeyFrame(1f, Vector3.Zero, easing);
             rise.Duration = step.Duration;
             rise.DelayTime = delay;

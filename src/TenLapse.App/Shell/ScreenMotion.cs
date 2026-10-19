@@ -27,9 +27,6 @@ namespace TenLapse.Shell;
 /// </remarks>
 internal sealed class ScreenMotion
 {
-    private const float SceneRise = 8f;
-    private const float SceneShrink = 0.985f;
-
     private readonly ShellViewModel _viewModel;
     private readonly UIElement _empty;
     private readonly UIElement[] _editing;
@@ -156,7 +153,7 @@ internal sealed class ScreenMotion
         if (step.Moves && element is FrameworkElement { ActualWidth: > 0 } framework)
         {
             visual.CenterPoint = new Vector3((float)framework.ActualWidth / 2, (float)framework.ActualHeight / 2, 0);
-            group.Add(Vector(compositor, nameof(Visual.Scale), null, new Vector3(SceneShrink, SceneShrink, 1), step, easing));
+            group.Add(Vector(compositor, nameof(Visual.Scale), null, new Vector3(MotionSpec.SceneShrink, MotionSpec.SceneShrink, 1), step, easing));
         }
 
         return group;
@@ -171,7 +168,7 @@ internal sealed class ScreenMotion
         var easing = MotionTokens.CreateEasing(compositor, step.Easing);
         var rest = step with { Duration = step.Animates ? step.Duration : MotionSpec.Tap, Delay = step.Animates ? step.Delay : TimeSpan.Zero };
         group.Add(Scalar(compositor, nameof(Visual.Opacity), step.Animates ? 0f : 1f, 1f, rest, easing));
-        group.Add(Vector(compositor, "Translation", new Vector3(0, step.Moves ? SceneRise : 0, 0), Vector3.Zero, rest, easing));
+        group.Add(Vector(compositor, "Translation", new Vector3(0, step.Moves ? MotionSpec.SceneRise : 0, 0), Vector3.Zero, rest, easing));
         group.Add(Vector(compositor, nameof(Visual.Scale), Vector3.One, Vector3.One, rest, easing));
         return group;
     }

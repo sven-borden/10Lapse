@@ -96,6 +96,47 @@ public static class MotionSpec
     /// </summary>
     public static readonly TimeSpan HandDrivenTick = TimeSpan.FromMilliseconds(16);
 
+    // ---- How far things move, in DIPs (positive: down or right), and the scales (the motion spec and the prototype) ----
+
+    /// <summary>A screen that arrives rises this far into place (the prototype's go: dy 8).</summary>
+    public const float SceneRise = 8f;
+
+    /// <summary>A screen that leaves shrinks to this scale (the drop zone's exit: scale(0.985)).</summary>
+    public const float SceneShrink = 0.985f;
+
+    /// <summary>The preview develops from this blur, in DIPs (Arrival: blur 14 → 0).</summary>
+    public const float DevelopBlur = 14f;
+
+    /// <summary>The preview develops from this scale (Arrival: scale 1.03 → 1).</summary>
+    public const float DevelopScale = 1.03f;
+
+    /// <summary>The thumbnails rise this far into place (Arrival: Filmstrip rises 8 px).</summary>
+    public const float ThumbnailRise = 8f;
+
+    /// <summary>The inspector's sections slide in from this far right (Arrival: Inspector slides 16 px).</summary>
+    public const float SectionSlide = 16f;
+
+    /// <summary>The new length rises this far into place (Retime: Readout rises 6 px).</summary>
+    public const float ReadoutRise = 6f;
+
+    /// <summary>The inspector part that leaves for the export panel, or back, moves this far (Gate: out −12 px).</summary>
+    public const float PanelOutTravel = -12f;
+
+    /// <summary>The part that arrives comes from this far right (Gate: in from +16 px).</summary>
+    public const float PanelInTravel = 16f;
+
+    /// <summary>The finished title rises this far into place (Wrap: Title rises 6 px).</summary>
+    public const float TitleRise = 6f;
+
+    /// <summary>An InfoBar comes in from, and leaves to, this far up (InfoBar: from −8 px, to −8 px).</summary>
+    public const float InfoBarTravel = -8f;
+
+    /// <summary>An InfoBar's detail list expands from this far up (the prototype's list: dy −4).</summary>
+    public const float InfoBarDetailsTravel = -4f;
+
+    /// <summary>Daybreak lifts this far while a drag is over the drop zone (the prototype's dropLift: translateY(−6px)).</summary>
+    public const float DragLift = -6f;
+
     /// <summary>The cubic-bezier control points of <paramref name="easing"/> (Linear is the straight line).</summary>
     public static (float X1, float Y1, float X2, float Y2) Curve(MotionEasing easing) => easing switch
     {

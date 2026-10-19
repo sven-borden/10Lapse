@@ -102,7 +102,7 @@ public sealed partial class ExportPanel : UserControl
         var title = MotionTokens.Plan(MotionCatalogue.FinishedTitle);
         if (title.Moves)
         {
-            var shift = new Microsoft.UI.Xaml.Media.TranslateTransform { Y = TitleRise };
+            var shift = new Microsoft.UI.Xaml.Media.TranslateTransform { Y = MotionSpec.TitleRise };
             FinishedHeading.RenderTransform = shift;
             var rise = new DoubleAnimationUsingKeyFrames { BeginTime = title.Delay };
             rise.KeyFrames.Add(MotionTokens.KeyFrame(0, title.Duration, title.Easing));
@@ -139,9 +139,6 @@ public sealed partial class ExportPanel : UserControl
 
     // The stroke's dash in units of its thickness (28 px / 3 px), as in ExportPanel.xaml.
     private const double CheckDash = 9.34;
-
-    // The finished title starts this far below its place (motion spec, Wrap: rises 6 px).
-    private const double TitleRise = 6;
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

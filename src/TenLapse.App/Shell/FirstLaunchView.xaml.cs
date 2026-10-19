@@ -32,8 +32,6 @@ public sealed partial class FirstLaunchView : UserControl
     // 30 fps, the sequence's own rate: one tick per frame.
     private static readonly TimeSpan _tickInterval = TimeSpan.FromTicks(Core.Timing.FrameTiming.FrameDuration(0, Daybreak.Rate));
 
-    private const double LiftDistance = -6;
-
     private readonly DispatcherQueueTimer _timer;
     private readonly DaybreakPlayback _playback = new();
     private IErrorPresenter? _errors;
@@ -367,7 +365,7 @@ public sealed partial class FirstLaunchView : UserControl
 
         // With animations off Daybreak stays put; settling back from a lift always goes to rest.
         var lifts = over && look.AnimationsEnabled;
-        var toY = lifts ? LiftDistance : 0;
+        var toY = lifts ? MotionSpec.DragLift : 0;
 
         _dragStoryboard?.Stop();
         _dragStoryboard = null;

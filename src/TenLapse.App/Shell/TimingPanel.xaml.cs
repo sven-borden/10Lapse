@@ -111,15 +111,12 @@ public sealed partial class TimingPanel : UserControl
         {
             var rise = compositor.CreateVector3KeyFrameAnimation();
             rise.Target = nameof(UIElement.Translation);
-            rise.InsertKeyFrame(0f, new Vector3(0, ReadoutRise, 0));
+            rise.InsertKeyFrame(0f, new Vector3(0, MotionSpec.ReadoutRise, 0));
             rise.InsertKeyFrame(1f, Vector3.Zero, easing);
             rise.Duration = readout.Duration;
             ReadoutPanel.StartAnimation(rise);
         }
     }
-
-    // The new length starts this far below its place (motion spec, Retime: rises 6 px).
-    private const float ReadoutRise = 6f;
 
     // The bar's length before the last change and now, as fractions of a minute (-1 before the first).
     private float _barFrom = -1;
