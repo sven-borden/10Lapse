@@ -218,7 +218,7 @@ public sealed class InfoBarQueueTests
         Assert.All(errors.Reported, report =>
         {
             Assert.Same(failure, report.Exception);
-            Assert.Equal(ProjectText.InfoBarActionFailed, report.Context);
+            Assert.Equal(ProjectText.InfoBarActionFailedContext, report.Context);
         });
 
         // Both failures read the same, so one Critical InfoBar says it.

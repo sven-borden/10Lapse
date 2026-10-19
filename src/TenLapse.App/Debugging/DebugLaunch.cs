@@ -23,6 +23,13 @@ internal static partial class DebugLaunch
     /// <summary>The first-launch drop zone starts in its drag-over look (<c>--drag-over</c>).</summary>
     public static bool DragOver => _args.Contains("--drag-over", StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Every string from the resource files is pseudo-localized (<c>--pseudo-loc</c>, #39): about 40 % longer, accented and
+    /// bracketed, to find what clips in a longer language and what text does not come from the resource files (it stays
+    /// plain). <see cref="App"/> turns it on before anything reads text.
+    /// </summary>
+    public static bool PseudoLocalize => _args.Contains("--pseudo-loc", StringComparer.OrdinalIgnoreCase);
+
     /// <summary>The first-launch drop zone acts as with Windows animations off (<c>--reduce-motion</c>).</summary>
     public static bool ReduceMotion => _args.Contains("--reduce-motion", StringComparer.OrdinalIgnoreCase);
 

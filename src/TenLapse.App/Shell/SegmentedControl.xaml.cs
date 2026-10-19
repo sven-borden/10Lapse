@@ -105,7 +105,8 @@ public sealed partial class SegmentedControl : UserControl
         for (var i = 0; i < labels.Count; i++)
         {
             Segments.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            var text = new TextBlock { Text = labels[i], TextWrapping = TextWrapping.NoWrap };
+            // A label longer than its equal share (a translation, #39) ends in an ellipsis instead of being cut off.
+            var text = new TextBlock { Text = labels[i], TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis };
             Typography.SetNumeralAlignment(text, FontNumeralAlignment.Tabular);
             var button = new RadioButton
             {

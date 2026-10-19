@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The user-visible text of SkippedFileText.cs (#39), read through TextResources.
+  English is the neutral language. A translation is a copy of this file named SkippedFileText.<culture>.resx (for example
+  SkippedFileText.de.resx) with the values translated; keep the {0} placeholders and their numbers, and keep each entry a
+  whole sentence. The comments say what each placeholder holds.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="SkippedOne" xml:space="preserve">
+    <value>1 photo couldn't be read and was skipped.</value>
+    <comment>The InfoBar for one skipped photo.</comment>
+  </data>
+  <data name="SkippedMany" xml:space="preserve">
+    <value>{0} photos couldn't be read and were skipped.</value>
+    <comment>The InfoBar for several skipped photos. {0} the count ("3", "1,204").</comment>
+  </data>
+  <data name="UnsupportedFormat" xml:space="preserve">
+    <value>Not a photo format Windows can read</value>
+    <comment>SkipReason.UnsupportedFormat.</comment>
+  </data>
+  <data name="DecodeFailed" xml:space="preserve">
+    <value>Damaged file</value>
+    <comment>SkipReason.DecodeFailed.</comment>
+  </data>
+  <data name="AccessDenied" xml:space="preserve">
+    <value>No permission to open it</value>
+    <comment>SkipReason.AccessDenied.</comment>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>No longer there: moved, deleted or disconnected</value>
+    <comment>SkipReason.FileNotFound.</comment>
+  </data>
+  <data name="Other" xml:space="preserve">
+    <value>Couldn't be read</value>
+    <comment>SkipReason.Other.</comment>
+  </data>
+  <data name="EmptyFile" xml:space="preserve">
+    <value>Empty file (0 bytes)</value>
+    <comment>SkipReason.EmptyFile, the prototype's words.</comment>
+  </data>
+  <data name="Truncated" xml:space="preserve">
+    <value>Damaged file: it ends early</value>
+    <comment>SkipReason.Truncated, the prototype's words.</comment>
+  </data>
+  <data name="NeedsExtension" xml:space="preserve">
+    <value>Needs a free extension from the Microsoft Store</value>
+    <comment>SkipReason.NeedsExtension; #14's own InfoBar names the extension and opens the Store.</comment>
+  </data>
+  <data name="FileInUse" xml:space="preserve">
+    <value>In use by another app</value>
+    <comment>SkipReason.FileInUse.</comment>
+  </data>
+  <data name="ImageTooLarge" xml:space="preserve">
+    <value>Too large to open</value>
+    <comment>SkipReason.ImageTooLarge.</comment>
+  </data>
+  <data name="CloudFileOffline" xml:space="preserve">
+    <value>In the cloud and not available offline</value>
+    <comment>SkipReason.CloudFileOffline.</comment>
+  </data>
+  <data name="CloudOnly" xml:space="preserve">
+    <value>Only in OneDrive, not on this PC</value>
+    <comment>SkipReason.CloudOnly: the user chose not to download it.</comment>
+  </data>
+</root>

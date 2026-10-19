@@ -196,11 +196,11 @@ public sealed class ProjectTests
     [InlineData(@"C:\Photos\Harbor sunset", "Harbor sunset")]
     [InlineData(@"C:\Photos\Harbor sunset\", "Harbor sunset")]
     [InlineData(@"D:\DCIM\100CANON", "100CANON")]
-    [InlineData(@"C:\", Project.DefaultName)]
-    [InlineData(@"C:", Project.DefaultName)]
-    [InlineData("", Project.DefaultName)]
-    [InlineData("   ", Project.DefaultName)]
-    [InlineData(null, Project.DefaultName)]
+    [InlineData(@"C:\", "Timelapse")]
+    [InlineData(@"C:", "Timelapse")]
+    [InlineData("", "Timelapse")]
+    [InlineData("   ", "Timelapse")]
+    [InlineData(null, "Timelapse")]
     public void TheNameComesFromTheFolder(string? folder, string expected)
     {
         Assert.Equal(expected, Project.NameFromFolder(folder));

@@ -1,28 +1,31 @@
 using System.Globalization;
 using TenLapse.Core.Projects;
+using TenLapse.Core.Text;
 
 namespace TenLapse.Media.Encoding;
 
 /// <summary>
-/// Every user-visible word about what this PC can encode, in one place for localization (#39). Whole format
-/// strings, so a translation can reorder them.
+/// Every user-visible word about what this PC can encode, read from <c>Strings/EncoderText.resx</c> (#39). Whole
+/// format strings, so a translation can reorder them. The resolution and codec names are technical names and stay in code.
 /// </summary>
 public static class EncoderText
 {
+    private static readonly TextResources _strings = new("TenLapse.Media.Strings.EncoderText", typeof(EncoderText).Assembly);
+
     /// <summary>{0}: the largest resolution, such as "1440p". Every size up to it uses the graphics hardware.</summary>
-    public const string HardwareUpTo = "This PC's graphics hardware exports up to {0}.";
+    public static string HardwareUpTo => _strings.Get();
 
     /// <summary>{0}: the largest resolution the hardware takes; larger ones work, slower, in software.</summary>
-    public const string HardwareUpToThenSoftware = "This PC's graphics hardware exports up to {0}; larger sizes use the slower software encoder.";
+    public static string HardwareUpToThenSoftware => _strings.Get();
 
     /// <summary>{0}: the codec, such as "H.264"; {1}: the largest resolution the software encoder takes.</summary>
-    public const string SoftwareOnly = "This PC's graphics hardware cannot encode {0}; the slower software encoder exports up to {1}.";
+    public static string SoftwareOnly => _strings.Get();
 
     /// <summary>{0}: the codec, such as "HEVC".</summary>
-    public const string Unavailable = "This PC cannot export {0} video at this shape and frame rate.";
+    public static string Unavailable => _strings.Get();
 
     /// <summary>{0}: the codec, "HEVC": Windows has no decoder for it (the HEVC Video Extensions are not installed).</summary>
-    public const string NoPlayback = "This PC cannot play {0} video, so it does not export it.";
+    public static string NoPlayback => _strings.Get();
 
     /// <summary>The resolution's usual name: 720p, 1080p, 1440p or 4K.</summary>
     public static string ResolutionName(OutputResolution resolution) => resolution switch

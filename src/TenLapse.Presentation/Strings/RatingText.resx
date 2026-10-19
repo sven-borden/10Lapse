@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The user-visible text of RatingText.cs (#39), read through TextResources.
+  English is the neutral language. A translation is a copy of this file named RatingText.<culture>.resx (for example
+  RatingText.de.resx) with the values translated; keep the {0} placeholders and their numbers, and keep each entry a
+  whole sentence. The comments say what each placeholder holds.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CardTitle" xml:space="preserve">
+    <value>Feedback</value>
+    <comment>The Settings card's title.</comment>
+  </data>
+  <data name="CardCaption" xml:space="preserve">
+    <value>Rate 10Lapse opens its page in the Microsoft Store. Send feedback opens GitHub in your browser. 10Lapse sends nothing itself.</value>
+    <comment>The Settings card's caption.</comment>
+  </data>
+  <data name="RateButton" xml:space="preserve">
+    <value>Rate 10Lapse</value>
+    <comment>The Rate button, and its accessible name.</comment>
+  </data>
+  <data name="FeedbackButton" xml:space="preserve">
+    <value>Send feedback</value>
+    <comment>The Send feedback button, and its accessible name.</comment>
+  </data>
+  <data name="RateTip" xml:space="preserve">
+    <value>Opens the Microsoft Store</value>
+    <comment>The Rate button's tooltip.</comment>
+  </data>
+  <data name="FeedbackTip" xml:space="preserve">
+    <value>Opens GitHub in your browser</value>
+    <comment>The Send feedback button's tooltip.</comment>
+  </data>
+  <data name="RateFailed" xml:space="preserve">
+    <value>The Microsoft Store didn't open. Open the Store yourself and search for 10Lapse to rate it.</value>
+    <comment>The InfoBar when the Store would not open.</comment>
+  </data>
+  <data name="FeedbackFailed" xml:space="preserve">
+    <value>Your browser didn't open. Go to github.com/sven-borden/10Lapse/issues to send your feedback.</value>
+    <comment>The InfoBar when the browser would not open.</comment>
+  </data>
+</root>

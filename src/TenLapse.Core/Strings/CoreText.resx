@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The user-visible words of Core (#39): the timing units of TimingWords and Project.DefaultName, read through TextResources.
+  English is the neutral language. A translation is a copy of this file named CoreText.<culture>.resx (for example
+  CoreText.de.resx) with the values translated; keep the {0} placeholders and their numbers, and keep each entry a
+  whole sentence. The comments say what each placeholder holds.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Second" xml:space="preserve">
+    <value>s</value>
+    <comment>Seconds, as in "24.7 s". Also the unit the Timing box accepts when the user types a duration ("2 s"), so keep it short and easy to type.</comment>
+  </data>
+  <data name="Minute" xml:space="preserve">
+    <value>min</value>
+    <comment>Minutes, as in "1 min 12 s".</comment>
+  </data>
+  <data name="Hour" xml:space="preserve">
+    <value>h</value>
+    <comment>Hours, as in "1 h 02 min".</comment>
+  </data>
+  <data name="FramesPerSecond" xml:space="preserve">
+    <value>fps</value>
+    <comment>Frames per second, as in "30 fps". Also the unit the Timing box accepts when the user types a rate ("30 fps"), so keep it short and easy to type.</comment>
+  </data>
+  <data name="PerPhoto" xml:space="preserve">
+    <value>per photo</value>
+    <comment>The per-photo suffix, as in "2 s per photo".</comment>
+  </data>
+  <data name="DefaultName" xml:space="preserve">
+    <value>Timelapse</value>
+    <comment>The name of a project that has no folder name to take (the window title, the Save dialog's suggestion).</comment>
+  </data>
+</root>

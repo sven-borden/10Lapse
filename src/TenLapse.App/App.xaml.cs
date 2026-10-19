@@ -35,6 +35,14 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
         UnhandledException += OnUnhandledException;
 
+#if DEBUG
+        // Before any text is read: a few lists of labels are read once and kept.
+        if (Debugging.DebugLaunch.PseudoLocalize)
+        {
+            Core.Text.PseudoLocalization.Enable();
+        }
+#endif
+
         _log.Info($"10Lapse {AppDiagnostics.AppVersion()} starting ({(AppEnvironment.HasPackageIdentity ? "packaged" : "unpackaged")}); log in {_log.Folder}.");
         ExportCleanupLog.Start(_log);
 

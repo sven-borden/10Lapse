@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using TenLapse.Core.Text;
 
 namespace TenLapse.Core.Projects;
 
@@ -208,8 +209,8 @@ public sealed record ProjectSnapshot
 /// </remarks>
 public sealed class Project
 {
-    /// <summary>The name of a project that has no folder to be named after.</summary>
-    public const string DefaultName = "Timelapse";
+    /// <summary>The name of a project that has no folder to be named after ("Timelapse", from <c>Strings/CoreText.resx</c>).</summary>
+    public static string DefaultName => CoreText.Strings.Get();
 
     private readonly int _ownerThreadId = Environment.CurrentManagedThreadId;
 

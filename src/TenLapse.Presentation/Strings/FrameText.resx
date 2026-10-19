@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The user-visible text of FrameText.cs (#39), read through TextResources.
+  English is the neutral language. A translation is a copy of this file named FrameText.<culture>.resx (for example
+  FrameText.de.resx) with the values translated; keep the {0} placeholders and their numbers, and keep each entry a
+  whole sentence. The comments say what each placeholder holds.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Frame</value>
+    <comment>The section's heading.</comment>
+  </data>
+  <data name="ShapeName" xml:space="preserve">
+    <value>Shape</value>
+    <comment>Name of the segmented control that picks the shape (the prototype calls it Shape).</comment>
+  </data>
+  <data name="FitName" xml:space="preserve">
+    <value>Fit</value>
+    <comment>Name of the segmented control that picks Fit or Fill.</comment>
+  </data>
+  <data name="ShapeMatch" xml:space="preserve">
+    <value>Match</value>
+    <comment>The first shape, as the segment shows it: the shape of the photos themselves. Keep it to about six letters: six equal segments share the 280 px row, and a longer word ends in an ellipsis (its screen reader name is ShapeMatchName).</comment>
+  </data>
+  <data name="ShapeMatchName" xml:space="preserve">
+    <value>Match photos</value>
+    <comment>The first shape, as a screen reader names it.</comment>
+  </data>
+  <data name="FitOption" xml:space="preserve">
+    <value>Fit</value>
+    <comment>The first Fit or Fill choice: the whole photo, with bars where the shapes differ.</comment>
+  </data>
+  <data name="FillOption" xml:space="preserve">
+    <value>Fill</value>
+    <comment>The second Fit or Fill choice: the frame is filled and the edges are cut.</comment>
+  </data>
+  <data name="FitHint" xml:space="preserve">
+    <value>Fit shows the whole photo with bars where shapes differ.</value>
+    <comment>The line under the controls when Fit is chosen.</comment>
+  </data>
+  <data name="FillHint" xml:space="preserve">
+    <value>Fill crops the edges so the frame has no bars.</value>
+    <comment>The line under the controls when Fill is chosen.</comment>
+  </data>
+  <data name="MatchingPhotos" xml:space="preserve">
+    <value>Matching your photos: {0} × {1}.</value>
+    <comment>Match photos is chosen and the photos' sizes are known. {0}: the width, {1}: the height of the most common photo.</comment>
+  </data>
+  <data name="MatchingNoPhotos" xml:space="preserve">
+    <value>Matching your photos. Until their sizes are known the shape is 16:9.</value>
+    <comment>Match photos is chosen but no photo size is known yet (no photos, or none read), so the video is 16:9.</comment>
+  </data>
+  <data name="NoSize" xml:space="preserve">
+    <value>Photos this wide or tall are too large to export on this PC. Pick a fixed shape such as 16:9.</value>
+    <comment>Match photos gives a shape so wide or tall that no size can be exported on this PC; says what to do instead.</comment>
+  </data>
+  <data name="PortraitHint" xml:space="preserve">
+    <value>Most of your photos are portrait, so 9:16 suits them better.</value>
+    <comment>The quiet line when most photos are portrait and the shape is landscape.</comment>
+  </data>
+  <data name="PortraitApply" xml:space="preserve">
+    <value>Use 9:16</value>
+    <comment>The button that applies the suggestion.</comment>
+  </data>
+  <data name="PortraitDismiss" xml:space="preserve">
+    <value>Dismiss</value>
+    <comment>The button that closes the suggestion for the project.</comment>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>Frame: {0}, {1}.</value>
+    <comment>Said to a screen reader after a change. {0}: the shape's name, {1}: Fit or Fill.</comment>
+  </data>
+</root>

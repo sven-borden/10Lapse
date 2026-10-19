@@ -126,8 +126,9 @@ public sealed class InfoBarQueue : IInfoBarService
     /// Runs the action of <paramref name="ticket"/> when it is the visible InfoBar and its action is not already
     /// running; otherwise does nothing, so a second press (or a press during the exit) never runs it twice. The
     /// InfoBar is dismissed first unless <see cref="InfoBarRequest.ActionKeepsOpen"/>. The action runs on the
-    /// calling thread (the UI thread). Never throws: a failure is reported to the error sink and shown as a
-    /// Critical InfoBar saying <see cref="ProjectText.InfoBarActionFailed"/>.
+    /// calling thread (the UI thread). Never throws: a failure is reported to the error sink with the English
+    /// context <see cref="ProjectText.InfoBarActionFailedContext"/> and shown as a Critical InfoBar saying
+    /// <see cref="ProjectText.InfoBarActionFailed"/>.
     /// </summary>
     public async Task RunActionAsync(InfoBarTicket ticket)
     {
@@ -158,7 +159,7 @@ public sealed class InfoBarQueue : IInfoBarService
         }
         catch (Exception exception)
         {
-            _errors.Report(exception, ProjectText.InfoBarActionFailed);
+            _errors.Report(exception, ProjectText.InfoBarActionFailedContext);
             Show(new InfoBarRequest(InfoBarSeverity.Critical, ProjectText.InfoBarActionFailed));
         }
         finally

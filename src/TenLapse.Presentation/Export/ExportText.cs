@@ -1,163 +1,171 @@
 using System.Globalization;
 using TenLapse.Core.Projects;
+using TenLapse.Core.Text;
 using TenLapse.Core.Timing;
 
 namespace TenLapse.Presentation.Export;
 
 /// <summary>
 /// Every word of the export (#24): the Export button, the export panel, the finished state, the InfoBars, the
-/// notification and what Narrator hears. Whole sentences with numbered placeholders, so #39 can move them to resource
-/// files and a translation can reorder them. Numbers are written in the user's culture, as the inspector's panels do.
+/// notification and what Narrator hears, read from <c>Strings/ExportText.resx</c> (#39); the log lines stay here in
+/// English. Whole sentences with numbered placeholders, so a translation can reorder them. Numbers are written in the user's culture, as the inspector's panels do.
 /// </summary>
 public static class ExportText
 {
+    private static readonly TextResources _strings = new("TenLapse.Presentation.Strings.ExportText", typeof(ExportText).Assembly);
+
     // ---- The command bar ----
 
     /// <summary>The amber button in the command bar (Ctrl+E).</summary>
-    public static string ExportVideo => "Export video";
+    public static string ExportVideo => _strings.Get();
+
+    /// <summary>
+    /// The Export button's shortcut as a screen reader names it (its accelerator key). The key E is fixed in code; translate only "Control", as Windows names that key in the language ("Strg+E" in German).
+    /// </summary>
+    public static string ExportKeys => _strings.Get();
 
     /// <summary>The same button, dimmed, while an export runs.</summary>
-    public static string ExportingButton => "Exporting…";
+    public static string ExportingButton => _strings.Get();
 
     // ---- The export panel ----
 
     /// <summary>The caption over the file name while the export runs.</summary>
-    public static string Exporting => "Exporting";
+    public static string Exporting => _strings.Get();
 
     /// <summary>The large percent: {0} the whole percent.</summary>
-    public static string PercentFormat => "{0}%";
+    public static string PercentFormat => _strings.Get();
 
     /// <summary>The progress bar's name for a screen reader.</summary>
-    public static string ProgressName => "Export progress";
+    public static string ProgressName => _strings.Get();
 
     /// <summary>Before the first frame is written.</summary>
-    public static string GettingReady => "Getting ready…";
+    public static string GettingReady => _strings.Get();
 
     /// <summary>Frames are being written but the speed is not known yet.</summary>
-    public static string EstimatingTimeLeft => "Working out the time left…";
+    public static string EstimatingTimeLeft => _strings.Get();
 
     /// <summary>Every frame is in; the file is being completed.</summary>
-    public static string Finishing => "Finishing the file…";
+    public static string Finishing => _strings.Get();
 
     /// <summary>Time left under a minute: {0} the seconds.</summary>
-    public static string TimeLeftSecondsFormat => "About {0} s left";
+    public static string TimeLeftSecondsFormat => _strings.Get();
 
     /// <summary>Time left from a minute, on the minute: {0} the minutes.</summary>
-    public static string TimeLeftMinutesFormat => "About {0} min left";
+    public static string TimeLeftMinutesFormat => _strings.Get();
 
     /// <summary>Time left from a minute, with a half minute: {0} the minutes.</summary>
-    public static string TimeLeftMinutesHalfFormat => "About {0} min 30 s left";
+    public static string TimeLeftMinutesHalfFormat => _strings.Get();
 
     /// <summary>The label of the frame count row.</summary>
-    public static string FrameLabel => "Frame";
+    public static string FrameLabel => _strings.Get();
 
     /// <summary>The frame count: {0} the frames written, {1} the total, both zero-padded to the total's width ("0312 of 0742").</summary>
-    public static string FramesFormat => "{0} of {1}";
+    public static string FramesFormat => _strings.Get();
 
     /// <summary>The label of the speed row.</summary>
-    public static string SpeedLabel => "Speed";
+    public static string SpeedLabel => _strings.Get();
 
     /// <summary>The speed: {0} photos per second, one decimal.</summary>
-    public static string SpeedFormat => "{0} photos per second";
+    public static string SpeedFormat => _strings.Get();
 
     /// <summary>The speed before it has been measured.</summary>
-    public static string SpeedMeasuring => "Measuring…";
+    public static string SpeedMeasuring => _strings.Get();
 
     /// <summary>The label of the output row.</summary>
-    public static string OutputLabel => "Output";
+    public static string OutputLabel => _strings.Get();
 
     /// <summary>The output summary: {0} the resolution ("4K"), {1} the codec ("H.264"), {2} the quality ("High").</summary>
-    public static string OutputSummaryFormat => "{0} · {1} · {2}";
+    public static string OutputSummaryFormat => _strings.Get();
 
     /// <summary>The hint under the numbers.</summary>
-    public static string MinimizeHint => "You can minimize 10Lapse. The export keeps going and Windows tells you when it's done.";
+    public static string MinimizeHint => _strings.Get();
 
     /// <summary>The button that stops the export.</summary>
-    public static string CancelExport => "Cancel export";
+    public static string CancelExport => _strings.Get();
 
     /// <summary>The label over the preview while the export runs: {0} the frame being written, zero-padded ("0313").</summary>
-    public static string RenderingFrameFormat => "Rendering frame {0}";
+    public static string RenderingFrameFormat => _strings.Get();
 
     // ---- The finished state ----
 
     /// <summary>The finished state's title and Narrator's announcement: {0} the file name ("Harbor sunset.mp4").</summary>
-    public static string ReadyFormat => "{0} is ready";
+    public static string ReadyFormat => _strings.Get();
 
     /// <summary>The summary under it: {0} the length ("24.7 s"), {1} the resolution ("4K"), {2} the codec, {3} the file size ("173 MB").</summary>
-    public static string ReadySummaryFormat => "{0} · {1} · {2} · {3}";
+    public static string ReadySummaryFormat => _strings.Get();
 
     /// <summary>The label of the time the export took.</summary>
-    public static string ExportedInLabel => "Exported in";
+    public static string ExportedInLabel => _strings.Get();
 
     /// <summary>The label of the folder.</summary>
-    public static string SavedToLabel => "Saved to";
+    public static string SavedToLabel => _strings.Get();
 
     /// <summary>The folder, shortened to its last two names: {0} the parent folder, {1} the folder ("Videos › 10Lapse").</summary>
-    public static string SavedToFormat => "{0} › {1}";
+    public static string SavedToFormat => _strings.Get();
 
     /// <summary>The accent button: plays the video in the preview from frame one.</summary>
-    public static string Play => "Play";
+    public static string Play => _strings.Get();
 
     /// <summary>Its name for a screen reader.</summary>
-    public static string PlayName => "Play the video";
+    public static string PlayName => _strings.Get();
 
     /// <summary>Opens File Explorer on the video.</summary>
-    public static string ShowInFolder => "Show in folder";
+    public static string ShowInFolder => _strings.Get();
 
     /// <summary>Back to the inspector.</summary>
-    public static string BackToEditing => "Back to editing";
+    public static string BackToEditing => _strings.Get();
 
     /// <summary>The name of the check for a screen reader.</summary>
-    public static string DoneName => "Done";
+    public static string DoneName => _strings.Get();
 
     // ---- InfoBars and questions ----
 
     /// <summary>The InfoBar once a cancelled export's unfinished file is gone.</summary>
-    public static string Cancelled => "Export cancelled. The unfinished file was removed.";
+    public static string Cancelled => _strings.Get();
 
     /// <summary>The InfoBar when a cancelled export's unfinished file could not be removed yet.</summary>
-    public static string CancelledFileLeft => "Export cancelled. The unfinished file couldn't be removed yet, so 10Lapse removes it the next time it starts.";
+    public static string CancelledFileLeft => _strings.Get();
 
     /// <summary>An edit tried while the export runs (a removal, a move, an import, a new project).</summary>
-    public static string EditsWait => "The project can't change while the video exports. Wait for it to finish, or cancel the export.";
+    public static string EditsWait => _strings.Get();
 
     /// <summary>Export tried while photos are still being added.</summary>
-    public static string ImportStillRunning => "Photos are still being added. Export once they're all in.";
+    public static string ImportStillRunning => _strings.Get();
 
     /// <summary>The Save dialog was answered, but the project, its output or the screen changed while it was open.</summary>
-    public static string ChangedDuringDialog => "The export didn't start because the project or its output changed while the Save dialog was open. Choose Export video again.";
+    public static string ChangedDuringDialog => _strings.Get();
 
     /// <summary>The finished video saved, but the preview can't play it (a codec Windows lacks, say).</summary>
-    public static string PremiereCantPlay => "The video was saved, but 10Lapse couldn't play it here. Open it with Show in folder to check it.";
+    public static string PremiereCantPlay => _strings.Get();
 
     /// <summary>The question when the window closes during an export.</summary>
-    public static string CloseTitle => "Stop the export and close?";
+    public static string CloseTitle => _strings.Get();
 
     /// <summary>What closing does.</summary>
-    public static string CloseMessage => "The video isn't finished yet. 10Lapse stops the export and removes the unfinished file.";
+    public static string CloseMessage => _strings.Get();
 
     /// <summary>Closes the window.</summary>
-    public static string CloseConfirm => "Stop and close";
+    public static string CloseConfirm => _strings.Get();
 
     /// <summary>Keeps the window and the export.</summary>
-    public static string CloseCancel => "Keep exporting";
+    public static string CloseCancel => _strings.Get();
 
     /// <summary>The Save dialog's file type.</summary>
-    public static string FileTypeName => "MP4 video";
+    public static string FileTypeName => _strings.Get();
 
     // ---- Narrator and the notification ----
 
     /// <summary>Narrator, as the export starts: {0} the file name.</summary>
-    public static string StartedFormat => "Exporting {0}.";
+    public static string StartedFormat => _strings.Get();
 
     /// <summary>Narrator, at most every ten percent: {0} the percent.</summary>
-    public static string ProgressAnnouncementFormat => "{0} percent exported.";
+    public static string ProgressAnnouncementFormat => _strings.Get();
 
     /// <summary>Narrator, when the export fails (the InfoBar says why).</summary>
-    public static string FailedAnnouncement => "The export stopped.";
+    public static string FailedAnnouncement => _strings.Get();
 
     /// <summary>The notification when an export in the background failed: {0} the file name.</summary>
-    public static string FailedNotificationFormat => "{0} couldn't be exported. Open 10Lapse to see why.";
+    public static string FailedNotificationFormat => _strings.Get();
 
     // ---- Log contexts (not shown) ----
 
@@ -179,8 +187,11 @@ public static class ExportText
     /// <summary>Log: a progress report could not be shown.</summary>
     public static string ProgressFailed => "Showing the export progress failed.";
 
-    /// <summary>What <c>powercfg /requests</c> shows next to 10Lapse while a video is written.</summary>
-    public static string KeepAwakeReason(string fileName) => $"Exporting {fileName}";
+    /// <summary>What <c>powercfg /requests</c> shows next to 10Lapse while a video is written. {0} the file name.</summary>
+    public static string KeepAwakeReasonFormat => _strings.Get();
+
+    /// <summary>"Exporting Harbor sunset.mp4", for <c>powercfg /requests</c>.</summary>
+    public static string KeepAwakeReason(string fileName) => string.Format(CultureInfo.CurrentCulture, KeepAwakeReasonFormat, fileName);
 
     /// <summary>Log: Windows would not keep the PC awake for the export (the export goes on).</summary>
     public static string KeepAwakeFailed => "Asking Windows to keep the PC awake during the export failed. The export goes on; the PC may go to sleep.";

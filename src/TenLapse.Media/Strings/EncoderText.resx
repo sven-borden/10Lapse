@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The user-visible text of EncoderText.cs (#39), read through TextResources.
+  English is the neutral language. A translation is a copy of this file named EncoderText.<culture>.resx (for example
+  EncoderText.de.resx) with the values translated; keep the {0} placeholders and their numbers, and keep each entry a
+  whole sentence. The comments say what each placeholder holds.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HardwareUpTo" xml:space="preserve">
+    <value>This PC's graphics hardware exports up to {0}.</value>
+    <comment>{0}: the largest resolution, such as "1440p". Every size up to it uses the graphics hardware.</comment>
+  </data>
+  <data name="HardwareUpToThenSoftware" xml:space="preserve">
+    <value>This PC's graphics hardware exports up to {0}; larger sizes use the slower software encoder.</value>
+    <comment>{0}: the largest resolution the hardware takes; larger ones work, slower, in software.</comment>
+  </data>
+  <data name="SoftwareOnly" xml:space="preserve">
+    <value>This PC's graphics hardware cannot encode {0}; the slower software encoder exports up to {1}.</value>
+    <comment>{0}: the codec, such as "H.264"; {1}: the largest resolution the software encoder takes.</comment>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>This PC cannot export {0} video at this shape and frame rate.</value>
+    <comment>{0}: the codec, such as "HEVC".</comment>
+  </data>
+  <data name="NoPlayback" xml:space="preserve">
+    <value>This PC cannot play {0} video, so it does not export it.</value>
+    <comment>{0}: the codec, "HEVC": Windows has no decoder for it (the HEVC Video Extensions are not installed).</comment>
+  </data>
+</root>
