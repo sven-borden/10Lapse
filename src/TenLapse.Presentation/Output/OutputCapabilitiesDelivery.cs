@@ -13,9 +13,9 @@ public static class OutputCapabilitiesDelivery
 
     /// <summary>
     /// Waits for <paramref name="probe"/> up to <paramref name="patience"/> and gives the panel its answer on the UI
-    /// thread. If the probe is slower than that the panel gets <see cref="ConservativeOutputCapabilities"/>, and the
-    /// real answer replaces it when it arrives. If the probe fails the failure is shown (the error path) and the panel
-    /// keeps the conservative answer. Never throws except for a cancellation of <paramref name="cancellationToken"/>.
+    /// thread. If the probe is slower than that the panel gets <see cref="ConservativeOutputCapabilities"/> as a
+    /// provisional answer (nothing it replaces is written to the project), and the real answer replaces it when it
+    /// arrives. If the probe fails the failure is shown (the error path) and the panel keeps the provisional answer. Never throws except for a cancellation of <paramref name="cancellationToken"/>.
     /// </summary>
     /// <param name="panel">The panel.</param>
     /// <param name="probe">The startup probe, already running.</param>
@@ -44,14 +44,14 @@ public static class OutputCapabilitiesDelivery
         catch (TimeoutException)
         {
             // Too slow: offer what every PC does now, and the probe's own answer when it comes.
-            await ui.RunAsync(() => panel.SetCapabilities(ConservativeOutputCapabilities.Instance)).ConfigureAwait(false);
+            await ui.RunAsync(() => panel.SetCapabilities(ConservativeOutputCapabilities.Instance, provisional: true)).ConfigureAwait(false);
             await DeliverLateAsync(panel, probe, ui, errors, cancellationToken).ConfigureAwait(false);
             return;
         }
         catch (Exception exception) when (!cancellationToken.IsCancellationRequested && exception is not OperationCanceledException)
         {
             errors.Show(exception, OutputText.ProbeFailed);
-            await ui.RunAsync(() => panel.SetCapabilities(ConservativeOutputCapabilities.Instance)).ConfigureAwait(false);
+            await ui.RunAsync(() => panel.SetCapabilities(ConservativeOutputCapabilities.Instance, provisional: true)).ConfigureAwait(false);
             return;
         }
 

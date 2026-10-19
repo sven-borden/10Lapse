@@ -339,6 +339,71 @@ public sealed class OutputPanelViewModelTests
     }
 
     [Fact]
+    public void AProvisionalAnswerShowsTheReplacementButNeverWritesTheProject()
+    {
+        var shell = Shell();
+        var project = shell.CurrentProject.Model;
+        var stored = new OutputSettings(OutputResolution.Uhd2160, VideoFormat.Mp4Hevc, OutputQuality.Maximum);
+        project.Output = stored;
+        project.MarkExported(project.Snapshot.Version);
+        var panel = Panel(shell, capabilities: null);
+
+        panel.SetCapabilities(ConservativeOutputCapabilities.Instance, provisional: true);
+
+        Assert.Equal(OutputResolution.Hd1080, panel.SelectedResolution?.Value);
+        Assert.Equal(VideoFormat.Mp4H264, panel.SelectedFormat?.Value);
+        Assert.NotEmpty(panel.Notice);
+        Assert.Equal(stored, project.Output);
+        Assert.False(project.IsDirty);
+        Assert.False(panel.CanExport);
+    }
+
+    [Fact]
+    public void ALateRealAnswerRestoresTheStoredSettingsAndClearsTheNotice()
+    {
+        var shell = Shell();
+        var project = shell.CurrentProject.Model;
+        var stored = new OutputSettings(OutputResolution.Uhd2160, VideoFormat.Mp4Hevc, OutputQuality.Maximum);
+        project.Output = stored;
+        project.MarkExported(project.Snapshot.Version);
+        var panel = Panel(shell, capabilities: null);
+        panel.SetCapabilities(ConservativeOutputCapabilities.Instance, provisional: true);
+
+        panel.SetCapabilities(new FakeOutputCapabilities());
+
+        Assert.Equal(OutputResolution.Uhd2160, panel.SelectedResolution?.Value);
+        Assert.Equal(VideoFormat.Mp4Hevc, panel.SelectedFormat?.Value);
+        Assert.Equal(string.Empty, panel.Notice);
+        Assert.False(panel.HasNotice);
+        Assert.Equal(stored, project.Output);
+        Assert.False(project.IsDirty);
+        Assert.True(panel.CanExport);
+    }
+
+    [Fact]
+    public void ALateRealAnswerThatCannotDoTheStoredSizeWritesTheCorrectionOnceAndSaysSo()
+    {
+        var shell = Shell();
+        var project = shell.CurrentProject.Model;
+        project.Output = project.Output with { Resolution = OutputResolution.Uhd2160 };
+        project.MarkExported(project.Snapshot.Version);
+        var panel = Panel(shell, capabilities: null);
+        panel.SetCapabilities(ConservativeOutputCapabilities.Instance, provisional: true);
+        Assert.False(project.IsDirty);
+        var writes = 0;
+        project.Changed += (_, e) => writes += e.Changes.HasFlag(ProjectChanges.Output) ? 1 : 0;
+
+        panel.SetCapabilities(new FakeOutputCapabilities { Max = OutputResolution.Qhd1440 });
+
+        Assert.Equal(1, writes);
+        Assert.Equal(OutputResolution.Qhd1440, project.Output.Resolution);
+        Assert.Equal(OutputResolution.Qhd1440, panel.SelectedResolution?.Value);
+        Assert.Equal("4K can't be exported on this PC with these settings, so 1440p is selected.", panel.Notice);
+        Assert.True(project.IsDirty);
+        Assert.True(panel.CanExport);
+    }
+
+    [Fact]
     public async Task ADeliveredAnswerReachesThePanelOnTheUiThread()
     {
         using var ui = new UiThread();

@@ -18,6 +18,10 @@ namespace TenLapse.Presentation;
 /// Stored settings that are no longer offered (the project came from a PC that could do 4K; the frame rate went
 /// up; the HEVC extension was removed) are replaced when the panel notices, by the largest size still offered or
 /// by H.264, and <see cref="Notice"/> says so: nothing unsupported is ever left selected for #24 to export.
+/// The stored value is the preference and the selected one is what this PC can do now. On a real answer the
+/// replacement is written to the project. On a provisional one (the conservative fallback, while the probe is
+/// slow or after it failed) it is only shown, never written, so a late real answer brings 4K or HEVC back and
+/// clears the notice, and the fallback never marks a project as changed.
 /// </remarks>
 public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
 {
@@ -42,6 +46,8 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
     private string _estimatedSize = string.Empty;
     private string _note = string.Empty;
     private string _notice = string.Empty;
+    private bool _provisional;
+    private bool _selectionMatchesProject = true;
     private bool _refreshing;
     private bool _again;
     private bool _disposed;
@@ -173,20 +179,32 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
     public bool HasNotice => _notice.Length > 0;
 
     /// <summary>
-    /// True when the project's current output settings are confirmed exportable here: the probe has answered and the
-    /// resolution and format are offered. #24 enables Export only then.
+    /// True when the project's own output settings are confirmed exportable here: an answer has arrived (even a
+    /// provisional one), the resolution and format are offered, and the project holds exactly what is selected.
+    /// It says nothing about frames: #24 must also require at least one. It is false while a stored setting this PC
+    /// cannot do is only replaced on screen (a provisional answer), because the project still holds the original;
+    /// picking another value in the list stores it. #24 should still export from the snapshot.
     /// </summary>
-    public bool CanExport => _capabilities is not null && _selectedResolution is not null && _selectedFormat is not null;
+    public bool CanExport => _capabilities is not null && _selectedResolution is not null && _selectedFormat is not null && _selectionMatchesProject;
 
     /// <summary>
     /// Hands over what the startup probe found (or <see cref="ConservativeOutputCapabilities"/> when it failed). Call
     /// it on the UI thread; a later call replaces the earlier answer. The lists appear in one step, and a stored
     /// setting this PC cannot do is replaced (see <see cref="Notice"/>).
     /// </summary>
-    public void SetCapabilities(IOutputCapabilities capabilities)
+    /// <param name="capabilities">What this PC can encode.</param>
+    /// <param name="provisional">
+    /// True for a stand-in (the conservative fallback while the probe is slow, or after it failed): the panel shows
+    /// what it would replace but writes nothing to the project, so the real answer can restore the stored setting.
+    /// </param>
+    public void SetCapabilities(IOutputCapabilities capabilities, bool provisional = false)
     {
         ArgumentNullException.ThrowIfNull(capabilities);
         _capabilities = capabilities;
+        _provisional = provisional;
+
+        // A new answer is judged afresh: the notice of the earlier one returns only if it still applies.
+        Notice = string.Empty;
         OnPropertyChanged(nameof(IsPending));
         OnPropertyChanged(nameof(IsSettled));
         OnPropertyChanged(nameof(Status));
@@ -284,7 +302,7 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
         var output = snapshot.Output;
         if (_capabilities is not { } capabilities)
         {
-            Publish(snapshot, [], [], capabilities: null);
+            Publish(snapshot, output, [], [], capabilities: null);
             return false;
         }
 
@@ -307,14 +325,26 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
             corrected = corrected with { Resolution = replacement };
         }
 
-        if (corrected != output && !_project.IsClosed)
+        if (corrected != output)
         {
-            Notice = string.Join(' ', notices);
-            _project.Output = corrected;
-            return true;
+            if (_provisional)
+            {
+                // Shown, not stored: the project keeps its preference until a real answer says what is possible.
+                Notice = string.Join(' ', notices);
+            }
+            else if (!_project.IsClosed)
+            {
+                Notice = string.Join(' ', notices);
+                _project.Output = corrected;
+                return true;
+            }
+        }
+        else if (_provisional)
+        {
+            Notice = string.Empty;
         }
 
-        Publish(snapshot, formats, offered, capabilities);
+        Publish(snapshot, corrected, formats, offered, capabilities);
         return false;
     }
 
@@ -335,9 +365,10 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
         return (aspect, photo, snapshot.EffectiveRate.Rate);
     }
 
-    private void Publish(ProjectSnapshot snapshot, List<VideoFormat> formats, List<OutputResolution> resolutions, IOutputCapabilities? capabilities)
+    // output: what to show, which is the project's own unless a provisional answer replaced something.
+    private void Publish(ProjectSnapshot snapshot, OutputSettings output, List<VideoFormat> formats, List<OutputResolution> resolutions, IOutputCapabilities? capabilities)
     {
-        var output = snapshot.Output;
+        _selectionMatchesProject = output == snapshot.Output;
         var shape = Shape(snapshot);
 
         // A list is replaced only when its entries differ, so the open dropdown and the selection do not flicker.
