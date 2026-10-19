@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #84 merged. Building: #24 export panel (Opus), #86 flaky test (Sonnet). Queued: #34 benchmark, #31 rating, #25 export while minimized, then #36.
+2026-10-19: #86 merged. Building: #24 export panel (Opus), #34 benchmark (Sonnet). Queued: #31 rating and #25 export while minimized (after #24), then #36 narrow layout.
 
 ## Waves
 
@@ -42,9 +42,9 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 13 | #21 Remember settings | S | settings persistence | merged #83 |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
 | 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | merged #85 |
-| 13 | #86 Flaky memory assertion (bug) | S | `tests/` | building |
+| 13 | #86 Flaky memory assertion (bug) | S | `tests/` | merged #87 |
 | 14 | #31 Rating prompt | S | Store rating | |
-| 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | |
+| 14 | #34 Benchmark | S | `tests/` bench, `docs/benchmarks.md` | building |
 | 15 | #36 Narrow window layout | S | shell visual states | |
 | 15 | #37 Icon and tile assets | S | `Assets/` (direction A Five frames) | |
 | 16 | #35 Motion system | O | every view, alone | |
@@ -284,3 +284,5 @@ Nothing blocks the build loop. Everything below waits until release is near
   against the bytes; worst read about 0.5 ms and a few KB. Matches the old
   reader on 1,289+ real files. Real fixtures (MetadataExtractor samples,
   raw.pixls.us CC0) with licences in `tests/.../Ordering/Fixtures/README.md`.
+- #86 PR #87: no process-wide memory deltas in tests (parallel classes skew
+  them); count saves and changes instead.
