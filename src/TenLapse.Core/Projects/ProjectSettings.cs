@@ -293,26 +293,51 @@ public static class OutputSize
     }
 
     /// <summary>
-    /// The oriented photo size most frames have (Match photos, #18), the first one met on a tie, or null when no
-    /// frame has a size.
+    /// The oriented photo size Match photos (#18) takes, or null when no frame has a size. The shape is decided
+    /// before the size: the orientation most frames have (landscape, portrait or square), then the reduced aspect
+    /// ratio most of those have (4032x3024 and 4000x3000 are both 4:3), then the size most of those have. Counting
+    /// exact sizes alone let three landscape photos outvote four portrait ones from two phones. On a tie, the
+    /// first to reach the count wins.
     /// </summary>
     public static PixelSize? MostCommonPhotoSize(IEnumerable<Frame> frames)
     {
         ArgumentNullException.ThrowIfNull(frames);
-        var counts = new Dictionary<PixelSize, int>();
-        PixelSize? best = null;
-        var bestCount = 0;
-        foreach (var frame in frames)
+        var sizes = frames.Where(frame => frame.PixelSize is not null).Select(frame => frame.PixelSize!.Value).ToList();
+        if (sizes.Count == 0)
         {
-            if (frame.PixelSize is not { } size)
-            {
-                continue;
-            }
+            return null;
+        }
 
-            var count = counts[size] = counts.GetValueOrDefault(size) + 1;
+        var orientation = MostCommon(sizes, Orientation);
+        sizes.RemoveAll(size => Orientation(size) != orientation);
+        var aspect = MostCommon(sizes, ReducedAspect);
+        sizes.RemoveAll(size => ReducedAspect(size) != aspect);
+        return MostCommon(sizes, static size => size);
+    }
+
+    private static int Orientation(PixelSize size) => Math.Sign(size.Width - size.Height);
+
+    private static (int Width, int Height) ReducedAspect(PixelSize size)
+    {
+        // Both sides are positive (PixelSize), so the divisor is at least 1.
+        var divisor = (int)System.Numerics.BigInteger.GreatestCommonDivisor(size.Width, size.Height);
+        return (size.Width / divisor, size.Height / divisor);
+    }
+
+    // The key most sizes have; on a tie, the first to reach that count.
+    private static T MostCommon<T>(List<PixelSize> sizes, Func<PixelSize, T> key)
+        where T : notnull
+    {
+        var counts = new Dictionary<T, int>();
+        var best = key(sizes[0]);
+        var bestCount = 0;
+        foreach (var size in sizes)
+        {
+            var value = key(size);
+            var count = counts[value] = counts.GetValueOrDefault(value) + 1;
             if (count > bestCount)
             {
-                (best, bestCount) = (size, count);
+                (best, bestCount) = (value, count);
             }
         }
 

@@ -43,4 +43,41 @@ public sealed class OutputSizeTests
         Assert.Throws<ArgumentOutOfRangeException>(() => OutputSize.For((OutputResolution)9, FrameAspect.Ratio1x1));
         Assert.Throws<ArgumentOutOfRangeException>(() => OutputSize.For(OutputResolution.Hd720, (FrameAspect)9));
     }
+
+    [Fact]
+    public void MatchPhotosPicksTheShapeBeforeTheSize()
+    {
+        // Four portrait photos from two phones against three landscape photos of one size: portrait wins, then
+        // the 3:4 size met first among the portrait ones.
+        PixelSize?[] sizes =
+        [
+            new(4000, 3000), new(3000, 4000), new(4000, 3000), new(3024, 4032),
+            new(3000, 4000), new(4000, 3000), new(3024, 4032), null,
+        ];
+
+        Assert.Equal(new PixelSize(3000, 4000), OutputSize.MostCommonPhotoSize(Frames(sizes)));
+    }
+
+    [Fact]
+    public void MatchPhotosPicksTheAspectWithinTheOrientation()
+    {
+        // Portrait wins 5 to 1; within it 9:16 (three sizes, three photos) beats 3:4 (two photos of one size).
+        PixelSize?[] sizes =
+        [
+            new(3000, 4000), new(3000, 4000), new(1080, 1920), new(2160, 3840), new(720, 1280), new(1920, 1080),
+        ];
+
+        Assert.Equal(new PixelSize(1080, 1920), OutputSize.MostCommonPhotoSize(Frames(sizes)));
+        Assert.Equal(new PixelSize(1080, 1920), OutputSize.For(OutputResolution.Hd1080, FrameAspect.MatchPhotos, Frames(sizes)));
+    }
+
+    [Fact]
+    public void MatchPhotosWithNoSizeKnownTakesSixteenByNine()
+    {
+        Assert.Null(OutputSize.MostCommonPhotoSize(Frames([null, null])));
+        Assert.Equal(new PixelSize(1920, 1080), OutputSize.For(OutputResolution.Hd1080, FrameAspect.MatchPhotos, Frames([])));
+    }
+
+    private static Frame[] Frames(PixelSize?[] sizes) =>
+        [.. sizes.Select((size, i) => new Frame($@"C:\p\{i}.jpg", 1, DateTime.UtcNow) { PixelSize = size })];
 }
