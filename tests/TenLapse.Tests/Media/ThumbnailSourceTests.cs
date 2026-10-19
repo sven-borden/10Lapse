@@ -91,11 +91,11 @@ public sealed class ThumbnailSourceTests : IDisposable
     }
 
     [Fact]
-    public async Task TheSourceTakesTheEmbeddedPictureThenTheProxyThenThePhoto()
+    public async Task TheSourceTakesTheProxyThenTheEmbeddedPictureThenThePhoto()
     {
         var withPicture = await WriteWithThumbnailAsync("with.jpg", 320, 200, 160, 100);
         var plain = await _photos.WriteAsync("plain.jpg", BitmapEncoder.JpegEncoderId, 320, 200);
-        var proxied = await _photos.WriteAsync("proxied.jpg", BitmapEncoder.JpegEncoderId, 320, 200);
+        var proxied = await WriteWithThumbnailAsync("proxied.jpg", 320, 200, 160, 100);
         var proxies = new ProxyCache(_proxies);
         var proxiedFrame = FrameOf(proxied);
         var build = await proxies.BuildAsync(proxied, proxies.KeyOf(proxiedFrame), TestContext.Current.CancellationToken);
@@ -103,11 +103,13 @@ public sealed class ThumbnailSourceTests : IDisposable
         var source = new ThumbnailSource(proxies);
         var size = new ThumbnailSize(48, 32);
 
-        using var embedded = (await source.LoadAsync(FrameOf(withPicture), size, TestContext.Current.CancellationToken)).Image;
+        var embedded = await source.LoadAsync(FrameOf(withPicture), size, TestContext.Current.CancellationToken);
         var fromProxy = await source.LoadAsync(proxiedFrame, size, TestContext.Current.CancellationToken);
         var fromPhoto = await source.LoadAsync(FrameOf(plain), size, TestContext.Current.CancellationToken);
 
-        Assert.NotNull(embedded);
+        // A photo with an embedded picture and a proxy: the proxy.
+        Assert.Equal(ThumbnailOrigin.Embedded, embedded.Origin);
+        embedded.Image!.Dispose();
         Assert.Equal(ThumbnailOrigin.Proxy, fromProxy.Origin);
         Assert.Equal(ThumbnailOrigin.Photo, fromPhoto.Origin);
         Assert.Equal(32, fromPhoto.Image!.PixelHeight);
@@ -142,6 +144,82 @@ public sealed class ThumbnailSourceTests : IDisposable
         Assert.Equal(32, result.Image!.PixelHeight);
         Assert.Equal((long)result.Image.PixelWidth * result.Image.PixelHeight * 4, result.Bytes);
         result.Image!.Dispose();
+    }
+
+    // #82 review, minor 4 (the reviewer's P10): photo B's pixels, all blue, with photo A's Exif segment and so A's embedded
+    // picture, red top-left (an editor that rewrote the pixels and kept the camera's EXIF). The embedded picture only fills
+    // in until the proxy exists; then the thumbnail comes from the proxy, made from the real pixels.
+    [Fact]
+    public async Task AStaleEmbeddedPictureGivesWayToTheProxy()
+    {
+        var cancel = TestContext.Current.CancellationToken;
+        var a = await File.ReadAllBytesAsync(await WriteWithThumbnailAsync("a.jpg", 320, 200, 160, 100), cancel);
+        var jpeg = await JpegOfAsync(await _photos.WritePatternAsync("b.png", 320, 200, (_, _) => PhotoFixtures.Blue));
+        var app1 = Segment(a, 0xE1);
+        var path = _photos.PathOf("stale.jpg");
+        await File.WriteAllBytesAsync(path, [0xFF, 0xD8, .. app1, .. jpeg.AsSpan(2)], cancel);
+        var proxies = new ProxyCache(_proxies);
+        var source = new ThumbnailSource(proxies);
+        var frame = FrameOf(path);
+        var size = new ThumbnailSize(48, 32);
+
+        var before = await source.LoadAsync(frame, size, cancel);
+        Assert.Equal(ThumbnailOrigin.Embedded, before.Origin);
+        Assert.True(TopLeftIsRed(before.Image!), "the stale embedded picture shows until the proxy exists");
+        before.Image!.Dispose();
+        Assert.False(source.HasBetter(frame, ThumbnailOrigin.Embedded));
+
+        (await proxies.BuildAsync(path, proxies.KeyOf(frame), cancel)).Photo!.Dispose();
+        Assert.True(source.HasBetter(frame, ThumbnailOrigin.Embedded));
+        Assert.False(source.HasBetter(frame, ThumbnailOrigin.Proxy));
+
+        var after = await source.LoadAsync(frame, size, cancel);
+        Assert.Equal(ThumbnailOrigin.Proxy, after.Origin);
+        Assert.False(TopLeftIsRed(after.Image!), "the thumbnail shows the photo's own pixels");
+        after.Image!.Dispose();
+    }
+
+    private static bool TopLeftIsRed(SoftwareBitmap picture)
+    {
+        var bytes = new byte[picture.PixelWidth * picture.PixelHeight * 4];
+        picture.CopyToBuffer(System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeBufferExtensions.AsBuffer(bytes));
+        var offset = (((picture.PixelHeight / 4) * picture.PixelWidth) + (picture.PixelWidth / 4)) * 4;
+        return PhotoFixtures.IsRed((bytes[offset], bytes[offset + 1], bytes[offset + 2]));
+    }
+
+    // A JPEG of the picture at path, through WIC, without an embedded picture or metadata.
+    private static async Task<byte[]> JpegOfAsync(string path)
+    {
+        using var input = await Windows.Storage.Streams.FileRandomAccessStream.OpenAsync(path, Windows.Storage.FileAccessMode.Read);
+        var decoder = await BitmapDecoder.CreateAsync(input);
+        using var bitmap = await decoder.GetSoftwareBitmapAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore);
+        using var output = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+        var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, output);
+        encoder.SetSoftwareBitmap(bitmap);
+        await encoder.FlushAsync();
+        var bytes = new byte[output.Size];
+        output.Seek(0);
+        using var stream = output.AsStreamForRead();
+        await stream.ReadExactlyAsync(bytes);
+        return bytes;
+    }
+
+    // The JPEG segment with this marker, its header included.
+    private static byte[] Segment(byte[] jpeg, byte marker)
+    {
+        var i = 2;
+        while (i + 4 < jpeg.Length && jpeg[i] == 0xFF)
+        {
+            var length = (jpeg[i + 2] << 8) | jpeg[i + 3];
+            if (jpeg[i + 1] == marker)
+            {
+                return jpeg[i..(i + 2 + length)];
+            }
+
+            i += 2 + length;
+        }
+
+        throw new InvalidOperationException("The segment is not in the file.");
     }
 
     private static Frame FrameOf(string path)

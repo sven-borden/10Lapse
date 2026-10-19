@@ -187,6 +187,29 @@ public sealed class ThumbnailCacheTests
         Assert.Null(cache.Acquire(frames[0].Id));
     }
 
+    // #82 review, minor 4: an embedded picture is loaded again once the source has better (the proxy appeared).
+    [Fact]
+    public async Task AnEmbeddedPictureIsLoadedAgainOnceTheProxyExists()
+    {
+        var source = new GatedSource { AutoRelease = true, Origin = ThumbnailOrigin.Embedded };
+        using var cache = new ThumbnailCache<FakeImage>(source, new ThumbnailCacheOptions { Workers = 1 });
+        var frames = TestFrames.Folder("a", 2);
+        cache.Want(frames, _small);
+        await WaitAsync(() => cache.Count == 2);
+
+        cache.Recheck();
+        Assert.Equal(2, source.Started.Count);
+
+        source.Origin = ThumbnailOrigin.Proxy;
+        source.Better.Add(frames[1].Id);
+        cache.Recheck();
+
+        await WaitAsync(() => OriginOf(cache, frames[1]) == ThumbnailOrigin.Proxy);
+        Assert.Equal(ThumbnailOrigin.Embedded, OriginOf(cache, frames[0]));
+        Assert.Equal(3, source.Started.Count);
+        Assert.Equal(1, source.Disposed);
+    }
+
     // #82 review, M3: Want, SetFrames and Dispose cancel loads a worker may be finishing. A cancel that met a disposed
     // source returned a faulted task nobody observed, which the app shows as an unexpected error.
     [Fact]
@@ -238,6 +261,12 @@ public sealed class ThumbnailCacheTests
         {
             TaskScheduler.UnobservedTaskException -= OnUnobserved;
         }
+    }
+
+    private static ThumbnailOrigin? OriginOf(ThumbnailCache<FakeImage> cache, Frame frame)
+    {
+        using var lease = cache.Acquire(frame.Id);
+        return lease?.Origin;
     }
 
     private static ThumbnailSize SizeOf(ThumbnailCache<FakeImage> cache, Frame frame)
@@ -293,7 +322,13 @@ public sealed class ThumbnailCacheTests
 
         public long BytesEach { get; init; } = 100;
 
+        public ThumbnailOrigin Origin { get; set; } = ThumbnailOrigin.Photo;
+
+        public ConcurrentBag<Guid> Better { get; } = [];
+
         public ConcurrentQueue<Guid> Started { get; } = new();
+
+        public bool HasBetter(Frame frame, ThumbnailOrigin origin) => origin == ThumbnailOrigin.Embedded && Better.Contains(frame.Id);
 
         public int Disposed => Volatile.Read(ref _disposed);
 
@@ -312,7 +347,7 @@ public sealed class ThumbnailCacheTests
             cancellationToken.ThrowIfCancellationRequested();
             return Unreadable
                 ? ThumbnailResult<FakeImage>.Failed(new FrameLoadFailure(new SkippedFile(frame.SourcePath, SkipReason.DecodeFailed, "Damaged.")))
-                : ThumbnailResult<FakeImage>.Loaded(new FakeImage(() => Interlocked.Increment(ref _disposed)), BytesEach, ThumbnailOrigin.Photo);
+                : ThumbnailResult<FakeImage>.Loaded(new FakeImage(() => Interlocked.Increment(ref _disposed)), BytesEach, Origin);
         }
     }
 

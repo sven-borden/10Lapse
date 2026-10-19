@@ -75,8 +75,9 @@ public sealed class ThumbnailResult<TImage>
 }
 
 /// <summary>
-/// Where the filmstrip's thumbnails come from (#20). Media implements it (the embedded EXIF thumbnail, else the preview's
-/// proxy, else a small decode of the photo); the tests fake it. Every member may be called from any thread, several at once.
+/// Where the filmstrip's thumbnails come from (#20). Media implements it (the preview's proxy, else the embedded EXIF
+/// thumbnail until the proxy exists, else a small decode of the photo); the tests fake it. Every member may be called from
+/// any thread, several at once.
 /// </summary>
 /// <typeparam name="TImage">The image (a <c>SoftwareBitmap</c> in the app).</typeparam>
 public interface IThumbnailSource<TImage>
@@ -88,6 +89,13 @@ public interface IThumbnailSource<TImage>
     /// cancellation throws <see cref="OperationCanceledException"/>.
     /// </summary>
     Task<ThumbnailResult<TImage>> LoadAsync(Frame frame, ThumbnailSize size, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// True when <paramref name="frame"/>'s thumbnail, loaded from <paramref name="origin"/>, would now come from a better
+    /// source (an embedded picture once the proxy exists). Cheap: <see cref="ThumbnailCache{TImage}.Recheck"/> asks it for
+    /// the thumbnails in view. False by default.
+    /// </summary>
+    bool HasBetter(Frame frame, ThumbnailOrigin origin) => false;
 }
 
 /// <summary>How <see cref="ThumbnailCache{TImage}"/> works.</summary>
@@ -291,6 +299,59 @@ public sealed class ThumbnailCache<TImage> : IDisposable
         }
     }
 
+    /// <summary>
+    /// Asks the source whether the wanted thumbnails that came from an embedded picture have a better source now (the
+    /// proxy appeared); those are loaded again, the old picture staying until the new one arrives. The strip calls it
+    /// every few seconds. Never throws: a source that does is reported as <see cref="UnexpectedFailure"/>.
+    /// </summary>
+    public void Recheck()
+    {
+        List<(Frame Frame, Entry Entry)> embedded;
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            embedded = [.. _wanted
+                .Select(frame => (Frame: frame, Entry: _entries.GetValueOrDefault(frame.Id)))
+                .Where(pair => pair.Entry is { Origin: ThumbnailOrigin.Embedded, Stale: false })
+                .Select(pair => (pair.Frame, pair.Entry!))];
+        }
+
+        if (embedded.Count == 0)
+        {
+            return;
+        }
+
+        List<Entry> better;
+        try
+        {
+            better = [.. embedded.Where(pair => _source.HasBetter(pair.Frame, ThumbnailOrigin.Embedded)).Select(pair => pair.Entry)];
+        }
+        catch (Exception exception)
+        {
+            Raise(() => UnexpectedFailure?.Invoke(this, new PreviewFailureEventArgs(exception)));
+            return;
+        }
+
+        if (better.Count == 0)
+        {
+            return;
+        }
+
+        lock (_gate)
+        {
+            foreach (var entry in better)
+            {
+                entry.Stale = true;
+            }
+        }
+
+        Wake();
+    }
+
     /// <summary>Why frame <paramref name="id"/>'s photo cannot be read, or null.</summary>
     public FrameLoadFailure? FailureOf(Guid id)
     {
@@ -423,8 +484,8 @@ public sealed class ThumbnailCache<TImage> : IDisposable
         }
     }
 
-    // Under the lock: the first wanted frame that needs a load (none in memory of the wanted size, not loading, not failed
-    // lately).
+    // Under the lock: the first wanted frame that needs a load (none in memory of the wanted size from its best source, not
+    // loading, not failed lately).
     private Frame? Next()
     {
         var now = Environment.TickCount64;
@@ -441,7 +502,7 @@ public sealed class ThumbnailCache<TImage> : IDisposable
                 continue;
             }
 
-            if (_entries.TryGetValue(frame.Id, out var entry) && entry.Size == _size)
+            if (_entries.TryGetValue(frame.Id, out var entry) && entry.Size == _size && !entry.Stale)
             {
                 continue;
             }
@@ -604,6 +665,9 @@ public sealed class ThumbnailCache<TImage> : IDisposable
         public int Leases { get; set; }
 
         public bool Evicted { get; set; }
+
+        // An embedded picture whose proxy has appeared since (Recheck): loaded again.
+        public bool Stale { get; set; }
     }
 }
 

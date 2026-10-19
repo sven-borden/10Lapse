@@ -69,6 +69,7 @@ public sealed partial class FilmstripView : UserControl
     private UIElement? _keyRoot;
     private Func<bool>? _canEdit;
     private DispatcherQueueTimer? _gapTimer;
+    private DispatcherQueueTimer? _recheckTimer;
     private int _flushQueued;
     private bool _wantQueued;
     private int _lastPlayhead = -1;
@@ -148,6 +149,14 @@ public sealed partial class FilmstripView : UserControl
         _gapTimer.IsRepeating = false;
         _gapTimer.Tick += OnGapTimerTick;
 
+        // Embedded EXIF pictures fill the strip only until #19's proxies exist; every few seconds the ones in view are
+        // checked and loaded again from a proxy that has appeared.
+        _recheckTimer = _dispatcher.CreateTimer();
+        _recheckTimer.Interval = TimeSpan.FromSeconds(2);
+        _recheckTimer.IsRepeating = true;
+        _recheckTimer.Tick += OnRecheckTimerTick;
+        _recheckTimer.Start();
+
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
         viewModel.Announced += OnAnnounced;
         viewModel.PlayheadMoved += OnPlayheadMoved;
@@ -183,6 +192,12 @@ public sealed partial class FilmstripView : UserControl
             timer.Tick -= OnGapTimerTick;
         }
 
+        if (_recheckTimer is { } recheck)
+        {
+            recheck.Stop();
+            recheck.Tick -= OnRecheckTimerTick;
+        }
+
         Repeater.ItemsSource = null;
         if (_thumbnails is { } thumbnails)
         {
@@ -194,6 +209,7 @@ public sealed partial class FilmstripView : UserControl
 
         _thumbnails = null;
         _gapTimer = null;
+        _recheckTimer = null;
         _keyRoot = null;
         _pointer = null;
         ViewModel = null;
@@ -417,6 +433,8 @@ public sealed partial class FilmstripView : UserControl
             _errors?.Guard(viewModel.RefreshGaps, ProjectText.FilmstripProjectFailed);
         }
     }
+
+    private void OnRecheckTimerTick(DispatcherQueueTimer sender, object args) => Guarded(() => _thumbnails?.Recheck());
 
     // ---- Narrator ----
 
