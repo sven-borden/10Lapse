@@ -28,14 +28,6 @@ public static class MotionCatalogue
 
     // ---- Arrival: the photos land (motion spec, Arrival) ----
 
-    /// <summary>The editor's surface (the Layer, the transport, the inspector's frame) fades in after the drop zone's exit.</summary>
-    public static readonly MotionTransition ArrivalSurface = new("Arrival.Surface", Scene, MotionEasing.Enter, MotionDirection.In, Moves: false, ReducedMotion.Fade, "fades in")
-    {
-        HoldsInfoBars = true,
-        Delay = Control,
-        ReducedDelay = ReducedFadeOut,
-    };
-
     /// <summary>The first frame develops like a print: blur 14 to 0 px, scale 1.03 to 1, opacity in, 700 ms Enter.</summary>
     public static readonly MotionTransition ArrivalDevelop = new("Arrival.Develop", Cinema, MotionEasing.Enter, MotionDirection.In, Moves: true, ReducedMotion.Fade, "blur 14 to 0 px, scale 1.03 to 1")
     {
@@ -156,7 +148,7 @@ public static class MotionCatalogue
     public static IReadOnlyList<MotionTransition> All { get; } =
     [
         SceneOut, SceneIn,
-        ArrivalSurface, ArrivalDevelop, ArrivalFilmstrip, ArrivalInspector,
+        ArrivalDevelop, ArrivalFilmstrip, ArrivalInspector,
         SegmentPill, RetimeReadout, RetimeLengthBar,
         ReframeGate, ReframePhoto,
         PanelOut, PanelIn, GateStrip, GateSample, ExportButtonDim,

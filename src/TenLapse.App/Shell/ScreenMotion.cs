@@ -14,9 +14,9 @@ namespace TenLapse.Shell;
 /// <summary>
 /// The screen changes between Empty, Editing and Settings (the prototype's <c>go</c>; motion spec, Arrival): the screen that
 /// leaves fades out and shrinks to 98.5 % over 167 ms (Exit), and the one that arrives rises 8 px and fades in over 400 ms
-/// (Enter) once the old one is gone. When the photos land on the Empty screen, the editor's surface fades in instead and
-/// the arrival choreography starts (the preview develops, the filmstrip files in, the inspector's sections slide in).
-/// With animations off both become short fades.
+/// (Enter) once the old one is gone. When the photos land on the Empty screen, the editor's frame appears at once when the
+/// drop zone has gone (as in the prototype), and the arrival choreography plays in it (the preview develops, the filmstrip
+/// files in, the inspector's sections slide in). With animations off the exit and the entrance become short fades.
 /// </summary>
 /// <remarks>
 /// The shell's visual states still switch the screens, at once, so the layout, focus and input are never held back. This
@@ -107,7 +107,7 @@ internal sealed class ScreenMotion
 
         var arrival = previous == Screen.Empty && next == Screen.Editing;
         var leaving = MotionTokens.Plan(MotionCatalogue.SceneOut);
-        var arriving = MotionTokens.Plan(arrival ? MotionCatalogue.ArrivalSurface : MotionCatalogue.SceneIn);
+        var arriving = arrival ? null : MotionTokens.Plan(MotionCatalogue.SceneIn);
         foreach (var element in ElementsOf(previous))
         {
             if (Hide(element, leaving) is { } hide)
@@ -118,7 +118,7 @@ internal sealed class ScreenMotion
 
         foreach (var element in ElementsOf(next))
         {
-            ElementCompositionPreview.SetImplicitShowAnimation(element, Show(element, arriving));
+            ElementCompositionPreview.SetImplicitShowAnimation(element, arriving is null ? Appear(element, leaving) : Show(element, arriving));
         }
 
         if (arrival)
@@ -173,6 +173,21 @@ internal sealed class ScreenMotion
         group.Add(Scalar(compositor, nameof(Visual.Opacity), step.Animates ? 0f : 1f, 1f, rest, easing));
         group.Add(Vector(compositor, "Translation", new Vector3(0, step.Moves ? SceneRise : 0, 0), Vector3.Zero, rest, easing));
         group.Add(Vector(compositor, nameof(Visual.Scale), Vector3.One, Vector3.One, rest, easing));
+        return group;
+    }
+
+    // The arrival: the editor's frame shows at once when the drop zone's exit (leaving) is over, at rest, so the develop,
+    // the cascade and the sections' slide play on a frame that is already there.
+    private static CompositionAnimationGroup Appear(UIElement element, MotionStep leaving)
+    {
+        var visual = ElementCompositionPreview.GetElementVisual(element);
+        var compositor = visual.Compositor;
+        var group = compositor.CreateAnimationGroup();
+        var cut = MotionTokens.CreateCut(compositor);
+        var wait = leaving with { Duration = leaving.Delay + leaving.Duration, Delay = TimeSpan.Zero };
+        group.Add(Scalar(compositor, nameof(Visual.Opacity), 0f, 1f, wait, cut));
+        group.Add(Vector(compositor, "Translation", Vector3.Zero, Vector3.Zero, wait, cut));
+        group.Add(Vector(compositor, nameof(Visual.Scale), Vector3.One, Vector3.One, wait, cut));
         return group;
     }
 

@@ -16,9 +16,9 @@ public sealed class MotionCatalogueTests
         { "Scene.Out", 167, MotionEasing.Exit, 0, 0, true, MotionKind.Faded, 90, 0 },
         { "Scene.In", 400, MotionEasing.Enter, 167, 0, true, MotionKind.Faded, 150, 90 },
 
-        // Arrival: drop zone fades out 167 exit; preview blur 14 to 0, scale 1.03 to 1, 700 ms enter; filmstrip rises 8 px,
-        // 400 ms, 18 ms stagger from 220 ms; inspector slides 16 px, 400 ms, 60 ms stagger from 160 ms.
-        { "Arrival.Surface", 400, MotionEasing.Enter, 167, 0, false, MotionKind.Faded, 150, 90 },
+        // Arrival: drop zone fades out 167 exit (Scene.Out), and the editor's frame appears at once (no transition of its
+        // own, as in the prototype); preview blur 14 to 0, scale 1.03 to 1, 700 ms enter; filmstrip rises 8 px, 400 ms, 18 ms
+        // stagger from 220 ms; inspector slides 16 px, 400 ms, 60 ms stagger from 160 ms.
         { "Arrival.Develop", 700, MotionEasing.Enter, 167, 0, true, MotionKind.Faded, 150, 90 },
         { "Arrival.Filmstrip", 400, MotionEasing.Enter, 220, 18, true, MotionKind.Faded, 150, 0 },
         { "Arrival.Inspector", 400, MotionEasing.Enter, 160, 60, true, MotionKind.Faded, 150, 0 },

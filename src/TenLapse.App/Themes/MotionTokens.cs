@@ -97,6 +97,13 @@ public static class MotionTokens
         return compositor.CreateCubicBezierEasingFunction(new Vector2(x1, y1), new Vector2(x2, y2));
     }
 
+    /// <summary>A new easing that holds the start value to the end, then jumps: something that appears at once, after a wait.</summary>
+    public static CompositionEasingFunction CreateCut(Compositor compositor)
+    {
+        ArgumentNullException.ThrowIfNull(compositor);
+        return compositor.CreateStepEasingFunction(1);
+    }
+
     /// <summary>A new Enter easing for arrivals.</summary>
     public static CompositionEasingFunction CreateEnter(Compositor compositor) => CreateEasing(compositor, MotionEasing.Enter);
 
