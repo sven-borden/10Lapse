@@ -22,6 +22,9 @@ public sealed class RememberedSettings : IImportFolderMemory, IDisposable
     /// <summary>How long after the last change the file is written.</summary>
     public static readonly TimeSpan DefaultDebounce = TimeSpan.FromMilliseconds(600);
 
+    /// <summary>The longest closing the window or Reset waits for the file to be written.</summary>
+    public static readonly TimeSpan FinalWriteLimit = TimeSpan.FromSeconds(2);
+
     private readonly ISettingsStore _store;
     private readonly IErrorPresenter _errors;
     private readonly ILog _log;
@@ -29,6 +32,7 @@ public sealed class RememberedSettings : IImportFolderMemory, IDisposable
     private readonly Lock _saveGate = new();
     private readonly ITimer _timer;
     private readonly TimeSpan _debounce;
+    private readonly TimeSpan _finalWriteLimit;
     private UserSettings _current;
     private bool _pending;
     private bool _disposed;
@@ -42,7 +46,8 @@ public sealed class RememberedSettings : IImportFolderMemory, IDisposable
     /// <param name="log">Takes what could not be read at start-up, and how long loading took.</param>
     /// <param name="time">The clock the debounce runs on; tests pass a fake.</param>
     /// <param name="debounce">The wait after the last change; <see cref="DefaultDebounce"/> when null.</param>
-    public RememberedSettings(ISettingsStore store, IErrorPresenter errors, ILog log, TimeProvider? time = null, TimeSpan? debounce = null)
+    /// <param name="finalWriteLimit">How long closing and Reset wait for the file; <see cref="FinalWriteLimit"/> when null.</param>
+    public RememberedSettings(ISettingsStore store, IErrorPresenter errors, ILog log, TimeProvider? time = null, TimeSpan? debounce = null, TimeSpan? finalWriteLimit = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(errors);
@@ -51,9 +56,21 @@ public sealed class RememberedSettings : IImportFolderMemory, IDisposable
         _errors = errors;
         _log = log;
         _debounce = debounce ?? DefaultDebounce;
+        _finalWriteLimit = finalWriteLimit ?? FinalWriteLimit;
 
         var started = System.Diagnostics.Stopwatch.GetTimestamp();
-        var loaded = store.Load();
+        SettingsLoadResult loaded;
+        try
+        {
+            loaded = store.Load();
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // Load promises not to throw; if a store breaks that, the app still starts, with the defaults.
+            _log.Error(ProjectText.SettingsLoadFailed, exception);
+            loaded = SettingsLoadResult.Fresh;
+        }
+
         _current = loaded.Settings;
         if (loaded.Problems.Count > 0)
         {
@@ -116,9 +133,10 @@ public sealed class RememberedSettings : IImportFolderMemory, IDisposable
     /// <summary>
     /// <i>Reset to defaults</i>: forgets everything remembered (the folders too), writes that at once, and sets the
     /// current project's timing, frame shape and output to the defaults through the project, so the panels follow.
-    /// The frames and the project's order are not touched. On the UI thread.
+    /// The frames and the project's order are not touched. On the UI thread. Returns whether the file was written;
+    /// a failure has been reported already.
     /// </summary>
-    public void ResetToDefaults()
+    public bool ResetToDefaults()
     {
         var project = _shell?.CurrentProject.Model;
         lock (_gate)
@@ -135,11 +153,11 @@ public sealed class RememberedSettings : IImportFolderMemory, IDisposable
         }
 
         // The project's own change events saw the defaults arrive; write once now, since the user asked for it.
-        Write(final: false);
+        return WriteBounded(final: false);
     }
 
-    /// <summary>Writes any change not yet written, now, and waits for it. For closing the window. Never throws.</summary>
-    public void Flush() => Write(final: true);
+    /// <summary>Writes any change not yet written, now, and waits for it (at most <see cref="FinalWriteLimit"/>). For closing the window. Never throws.</summary>
+    public void Flush() => WriteBounded(final: true);
 
     /// <summary>Writes what is pending, stops following the project, and stops the timer.</summary>
     public void Dispose()
@@ -161,7 +179,7 @@ public sealed class RememberedSettings : IImportFolderMemory, IDisposable
 
         Follow(null);
         _timer.Dispose();
-        Write(final: true);
+        WriteBounded(final: true);
     }
 
     private void OnProjectReplaced(object? sender, ProjectReplacedEventArgs e) => Follow(e.Current.Model);
@@ -238,9 +256,33 @@ public sealed class RememberedSettings : IImportFolderMemory, IDisposable
         }
     }
 
+    // The write the user is waiting for (closing, Reset): a stalled disk must not hang the window, so it waits for
+    // the write a couple of seconds at most. On a timeout the write carries on in the background; what it could not
+    // finish stays pending. Returns whether the settings are on disk.
+    private bool WriteBounded(bool final)
+    {
+        try
+        {
+            var write = Task.Run(() => Write(final));
+            if (write.Wait(_finalWriteLimit))
+            {
+                return write.Result;
+            }
+
+            _log.Warning(ProjectText.SettingsSaveTimedOut);
+            return false;
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            _log.Error(ProjectText.SettingsSaveFailed, exception);
+            return false;
+        }
+    }
+
     // Writes the pending settings. A failure leaves them pending, so the next change tries again. The first failure
     // is shown to the user; while it keeps failing, the repeats go to the log only. Closing cannot show an InfoBar.
-    private void Write(bool final)
+    // Returns false only when the write failed (nothing pending counts as written).
+    private bool Write(bool final)
     {
         // One write at a time, in the order of the snapshots: the timer's thread and the UI thread (reset, closing).
         lock (_saveGate)
@@ -250,7 +292,7 @@ public sealed class RememberedSettings : IImportFolderMemory, IDisposable
             {
                 if (!_pending)
                 {
-                    return;
+                    return true;
                 }
 
                 snapshot = _current;
@@ -261,6 +303,7 @@ public sealed class RememberedSettings : IImportFolderMemory, IDisposable
             {
                 _store.Save(snapshot);
                 _failureShown = false;
+                return true;
             }
             catch (Exception exception)
             {
@@ -278,6 +321,8 @@ public sealed class RememberedSettings : IImportFolderMemory, IDisposable
                     _failureShown = true;
                     _errors.Show(exception, ProjectText.SettingsSaveFailed);
                 }
+
+                return false;
             }
         }
     }

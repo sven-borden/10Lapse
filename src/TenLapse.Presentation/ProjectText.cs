@@ -243,6 +243,12 @@ public static class ProjectText
     /// <summary>Error context (log only): the remembered settings could not be written.</summary>
     public static string SettingsSaveFailed => "Saving your settings failed. They will be tried again after the next change.";
 
+    /// <summary>Error context (log only): loading the remembered settings failed unexpectedly; the defaults are used.</summary>
+    public static string SettingsLoadFailed => "Loading the remembered settings failed; using the defaults.";
+
+    /// <summary>Log line: the final write of the settings took too long and was left to finish in the background.</summary>
+    public static string SettingsSaveTimedOut => "Saving the settings took longer than 2 seconds; it carries on in the background.";
+
     /// <summary>Log line: what the settings file could not give at start-up (one line, so it is logged once).</summary>
     public static string SettingsLoadProblems(IReadOnlyList<string> problems) =>
         "Some remembered settings could not be read and use their defaults: " + string.Join(" ", problems);
