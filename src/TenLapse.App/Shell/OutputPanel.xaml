@@ -43,7 +43,7 @@
         <VisualState x:Name="Narrow">
           <VisualState.Setters>
             <Setter Target="Section.BorderThickness" Value="0" />
-            <Setter Target="PendingBlock.MinHeight" Value="82" />
+            <Setter Target="PendingBlock.MinHeight" Value="{StaticResource OutputPendingNarrowMinHeight}" />
             <Setter Target="SelectGrid.RowSpacing" Value="0" />
             <Setter Target="ResolutionBlock.(Grid.ColumnSpan)" Value="1" />
             <Setter Target="FormatBlock.(Grid.ColumnSpan)" Value="1" />
