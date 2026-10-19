@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: in flight: PR #81 (#32) fix round, PR #82 (#20) and PR #83 (#21) in review, #84 (new bug: corrupt EXIF makes capture-time reading allocate ~15 GB) building. Next: #24 export panel after #82.
+2026-10-19: #32 merged. In flight: PR #82 (#20) in review, PR #83 (#21) fix round, #84 (capture-time memory bug) building. Next: #24 export panel after #82.
 
 ## Waves
 
@@ -37,9 +37,9 @@ Opus 5.5, **S** is Sonnet 5.5.
 | 10 | #17 Timing panel | S | timing inspector section | merged #78 |
 | 11 | #24 Export panel and finished state | O | export panel | |
 | 11 | #18 Frame panel | S | frame inspector section | merged #80 |
-| 12 | #32 Golden render test | O | `tests/` golden | PR #81, fix round |
+| 12 | #32 Golden render test | O | `tests/` golden | merged #81 |
 | 12 | #25 Export while minimized, keep awake | S | export power request | |
-| 13 | #21 Remember settings | S | settings persistence | PR #83, in review |
+| 13 | #21 Remember settings | S | settings persistence | PR #83, fix round |
 | 13 | #14 HEIC and RAW extension prompts | S | import InfoBars | merged #79 |
 | 13 | #84 Capture-time memory bound (bug) | O | `Core/Ordering` | building |
 | 14 | #31 Rating prompt | S | Store rating | |
@@ -252,3 +252,13 @@ Nothing blocks the build loop. Everything below waits until release is near
   *Dismiss*, never automatic, kept in the view model only. `OutputPlan.Resolve`
   gives the effective output; *Use these settings* stores a shown replacement.
   `FrameText.NoSize` when Match photos has no encodable size. Debug `--frame=`.
+- #32 PR #81: `tests/.../Golden/` exports 120 coded frames at 24, 25, 29.97,
+  30, 60, 2 and 0.5 fps (H.264, HEVC at 0.5) and checks every frame time
+  through `RecordingEncoder` (exact `FrameStart`/`FrameDuration`), the file
+  read-back, and the decoded frame number; every aspect x fit against the
+  preview's path (`PreviewImageSource` + `FrameRenderer.Draw`), edges within
+  1 px. Adds about 20 s to the gate. MP4 header durations are one timescale
+  unit short at 24, 29.97 and 60 fps (the MP4 sink; cosmetic in Explorer,
+  accepted, noted on #41). `MediaSkips.CannotRunHere` skips only when no
+  encoder is listed or no device works. `TENLAPSE_GOLDEN_SOFTWARE=1` forces
+  the software encoder.
