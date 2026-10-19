@@ -40,14 +40,16 @@ public sealed partial class ShellView : UserControl
     /// <param name="viewModel">The shell view model.</param>
     /// <param name="settings">The Settings page's view model.</param>
     /// <param name="import">Add photos, drag and drop and the import progress (#12).</param>
+    /// <param name="output">The Output section of the inspector (#23).</param>
     /// <param name="infoBars">The InfoBars to float over the stage.</param>
     /// <param name="errors">Logs failures of the shell's dispatcher callbacks (log only, see <see cref="DispatcherQueueExtensions"/>).</param>
     /// <param name="presenter">The error path for the drop handler.</param>
-    public ShellView(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter)
+    public ShellView(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(import);
+        ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(infoBars);
         ArgumentNullException.ThrowIfNull(errors);
         ArgumentNullException.ThrowIfNull(presenter);
@@ -57,6 +59,7 @@ public sealed partial class ShellView : UserControl
         _presenter = presenter;
         InitializeComponent();
         SettingsPage.ViewModel = settings;
+        OutputSection.ViewModel = output;
         FirstLaunch.Attach(import, presenter, errors);
         _emptyRegionVisibilityToken = EmptyRegion.RegisterPropertyChangedCallback(VisibilityProperty, OnEmptyRegionVisibilityChanged);
 

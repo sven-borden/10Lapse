@@ -448,7 +448,9 @@
         BorderBrush="{ThemeResource DividerBrush}"
         BorderThickness="1,0,0,0"
         Visibility="Collapsed">
-        <Grid x:Name="InspectorRegion" Padding="20,0,20,20" />
+        <Grid x:Name="InspectorRegion" Padding="20,0,20,20">
+          <shell:OutputPanel x:Name="OutputSection" VerticalAlignment="Top" />
+        </Grid>
       </Border>
 
       <!-- Settings (#26): the whole body, over the Empty and Editing regions, under the InfoBars. -->

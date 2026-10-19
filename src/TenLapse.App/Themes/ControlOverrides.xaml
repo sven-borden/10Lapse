@@ -113,6 +113,16 @@
       <SolidColorBrush x:Key="ListViewItemSelectionIndicatorDisabledBrush" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
       <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{ThemeResource DeepAmberIndicatorColor}" />
       <SolidColorBrush x:Key="PivotHeaderItemSelectedPipeFill" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <!-- Select (ComboBox, DESIGN.md Inputs): Control Fill with a Control Stroke border, the list on Card, and the selected entry marked by the indicator pip. -->
+      <SolidColorBrush x:Key="ComboBoxBackground" Color="{ThemeResource ControlFillColor}" />
+      <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="{ThemeResource ControlFillColor}" />
+      <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="{ThemeResource ControlFillColor}" />
+      <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="{ThemeResource CardColor}" />
+      <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
       <!-- Focus: the Windows double ring, Ink over the ground (DESIGN.md Elevation, Focus). Text boxes underline in Ink, not accent. -->
       <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="{ThemeResource InkColor}" />
       <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="{ThemeResource LayerColor}" />
@@ -229,6 +239,16 @@
       <SolidColorBrush x:Key="ListViewItemSelectionIndicatorDisabledBrush" Color="{ThemeResource DeepAmberIndicatorColor}" Opacity="0.4" />
       <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{ThemeResource DeepAmberIndicatorColor}" />
       <SolidColorBrush x:Key="PivotHeaderItemSelectedPipeFill" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <!-- Select (ComboBox, DESIGN.md Inputs): Control Fill with a Control Stroke border, the list on Card, and the selected entry marked by the indicator pip. -->
+      <SolidColorBrush x:Key="ComboBoxBackground" Color="{ThemeResource ControlFillColor}" />
+      <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="{ThemeResource ControlFillColor}" />
+      <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="{ThemeResource ControlFillColor}" />
+      <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="{ThemeResource CardColor}" />
+      <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
       <!-- Focus: the Windows double ring, Ink over the ground (DESIGN.md Elevation, Focus). Text boxes underline in Ink, not accent. -->
       <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="{ThemeResource InkColor}" />
       <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="{ThemeResource LayerColor}" />
@@ -345,6 +365,16 @@
       <SolidColorBrush x:Key="ListViewItemSelectionIndicatorDisabledBrush" Color="{ThemeResource SystemColorGrayTextColor}" />
       <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{ThemeResource DeepAmberIndicatorColor}" />
       <SolidColorBrush x:Key="PivotHeaderItemSelectedPipeFill" Color="{ThemeResource DeepAmberIndicatorColor}" />
+      <!-- Select (ComboBox, DESIGN.md Inputs): Control Fill with a Control Stroke border, the list on Card, and the selected entry marked by the indicator pip. -->
+      <SolidColorBrush x:Key="ComboBoxBackground" Color="{ThemeResource ControlFillColor}" />
+      <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="{ThemeResource ControlFillColor}" />
+      <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="{ThemeResource ControlFillColor}" />
+      <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="{ThemeResource CardColor}" />
+      <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="{ThemeResource ControlStrokeColor}" />
+      <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="{ThemeResource DeepAmberIndicatorColor}" />
       <!-- Focus: the Windows double ring, Ink over the ground (DESIGN.md Elevation, Focus). Text boxes underline in Ink, not accent. -->
       <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="{ThemeResource InkColor}" />
       <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="{ThemeResource LayerColor}" />
