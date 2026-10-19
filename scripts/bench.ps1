@@ -5,8 +5,8 @@
     filmstrip sweep, on generated photos. A person runs it on demand; it is not part of the gate.
 
 .DESCRIPTION
-        pwsh -File scripts/bench.ps1 -Quick          # 500 photos of 12 MP: QUICKTIME, writes about 5 GB, needs 11 GB free
-        pwsh -File scripts/bench.ps1 -Full           # 5,000 photos of 24 MP: FULLTIME, writes about 52 GB, needs 56 GB free
+        pwsh -File scripts/bench.ps1 -Quick          # 500 photos of 12 MP: about 5 minutes with the builds, writes about 4 GB, needs 11 GB free
+        pwsh -File scripts/bench.ps1 -Full           # 5,000 photos of 24 MP: about 15 minutes with the builds (20 with -TightMemory), writes about 50 GB, needs 56 GB free
         pwsh -File scripts/bench.ps1 -Photos 2000 -Size 5472x3648 -Keep
         pwsh -File scripts/bench.ps1 -Full -TightMemory   # the export with 4 frames decoded ahead and 3 threads
 
