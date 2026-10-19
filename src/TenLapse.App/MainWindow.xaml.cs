@@ -74,7 +74,9 @@ public sealed partial class MainWindow : Window
         SetTitleBar(_shell.TitleBar);
         if (MicaController.IsSupported())
         {
-            _backdrop = new TintedMicaBackdrop();
+            // XAML connects the backdrop inside this setter and again whenever the window's target comes back; a Mica
+            // failure falls back to the flat color the shell paints where Mica is not supported (#90).
+            _backdrop = new TintedMicaBackdrop(errors, _shell.ShowMicaFallback);
             SystemBackdrop = _backdrop;
         }
         else
@@ -152,16 +154,21 @@ public sealed partial class MainWindow : Window
 
     // A minimum size measured while maximized waits for the window to be restored. Minimized or hidden, the preview
     // pauses (and plays on when the window shows again): nothing should decode and draw unseen.
-    private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
+    // AppWindow.Changed is raised by the window's message handling, not by XAML: an exception from its handler reaches
+    // no handler and leaves no trace (checked in #90), so the work runs inside RunLogged.
+    private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args) =>
+        _errors.RunLogged(() => FollowAppWindow(sender, args.DidPresenterChange || args.DidSizeChange), ProjectText.WindowChangeFailed);
+
+    private void FollowAppWindow(AppWindow window, bool presenterOrSizeChanged)
     {
-        if (_minimumPending && (args.DidPresenterChange || args.DidSizeChange) && IsRestored)
+        if (_minimumPending && presenterOrSizeChanged && IsRestored)
         {
             ApplyMinimumSize(Scale);
         }
 
         if (!_closed)
         {
-            _shell.SetWindowShown(sender.IsVisible && sender.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Minimized });
+            _shell.SetWindowShown(window.IsVisible && window.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Minimized });
         }
     }
 

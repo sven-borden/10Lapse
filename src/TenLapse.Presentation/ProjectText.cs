@@ -300,6 +300,12 @@ public static class ProjectText
     /// <summary>Error context (log only): following a change of the Windows colors or high contrast failed.</summary>
     public static string SystemColorsFailed => "Following the Windows colors failed.";
 
+    /// <summary>Error context: the window's size, state or visibility changed and following it failed (#90).</summary>
+    public static string WindowChangeFailed => "Following a change of the window's size, state or visibility failed.";
+
+    /// <summary>Error context: the tinted Mica backdrop failed; the window shows the flat Mica color instead (#90).</summary>
+    public static string BackdropFailed => "Showing the Mica backdrop failed; the window shows its flat Mica color instead.";
+
     /// <summary>Error context (log only): moving focus after opening or leaving Settings failed.</summary>
     public static string SettingsFocusFailed => "Moving focus after opening or leaving Settings failed.";
 

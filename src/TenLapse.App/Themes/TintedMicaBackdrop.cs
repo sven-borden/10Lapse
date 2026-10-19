@@ -2,6 +2,8 @@ using Microsoft.UI.Composition;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
+using TenLapse.Presentation;
+using TenLapse.Presentation.Services;
 
 namespace TenLapse.Themes;
 
@@ -25,37 +27,80 @@ internal sealed class TintedMicaBackdrop : SystemBackdrop
     private const float DarkTintOpacity = 0.95f;
     private const float DarkLuminosityOpacity = 1f;
 
+    private readonly IErrorSink _errors;
+    private readonly Action _failed;
     private MicaController? _controller;
     private SystemBackdropConfiguration? _configuration;
 
+    /// <param name="errors">Logs a failure of the overrides XAML calls (log only: they run outside its error routing).</param>
+    /// <param name="failed">Shows the flat fallback when Mica cannot be connected (UI thread).</param>
+    public TintedMicaBackdrop(IErrorSink errors, Action failed)
+    {
+        ArgumentNullException.ThrowIfNull(errors);
+        ArgumentNullException.ThrowIfNull(failed);
+        _errors = errors;
+        _failed = failed;
+    }
+
+    // XAML calls the three overrides itself: the first connection inside the window's SystemBackdrop setter, where a
+    // throw would fail the window and end the start-up over a backdrop, the others with no managed caller to catch
+    // anything. Each runs inside RunLogged (#90).
     protected override void OnTargetConnected(ICompositionSupportsSystemBackdrop connectedTarget, XamlRoot xamlRoot)
     {
         base.OnTargetConnected(connectedTarget, xamlRoot);
-        _configuration = GetDefaultSystemBackdropConfiguration(connectedTarget, xamlRoot);
-        _controller = new MicaController { Kind = MicaKind.Base };
-        Tint();
-        _controller.AddSystemBackdropTarget(connectedTarget);
-        _controller.SetSystemBackdropConfiguration(_configuration);
+        _errors.RunLogged(() => Connect(connectedTarget, xamlRoot), ProjectText.BackdropFailed);
     }
 
     protected override void OnDefaultSystemBackdropConfigurationChanged(ICompositionSupportsSystemBackdrop target, XamlRoot xamlRoot)
     {
         // The theme or high contrast changed: the default configuration has followed it, the tint follows here.
         base.OnDefaultSystemBackdropConfigurationChanged(target, xamlRoot);
-        Tint();
+        _errors.RunLogged(Tint, ProjectText.BackdropFailed);
     }
 
     protected override void OnTargetDisconnected(ICompositionSupportsSystemBackdrop disconnectedTarget)
     {
         base.OnTargetDisconnected(disconnectedTarget);
-        if (_controller is not null)
-        {
-            _controller.RemoveSystemBackdropTarget(disconnectedTarget);
-            _controller.Dispose();
-            _controller = null;
-        }
+        _errors.RunLogged(() => Release(disconnectedTarget), ProjectText.BackdropFailed);
+    }
 
+    // A connection that fails lets go of what it made and shows the flat fallback; RunLogged logs the failure.
+    private void Connect(ICompositionSupportsSystemBackdrop target, XamlRoot xamlRoot)
+    {
+        try
+        {
+            _configuration = GetDefaultSystemBackdropConfiguration(target, xamlRoot);
+            _controller = new MicaController { Kind = MicaKind.Base };
+            Tint();
+            _controller.AddSystemBackdropTarget(target);
+            _controller.SetSystemBackdropConfiguration(_configuration);
+        }
+        catch (Exception)
+        {
+            _controller?.Dispose();
+            _controller = null;
+            _configuration = null;
+            _failed();
+            throw;
+        }
+    }
+
+    private void Release(ICompositionSupportsSystemBackdrop target)
+    {
+        var controller = _controller;
+        _controller = null;
         _configuration = null;
+        if (controller is not null)
+        {
+            try
+            {
+                controller.RemoveSystemBackdropTarget(target);
+            }
+            finally
+            {
+                controller.Dispose();
+            }
+        }
     }
 
     /// <summary>Takes the tint again, for a change the configuration does not report (high contrast switched).</summary>
