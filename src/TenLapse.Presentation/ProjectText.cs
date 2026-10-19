@@ -357,6 +357,9 @@ public static class ProjectText
     /// <summary>Error context: drawing the preview failed.</summary>
     public static string PreviewDrawFailed => "Drawing the preview failed.";
 
+    /// <summary>Error context: the preview's drawing surface could not be made again after the graphics device was lost; it keeps trying.</summary>
+    public static string PreviewRestartFailed => "Starting the preview again after the graphics driver reset failed. It keeps trying by itself.";
+
     /// <summary>Error context (log only): advancing the counter during playback failed.</summary>
     public static string PreviewTickFailed => "Advancing the preview's counter failed.";
 
@@ -364,7 +367,7 @@ public static class ProjectText
     public static string PreviewFrameFailedLog => "The preview could not read {0}.";
 
     /// <summary>Error context (log only): the proxy cache failed.</summary>
-    public static string PreviewCacheFailedLog => "The preview cache could not save or read a proxy.";
+    public static string PreviewCacheFailedLog => "The preview cache could not save a proxy.";
 
     /// <summary>Error context (log only): the preview's frame cache failed in its own code.</summary>
     public static string PreviewCacheUnexpected => "The preview's frame cache failed.";

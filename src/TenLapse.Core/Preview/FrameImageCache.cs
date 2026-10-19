@@ -26,6 +26,19 @@ public sealed record FrameImageCacheOptions
     /// the playhead), so a photo put back where it was shows again.
     /// </summary>
     public TimeSpan RetryFailedAfter { get; init; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// After this many proxies in a row could not be saved (a full disk, an unwritable cache), the background pass stops
+    /// for the life of the cache: it would only decode every photo for nothing. The frame on screen still gets its
+    /// proxy-sized image while paused.
+    /// </summary>
+    public int StopPassAfterCacheFailures { get; init; } = 3;
+
+    /// <summary>
+    /// While paused, how often the photo of the frame on screen is checked (one stat), so a photo edited or replaced
+    /// meanwhile is shown as the export would read it. Zero turns the check off.
+    /// </summary>
+    public TimeSpan RecheckPausedEvery { get; init; } = TimeSpan.FromSeconds(1);
 }
 
 /// <summary>
@@ -48,6 +61,12 @@ public sealed record FrameImageCacheOptions
 /// image the render thread holds (<see cref="Acquire"/>) is disposed only when its lease is released, even if it was
 /// evicted meanwhile.
 /// </para>
+/// <para>
+/// <see cref="Clear"/> (a lost graphics device) starts a new generation: a load still in flight when it is called comes
+/// back with an image made on the old device, and is freed instead of kept. A source that throws (a lost device, a
+/// bug) is reported as <see cref="UnexpectedFailure"/> and retried later, but never marks the frame unreadable: the
+/// render thread keeps the picture it had.
+/// </para>
 /// <para>Thread-safe. Events are raised on worker threads, outside the cache's lock.</para>
 /// </remarks>
 public sealed class FrameImageCache<TImage> : IDisposable
@@ -58,7 +77,7 @@ public sealed class FrameImageCache<TImage> : IDisposable
     private readonly FrameImageCacheOptions _options;
     private readonly CancellationTokenSource _disposing = new();
     private readonly Dictionary<Guid, Entry> _entries = [];
-    private readonly Dictionary<Guid, (FrameLoadFailure Failure, long At)> _failed = [];
+    private readonly Dictionary<Guid, (FrameLoadFailure Failure, long At, bool Unexpected)> _failed = [];
     private readonly HashSet<Guid> _reported = [];
     private readonly HashSet<Guid> _loading = [];
     private readonly HashSet<Guid> _building = [];
@@ -75,6 +94,17 @@ public sealed class FrameImageCache<TImage> : IDisposable
     private long _bytes;
     private long _useClock;
     private bool _disposed;
+
+    // Bumped by Clear (a new graphics device): results of loads started before belong to the old one.
+    private int _generation;
+
+    // Proxies that could not be saved, in a row; past the option the background pass stops.
+    private int _cacheFailuresInARow;
+    private bool _passStopped;
+
+    // The paused frame's stat check: when it last ran (Environment.TickCount64), and whether one is running.
+    private long _lastCheck;
+    private bool _checking;
 
     /// <summary>Starts the workers; they wait until there are frames.</summary>
     public FrameImageCache(IFrameImageSource<TImage> source, FrameImageCacheOptions? options = null)
@@ -240,19 +270,42 @@ public sealed class FrameImageCache<TImage> : IDisposable
     {
         lock (_gate)
         {
-            return _failed.TryGetValue(id, out var failed) ? failed.Failure : null;
+            // A source that threw says nothing about the photo: no placeholder for it.
+            return _failed.TryGetValue(id, out var failed) && !failed.Unexpected ? failed.Failure : null;
         }
     }
 
-    /// <summary>Frees every image in memory (the graphics device was lost: they belong to the old one). The proxies stay.</summary>
+    /// <summary>True once the background pass has stopped because proxies could not be saved (<see cref="FrameImageCacheOptions.StopPassAfterCacheFailures"/>).</summary>
+    public bool IsPassStopped
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _passStopped;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Frees every image in memory (the graphics device was lost: they belong to the old one) and starts a new
+    /// generation: loads still in flight are freed when they come back, and frames whose loads threw are tried again at
+    /// once. The proxies stay.
+    /// </summary>
     public void Clear()
     {
         var dispose = new List<TImage>();
         lock (_gate)
         {
+            _generation++;
             foreach (var entry in _entries.Values.ToList())
             {
                 Evict(entry, dispose);
+            }
+
+            foreach (var id in _failed.Where(pair => pair.Value.Unexpected).Select(pair => pair.Key).ToList())
+            {
+                _failed.Remove(id);
             }
         }
 
@@ -317,28 +370,62 @@ public sealed class FrameImageCache<TImage> : IDisposable
     private async Task WorkAsync(int worker)
     {
         var stop = _disposing.Token;
+        var problems = new List<Exception>();
         while (!stop.IsCancellationRequested)
         {
             // Taken before looking for work, so a change in between still wakes this worker.
             var wake = Volatile.Read(ref _wake).Task;
             Job? job = null;
+            Check? check = null;
+            var due = long.MaxValue;
             try
             {
                 lock (_gate)
                 {
-                    job = _disposed ? null : NextJob(worker);
+                    if (!_disposed)
+                    {
+                        job = NextJob(worker, ref due, problems);
+                        check = job is null ? NextCheck(worker, ref due) : null;
+                    }
                 }
             }
             catch (Exception exception)
             {
-                ReportUnexpected(exception);
+                problems.Add(exception);
+            }
+
+            // Reported outside the lock: a listener may show an InfoBar.
+            foreach (var problem in problems)
+            {
+                ReportUnexpected(problem);
+            }
+
+            problems.Clear();
+            if (check is not null)
+            {
+                RunCheck(check);
+                continue;
             }
 
             if (job is null)
             {
                 try
                 {
-                    await wake.WaitAsync(stop).ConfigureAwait(false);
+                    if (due == long.MaxValue)
+                    {
+                        await wake.WaitAsync(stop).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        // A failed frame waits for its retry, the paused frame for its next check: nothing else may
+                        // wake this worker meanwhile (review m1).
+                        var wait = Math.Clamp(due - Environment.TickCount64, 1, int.MaxValue);
+                        await wake.WaitAsync(TimeSpan.FromMilliseconds(wait), stop).ConfigureAwait(false);
+                    }
+                }
+                catch (TimeoutException)
+                {
+                    // Time to retry or check.
                 }
                 catch (OperationCanceledException)
                 {
@@ -365,8 +452,9 @@ public sealed class FrameImageCache<TImage> : IDisposable
         }
     }
 
-    // Under the lock. The most useful thing to do now, marked as in flight; null when there is nothing.
-    private Job? NextJob(int worker)
+    // Under the lock. The most useful thing to do now, marked as in flight; null when there is nothing. A failed frame
+    // still waiting for its retry lowers due to the moment it may be tried; failures of the source's hint go to problems.
+    private Job? NextJob(int worker, ref long due, List<Exception> problems)
     {
         if (_frames.IsEmpty)
         {
@@ -384,22 +472,25 @@ public sealed class FrameImageCache<TImage> : IDisposable
             if (_failed.TryGetValue(frame.Id, out var failed))
             {
                 // A photo put back where it was shows again: a frame on or near the playhead is retried after a while.
-                if (Environment.TickCount64 - failed.At < (long)_options.RetryFailedAfter.TotalMilliseconds)
+                var retryAt = failed.At + (long)_options.RetryFailedAfter.TotalMilliseconds;
+                if (Environment.TickCount64 < retryAt)
                 {
+                    due = Math.Min(due, retryAt);
                     continue;
                 }
 
                 _failed.Remove(frame.Id);
             }
 
-            var have = _entries.TryGetValue(frame.Id, out var entry) ? entry.Quality : FrameImageQuality.None;
+            // A stale image (the photo changed while paused on it) stays on screen until its replacement comes.
+            var have = _entries.TryGetValue(frame.Id, out var entry) && !entry.Stale ? entry.Quality : FrameImageQuality.None;
             if (have == FrameImageQuality.Proxy)
             {
                 continue;
             }
 
             FrameImageQuality want;
-            if (_proxyReady.Contains(frame.Id) || Hint(frame))
+            if (_proxyReady.Contains(frame.Id) || Hint(frame, problems))
             {
                 want = FrameImageQuality.Proxy;
             }
@@ -408,9 +499,10 @@ public sealed class FrameImageCache<TImage> : IDisposable
                 // Something to show soon: a small decode, ready long before a proxy would be.
                 want = FrameImageQuality.Quick;
             }
-            else if (index == _focus && !_playing && !_proxyFailed.Contains(frame.Id))
+            else if (index == _focus && !_playing)
             {
-                // Paused on it: worth its proxy now.
+                // Paused on it: worth its proxy now. Even when its proxy cannot be saved, the source decodes the photo
+                // at proxy size, so the frame being judged is sharp (review M2).
                 want = FrameImageQuality.Proxy;
             }
             else
@@ -425,10 +517,10 @@ public sealed class FrameImageCache<TImage> : IDisposable
             }
 
             _loading.Add(frame.Id);
-            return new Job(frame, want, Build: false, _projectCancel.Token);
+            return new Job(frame, want, Build: false, _projectCancel.Token, _generation);
         }
 
-        if (!_options.BuildProxiesInBackground || (worker == 0 && _options.Workers > 1))
+        if (!_options.BuildProxiesInBackground || _passStopped || (worker == 0 && _options.Workers > 1))
         {
             return null;
         }
@@ -444,10 +536,62 @@ public sealed class FrameImageCache<TImage> : IDisposable
             }
 
             _building.Add(frame.Id);
-            return new Job(frame, FrameImageQuality.Proxy, Build: true, _projectCancel.Token);
+            return new Job(frame, FrameImageQuality.Proxy, Build: true, _projectCancel.Token, _generation);
         }
 
         return null;
+    }
+
+    // Under the lock: the paused frame's photo is due for its stat check (worker 0 only, one at a time); otherwise due
+    // is lowered to when it will be.
+    private Check? NextCheck(int worker, ref long due)
+    {
+        var every = (long)_options.RecheckPausedEvery.TotalMilliseconds;
+        if (worker != 0 || every <= 0 || _playing || _checking || _frames.IsEmpty
+            || !_entries.TryGetValue(_frames[_focus].Id, out var entry) || entry.Stale || entry.Version is not { } version)
+        {
+            return null;
+        }
+
+        var now = Environment.TickCount64;
+        if (now < _lastCheck + every)
+        {
+            due = Math.Min(due, _lastCheck + every);
+            return null;
+        }
+
+        _lastCheck = now;
+        _checking = true;
+        return new Check(_frames[_focus], entry, version);
+    }
+
+    // Outside the lock: one stat of the photo. A photo changed since its image was loaded marks the image stale, so it
+    // is loaded again (and stays on screen until then).
+    private void RunCheck(Check check)
+    {
+        var stale = false;
+        try
+        {
+            stale = _source.IsStale(check.Frame, check.Version);
+        }
+        catch (Exception exception)
+        {
+            ReportUnexpected(exception);
+        }
+
+        lock (_gate)
+        {
+            _checking = false;
+            if (stale && !check.Entry.Evicted)
+            {
+                check.Entry.Stale = true;
+            }
+        }
+
+        if (stale)
+        {
+            Wake();
+        }
     }
 
     // Under the lock: the frames to keep in memory, most wanted first: the playhead, then the frames ahead while playing
@@ -485,7 +629,8 @@ public sealed class FrameImageCache<TImage> : IDisposable
         }
     }
 
-    private bool Hint(Frame frame)
+    // Under the lock: the failure is collected and reported once the lock is left (review m12).
+    private bool Hint(Frame frame, List<Exception> problems)
     {
         try
         {
@@ -493,7 +638,7 @@ public sealed class FrameImageCache<TImage> : IDisposable
         }
         catch (Exception exception)
         {
-            ReportUnexpected(exception);
+            problems.Add(exception);
             return false;
         }
     }
@@ -520,7 +665,8 @@ public sealed class FrameImageCache<TImage> : IDisposable
         catch (Exception exception)
         {
             // The source says a bad photo with a result; a throw is something else (a lost graphics device, a bug). It is
-            // reported as such, not as an unreadable photo; the frame shows its placeholder and is tried again later.
+            // reported as such, not as an unreadable photo: the frame keeps the picture it had (no placeholder) and is
+            // tried again later.
             ReportUnexpected(exception);
             var failure = new FrameLoadFailure(new SkippedFile(job.Frame.SourcePath, SkipReason.Other, exception.Message), exception);
             loaded = job.Build ? null : FrameImageResult<TImage>.Failed(failure);
@@ -545,11 +691,13 @@ public sealed class FrameImageCache<TImage> : IDisposable
             _loading.Remove(id);
             _building.Remove(id);
 
-            // Ids are never reused, so a frame of a replaced project is simply not there any more.
+            // Ids are never reused, so a frame of a replaced project is simply not there any more. A load started
+            // before Clear made its image (or failed) on the old graphics device: neither is kept (review M3).
             var stillThere = !_disposed && _indexOf.ContainsKey(id);
-            if (failure is not null && stillThere)
+            var current = job.Generation == _generation;
+            if (failure is not null && stillThere && current)
             {
-                _failed[id] = (failure, Environment.TickCount64);
+                _failed[id] = (failure, Environment.TickCount64, unexpected);
                 if (!unexpected && _reported.Add(id))
                 {
                     failed = new FrameLoadFailedEventArgs(job.Frame, failure);
@@ -563,18 +711,26 @@ public sealed class FrameImageCache<TImage> : IDisposable
             if (cacheFailure is not null)
             {
                 _proxyFailed.Add(id);
+                if (++_cacheFailuresInARow >= _options.StopPassAfterCacheFailures)
+                {
+                    _passStopped = true;
+                }
             }
             else if ((built?.Succeeded ?? false) || loaded is { Image: not null, Quality: FrameImageQuality.Proxy })
             {
                 _proxyReady.Add(id);
                 _proxyFailed.Remove(id);
+                if (built?.Succeeded ?? false)
+                {
+                    _cacheFailuresInARow = 0;
+                }
             }
 
             if (loaded?.Image is { } image)
             {
-                if (stillThere)
+                if (stillThere && current)
                 {
-                    ready = Store(job.Frame, image, loaded.Quality, loaded.Bytes, dispose);
+                    ready = Store(job.Frame, image, loaded.Quality, loaded.Bytes, loaded.Version, dispose);
                 }
                 else
                 {
@@ -603,11 +759,12 @@ public sealed class FrameImageCache<TImage> : IDisposable
     }
 
     // Under the lock.
-    private FrameImageReadyEventArgs? Store(Frame frame, TImage image, FrameImageQuality quality, long bytes, List<TImage> dispose)
+    private FrameImageReadyEventArgs? Store(Frame frame, TImage image, FrameImageQuality quality, long bytes, string? version, List<TImage> dispose)
     {
         if (_entries.TryGetValue(frame.Id, out var existing))
         {
-            if (existing.Quality >= quality)
+            // A stale image (the photo changed) gives way to any new one.
+            if (existing.Quality >= quality && !existing.Stale)
             {
                 dispose.Add(image);
                 return null;
@@ -616,7 +773,7 @@ public sealed class FrameImageCache<TImage> : IDisposable
             Evict(existing, dispose);
         }
 
-        var entry = new Entry(frame.Id, image, quality, bytes) { LastUsed = ++_useClock };
+        var entry = new Entry(frame.Id, image, quality, bytes, version) { LastUsed = ++_useClock };
         _entries[frame.Id] = entry;
         _bytes += bytes;
         TrimToBudget(dispose);
@@ -713,9 +870,11 @@ public sealed class FrameImageCache<TImage> : IDisposable
 
     private static TaskCompletionSource NewWake() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private sealed record Job(Frame Frame, FrameImageQuality Quality, bool Build, CancellationToken Cancel);
+    private sealed record Job(Frame Frame, FrameImageQuality Quality, bool Build, CancellationToken Cancel, int Generation);
 
-    private sealed class Entry(Guid id, TImage image, FrameImageQuality quality, long bytes)
+    private sealed record Check(Frame Frame, Entry Entry, string Version);
+
+    private sealed class Entry(Guid id, TImage image, FrameImageQuality quality, long bytes, string? version)
     {
         public Guid Id { get; } = id;
 
@@ -724,6 +883,12 @@ public sealed class FrameImageCache<TImage> : IDisposable
         public FrameImageQuality Quality { get; } = quality;
 
         public long Bytes { get; } = bytes;
+
+        // The photo's state the image shows (FrameImageResult.Version), for the paused stat check.
+        public string? Version { get; } = version;
+
+        // The photo changed since: loaded again, and shown until then. Under the lock.
+        public bool Stale { get; set; }
 
         public long LastUsed { get; set; }
 

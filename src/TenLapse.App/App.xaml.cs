@@ -142,7 +142,7 @@ public partial class App : Application
         _ = errors.GuardAsync(() => output.DeliverAsync(probe, ui, errors, OutputCapabilitiesDelivery.DefaultPatience, encoders.Token), OutputText.ProbeFailed);
 
         // The preview (#19): the proxy cache in LocalCache (beside the log unpackaged), the frame images, the player.
-        var preview = new Preview.PreviewSession(shell, errors, infoBars, logOnly, PreviewCacheFolder());
+        var preview = new Preview.PreviewSession(shell, errors, infoBars, _log, PreviewCacheFolder());
         window = new MainWindow(shell, settings, import, output, infoBars, logOnly, errors, preview);
 
         // Closing the window stops the probe (it ends within one test encode and removes that file) and the panel.

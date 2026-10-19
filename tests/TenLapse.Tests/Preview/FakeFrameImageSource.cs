@@ -39,7 +39,7 @@ internal sealed class FakeCall(Frame frame, FrameImageQuality quality, bool buil
     public FakeImage? Image { get; private set; }
 
     /// <summary>Gives the image (a load) or says the proxy is there (a build).</summary>
-    public FakeImage? Succeed(long bytes = 100, Exception? cacheFailure = null)
+    public FakeImage? Succeed(long bytes = 100, Exception? cacheFailure = null, string? version = null)
     {
         if (Build)
         {
@@ -48,7 +48,7 @@ internal sealed class FakeCall(Frame frame, FrameImageQuality quality, bool buil
         }
 
         Image = new FakeImage(Frame.Id, Quality);
-        _result.TrySetResult(FrameImageResult<FakeImage>.Loaded(Image, Quality, bytes, cacheFailure));
+        _result.TrySetResult(FrameImageResult<FakeImage>.Loaded(Image, Quality, bytes, cacheFailure, version));
         return Image;
     }
 
@@ -71,6 +71,7 @@ internal sealed class FakeFrameImageSource : IFrameImageSource<FakeImage>
 {
     private readonly BlockingCollection<FakeCall> _pending = [];
     private readonly ConcurrentQueue<FakeCall> _all = new();
+    private int _staleChecks;
 
     /// <summary>Frames whose proxy is "on disk".</summary>
     public ConcurrentDictionary<Guid, bool> Proxies { get; } = new();
@@ -84,11 +85,26 @@ internal sealed class FakeFrameImageSource : IFrameImageSource<FakeImage>
     /// <summary>When set, a call ignores its cancellation: its result arrives even after the cache moved on.</summary>
     public bool IgnoreCancellation { get; set; }
 
+    /// <summary>
+    /// With <see cref="AutoComplete"/>: the cache cannot be written. Builds fail with this, and proxy-size loads give the
+    /// image with it as their cache failure (as the app's source does when it cannot save).
+    /// </summary>
+    public Exception? AutoCacheFailure { get; set; }
+
+    /// <summary>The photos' versions on disk: a load gives the frame's, and <see cref="IsStale"/> compares against it.</summary>
+    public ConcurrentDictionary<Guid, string> Versions { get; } = new();
+
+    /// <summary>How many stat checks the cache made.</summary>
+    public int StaleChecks => Volatile.Read(ref _staleChecks);
+
     public IReadOnlyCollection<FakeCall> All => _all;
 
     public ImmutableArray<Frame> LastFrames { get; private set; }
 
-    public bool HasProxy(Frame frame) => Proxies.ContainsKey(frame.Id);
+    /// <summary>When set, <see cref="HasProxy"/> throws it (a bug in the source).</summary>
+    public Exception? HasProxyThrows { get; set; }
+
+    public bool HasProxy(Frame frame) => HasProxyThrows is { } exception ? throw exception : Proxies.ContainsKey(frame.Id);
 
     public async Task<FrameImageResult<FakeImage>> LoadAsync(Frame frame, FrameImageQuality quality, CancellationToken cancellationToken) =>
         (FrameImageResult<FakeImage>)await Record(new FakeCall(frame, quality, build: false, cancellationToken));
@@ -105,6 +121,12 @@ internal sealed class FakeFrameImageSource : IFrameImageSource<FakeImage>
     }
 
     public void FramesChanged(ImmutableArray<Frame> frames) => LastFrames = frames;
+
+    public bool IsStale(Frame frame, string version)
+    {
+        Interlocked.Increment(ref _staleChecks);
+        return Versions.TryGetValue(frame.Id, out var now) && now != version;
+    }
 
     /// <summary>The next call the cache makes, within five seconds.</summary>
     public FakeCall Next()
@@ -130,12 +152,13 @@ internal sealed class FakeFrameImageSource : IFrameImageSource<FakeImage>
                 await Task.Delay(Random.Shared.Next(AutoDelay + 1));
             }
 
-            if (call.Build)
+            var failure = call.Quality == FrameImageQuality.Proxy ? AutoCacheFailure : null;
+            if (call.Build && failure is null)
             {
                 Proxies[call.Frame.Id] = true;
             }
 
-            call.Succeed(bytes);
+            call.Succeed(bytes, failure, Versions.GetValueOrDefault(call.Frame.Id));
             return await call.Result;
         }
 

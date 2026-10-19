@@ -273,7 +273,142 @@ public sealed class FrameImageCacheTests
 
         Eventually(() => unexpected.Count == 1);
         Assert.Equal(0, unreadable);
-        Assert.NotNull(cache.FailureOf(frames[0].Id));
+
+        // No placeholder: the photo may be fine. The render thread keeps the picture it had.
+        Assert.Null(cache.FailureOf(frames[0].Id));
+
+        // Within its retry window nothing happens; a new device (Clear) tries it again at once.
+        Assert.True(source.Quiet());
+        cache.Clear();
+        Assert.Equal(frames[0].Id, source.Next().Frame.Id);
+    }
+
+    [Fact]
+    public void AnImageLoadedOnTheOldDeviceBeforeClearIsFreedNotKept()
+    {
+        var source = new FakeFrameImageSource();
+        using var cache = new FrameImageCache<FakeImage>(source, _one);
+        var frames = Frames("a", 3);
+        cache.SetFrames(frames);
+        var inFlight = source.Next();
+
+        // The device is lost while the load runs; its image comes back made on the old device.
+        cache.Clear();
+        var old = inFlight.Succeed()!;
+
+        Eventually(() => old.IsDisposed);
+        Assert.Null(cache.Acquire(frames[0].Id));
+
+        // The frame is loaded again, and that image is kept.
+        var again = source.Next();
+        Assert.Equal(frames[0].Id, again.Frame.Id);
+        var fresh = again.Succeed()!;
+        Eventually(() => Quality(cache, frames[0]) != FrameImageQuality.None);
+        Assert.False(fresh.IsDisposed);
+    }
+
+    [Fact]
+    public void AFailedFrameIsRetriedWhenItsTimeComesWithNothingElseHappening()
+    {
+        var source = new FakeFrameImageSource();
+        using var cache = new FrameImageCache<FakeImage>(source, _one with { RetryFailedAfter = TimeSpan.FromMilliseconds(200) });
+        var frames = Frames("a", 3);
+        cache.SetFrames(frames);
+        var failedAt = Stopwatch.StartNew();
+        source.Next().Fail(SkipReason.FileNotFound);
+
+        // Paused, nothing changes: no seek, no new frames, no image arriving. The worker still wakes for the retry.
+        var retry = source.Next();
+
+        Assert.Equal(frames[0].Id, retry.Frame.Id);
+        Assert.InRange(failedAt.Elapsed, TimeSpan.FromMilliseconds(150), TimeSpan.FromSeconds(3));
+    }
+
+    [Fact]
+    public void WithAnUnwritableCacheThePausedFrameStillGetsItsProxySizeAndThePassStops()
+    {
+        var source = new FakeFrameImageSource { AutoComplete = 100, AutoCacheFailure = new IOException("Access is denied.") };
+        using var cache = new FrameImageCache<FakeImage>(
+            source,
+            new FrameImageCacheOptions { Workers = 2, Neighbours = 0, StopPassAfterCacheFailures = 3, RecheckPausedEvery = TimeSpan.Zero });
+        var told = 0;
+        cache.CacheFailed += (_, _) => Interlocked.Increment(ref told);
+        var frames = Frames("a", 50);
+        cache.SetFocus(10, playing: false, lookahead: 0);
+        cache.SetFrames(frames);
+
+        Eventually(() => Quality(cache, frames[10]) == FrameImageQuality.Proxy);
+        Eventually(() => cache.IsPassStopped);
+        Assert.True(source.Quiet(300));
+
+        var builds = source.All.Count(call => call.Build);
+        Assert.InRange(builds, 1, 3);
+        Assert.True(told >= 1);
+        Assert.NotEqual(frames.Length, cache.ProxyProgress.Done);
+    }
+
+    [Fact]
+    public void APausedFramesPhotoChangedOnDiskIsLoadedAgain()
+    {
+        var source = new FakeFrameImageSource { AutoComplete = 100 };
+        using var cache = new FrameImageCache<FakeImage>(source, _one with { RecheckPausedEvery = TimeSpan.FromMilliseconds(50) });
+        var frames = Frames("a", 3);
+        var id = frames[0].Id;
+        source.Versions[id] = "v1";
+        cache.SetFrames(frames);
+        Eventually(() => Quality(cache, frames[0]) == FrameImageQuality.Proxy);
+        FakeImage before;
+        using (var lease = cache.Acquire(id)!)
+        {
+            before = lease.Image;
+        }
+
+        // Edited in another app while the preview sits paused on it.
+        source.Versions[id] = "v2";
+
+        Eventually(() =>
+        {
+            using var lease = cache.Acquire(id);
+            return lease is { Quality: FrameImageQuality.Proxy } && !ReferenceEquals(lease.Image, before);
+        });
+        Eventually(() => before.IsDisposed);
+        var checks = source.StaleChecks;
+        Assert.True(checks >= 1);
+
+        // While playing there are no checks.
+        cache.SetFocus(0, playing: true, lookahead: 1);
+        Thread.Sleep(200);
+        Assert.InRange(source.StaleChecks - checks, 0, 1);
+    }
+
+    [Fact]
+    public void AHintThatThrowsIsReportedOutsideTheCachesLock()
+    {
+        var source = new FakeFrameImageSource { HasProxyThrows = new InvalidOperationException("A bug in the source.") };
+        using var cache = new FrameImageCache<FakeImage>(source, _one);
+        var otherThreadGotIn = new List<bool>();
+        cache.UnexpectedFailure += (_, _) =>
+        {
+            // Another thread takes the cache's lock: it would wait forever if the event came under it.
+            var count = Task.Run(() => cache.Count);
+            lock (otherThreadGotIn)
+            {
+                otherThreadGotIn.Add(count.Wait(TimeSpan.FromSeconds(2)));
+            }
+        };
+        cache.SetFrames(Frames("a", 2));
+
+        Eventually(() =>
+        {
+            lock (otherThreadGotIn)
+            {
+                return otherThreadGotIn.Count > 0;
+            }
+        });
+        lock (otherThreadGotIn)
+        {
+            Assert.All(otherThreadGotIn, Assert.True);
+        }
     }
 
     [Fact]

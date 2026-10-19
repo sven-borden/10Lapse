@@ -37,7 +37,8 @@ public interface IFrameImageSource<TImage>
     /// from the photo first when it is missing or stale (the photo's size or time changed);
     /// <see cref="FrameImageQuality.Quick"/> decodes the photo small (or the proxy, when it already exists). Never
     /// throws for a photo that cannot be read: that is <see cref="FrameImageResult{TImage}.Failure"/>. A proxy that cannot
-    /// be written still gives the image, with <see cref="FrameImageResult{TImage}.CacheFailure"/> set.
+    /// be written still gives the image, with <see cref="FrameImageResult{TImage}.CacheFailure"/> set; a damaged proxy that
+    /// is built again and saved is no failure at all.
     /// </summary>
     Task<FrameImageResult<TImage>> LoadAsync(Frame frame, FrameImageQuality quality, CancellationToken cancellationToken);
 
@@ -52,6 +53,13 @@ public interface IFrameImageSource<TImage>
     /// up the rest. Called by the cache on its caller's thread; must return quickly.
     /// </summary>
     void FramesChanged(ImmutableArray<Frame> frames);
+
+    /// <summary>
+    /// True when the photo on disk is no longer the one the image of <paramref name="version"/>
+    /// (<see cref="FrameImageResult{TImage}.Version"/>) was loaded from: edited or replaced since, or gone. One cheap
+    /// stat of the photo; the cache asks it for the frame on screen while paused, never under its lock.
+    /// </summary>
+    bool IsStale(Frame frame, string version);
 }
 
 /// <summary>A frame that cannot be shown: the photo as the skipped-files list would name it, and what was thrown, for the log.</summary>
@@ -63,13 +71,14 @@ public sealed record FrameLoadFailure(SkippedFile File, Exception? Exception = n
 public sealed class FrameImageResult<TImage>
     where TImage : class, IDisposable
 {
-    private FrameImageResult(TImage? image, FrameImageQuality quality, long bytes, FrameLoadFailure? failure, Exception? cacheFailure)
+    private FrameImageResult(TImage? image, FrameImageQuality quality, long bytes, FrameLoadFailure? failure, Exception? cacheFailure, string? version)
     {
         Image = image;
         Quality = quality;
         Bytes = bytes;
         Failure = failure;
         CacheFailure = cacheFailure;
+        Version = version;
     }
 
     /// <summary>The image; null when the frame failed. The receiver owns it.</summary>
@@ -84,11 +93,17 @@ public sealed class FrameImageResult<TImage>
     /// <summary>Why the frame cannot be shown; null when it loaded.</summary>
     public FrameLoadFailure? Failure { get; }
 
-    /// <summary>The proxy could not be written or read back (the image came from the photo instead); null when all was well.</summary>
+    /// <summary>The proxy could not be written (the image came from the photo instead); null when all was well.</summary>
     public Exception? CacheFailure { get; }
 
+    /// <summary>
+    /// Which state of the photo the image shows (the app uses the proxy key: path, size and last write time), for
+    /// <see cref="IFrameImageSource{TImage}.IsStale"/>; null when the source cannot tell.
+    /// </summary>
+    public string? Version { get; }
+
     /// <summary>A loaded image.</summary>
-    public static FrameImageResult<TImage> Loaded(TImage image, FrameImageQuality quality, long bytes, Exception? cacheFailure = null)
+    public static FrameImageResult<TImage> Loaded(TImage image, FrameImageQuality quality, long bytes, Exception? cacheFailure = null, string? version = null)
     {
         ArgumentNullException.ThrowIfNull(image);
         if (quality == FrameImageQuality.None || !Enum.IsDefined(quality))
@@ -97,12 +112,12 @@ public sealed class FrameImageResult<TImage>
         }
 
         ArgumentOutOfRangeException.ThrowIfNegative(bytes);
-        return new FrameImageResult<TImage>(image, quality, bytes, null, cacheFailure);
+        return new FrameImageResult<TImage>(image, quality, bytes, null, cacheFailure, version);
     }
 
     /// <summary>A frame that cannot be shown.</summary>
     public static FrameImageResult<TImage> Failed(FrameLoadFailure failure) =>
-        new(null, FrameImageQuality.None, 0, failure ?? throw new ArgumentNullException(nameof(failure)), null);
+        new(null, FrameImageQuality.None, 0, failure ?? throw new ArgumentNullException(nameof(failure)), null, null);
 }
 
 /// <summary>What <see cref="IFrameImageSource{TImage}.EnsureProxyAsync"/> gave.</summary>

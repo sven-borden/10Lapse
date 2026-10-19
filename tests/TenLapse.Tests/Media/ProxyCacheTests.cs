@@ -1,4 +1,5 @@
 using Microsoft.Graphics.Canvas;
+using TenLapse.Core.Diagnostics;
 using TenLapse.Core.Preview;
 using TenLapse.Core.Projects;
 using TenLapse.Media;
@@ -97,8 +98,14 @@ public sealed class ProxyCacheTests : IDisposable
         Directory.CreateDirectory(_folder);
         var used = Fake("a1", DateTime.UtcNow.AddDays(-2));
         var unused = Fake("b2", DateTime.UtcNow.AddDays(-31));
-        var leftover = Fake("c3.1234abcd", DateTime.UtcNow.AddHours(-2), ".tmp");
-        var writing = Fake("d4.5678abcd", DateTime.UtcNow, ".tmp");
+        var leftover = Fake(Key("c3") + ".1234abcd", DateTime.UtcNow.AddHours(-2), ".tmp");
+        var writing = Fake(Key("d4") + ".5678abcd", DateTime.UtcNow, ".tmp");
+
+        // Files that are not the cache's own stay, however old: a folder given by mistake loses nothing.
+        var photo = Fake("IMG_0001", DateTime.UtcNow.AddDays(-400), ".jpg", keyName: false);
+        var upper = Fake(Key("e5").ToUpperInvariant(), DateTime.UtcNow.AddDays(-400), ".jpg", keyName: false);
+        var notes = Fake("draft", DateTime.UtcNow.AddDays(-400), ".tmp");
+        var otherTemp = Fake(Key("f6") + ".tmp", DateTime.UtcNow.AddDays(-400), ".tmp");
 
         var cache = new ProxyCache(_folder);
         await cache.OpenAsync();
@@ -107,6 +114,10 @@ public sealed class ProxyCacheTests : IDisposable
         Assert.False(File.Exists(unused));
         Assert.False(File.Exists(leftover));
         Assert.True(File.Exists(writing));
+        Assert.True(File.Exists(photo));
+        Assert.True(File.Exists(upper));
+        Assert.True(File.Exists(notes));
+        Assert.True(File.Exists(otherTemp));
         Assert.True(cache.Contains(Key("a1"), mayTouchDisk: false));
         Assert.False(cache.Contains(Key("b2"), mayTouchDisk: false));
         Assert.Equal((1, 100L), cache.Size);
@@ -116,7 +127,7 @@ public sealed class ProxyCacheTests : IDisposable
     public async Task PastTheBoundOtherPhotosGoFirstAndTheProjectsOwnOnlyDownToTheBound()
     {
         Directory.CreateDirectory(_folder);
-        var names = Enumerable.Range(0, 6).Select(i => "k" + i).ToList();
+        var names = Enumerable.Range(0, 6).Select(i => "a" + i).ToList();
         for (var i = 0; i < names.Count; i++)
         {
             Fake(names[i], DateTime.UtcNow.AddMinutes(i - 10));
@@ -128,14 +139,14 @@ public sealed class ProxyCacheTests : IDisposable
         cache.Protect(names.Take(3).Select(Key));
         await cache.OpenAsync();
 
-        Assert.Equal(["k0", "k1", "k2"], Remaining());
+        Assert.Equal(["a0", "a1", "a2"], Remaining());
         Assert.Equal(300, cache.Size.Bytes);
 
         // When the project alone is past the bound, its least recently used go until it fits.
         var tight = new ProxyCache(_folder, new ProxyCacheOptions { MaxBytes = 150 });
         tight.Protect(names.Select(Key));
         await tight.OpenAsync();
-        Assert.Equal(["k2"], Remaining());
+        Assert.Equal(["a2"], Remaining());
     }
 
     [Fact]
@@ -249,6 +260,79 @@ public sealed class ProxyCacheTests : IDisposable
         Assert.Null(built.Failure);
     }
 
+    [Fact]
+    public async Task ADamagedProxyIsMadeAgainAndIsNoCacheFailure()
+    {
+        MediaSkips.SkipWithoutGraphicsDevice();
+        var path = await _photos.WriteAsync("damaged.jpg", BitmapEncoder.JpegEncoderId, 3000, 2000);
+        var frame = FrameOf(path);
+        var cache = new ProxyCache(_folder);
+        await cache.OpenAsync();
+        var log = new ListLog();
+        var source = new PreviewImageSource(cache, () => GraphicsDevice.Shared) { Log = log };
+        using (await LoadAsync(source, frame, FrameImageQuality.Proxy))
+        {
+        }
+
+        var proxyPath = cache.PathOf(KeyOf(cache, path));
+        var whole = new FileInfo(proxyPath).Length;
+
+        // A crash mid-copy, a disk error: the proxy ends a third of the way in.
+        using (var file = new FileStream(proxyPath, FileMode.Open, FileAccess.Write))
+        {
+            file.SetLength(whole / 3);
+        }
+
+        // No cache failure (LoadAsync asserts it), the image is proxy size, and the proxy is whole again.
+        using (var again = await LoadAsync(source, frame, FrameImageQuality.Proxy))
+        {
+            Assert.Equal(FrameImageQuality.Proxy, again.Quality);
+            Assert.Equal(1280u, again.Image.SizeInPixels.Width);
+        }
+
+        Assert.Equal(whole, new FileInfo(proxyPath).Length);
+        Assert.Single(log.Lines, line => line.Level == LogLevel.Warning && line.Message.Contains("damaged.jpg", StringComparison.Ordinal));
+        Assert.DoesNotContain(log.Lines, line => line.Level >= LogLevel.Error);
+    }
+
+    [Fact]
+    public async Task ATransparentPartOfAPhotoIsBlackInItsProxyAsOverTheRenderersBlack()
+    {
+        // Left half transparent white, right half opaque white, as a PNG with alpha.
+        const int Width = 64;
+        const int Height = 32;
+        var path = Path.Combine(_photos.Directory, "transparent.png");
+        var pixels = new byte[Width * Height * 4];
+        for (var i = 0; i < Width * Height; i++)
+        {
+            pixels.AsSpan(i * 4, 3).Fill(255);
+            pixels[(i * 4) + 3] = (i % Width) < Width / 2 ? (byte)0 : (byte)255;
+        }
+
+        using (var file = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+        using (var stream = file.AsRandomAccessStream())
+        {
+            var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
+            encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Straight, Width, Height, 96, 96, pixels);
+            await encoder.FlushAsync();
+        }
+
+        var cache = new ProxyCache(_folder);
+        await cache.OpenAsync();
+        var key = KeyOf(cache, path);
+        var build = await cache.BuildAsync(path, key, TestContext.Current.CancellationToken);
+        build.Photo?.Dispose();
+        Assert.Null(build.WriteFailure);
+
+        using var proxyFile = File.OpenRead(cache.PathOf(key));
+        var decoder = await BitmapDecoder.CreateAsync(proxyFile.AsRandomAccessStream());
+        var data = (await decoder.GetPixelDataAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, new BitmapTransform(), ExifOrientationMode.IgnoreExifOrientation, ColorManagementMode.DoNotColorManage)).DetachPixelData();
+        var left = ((Height / 2 * Width) + 8) * 4;
+        var right = ((Height / 2 * Width) + Width - 8) * 4;
+        Assert.All(data.AsSpan(left, 3).ToArray(), value => Assert.InRange(value, 0, 16));
+        Assert.All(data.AsSpan(right, 3).ToArray(), value => Assert.InRange(value, 239, 255));
+    }
+
     private static Frame FrameOf(string path)
     {
         var info = new FileInfo(path);
@@ -269,19 +353,46 @@ public sealed class ProxyCacheTests : IDisposable
         return new Loaded(result.Image!, result.Quality, result.Bytes);
     }
 
-    // A proxy file of 100 bytes named after a made-up key, last used at the given time.
-    private string Fake(string name, DateTime lastUsedUtc, string extension = ".jpg")
+    // A proxy file of 100 bytes named after a made-up key (or, with keyName false, the name as given), last used at the given time.
+    private string Fake(string name, DateTime lastUsedUtc, string extension = ".jpg", bool keyName = true)
     {
-        var path = Path.Combine(_folder, (extension == ".jpg" ? Key(name) : name) + extension);
+        var path = Path.Combine(_folder, (extension == ".jpg" && keyName ? Key(name) : name) + extension);
         File.WriteAllBytes(path, new byte[100]);
         File.SetLastWriteTimeUtc(path, lastUsedUtc);
         return path;
     }
 
+    // Hex, as a real key is: the cache touches no other names.
     private static string Key(string name) => name.PadRight(32, 'f');
 
     private List<string> Remaining() =>
         [.. Directory.GetFiles(_folder, "*.jpg").Select(path => Path.GetFileNameWithoutExtension(path).TrimEnd('f')).Order()];
+
+    private sealed class ListLog : ILog
+    {
+        private readonly List<(LogLevel Level, string Message)> _lines = [];
+
+        public IReadOnlyList<(LogLevel Level, string Message)> Lines
+        {
+            get
+            {
+                lock (_lines)
+                {
+                    return [.. _lines];
+                }
+            }
+        }
+
+        public void Write(LogLevel level, string message, Exception? exception = null)
+        {
+            lock (_lines)
+            {
+                _lines.Add((level, message));
+            }
+        }
+
+        public IReadOnlyList<string> RecentLines(int count) => [.. Lines.TakeLast(count).Select(line => line.Message)];
+    }
 
     private sealed record Loaded(CanvasBitmap Image, FrameImageQuality Quality, long Bytes) : IDisposable
     {

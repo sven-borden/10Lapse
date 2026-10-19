@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Microsoft.Graphics.Canvas;
+using TenLapse.Core.Diagnostics;
 using TenLapse.Core.Preview;
 using TenLapse.Core.Projects;
 using TenLapse.Media.Decoding;
@@ -34,6 +35,9 @@ public sealed class PreviewImageSource : IFrameImageSource<CanvasBitmap>
         _device = device ?? throw new ArgumentNullException(nameof(device));
     }
 
+    /// <summary>Where a damaged proxy that is made again is noted (a warning: the preview goes on).</summary>
+    public ILog? Log { get; init; }
+
     /// <inheritdoc/>
     public bool HasProxy(Frame frame)
     {
@@ -46,21 +50,21 @@ public sealed class PreviewImageSource : IFrameImageSource<CanvasBitmap>
     {
         ArgumentNullException.ThrowIfNull(frame);
         var key = CurrentKey(frame);
-        Exception? cacheFailure = null;
         if (key is not null && _cache.Contains(key))
         {
             var proxy = await PhotoDecoder.DecodeAsync(_cache.PathOf(key), PhotoDecodeOptions.FullSize, cancellationToken).ConfigureAwait(false);
             if (proxy.Succeeded)
             {
                 _cache.Touch(key);
-                return Upload(proxy.Value, FrameImageQuality.Proxy);
+                return Upload(proxy.Value, FrameImageQuality.Proxy, key);
             }
 
-            // Deleted under us (another instance trimmed it) or damaged: rebuild it from the photo.
+            // Deleted under us (another instance trimmed it) or damaged (a crash mid-copy, a disk error): forget it and
+            // build it again from the photo. Only a rebuild that cannot be saved is a cache failure the user hears of.
             _cache.Forget(key);
             if (proxy.Failure.Reason is not SkipReason.FileNotFound)
             {
-                cacheFailure = proxy.Failure.Exception ?? new IOException(proxy.Failure.Detail);
+                Log?.Warning($"A preview copy could not be read and is made again from {frame.FileName}: {proxy.Failure.Detail}", proxy.Failure.Exception);
             }
         }
 
@@ -69,7 +73,7 @@ public sealed class PreviewImageSource : IFrameImageSource<CanvasBitmap>
             // A small decode, or the photo is gone (no key): the decoder gives the reason the import would.
             var small = await PhotoDecoder.DecodeAsync(frame.SourcePath, new PhotoDecodeOptions { MaxSide = QuickSide }, cancellationToken).ConfigureAwait(false);
             return small.Succeeded
-                ? Upload(small.Value, FrameImageQuality.Quick, cacheFailure)
+                ? Upload(small.Value, FrameImageQuality.Quick, key)
                 : FrameImageResult<CanvasBitmap>.Failed(Failure(small.Failure));
         }
 
@@ -79,7 +83,15 @@ public sealed class PreviewImageSource : IFrameImageSource<CanvasBitmap>
             return FrameImageResult<CanvasBitmap>.Failed(Failure(build.Failure!));
         }
 
-        return Upload(build.Photo, FrameImageQuality.Proxy, build.WriteFailure ?? cacheFailure);
+        return Upload(build.Photo, FrameImageQuality.Proxy, key, build.WriteFailure);
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>One stat of the photo: its size and last write time make the key the image was loaded under.</remarks>
+    public bool IsStale(Frame frame, string version)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        return !string.Equals(CurrentKey(frame), version, StringComparison.Ordinal);
     }
 
     /// <inheritdoc/>
@@ -145,13 +157,14 @@ public sealed class PreviewImageSource : IFrameImageSource<CanvasBitmap>
         }
     }
 
-    private FrameImageResult<CanvasBitmap> Upload(DecodedPhoto photo, FrameImageQuality quality, Exception? cacheFailure = null)
+    // The key is the photo's version as it was read: IsStale compares the photo on disk against it.
+    private FrameImageResult<CanvasBitmap> Upload(DecodedPhoto photo, FrameImageQuality quality, string? key, Exception? cacheFailure = null)
     {
         using (photo)
         {
             var bitmap = CanvasBitmap.CreateFromSoftwareBitmap(_device(), photo.Pixels);
             var bytes = (long)photo.Size.Width * photo.Size.Height * 4;
-            return FrameImageResult<CanvasBitmap>.Loaded(bitmap, quality, bytes, cacheFailure);
+            return FrameImageResult<CanvasBitmap>.Loaded(bitmap, quality, bytes, cacheFailure, key);
         }
     }
 }

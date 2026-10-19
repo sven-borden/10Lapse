@@ -1,5 +1,6 @@
 using Microsoft.Graphics.Canvas;
 using Microsoft.UI.Dispatching;
+using TenLapse.Core.Diagnostics;
 using TenLapse.Core.Preview;
 using TenLapse.Media;
 using TenLapse.Media.Preview;
@@ -19,17 +20,23 @@ internal sealed class PreviewSession : IDisposable
 {
     private static readonly TimeSpan _problemDelay = TimeSpan.FromMilliseconds(600);
 
+    // An unexpected failure is shown at most once in this long; the others in between go to the log only, so a
+    // failure that repeats on every retry (a lost device, a bug) does not raise the InfoBar again and again.
+    private static readonly long _unexpectedQuiet = (long)TimeSpan.FromMinutes(1).TotalMilliseconds;
+
     private readonly ShellViewModel _shell;
     private readonly IErrorPresenter _errors;
     private readonly IErrorSink _log;
     private readonly DispatcherQueue _dispatcher;
     private readonly DispatcherQueueTimer _problemTimer;
+    private long _unexpectedShownAt = long.MinValue;
 
     /// <summary>Builds the parts on the UI thread and starts opening the proxy cache in the background.</summary>
-    public PreviewSession(ShellViewModel shell, IErrorPresenter errors, IInfoBarService infoBars, IErrorSink log, string cacheFolder)
+    public PreviewSession(ShellViewModel shell, IErrorPresenter errors, IInfoBarService infoBars, ILog fileLog, string cacheFolder)
     {
         _shell = shell;
         _errors = errors;
+        var log = new LogErrorSink(fileLog);
         _log = log;
         _dispatcher = DispatcherQueue.GetForCurrentThread();
 
@@ -39,7 +46,7 @@ internal sealed class PreviewSession : IDisposable
         };
         _ = Proxies.OpenAsync();
 
-        Images = new FrameImageCache<CanvasBitmap>(new PreviewImageSource(Proxies, () => GraphicsDevice.Shared));
+        Images = new FrameImageCache<CanvasBitmap>(new PreviewImageSource(Proxies, () => GraphicsDevice.Shared) { Log = fileLog });
         Player = new PlayerViewModel(shell, errors);
         Problems = new PreviewProblems(infoBars, log);
 
@@ -98,7 +105,20 @@ internal sealed class PreviewSession : IDisposable
 
     private void OnCacheFailed(object? sender, PreviewFailureEventArgs e) => Problems.CacheFailed(e.Exception);
 
-    private void OnUnexpectedFailure(object? sender, PreviewFailureEventArgs e) => _errors.Show(e.Exception, ProjectText.PreviewCacheUnexpected);
+    // Worker threads.
+    private void OnUnexpectedFailure(object? sender, PreviewFailureEventArgs e)
+    {
+        var now = Environment.TickCount64;
+        var last = Interlocked.Read(ref _unexpectedShownAt);
+        if ((last == long.MinValue || now - last >= _unexpectedQuiet) && Interlocked.CompareExchange(ref _unexpectedShownAt, now, last) == last)
+        {
+            _errors.Show(e.Exception, ProjectText.PreviewCacheUnexpected);
+        }
+        else
+        {
+            _log.Report(e.Exception, ProjectText.PreviewCacheUnexpected);
+        }
+    }
 
     private void OnProblemTimerTick(DispatcherQueueTimer sender, object args) => _errors.Guard(Problems.Flush, ProjectText.PreviewProblemsFailed);
 
