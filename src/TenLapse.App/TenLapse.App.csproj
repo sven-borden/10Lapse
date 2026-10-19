@@ -35,6 +35,8 @@
     <WindowsPackageType>MSIX</WindowsPackageType>
     <SelfContained>true</SelfContained>
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
+    <!-- Split the bundle by language and DX feature level only: every scale stays in the main package (no per-scale resource packages). -->
+    <AppxBundleAutoResourcePackageQualifiers>Language|DXFeatureLevel</AppxBundleAutoResourcePackageQualifiers>
     <!--
       Packing (GenerateAppxPackageOnBuild) warns "Path to mspdbcmf.exe could not be
       found" on a machine without Visual Studio, and the packaging tools give that
