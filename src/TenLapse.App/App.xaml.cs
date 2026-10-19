@@ -124,8 +124,7 @@ public partial class App : Application
         var settings = new SettingsViewModel(errors, diagnostics, remembered, infoBars);
 
         // Import (#12): Media's PhotoImporter does the file work behind Core's IPhotoImportSource; the batches reach
-        // the project on this (the UI) thread's queue. The pickers remember the last folder for the session; #21
-        // passes an IImportFolderMemory that lasts across launches instead of SessionImportFolders.
+        // the project on this (the UI) thread's queue. The pickers remember the last folder across launches (#21).
         var ui = new DispatcherQueueUiDispatcher(DispatcherQueue.GetForCurrentThread(), logOnly);
         ICodecExtensions codecs = new WindowsCodecExtensions();
 #if DEBUG

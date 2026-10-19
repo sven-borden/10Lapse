@@ -336,6 +336,42 @@ public sealed class RememberedSettingsTests
     }
 
     [Fact]
+    public void SavingAndResettingNeverChangeTheProjectBackSoNothingLoops()
+    {
+        // A write must not raise a project change (which would schedule another write), and a reset is one change per
+        // setting at most: the memory and the number of writes stay small however often the clock runs.
+        var store = new MemorySettingsStore(new SettingsLoadResult(_saved, []));
+        var remembered = Remembered(store);
+        var project = Attached(remembered).CurrentProject.Model;
+        var changes = 0;
+        project.Changed += (_, _) => changes++;
+
+        project.Timing = TimingSettings.PerSecond(new Fraction(20, 1));
+        _time.Advance(_debounce);
+        var versionAfterSave = project.Version;
+        for (var i = 0; i < 50; i++)
+        {
+            _time.Advance(_debounce);
+            remembered.Flush();
+        }
+
+        Assert.Equal(versionAfterSave, project.Version);
+        Assert.Equal(1, changes);
+        Assert.Equal(1, store.Saves);
+
+        var before = GC.GetTotalMemory(forceFullCollection: true);
+        remembered.ResetToDefaults();
+        for (var i = 0; i < 50; i++)
+        {
+            _time.Advance(_debounce);
+        }
+
+        Assert.True(changes <= 4, $"A reset raised {changes - 1} project changes.");
+        Assert.Equal(2, store.Saves);
+        Assert.True(GC.GetTotalMemory(forceFullCollection: true) - before < 5_000_000);
+    }
+
+    [Fact]
     public void ResetOnADefaultProjectLeavesItClean()
     {
         var remembered = Remembered();

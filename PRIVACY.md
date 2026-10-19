@@ -6,7 +6,7 @@ Effective 2026-10-18.
 
 Your photos and videos are processed on your PC and never leave it. The app has no analytics, no accounts and no network access: the 3.0 package declares no internet capability, so it cannot send anything anywhere.
 
-The app remembers a few settings, such as your last export options. They stay on your PC, in the app's own storage, and are removed when you uninstall the app.
+The app remembers a few settings, such as your last speed, frame shape and export options, and the folders you last imported from and saved videos to (the folder names only, never the photos). They stay on your PC, in the app's own storage, and are removed when you uninstall the app. Settings has a button to reset them.
 
 To keep the preview fast, the app keeps small preview copies of your photos in its own cache on your PC. They never leave your PC, and they are removed when you uninstall the app. The copies are at most 1280 pixels on the longer side, carry no metadata such as the date or location, and a copy the app has not used for 30 days is deleted.
 
