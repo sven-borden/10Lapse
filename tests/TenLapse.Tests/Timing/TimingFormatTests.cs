@@ -7,6 +7,38 @@ public sealed class TimingFormatTests
     private const long Second = FrameTiming.TicksPerSecond;
 
     [Theory]
+    [InlineData(0L, "00:00.00")]
+    [InlineData(333_333L, "00:00.03")]           // frame 1 at 30 fps
+    [InlineData(666_666L, "00:00.06")]           // cut, not rounded to .07
+    [InlineData(52_666_666L, "00:05.26")]
+    [InlineData(200_000_000L, "00:20.00")]
+    [InlineData(599_999_999L, "00:59.99")]       // no carry into the minute
+    [InlineData(600_000_000L, "01:00.00")]
+    [InlineData(247_333_333L, "00:24.73")]
+    [InlineData(35_999_999_999L, "59:59.99")]
+    [InlineData(36_000_000_000L, "1:00:00.00")]
+    [InlineData(37_234_000_000L, "1:02:03.40")]
+    public void TimecodeIsMinutesSecondsAndHundredths(long ticks, string expected)
+    {
+        Assert.Equal(expected, TimingFormat.Timecode(ticks));
+    }
+
+    [Fact]
+    public void TimecodeRejectsANegativeTime()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => TimingFormat.Timecode(-1));
+    }
+
+    [Fact]
+    public void TimecodeOfAFrameStartMatchesFrameTiming()
+    {
+        var rate = new Fraction(30, 1);
+
+        Assert.Equal("00:10.00", TimingFormat.Timecode(FrameTiming.FrameStart(300, rate)));
+        Assert.Equal("00:09.96", TimingFormat.Timecode(FrameTiming.FrameStart(299, rate)));
+    }
+
+    [Theory]
     [InlineData(0L, "0.0 s")]
     [InlineData(247_000_000L, "24.7 s")]
     [InlineData(450_000_000L, "45.0 s")]

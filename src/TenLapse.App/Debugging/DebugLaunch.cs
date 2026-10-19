@@ -19,6 +19,12 @@ internal static partial class DebugLaunch
 
     private static readonly string[] _args = Environment.GetCommandLineArgs();
 
+    /// <summary>The first-launch drop zone starts in its drag-over look (<c>--drag-over</c>).</summary>
+    public static bool DragOver => _args.Contains("--drag-over", StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The first-launch drop zone acts as with Windows animations off (<c>--reduce-motion</c>).</summary>
+    public static bool ReduceMotion => _args.Contains("--reduce-motion", StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Applies the switches to a freshly built shell, on the UI thread.</summary>
     public static void Apply(ShellViewModel shell, IInfoBarService infoBars)
     {
