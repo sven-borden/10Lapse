@@ -58,7 +58,10 @@ $samples = Join-Path $base 'samples'
 $broken = Join-Path $base 'broken-photos'
 Remove-Item $results -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $base, $results, $samples, $broken | Out-Null
-foreach ($name in 'empty', 'editing', 'export', 'keys', 'newproject') { Remove-Item (Join-Path $base "a11y-logs-$name") -Recurse -Force -ErrorAction SilentlyContinue }
+foreach ($name in 'empty', 'editing', 'export', 'keys', 'newproject') {
+    # Fresh settings too: the app keeps the last rate, which would make the next run's typed 24 the stored value.
+    Remove-Item (Join-Path $base "a11y-logs-$name"), (Join-Path $base "a11y-settings-$name") -Recurse -Force -ErrorAction SilentlyContinue
+}
 Copy-Item (Join-Path $root 'tests/TenLapse.Tests/Fixtures/Photos/*') $broken -Force
 
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
@@ -303,20 +306,31 @@ if (Want 'keys') {
         else { Skip 'new-project-question' 'no question appeared' }
         # "24" typed into the Timing box and not committed (ValuePattern sets the text without focus or Enter), as a user
         # who types and presses Ctrl+E at once: the export must take it (#38 review, M1). 400 frames at 24 fps are 16.7 s,
-        # at the default 30 fps 13.3 s.
-        $box = @($app.Window.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, 'Custom frames per second')))) |
+        # at the default 30 fps 13.3 s. Typed at 23 s, after the focus walk of the screen the question left (19 s), whose
+        # Tab walk through the box would commit it; focus-keys.log then shows the TimingChanged announcement at Ctrl+E.
+        # The edit box itself: its label and the group around it carry the same name.
+        Wait-Until $app 23
+        $isBox = New-Object System.Windows.Automation.AndCondition(
+            (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, 'Custom frames per second')),
+            (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)))
+        $box = @($app.Window.FindAll($Tree::Descendants, $isBox)) |
             Where-Object { -not $_.Current.IsOffscreen } | Select-Object -First 1
         if ($box -and ((Get-Date) - $app.Process.StartTime).TotalSeconds -lt 25) {
             $box.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('24')
-            $summary.Add("timing box before ctrl+e: '$($box.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value)' typed, not committed")
+            Start-Sleep -Seconds 1
+            # The readout still says the stored rate: the entry is in the box only.
+            $readout = @($app.Window.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text)))) |
+                Where-Object { $_.Current.Name -match ' fps' } | Select-Object -First 1
+            $summary.Add("timing box before ctrl+e: '$($box.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value)' typed; readout '$(if ($readout) { $readout.Current.Name })'")
         }
         else { Skip 'ctrl+e typed rate' 'the Timing box was not found before Ctrl+E' }
         # Ctrl+E at 26 s, the finished state: its summary says the video's length.
-        if (Find-Id $app 'PlayButton' 60) {
+        # (The transport's Play is also 'PlayButton', so the finished state is found by its title.)
+        $title = Find-Id $app 'FinishedTitle' 60
+        if ($title) {
             Start-Sleep -Seconds 1
-            $texts = @($app.Window.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text))))
-            $finished = $texts | Where-Object { $_.Current.Name -match ' s · ' } | Select-Object -First 1
-            $summary.Add("ctrl+e finished: '$(if ($finished) { $finished.Current.Name })' (16.7 s means the typed 24 fps)")
+            $finished = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetNextSibling($title)
+            $summary.Add("ctrl+e finished: '$($title.Current.Name)', '$(if ($finished) { $finished.Current.Name })' (16.7 s means the typed 24 fps)")
         }
         # Ctrl+N at 40 s, Ctrl+E at 43 s on the Empty screen, then Settings.
         Wait-Until $app 45
