@@ -74,10 +74,10 @@
     <value>Cancelar</value>
   </data>
   <data name="InfoBarActionFailed" xml:space="preserve">
-    <value>No se pudo hacer por un problema inesperado. Vuelve a intentarlo y, si sigue pasando, reinicia 10Lapse.</value>
+    <value>No se pudo completar la acción por un problema inesperado. Vuelve a intentarlo y, si sigue pasando, reinicia 10Lapse.</value>
   </data>
   <data name="InfoBarShowDetails" xml:space="preserve">
-    <value>Ver lista</value>
+    <value>Mostrar lista</value>
   </data>
   <data name="InfoBarHideDetails" xml:space="preserve">
     <value>Ocultar lista</value>
@@ -260,7 +260,7 @@
     <value>No se pueden leer {0} de fotos, así que la vista previa muestra marcadores de posición en su lugar. Restáuralas o sustitúyelas antes de exportar.</value>
   </data>
   <data name="PreviewCacheFailed" xml:space="preserve">
-    <value>No se pueden guardar las copias de vista previa de tus fotos, así que la vista previa puede ir lenta. Tus fotos y la exportación no se ven afectadas.</value>
+    <value>No se pueden guardar las copias de vista previa de tus fotos, así que la vista previa puede ser lenta. Tus fotos y la exportación no se ven afectadas.</value>
   </data>
   <data name="AddPhotos" xml:space="preserve">
     <value>Agregar fotos</value>

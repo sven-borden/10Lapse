@@ -40,7 +40,7 @@
     <value>Abre GitHub en tu navegador</value>
   </data>
   <data name="RateFailed" xml:space="preserve">
-    <value>No se pudo abrir Microsoft Store. Ábrela desde el menú Inicio y busca 10Lapse para calificarla.</value>
+    <value>No se pudo abrir Microsoft Store. Ábrela desde el menú Inicio y busca 10Lapse para calificar la aplicación.</value>
   </data>
   <data name="FeedbackFailed" xml:space="preserve">
     <value>No se pudo abrir el navegador. Ve a github.com/sven-borden/10Lapse/issues para enviar tus comentarios.</value>

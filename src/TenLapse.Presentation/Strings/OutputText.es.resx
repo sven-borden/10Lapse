@@ -49,7 +49,7 @@
     <value>{0} no se puede exportar en este equipo con esta configuración, así que se seleccionó {1}.</value>
   </data>
   <data name="ResolutionReplacedByShape" xml:space="preserve">
-    <value>{0} no está disponible con esta proporción en este equipo, así que se seleccionó {1}. Tu elección de {0} vuelve con una proporción que lo permita.</value>
+    <value>{0} no está disponible con esta proporción en este equipo, así que se seleccionó {1}. {0} vuelve a seleccionarse si eliges una proporción que lo admita.</value>
   </data>
   <data name="KeepSelected" xml:space="preserve">
     <value>Usar esta configuración</value>

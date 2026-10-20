@@ -34,7 +34,7 @@
     <value>Exportando {0}</value>
   </data>
   <data name="PercentFormat" xml:space="preserve">
-    <value>{0} %</value>
+    <value>{0} %</value>
   </data>
   <data name="ProgressName" xml:space="preserve">
     <value>Progreso de la exportación</value>
@@ -127,13 +127,13 @@
     <value>El proyecto no se puede cambiar mientras se exporta el video. Espera a que termine o cancela la exportación.</value>
   </data>
   <data name="ImportStillRunning" xml:space="preserve">
-    <value>Todavía se están agregando fotos. Exporta cuando estén todas.</value>
+    <value>Todavía se están agregando fotos. Exporta cuando se hayan agregado todas.</value>
   </data>
   <data name="ChangedDuringDialogFormat" xml:space="preserve">
     <value>La exportación no se inició porque el proyecto o su salida cambiaron mientras el cuadro de diálogo Guardar estaba abierto. Vuelve a elegir “{0}”.</value>
   </data>
   <data name="PremiereCantPlayFormat" xml:space="preserve">
-    <value>El video se guardó, pero 10Lapse no puede reproducirlo aquí. Elige “{0}” y prueba el video en otra aplicación.</value>
+    <value>El video se guardó, pero 10Lapse no puede reproducirlo aquí. Elige “{0}” y ábrelo con otra aplicación para comprobarlo.</value>
   </data>
   <data name="CloseTitle" xml:space="preserve">
     <value>¿Detener la exportación y cerrar?</value>
