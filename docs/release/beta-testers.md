@@ -24,7 +24,7 @@ Use your own photos. Notice anything odd, slow or confusing.
 - **Export** at a few settings: another resolution, frame rate or codec (H.264, HEVC). Play the video.
 - **Minimize 10Lapse during an export** and wait. When it ends, a Windows notification should say so, and clicking it should bring 10Lapse back.
 - **Cancel** an export half way. The window should go back to normal.
-- **Export twice.** A few seconds after the second finished export the Microsoft Store should ask you to rate 10Lapse. Tell Sven if it does not, or if it asks again straight away.
+- **Export twice**, and keep the window in front for the second export. A few seconds after the second finished export the Microsoft Store should ask you to rate 10Lapse. Tell Sven if it does not, or if it asks again straight away.
 - **Remove frames** you do not want. Your photo files on disk are never changed or deleted.
 - **Close and reopen.** Do your choices come back? Did the app ever close by itself while starting? That matters a lot.
 
