@@ -275,10 +275,13 @@ function Get-ArchPackageProblem([System.IO.Compression.ZipArchive]$package, [str
         $problems.Add("the $arch package has no resources.pri, so ms-resource:AppDescription cannot resolve")
     }
     else {
+        # Searched as bytes (the PRI and each needle as Latin-1, one char per byte): MRT stores a string as UTF-8 or as
+        # UTF-16LE, and a translated description (é, ’, œ, a narrow no-break space) only matches in its real encoding.
         $priText = $latin1.GetString((Read-ZipBytes $pri))
         foreach ($needle in @('AppDescription') + @($descriptions.Values)) {
-            $wide = ($needle.ToCharArray() | ForEach-Object { "$_" }) -join "`0"
-            if (-not $priText.Contains($needle, [System.StringComparison]::Ordinal) -and -not $priText.Contains($wide, [System.StringComparison]::Ordinal)) {
+            $utf8 = $latin1.GetString([System.Text.Encoding]::UTF8.GetBytes($needle))
+            $utf16 = $latin1.GetString([System.Text.Encoding]::Unicode.GetBytes($needle))
+            if (-not $priText.Contains($utf8, [System.StringComparison]::Ordinal) -and -not $priText.Contains($utf16, [System.StringComparison]::Ordinal)) {
                 $problems.Add("the $arch resources.pri does not hold '$needle'")
             }
         }
