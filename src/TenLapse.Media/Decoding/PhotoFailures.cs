@@ -106,7 +106,8 @@ internal static class PhotoFailures
             $"{stage}: {name} (0x{hresult:X8}, {exception.GetType().Name}): {exception.Message}");
         if (missing is not null)
         {
-            detail += $" Missing: {missing.Name} ({missing.StoreProductId}).";
+            // The log stays English: the product ID alone, not the Store name, which is localized.
+            detail += $" Missing Store product {missing.StoreProductId}.";
         }
 
         return new PhotoFailure(path, missing is null ? reason : SkipReason.NeedsExtension, detail, exception, format, missing);

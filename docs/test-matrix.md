@@ -85,23 +85,23 @@ extension in Settings > Apps, add the photos again, restart 10Lapse after each
 install or uninstall (the wording tells the user to restart).
 
 - [ ] **3.1 HEIF Image Extensions missing, iPhone HEIC folder** (#14).
-  Expect: "These N photos need the free HEIF Image Extensions from Microsoft."
+  Expect: "These N photos need HEIF Image Extensions (free) from Microsoft."
   The button opens the Store page for the extension.
 - [ ] **3.2 Raw Image Extension missing, RAW folder** (#14). Expect: "These N
-  photos need the free Raw Image Extension from Microsoft." DNG and other RAW
+  photos need Raw Image Extension (free) from Microsoft." DNG and other RAW
   that the PC can already decode do not prompt.
 - [ ] **3.3 HEVC Video Extensions missing, HEVC-coded HEIC** (#14). Expect:
-  "These N photos need the HEVC Video Extensions from Microsoft, which costs a
-  small fee." A PC that already has a software HEVC decoder must not be
+  "These N photos need HEVC Video Extensions (paid) from Microsoft." A PC that already has a software HEVC decoder must not be
   prompted (no false paid upsell); those files stay in the generic "couldn't
   be read" list.
-- [ ] **3.4 HEIF and HEVC both missing** (#14). Expect: one InfoBar naming
-  both; its button opens the first, then a follow-up InfoBar at the front of the
-  queue: "Next, get the HEVC Video Extensions (a small fee). When both are
-  installed, restart 10Lapse and add the photos again."
+- [ ] **3.4 HEIF and HEVC both missing** (#14). Expect: one InfoBar, "These N
+  photos need 2 extensions from Microsoft. Start with HEIF Image Extensions
+  (free)."; its button opens the first, then a follow-up InfoBar at the front of
+  the queue: "Finally, get HEVC Video Extensions (paid). When the install
+  finishes, restart 10Lapse and add the photos again."
 - [ ] **3.5 Store cannot open** (#14). Do: turn the Store off or block it if
   you can. Expect: a Caution InfoBar "Couldn't open the Microsoft Store. Search
-  the Store for <name>, install it, then restart 10Lapse and add the photos
+  the Store for <name> and install the extension, then restart 10Lapse and add the photos
   again."
 - [ ] **3.6 After installing and restarting** (#14). Expect: the same photos
   import with no prompt. Whether a running 10Lapse picks up an extension

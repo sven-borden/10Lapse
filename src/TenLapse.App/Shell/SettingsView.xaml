@@ -50,6 +50,26 @@
     Background="{ThemeResource LayerBrush}"
     BorderBrush="{ThemeResource DividerBrush}"
     BorderThickness="0,1,0,0">
+    <VisualStateManager.VisualStateGroups>
+      <VisualStateGroup x:Name="CardLayout">
+        <VisualState x:Name="CardsWide">
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="900" />
+          </VisualState.StateTriggers>
+        </VisualState>
+        <VisualState x:Name="CardsNarrow">
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FeedbackButtons.(Grid.Row)" Value="1" />
+            <Setter Target="FeedbackButtons.(Grid.Column)" Value="1" />
+            <Setter Target="FeedbackButtons.HorizontalAlignment" Value="Left" />
+            <Setter Target="FeedbackButtons.Margin" Value="0,8,0,0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
     <ScrollViewer HorizontalScrollMode="Disabled" VerticalScrollBarVisibility="Auto">
       <!-- The page is the window's main landmark while it shows (#38). -->
       <shell:Region
@@ -124,12 +144,17 @@
           </Grid>
 
           <!-- #31: both buttons hand a link to another app (the Store, the browser); 10Lapse itself makes no request. -->
+          <!-- In a narrow window (below 900 px) the two buttons move under the caption and may wrap (#114). -->
           <Grid Style="{StaticResource SettingsCardStyle}">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="Auto" />
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
             <!-- Segoe Fluent Icons "FavoriteStar". -->
             <FontIcon Glyph="&#xE734;" Style="{StaticResource SettingsCardIconStyle}" />
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
@@ -141,10 +166,10 @@
                 Text="{x:Bind rating:RatingText.CardCaption}"
                 TextWrapping="Wrap" />
             </StackPanel>
-            <StackPanel
+            <shell:WrapRow
+              x:Name="FeedbackButtons"
               Grid.Column="2"
               VerticalAlignment="Center"
-              Orientation="Horizontal"
               Spacing="{StaticResource SpacingSm}">
               <Button
                 Height="{StaticResource ControlHeight}"
@@ -160,7 +185,7 @@
                 Command="{x:Bind ViewModel.RateCommand}"
                 Content="{x:Bind rating:RatingText.RateButton}"
                 ToolTipService.ToolTip="{x:Bind rating:RatingText.RateTip}" />
-            </StackPanel>
+            </shell:WrapRow>
           </Grid>
         </StackPanel>
       </shell:Region>

@@ -37,10 +37,7 @@ public static class KeyText
     /// <summary>Export video's shortcut in its tooltip (its accelerator key is <c>ExportText.ExportKeys</c>).</summary>
     public static string ExportShortcut => _strings.Get();
 
-    /// <summary>The play button's key in its tooltip.</summary>
-    public static string PlayShortcut => _strings.Get();
-
-    /// <summary>The play button's key as a screen reader names it (its accelerator key).</summary>
+    /// <summary>The play button's key, the space bar: in its tooltip and as a screen reader names it (its accelerator key).</summary>
     public static string PlayKeys => _strings.Get();
 
     /// <summary>Settings' Back button's key as a screen reader names it (its accelerator key; Alt+Left and the mouse's back button work too).</summary>

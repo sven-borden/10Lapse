@@ -11,9 +11,11 @@ namespace TenLapse.Presentation;
 /// <summary>
 /// Every user-visible string the view models and the views show, read from <c>Strings/ProjectText.resx</c> (#39,
 /// <see cref="TextResources"/>); the XAML binds to these properties too. Each sentence is one whole format string with
-/// numbered placeholders, never pieces glued together, so a translation can reorder it; the singular and the plural
-/// are separate strings, chosen by count. The timing units ("s", "fps", "per photo") are Core's
-/// <see cref="TimingWords"/>. Numbers use the invariant culture, as <see cref="TimingFormat"/> does.
+/// numbered placeholders, never pieces glued together, so a translation can reorder it. A counted sentence is a
+/// <see cref="PluralText"/> family (<c>X_one</c>, <c>X_other</c>, and <c>X_many</c> where a language has it), chosen
+/// by the count's CLDR plural category (#114). The timing formats ("{0} s", "{0} fps") are Core's
+/// <see cref="TimingWords"/>. Numbers are written in the user's culture (<see cref="CultureInfo.CurrentCulture"/>),
+/// except the zero-padded frame counters and the time codes, which are invariant on purpose.
 /// <para>
 /// The split: what the user sees comes from the resource file. Error contexts and log lines (their summaries say
 /// so) and the Copy diagnostics text stay here as English literals: the log is for the developer and bug reports.
@@ -45,11 +47,29 @@ public static class ProjectText
     /// <summary>What a screen reader calls a region that is no standard landmark (the filmstrip, the export panel): the ARIA word "region" in the language.</summary>
     public static string RegionLandmarkType => _strings.Get();
 
-    /// <summary>The readout for one photo. {0} the length ("0.5 s"), {1} the rate ("30 fps").</summary>
-    public static string TimingReadoutOne => _strings.Get();
+    /// <summary>
+    /// Two texts one after the other, "{0} {1}": a message and the readout a screen reader hears, two notices, or the
+    /// Timing readout's two lines in one (#114). A space in most languages.
+    /// </summary>
+    public static string SentenceJoin => _strings.Get();
 
-    /// <summary>The readout for 0 or several photos. {0} the count ("742"), {1} the length, {2} the rate.</summary>
-    public static string TimingReadoutMany => _strings.Get();
+    /// <summary>The non-empty <paramref name="parts"/> joined with <see cref="SentenceJoin"/>, in order; empty when none is.</summary>
+    public static string Sentences(params string?[] parts)
+    {
+        ArgumentNullException.ThrowIfNull(parts);
+        var joined = string.Empty;
+        foreach (var part in parts)
+        {
+            if (string.IsNullOrEmpty(part))
+            {
+                continue;
+            }
+
+            joined = joined.Length == 0 ? part : Format(SentenceJoin, joined, part);
+        }
+
+        return joined;
+    }
 
     /// <summary>The window title of a project with nothing unsaved. {0} the project name, {1} the product name.</summary>
     public static string WindowTitleSaved => _strings.Get();
@@ -63,11 +83,8 @@ public static class ProjectText
     /// <summary>The <c>New project</c> question for a project with settings but no photos.</summary>
     public static string NewProjectMessageNoPhotos => _strings.Get();
 
-    /// <summary>The <c>New project</c> question for one photo.</summary>
-    public static string NewProjectMessageOne => _strings.Get();
-
-    /// <summary>The <c>New project</c> question for several photos. {0} the count ("742").</summary>
-    public static string NewProjectMessageMany => _strings.Get();
+    /// <summary>The <c>New project</c> question for a project with photos. {0} the count ("742"; the one form may leave it out).</summary>
+    public static PluralText NewProjectMessage => _strings.Plural();
 
     /// <summary>The button that goes ahead with <c>New project</c>.</summary>
     public static string NewProjectConfirm => _strings.Get();
@@ -363,56 +380,35 @@ public static class ProjectText
     public static string LogCancelled => "Cancelled, not an error: {0}";
 
     /// <summary>
-    /// The Timing readout, e.g. "742 photos → 24.7 s at 30 fps", at the effective rate for this count
-    /// (<see cref="TimingSettings.EffectiveRate"/>: in Length mode a clamped rate gives the length the clip
-    /// really has). In <see cref="SpeedMode.PerPhoto"/> the rate reads per photo ("40 photos → 20.0 s at
-    /// 0.5 s per photo"); otherwise as <see cref="TimingFormat.FrameRate"/>.
+    /// The first, larger line of the Timing panel's readout: "742 photos → 24.7 s". {0} the count, {1} the length. It
+    /// reads on its own; <see cref="TimingDetail"/> is the second line.
     /// </summary>
-    public static string TimingReadout(int frameCount, TimingSettings timing)
-    {
-        var (length, rate) = TimingLengthAndRate(frameCount, timing);
-        return frameCount == 1
-            ? Format(TimingReadoutOne, length, rate)
-            : Format(TimingReadoutMany, Count(frameCount), length, rate);
-    }
+    public static PluralText TimingHeadline => _strings.Plural();
 
-    /// <summary>The first part of the Timing panel's readout. {0} the length ("24.7 s").</summary>
-    public static string TimingHeadlineOne => _strings.Get();
-
-    /// <summary>The first part of the readout for 0 or several photos. {0} the count ("742"), {1} the length.</summary>
-    public static string TimingHeadlineMany => _strings.Get();
-
-    /// <summary>The second part of the readout. {0} the rate ("30 fps", "2 s per photo").</summary>
+    /// <summary>The second line of the readout, "at 30 fps": {0} the rate ("30 fps", "2 s per photo"). It reads on its own.</summary>
     public static string TimingDetail => _strings.Get();
 
     /// <summary>
-    /// <see cref="TimingReadout"/> in two parts for the Timing panel, which sets the first in the larger type:
-    /// ("742 photos → 24.7 s", "at 30 fps"). Joined with a space they read exactly as <see cref="TimingReadout"/>.
+    /// The Timing readout in two lines, which the Timing panel sets in two sizes: ("742 photos → 24.7 s", "at 30 fps"),
+    /// at the effective rate for this count (<see cref="TimingSettings.EffectiveRate"/>: in Length mode a clamped rate
+    /// gives the length the clip really has). In <see cref="SpeedMode.PerPhoto"/> the rate reads per photo ("at 0.5 s
+    /// per photo"); otherwise as <see cref="TimingFormat.FrameRate"/>. <see cref="Sentences"/> joins them for a screen reader.
     /// </summary>
     /// <param name="frameCount">The number of photos.</param>
     /// <param name="timing">The speed.</param>
-    /// <param name="culture">The culture of the numbers (decimal separator, grouping); invariant when null, as <see cref="TimingReadout"/> is.</param>
+    /// <param name="culture">The culture of the numbers (decimal separator, grouping); the current culture when null.</param>
     public static (string Headline, string Detail) TimingReadoutParts(int frameCount, TimingSettings timing, CultureInfo? culture = null)
-    {
-        var (length, rate) = TimingLengthAndRate(frameCount, timing, culture);
-        var headline = frameCount == 1
-            ? Format(TimingHeadlineOne, length)
-            : Format(TimingHeadlineMany, Count(frameCount, culture), length);
-        return (headline, Format(TimingDetail, rate));
-    }
-
-    // The clip length and the rate label at the effective rate for this count.
-    private static (string Length, string Rate) TimingLengthAndRate(int frameCount, TimingSettings timing, CultureInfo? culture = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(frameCount);
         ArgumentNullException.ThrowIfNull(timing);
+        culture ??= CultureInfo.CurrentCulture;
 
         var effective = timing.EffectiveRate(frameCount).Rate;
         var length = TimingFormat.Duration(FrameTiming.Duration(frameCount, effective), culture);
         var rate = timing.Mode == SpeedMode.PerPhoto
             ? TimingFormat.SecondsPerPhoto(effective, culture)
             : TimingFormat.FrameRate(effective, culture);
-        return (length, rate);
+        return (TimingHeadline.Format(culture, frameCount, Count(frameCount, culture), length), Format(culture, TimingDetail, rate));
     }
 
     /// <summary>
@@ -434,12 +430,7 @@ public static class ProjectText
     {
         ArgumentOutOfRangeException.ThrowIfNegative(frameCount);
 
-        var message = frameCount switch
-        {
-            0 => NewProjectMessageNoPhotos,
-            1 => NewProjectMessageOne,
-            _ => Format(NewProjectMessageMany, Count(frameCount)),
-        };
+        var message = frameCount == 0 ? NewProjectMessageNoPhotos : Counted(NewProjectMessage, frameCount);
         return new Confirmation(NewProjectTitle, message, NewProjectConfirm, Cancel);
     }
 
@@ -454,11 +445,11 @@ public static class ProjectText
     /// <summary>The scrubber's name.</summary>
     public static string PreviewScrubberName => _strings.Get();
 
-    /// <summary>The transport's frame counter. {0} the frame number, {1} the total, both zero-padded to the same width ("0312 / 0742").</summary>
-    public static string PreviewCounterFormat => _strings.Get();
-
-    /// <summary>The frame counter as Narrator reads it. {0} the frame number, {1} the total ("Frame 312 of 742").</summary>
-    public static string PreviewCounterNameFormat => _strings.Get();
+    /// <summary>
+    /// A place and the total, "{0} / {1}": the transport's frame counter ("0312 / 0742", both zero-padded to the same
+    /// width) and the first-launch timelapse's time codes ("00:10.40 / 00:24.73").
+    /// </summary>
+    public static string PositionOfTotal => _strings.Get();
 
     /// <summary>The time code as Narrator reads it. {0} the time, {1} the length.</summary>
     public static string PreviewTimecodeNameFormat => _strings.Get();
@@ -466,11 +457,8 @@ public static class ProjectText
     /// <summary>A frame whose photo cannot be read, drawn in its place. {0} the file name.</summary>
     public static string PreviewPlaceholderFormat => _strings.Get();
 
-    /// <summary>One photo of the project cannot be read while previewing. The detail list names it.</summary>
-    public static string PreviewFrameUnreadableOne => _strings.Get();
-
-    /// <summary>Several photos cannot be read while previewing. {0} the count ("3"). The detail list names them.</summary>
-    public static string PreviewFrameUnreadableMany => _strings.Get();
+    /// <summary>Photos of the project cannot be read while previewing. {0} the count ("3"). The detail list names them.</summary>
+    public static PluralText PreviewUnreadablePhotos => _strings.Plural();
 
     /// <summary>The proxy cache cannot be written: the preview works from the photos, slower.</summary>
     public static string PreviewCacheFailed => _strings.Get();
@@ -515,14 +503,14 @@ public static class ProjectText
     public static string PreviewCounter(int number, int total)
     {
         var (padded, paddedTotal) = PadFrames(number, total);
-        return Format(PreviewCounterFormat, padded, paddedTotal);
+        return Format(PositionOfTotal, padded, paddedTotal);
     }
 
-    /// <summary>"Frame 312 of 742": the counter for Narrator.</summary>
+    /// <summary>"Frame 312 of 742": the counter for Narrator, its numbers in the user's culture.</summary>
     public static string PreviewCounterName(int number, int total)
     {
         PadFrames(number, total);
-        return Format(PreviewCounterNameFormat, number, total);
+        return Format(FrameOfTotal, Count(number), Count(total));
     }
 
     /// <summary>"Time 00:10.40 of 00:24.73": the time code for Narrator.</summary>
@@ -536,17 +524,25 @@ public static class ProjectText
     public static string PreviewFrameUnreadable(int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
-        return count == 1 ? PreviewFrameUnreadableOne : Format(PreviewFrameUnreadableMany, Count(count));
+        return Counted(PreviewUnreadablePhotos, count);
     }
 
+    // "0312", "0742": zero-padded to four digits or the total's width. Invariant on purpose: a fixed-width counter of
+    // ASCII digits with no grouping (DESIGN.md, the Tabular Rule).
     private static (string Number, string Total) PadFrames(int number, int total)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(total);
         ArgumentOutOfRangeException.ThrowIfLessThan(number, 1);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(number, total);
-        var digits = "D" + Math.Max(4, total.ToString(CultureInfo.InvariantCulture).Length).ToString(CultureInfo.InvariantCulture);
-        return (number.ToString(digits, CultureInfo.InvariantCulture), total.ToString(digits, CultureInfo.InvariantCulture));
+        var width = Math.Max(4, Digits(total));
+        return (Padded(number, width), Padded(total, width));
     }
+
+    // Invariant on purpose: zero-padded counter digits (DESIGN.md, the Tabular Rule).
+    private static string Padded(int value, int width) => value.ToString(CultureInfo.InvariantCulture).PadLeft(width, '0');
+
+    // Invariant on purpose: only the number of digits is wanted.
+    private static int Digits(int value) => value.ToString(CultureInfo.InvariantCulture).Length;
 
     // ---- End of the preview block (#19). ----
 
@@ -567,35 +563,23 @@ public static class ProjectText
     /// <summary>The import progress while the first photos are being looked for.</summary>
     public static string ImportLooking => _strings.Get();
 
-    /// <summary>The import progress while listing, one photo found so far.</summary>
-    public static string ImportFoundOne => _strings.Get();
-
     /// <summary>The import progress while listing. {0} the photos found so far ("1,240").</summary>
-    public static string ImportFoundMany => _strings.Get();
+    public static PluralText ImportFound => _strings.Plural();
 
-    /// <summary>The import progress while reading one photo.</summary>
-    public static string ImportAddingOne => _strings.Get();
-
-    /// <summary>The import progress while reading. {0} the photos read ("1,240"), {1} all of them ("5,000").</summary>
-    public static string ImportAddingMany => _strings.Get();
+    /// <summary>The import progress while reading, its form chosen by {1}. {0} the photos read ("1,240"), {1} all of them ("5,000").</summary>
+    public static PluralText ImportAdding => _strings.Plural();
 
     /// <summary>The accessible name of the progress's Cancel button.</summary>
     public static string ImportCancelName => _strings.Get();
 
-    /// <summary>Narrator once an import's progress goes and the project holds one photo.</summary>
-    public static string ImportDoneOne => _strings.Get();
-
     /// <summary>Narrator once an import's progress goes. {0} the photos in the project now ("742").</summary>
-    public static string ImportDoneMany => _strings.Get();
+    public static PluralText ImportDone => _strings.Plural();
 
     /// <summary>The drag caption when the count is not known (folders, or items still being looked at).</summary>
     public static string DragCaptionAny => _strings.Get();
 
-    /// <summary>The drag caption for one photo file.</summary>
-    public static string DragCaptionOne => _strings.Get();
-
-    /// <summary>The drag caption for several photo files. {0} the count ("120").</summary>
-    public static string DragCaptionMany => _strings.Get();
+    /// <summary>The drag caption for photo files. {0} the count ("120").</summary>
+    public static PluralText DragCaptionPhotos => _strings.Plural();
 
     /// <summary>The drag caption while Settings is open: the drop is refused until the user goes back.</summary>
     public static string DragCaptionSettingsOpen => _strings.Get();
@@ -603,11 +587,8 @@ public static class ProjectText
     /// <summary>The title of the question a drop onto a project with photos asks.</summary>
     public static string DropTitle => _strings.Get();
 
-    /// <summary>The drop question for a project with one photo.</summary>
-    public static string DropMessageOne => _strings.Get();
-
-    /// <summary>The drop question for a project with several photos. {0} the count ("742").</summary>
-    public static string DropMessageMany => _strings.Get();
+    /// <summary>The drop question for a project with photos. {0} the count ("742").</summary>
+    public static PluralText DropMessage => _strings.Plural();
 
     /// <summary>The drop question's default button: add to the project that is open.</summary>
     public static string DropAddToProject => _strings.Get();
@@ -615,8 +596,14 @@ public static class ProjectText
     /// <summary>A Caution InfoBar: nothing to import was found.</summary>
     public static string ImportNothingFound => _strings.Get();
 
-    /// <summary>The same with subfolders off, when a folder was searched.</summary>
-    public static string ImportNothingFoundSubfolders => _strings.Get();
+    /// <summary>
+    /// The same with subfolders off, when a folder was searched. {0} the menu toggle (<see cref="IncludeSubfolders"/>),
+    /// {1} the menu's button (<see cref="AddPhotos"/>).
+    /// </summary>
+    public static string ImportNothingFoundSubfoldersFormat => _strings.Get();
+
+    /// <summary><see cref="ImportNothingFoundSubfoldersFormat"/> with the labels it names.</summary>
+    public static string ImportNothingFoundSubfolders => Format(ImportNothingFoundSubfoldersFormat, IncludeSubfolders, AddPhotos);
 
     /// <summary>A Neutral InfoBar: every photo found was in the project already.</summary>
     public static string ImportAlreadyAdded => _strings.Get();
@@ -624,44 +611,29 @@ public static class ProjectText
     /// <summary>A Neutral InfoBar after Cancel, when no photo was kept.</summary>
     public static string ImportStoppedNone => _strings.Get();
 
-    /// <summary>A Neutral InfoBar after Cancel, one photo kept.</summary>
-    public static string ImportStoppedOne => _strings.Get();
-
     /// <summary>A Neutral InfoBar after Cancel. {0} the photos kept ("1,240").</summary>
-    public static string ImportStoppedMany => _strings.Get();
+    public static PluralText ImportStoppedAdded => _strings.Plural();
 
     /// <summary>
     /// A Caution InfoBar: a folder of the import would not open, or a path was no longer there. {0} the folder's name
     /// (its full path for a drive).
     /// </summary>
-    public static string ImportFolderFailedOne => _strings.Get();
+    public static string ImportFolderFailedNamed => _strings.Get();
 
-    /// <summary>The same for several folders, listed under View list. {0} the count ("3").</summary>
-    public static string ImportFolderFailedMany => _strings.Get();
+    /// <summary>The same for several folders, listed under View list. {0} the count, 2 or more ("3").</summary>
+    public static PluralText ImportFoldersNotOpened => _strings.Plural();
 
     /// <summary>The title of the question an import asks when photos are only in OneDrive (files on demand).</summary>
     public static string CloudDownloadTitle => _strings.Get();
 
-    /// <summary>The question for one online-only photo. {0} its size ("12 MB").</summary>
-    public static string CloudDownloadOne => _strings.Get();
-
-    /// <summary>The question for several online-only photos. {0} the count ("1,240"), {1} their size ("2.4 GB").</summary>
-    public static string CloudDownloadMany => _strings.Get();
+    /// <summary>The question for online-only photos. {0} the count ("1,240"), {1} their size ("2.4 GB").</summary>
+    public static PluralText CloudDownloadQuestion => _strings.Plural();
 
     /// <summary>The question's button that downloads the photos and adds them.</summary>
     public static string CloudDownloadConfirm => _strings.Get();
 
-    /// <summary>The question's default button for one photo: leave it in the cloud and list it as skipped.</summary>
-    public static string CloudDownloadSkipOne => _strings.Get();
-
-    /// <summary>The question's default button for several photos.</summary>
-    public static string CloudDownloadSkipMany => _strings.Get();
-
-    /// <summary>A size under 1 GB. {0} the megabytes, whole ("340").</summary>
-    public static string SizeMegabytes => _strings.Get();
-
-    /// <summary>A size of 1 GB or more. {0} the gigabytes, one decimal ("2.4").</summary>
-    public static string SizeGigabytes => _strings.Get();
+    /// <summary>The question's default button: leave the photos in the cloud and list them as skipped. {0} the count (not shown in English).</summary>
+    public static PluralText CloudDownloadSkip => _strings.Plural();
 
     /// <summary>Error context: an import failed part way.</summary>
     public static string ImportFailed => "Importing photos failed.";
@@ -688,77 +660,49 @@ public static class ProjectText
     public static Choice DropChoice(int frameCount)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(frameCount);
-        var message = frameCount == 1 ? DropMessageOne : Format(DropMessageMany, Count(frameCount));
-        return new Choice(DropTitle, message, DropAddToProject, NewProjectConfirm, Cancel);
+        return new Choice(DropTitle, Counted(DropMessage, frameCount), DropAddToProject, NewProjectConfirm, Cancel);
     }
 
     /// <summary>"Add 120 photos", or "Add photos" when <paramref name="photoCount"/> is not known.</summary>
-    public static string DragCaption(int? photoCount) => photoCount switch
-    {
-        null or <= 0 => DragCaptionAny,
-        1 => DragCaptionOne,
-        _ => Format(DragCaptionMany, Count(photoCount.Value)),
-    };
+    public static string DragCaption(int? photoCount) =>
+        photoCount is > 0 and var count ? Counted(DragCaptionPhotos, count) : DragCaptionAny;
 
     /// <summary>The listing progress: "Looking for photos…", then "Found 1,240 photos…".</summary>
     public static string ImportListingProgress(int found)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(found);
-        return found switch
-        {
-            0 => ImportLooking,
-            1 => ImportFoundOne,
-            _ => Format(ImportFoundMany, Count(found)),
-        };
+        return found == 0 ? ImportLooking : Counted(ImportFound, found);
     }
 
-    /// <summary>The reading progress: "Adding 1,240 of 5,000 photos…".</summary>
+    /// <summary>The reading progress: "Adding 1,240 of 5,000 photos…", its form chosen by the total.</summary>
     public static string ImportReadingProgress(int read, int total)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(read);
         ArgumentOutOfRangeException.ThrowIfLessThan(total, read);
-        return total == 1 ? ImportAddingOne : Format(ImportAddingMany, Count(read), Count(total));
+        return ImportAdding.Format(CultureInfo.CurrentCulture, total, Count(read), Count(total));
     }
 
     /// <summary>Narrator once the import's progress goes: the project's frames now ("742 photos in the project.").</summary>
-    public static string ImportDoneAnnouncement(int frames) =>
-        frames == 1 ? ImportDoneOne : Format(ImportDoneMany, Count(frames));
+    public static string ImportDoneAnnouncement(int frames) => Counted(ImportDone, frames);
 
     /// <summary>The InfoBar after Cancel, with the photos the import kept.</summary>
     public static string ImportStopped(int kept)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(kept);
-        return kept switch
-        {
-            0 => ImportStoppedNone,
-            1 => ImportStoppedOne,
-            _ => Format(ImportStoppedMany, Count(kept)),
-        };
+        return kept == 0 ? ImportStoppedNone : Counted(ImportStoppedAdded, kept);
     }
 
     /// <summary>
     /// The question an import asks before reading <paramref name="count"/> online-only photos of <paramref name="bytes"/>
-    /// in all (their reported sizes): <see cref="CloudDownloadConfirm"/>, or the default button, which skips them.
+    /// in all (their reported sizes): <see cref="CloudDownloadConfirm"/>, or the default button, which skips them. The
+    /// size reads as the Output panel's estimate does, at least 1 MB ("About 12 MB", "About 2.4 GB").
     /// </summary>
     public static Confirmation CloudDownload(int count, long bytes)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
         ArgumentOutOfRangeException.ThrowIfNegative(bytes);
-        var size = Size(bytes);
-        return count == 1
-            ? new Confirmation(CloudDownloadTitle, Format(CloudDownloadOne, size), CloudDownloadConfirm, CloudDownloadSkipOne)
-            : new Confirmation(CloudDownloadTitle, Format(CloudDownloadMany, Count(count), size), CloudDownloadConfirm, CloudDownloadSkipMany);
-    }
-
-    /// <summary>"340 MB" under 1 GB (at least 1 MB, rounded up), "2.4 GB" from there; binary units, as File Explorer counts them.</summary>
-    public static string Size(long bytes)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(bytes);
-        const double megabyte = 1024 * 1024;
-        const double gigabyte = megabyte * 1024;
-        return bytes >= gigabyte
-            ? Format(SizeGigabytes, (bytes / gigabyte).ToString("N1", CultureInfo.InvariantCulture))
-            : Format(SizeMegabytes, Math.Max(1, Math.Ceiling(bytes / megabyte)).ToString("N0", CultureInfo.InvariantCulture));
+        var size = OutputText.Size(Math.Max(bytes, 1L << 20));
+        return new Confirmation(CloudDownloadTitle, Counted(CloudDownloadQuestion, count, size), CloudDownloadConfirm, Counted(CloudDownloadSkip, count));
     }
 
     /// <summary>The InfoBar for one folder (or path) the import could not open: named by its folder name.</summary>
@@ -766,14 +710,14 @@ public static class ProjectText
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
-        return Format(ImportFolderFailedOne, string.IsNullOrEmpty(name) ? path : name);
+        return Format(ImportFolderFailedNamed, string.IsNullOrEmpty(name) ? path : name);
     }
 
     /// <summary>The InfoBar for several folders the import could not open.</summary>
     public static string ImportFoldersFailed(int count)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(count, 2);
-        return Format(ImportFolderFailedMany, Count(count));
+        return Counted(ImportFoldersNotOpened, count);
     }
 
     // ---- End of the import block (#12). ----
@@ -783,41 +727,26 @@ public static class ProjectText
     /// <summary>The button of an extension InfoBar. It opens the Store app; nothing is downloaded by 10Lapse.</summary>
     public static string CodecGetFromStore => _strings.Get();
 
-    /// <summary>One photo needs one free extension. {0} its Store name ("HEIF Image Extensions").</summary>
-    public static string CodecNeedsOneFree => _strings.Get();
+    /// <summary>A free extension as the sentences name it, "{0} (free)": {0} its Store name ("HEIF Image Extensions").</summary>
+    public static string CodecFree => _strings.Get();
 
-    /// <summary>Several photos need one free extension. {0} the count, {1} its Store name.</summary>
-    public static string CodecNeedsManyFree => _strings.Get();
+    /// <summary>An extension the Store sells, "{0} (paid)": {0} its Store name ("HEVC Video Extensions").</summary>
+    public static string CodecFee => _strings.Get();
 
-    /// <summary>One photo needs one extension the Store sells (HEVC). {0} its Store name.</summary>
-    public static string CodecNeedsOneFee => _strings.Get();
+    /// <summary>Photos need one extension. {0} the photo count, {1} the extension as <see cref="CodecFree"/> or <see cref="CodecFee"/>.</summary>
+    public static PluralText CodecNeedsOne => _strings.Plural();
 
-    /// <summary>Several photos need one extension the Store sells. {0} the count, {1} its Store name.</summary>
-    public static string CodecNeedsManyFee => _strings.Get();
+    /// <summary>
+    /// Photos need several extensions, installed one after the other. {0} the photo count, {1} how many extensions
+    /// ("2"), {2} the first as <see cref="CodecFree"/> or <see cref="CodecFee"/>.
+    /// </summary>
+    public static PluralText CodecNeedsSeveral => _strings.Plural();
 
-    /// <summary>One photo needs several extensions. {0} how many in words, {1} the list.</summary>
-    public static string CodecNeedsOneSeveral => _strings.Get();
-
-    /// <summary>Several photos need several extensions. {0} the count, {1} how many in words, {2} the list ("the free HEIF Image Extensions, then the HEVC Video Extensions (a small fee)").</summary>
-    public static string CodecNeedsManySeveral => _strings.Get();
-
-    /// <summary>One free extension inside a list. {0} its Store name.</summary>
-    public static string CodecListFree => _strings.Get();
-
-    /// <summary>One extension the Store sells, inside a list. {0} its Store name.</summary>
-    public static string CodecListFee => _strings.Get();
-
-    /// <summary>"Two", for how many extensions a list names.</summary>
-    public static string CodecCountTwo => _strings.Get();
-
-    /// <summary>"Several", for how many extensions a list names when it is more than two.</summary>
-    public static string CodecCountSeveral => _strings.Get();
-
-    /// <summary>Between the extensions of a list, in install order.</summary>
-    public static string CodecListSeparator => _strings.Get();
-
-    /// <summary>The InfoBar that follows the first button of a list. {0} the next extension as <see cref="CodecListFree"/> or <see cref="CodecListFee"/>.</summary>
+    /// <summary>The InfoBar after an extension's page opened, with two or more still to come. {0} the next extension as <see cref="CodecFree"/> or <see cref="CodecFee"/>.</summary>
     public static string CodecNextFormat => _strings.Get();
+
+    /// <summary>The InfoBar after an extension's page opened, with one left. {0} that extension as <see cref="CodecFree"/> or <see cref="CodecFee"/>.</summary>
+    public static string CodecLastFormat => _strings.Get();
 
     /// <summary>When Windows could not open the Store page. {0} the extension's Store name, to search for.</summary>
     public static string CodecStoreFallbackFormat => _strings.Get();
@@ -831,29 +760,22 @@ public static class ProjectText
         ArgumentOutOfRangeException.ThrowIfLessThan(count, 1);
         ArgumentNullException.ThrowIfNull(needed);
         ArgumentOutOfRangeException.ThrowIfZero(needed.Count);
-        var number = count.ToString("N0", CultureInfo.InvariantCulture);
-        if (needed.Count == 1)
+        return needed.Count switch
         {
-            var extension = needed[0];
-            return (count == 1, extension.HasFee) switch
-            {
-                (true, false) => Format(CodecNeedsOneFree, extension.Name),
-                (true, true) => Format(CodecNeedsOneFee, extension.Name),
-                (false, false) => Format(CodecNeedsManyFree, number, extension.Name),
-                (false, true) => Format(CodecNeedsManyFee, number, extension.Name),
-            };
-        }
-
-        var list = string.Join(CodecListSeparator, needed.Select(CodecListed));
-        var words = needed.Count == 2 ? CodecCountTwo : CodecCountSeveral;
-        return count == 1 ? Format(CodecNeedsOneSeveral, words, list) : Format(CodecNeedsManySeveral, number, words, list);
+            // Not a plural: one extension needed, or several (their number is said in the sentence).
+            1 => Counted(CodecNeedsOne, count, CodecListed(needed[0])),
+            _ => Counted(CodecNeedsSeveral, count, Count(needed.Count), CodecListed(needed[0])),
+        };
     }
 
-    /// <summary>The InfoBar raised after the button for an earlier extension of a list was pressed.</summary>
-    public static string CodecNext(PhotoCodecExtension next)
+    /// <summary>
+    /// The InfoBar raised after the button for an earlier extension of a list was pressed: <paramref name="next"/> is the
+    /// one to get now, and <paramref name="isLast"/> says no other follows it (then it says to restart).
+    /// </summary>
+    public static string CodecNext(PhotoCodecExtension next, bool isLast)
     {
         ArgumentNullException.ThrowIfNull(next);
-        return Format(CodecNextFormat, CodecListed(next));
+        return Format(isLast ? CodecLastFormat : CodecNextFormat, CodecListed(next));
     }
 
     /// <summary>The InfoBar for a Store page that would not open, naming the extension to search for.</summary>
@@ -864,7 +786,7 @@ public static class ProjectText
     }
 
     private static string CodecListed(PhotoCodecExtension extension) =>
-        Format(extension.HasFee ? CodecListFee : CodecListFree, extension.Name);
+        Format(extension.HasFee ? CodecFee : CodecFree, extension.Name);
 
     // ---- End of the photo extensions block (#14). ----
 
@@ -892,11 +814,11 @@ public static class ProjectText
     /// <summary>The drop zone's standard button, the same command as <see cref="ChoosePhotos"/>.</summary>
     public static string FirstLaunchChoosePhotos => _strings.Get();
 
-    /// <summary>A frame's place in a sequence. {0} the frame number, {1} the total, both zero-padded to four digits ("0312", "0742").</summary>
+    /// <summary>
+    /// A frame's place in the video, "Frame {0} of {1}": the filmstrip's caption ({0} "0312", {1} "0742", zero-padded)
+    /// and the transport's counter for Narrator ({0} "312", {1} "742").
+    /// </summary>
     public static string FrameOfTotal => _strings.Get();
-
-    /// <summary>A time code and the clip length. {0} the time code ("00:10.40"), {1} the length as a time code ("00:24.73").</summary>
-    public static string TimecodeOfTotal => _strings.Get();
 
     /// <summary>Log-only context: drawing the first-launch timelapse failed (the drop zone stays usable without it).</summary>
     public static string DaybreakDrawFailed => "Drawing the first-launch timelapse failed.";
@@ -938,16 +860,13 @@ public static class ProjectText
     /// </summary>
     public static string FrameCaption(int number, int total)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(total);
-        ArgumentOutOfRangeException.ThrowIfLessThan(number, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(number, total);
-        var digits = "D" + Math.Max(4, total.ToString(CultureInfo.InvariantCulture).Length).ToString(CultureInfo.InvariantCulture);
-        return Format(FrameOfTotal, number.ToString(digits, CultureInfo.InvariantCulture), total.ToString(digits, CultureInfo.InvariantCulture));
+        var (padded, paddedTotal) = PadFrames(number, total);
+        return Format(FrameOfTotal, padded, paddedTotal);
     }
 
     /// <summary>"00:10.40 / 00:24.73": the time at <paramref name="ticks"/> and the clip's <paramref name="lengthTicks"/>, as time codes.</summary>
     public static string TimecodeCaption(long ticks, long lengthTicks) =>
-        Format(TimecodeOfTotal, TimingFormat.Timecode(ticks), TimingFormat.Timecode(lengthTicks));
+        Format(PositionOfTotal, TimingFormat.Timecode(ticks), TimingFormat.Timecode(lengthTicks));
 
     // ---- End of the first-launch block (#29). ----
 
@@ -959,17 +878,14 @@ public static class ProjectText
     /// <summary>A thumbnail's name for Narrator. {0} the frame number from 1, not padded ("312"), {1} the file name ("IMG_0312.JPG").</summary>
     public static string FilmstripItemNameFormat => _strings.Get();
 
-    /// <summary>The caption with several frames selected. {0} the frame caption ("Frame 0312 of 0742"), {1} how many are selected ("3").</summary>
-    public static string FilmstripCaptionSelectedFormat => _strings.Get();
+    /// <summary>The caption with several frames selected. {0} how many are selected, 2 or more ("3"), {1} the frame caption ("Frame 0312 of 0742").</summary>
+    public static PluralText FilmstripCaptionSelected => _strings.Plural();
 
-    /// <summary>The file caption with a capture time. {0} the file name, {1} the time the photo was taken ("19:26:05").</summary>
+    /// <summary>The file caption with a capture time. {0} the file name, {1} the time the photo was taken, in the user's time format ("19:26:05").</summary>
     public static string FilmstripFileTimeFormat => _strings.Get();
 
-    /// <summary>A gap marker's text (tooltip and Narrator) for one number skipped.</summary>
-    public static string FilmstripGapMissingOne => _strings.Get();
-
-    /// <summary>A gap marker's text for several numbers skipped. {0} how many ("3").</summary>
-    public static string FilmstripGapMissingMany => _strings.Get();
+    /// <summary>A gap marker's text (tooltip and Narrator) for file numbers skipped. {0} how many ("3").</summary>
+    public static PluralText FilmstripGapMissing => _strings.Plural();
 
     /// <summary>A gap marker's text for a long interval. {0} the interval ("2 min 10 s"), {1} the usual one ("5.0 s").</summary>
     public static string FilmstripGapPause => _strings.Get();
@@ -1004,26 +920,17 @@ public static class ProjectText
     /// <summary>The thumbnail size slider's name.</summary>
     public static string FilmstripThumbnailSize => _strings.Get();
 
-    /// <summary>Narrator after removing one frame.</summary>
-    public static string FilmstripRemovedOne => _strings.Get();
+    /// <summary>Narrator after removing frames. {0} how many ("3"), {1} the undo keys (<see cref="FilmstripUndoKeys"/>).</summary>
+    public static PluralText FilmstripRemovedFrames => _strings.Plural();
 
-    /// <summary>Narrator after removing several frames. {0} how many ("3").</summary>
-    public static string FilmstripRemovedMany => _strings.Get();
-
-    /// <summary>Narrator after an undo put one frame back.</summary>
-    public static string FilmstripRestoredOne => _strings.Get();
-
-    /// <summary>Narrator after an undo put several frames back. {0} how many.</summary>
-    public static string FilmstripRestoredMany => _strings.Get();
+    /// <summary>Narrator after an undo put frames back. {0} how many.</summary>
+    public static PluralText FilmstripRestoredFrames => _strings.Plural();
 
     /// <summary>An undo of a removal that found every photo back in the project already (imported again).</summary>
     public static string FilmstripRestoredNone => _strings.Get();
 
-    /// <summary>The context menu's Undo of a removal of one frame.</summary>
-    public static string FilmstripUndoRemoveOne => _strings.Get();
-
-    /// <summary>The context menu's Undo of a removal of several frames. {0} the number of frames removed ("12").</summary>
-    public static string FilmstripUndoRemoveMany => _strings.Get();
+    /// <summary>The context menu's Undo of a removal. {0} the number of frames removed ("12").</summary>
+    public static PluralText FilmstripUndoRemove => _strings.Plural();
 
     /// <summary>The context menu's Undo of a move.</summary>
     public static string FilmstripUndoMove => _strings.Get();
@@ -1035,10 +942,10 @@ public static class ProjectText
     public static string FilmstripNothingToUndo => _strings.Get();
 
     /// <summary>Narrator after moving one frame. {0} its number before, {1} its place now.</summary>
-    public static string FilmstripMovedOne => _strings.Get();
+    public static string FilmstripMovedFrame => _strings.Get();
 
-    /// <summary>Narrator after moving several frames. {0} how many, {1} the first one's place now.</summary>
-    public static string FilmstripMovedMany => _strings.Get();
+    /// <summary>Narrator after moving several frames. {0} how many, 2 or more, {1} the first one's place now.</summary>
+    public static PluralText FilmstripMovedFrames => _strings.Plural();
 
     /// <summary>Log-only context: removing frames failed.</summary>
     public static string FilmstripRemoveFailed => "Removing frames from the project failed.";
@@ -1076,12 +983,12 @@ public static class ProjectText
         }
 
         var caption = FrameCaption(Math.Clamp(number, 1, total), total);
-        return selected > 1 ? Format(FilmstripCaptionSelectedFormat, caption, Count(selected)) : caption;
+        return selected > 1 ? Counted(FilmstripCaptionSelected, selected, caption) : caption;
     }
 
-    /// <summary>"IMG_0312.JPG · 19:26:05", or the name alone when the capture time is not known.</summary>
+    /// <summary>"IMG_0312.JPG · 19:26:05" (the time in the user's long time format), or the name alone when the capture time is not known.</summary>
     public static string FilmstripFileCaption(string fileName, DateTime? captureTime) =>
-        captureTime is { } time ? Format(FilmstripFileTimeFormat, fileName, time.ToString("HH:mm:ss", CultureInfo.InvariantCulture)) : fileName;
+        captureTime is { } time ? Format(FilmstripFileTimeFormat, fileName, time.ToString("T", CultureInfo.CurrentCulture)) : fileName;
 
     /// <summary>What a gap marker says.</summary>
     public static string FilmstripGap(FrameGap gap)
@@ -1089,44 +996,47 @@ public static class ProjectText
         ArgumentNullException.ThrowIfNull(gap);
         if (gap.Kinds.HasFlag(FrameGapKinds.Numbering) && gap.MissingFrames > 0)
         {
-            return gap.MissingFrames == 1 ? FilmstripGapMissingOne : Format(FilmstripGapMissingMany, Count(gap.MissingFrames));
+            return Counted(FilmstripGapMissing, gap.MissingFrames);
         }
 
         return gap.Interval is { } interval && gap.TypicalInterval is { } typical
-            ? Format(FilmstripGapPause, TimingFormat.Duration(interval.Ticks), TimingFormat.Duration(typical.Ticks))
-            : FilmstripGapMissingOne;
+            ? Format(FilmstripGapPause, TimingFormat.Duration(interval.Ticks, CultureInfo.CurrentCulture), TimingFormat.Duration(typical.Ticks, CultureInfo.CurrentCulture))
+            : Counted(FilmstripGapMissing, 1);
     }
 
     /// <summary>What Narrator hears after a removal of <paramref name="count"/> frames.</summary>
-    public static string FilmstripRemoved(int count) => count == 1 ? FilmstripRemovedOne : Format(FilmstripRemovedMany, Count(count));
+    public static string FilmstripRemoved(int count) => Counted(FilmstripRemovedFrames, count, FilmstripUndoKeys);
 
     /// <summary>What Narrator hears after an undo put <paramref name="count"/> frames back.</summary>
-    public static string FilmstripRestored(int count) => count switch
-    {
-        0 => FilmstripRestoredNone,
-        1 => FilmstripRestoredOne,
-        _ => Format(FilmstripRestoredMany, Count(count)),
-    };
+    public static string FilmstripRestored(int count) => count == 0 ? FilmstripRestoredNone : Counted(FilmstripRestoredFrames, count);
 
     /// <summary>The context menu's Undo, named after <paramref name="next"/>, the edit it would undo; plain "Undo" for none.</summary>
     public static string FilmstripUndoText(FrameEdit? next) => next switch
     {
-        { Kind: FrameEditKind.Removal, Count: 1 } => FilmstripUndoRemoveOne,
-        { Kind: FrameEditKind.Removal } edit => Format(FilmstripUndoRemoveMany, Count(edit.Count)),
+        { Kind: FrameEditKind.Removal } edit => Counted(FilmstripUndoRemove, edit.Count),
         { Kind: FrameEditKind.Reorder } => FilmstripUndoMove,
         _ => FilmstripUndo,
     };
 
     /// <summary>What Narrator hears after a move: the frame's old number (one frame) or the count, and its place now (from 1).</summary>
     public static string FilmstripMoved(int count, int oldNumber, int newPlace) =>
-        count == 1 ? Format(FilmstripMovedOne, oldNumber, newPlace) : Format(FilmstripMovedMany, Count(count), newPlace);
+        // Not a plural: one frame is named by its number, several are counted.
+        count == 1 ? Format(FilmstripMovedFrame, Count(oldNumber), Count(newPlace)) : Counted(FilmstripMovedFrames, count, Count(newPlace));
 
     // ---- End of the filmstrip block (#20). ----
 
-    // "5,000": grouped, invariant (3.0 is English only; a translation would pass the culture, as the Timing panel does).
-    private static string Count(int count, CultureInfo? culture = null) => count.ToString("N0", culture ?? CultureInfo.InvariantCulture);
+    // "5,000": grouped in the user's culture ("5.000" in German, "5 000" in French).
+    private static string Count(long count, CultureInfo? culture = null) => count.ToString("N0", culture ?? CultureInfo.CurrentCulture);
 
-    /// <summary>Fills a format string with the invariant culture (3.0 is English only, so its numbers stay unlocalized).</summary>
+    // A counted sentence in the user's culture: {0} the count, grouped, then the other values.
+    private static string Counted(PluralText text, int count, params object[] rest) =>
+        text.Format(CultureInfo.CurrentCulture, count, [Count(count), .. rest]);
+
+    /// <summary>Fills a format string in the user's culture (<see cref="CultureInfo.CurrentCulture"/>).</summary>
     internal static string Format(string format, params object[] values) =>
-        string.Format(CultureInfo.InvariantCulture, format, values);
+        string.Format(CultureInfo.CurrentCulture, format, values);
+
+    // Fills a format string in the given culture.
+    private static string Format(CultureInfo culture, string format, params object[] values) =>
+        string.Format(culture, format, values);
 }

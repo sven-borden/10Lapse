@@ -15,6 +15,13 @@
         05 editing, wide; 06 the inspector scrolled to Output
         07-09 narrow (900 px): the Timing, Frame and Output tabs; 10 the smallest window (640 x 480)
         11 the export panel; 12 the close-during-export question; 13 the finished state; 14 finished, narrow
+        15 the New project question at the smallest window
+        16 the drop question (--motion-drop onto a project with photos), 17 the same at the smallest window
+
+    Pseudo mode also sets a German regional format (#114), so a number written with the invariant culture (a dot
+    decimal, "1,240") stands out next to the localized ones ("1.240", "24,7 s"). Not captured, because they need what
+    UI Automation cannot give without real input or real files: the tooltips (a hover) and the OneDrive question (files
+    on demand). Their texts are in the same resource files and pass the same tests.
 
     The export is fast on a GPU encoder: when it has finished before the close step, 12 is skipped and the run goes
     on, and any capture after the app has exited is skipped too. The end lists what was skipped and why.
@@ -46,7 +53,7 @@ $shots = Join-Path $base $(if ($Plain) { 'plain' } else { 'pseudo' })
 $samples = Join-Path $base 'samples'
 $broken = Join-Path $base 'broken-photos'
 New-Item -ItemType Directory -Force $base, $shots, $samples, $broken | Out-Null
-foreach ($name in 'empty', 'editing', 'export') { Remove-Item (Join-Path $base "logs-$name") -Recurse -Force -ErrorAction SilentlyContinue }
+foreach ($name in 'empty', 'editing', 'drop', 'export') { Remove-Item (Join-Path $base "logs-$name") -Recurse -Force -ErrorAction SilentlyContinue }
 Copy-Item (Join-Path $root 'tests/TenLapse.Tests/Fixtures/Photos/*') $broken -Force
 
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
@@ -131,7 +138,16 @@ function Shot($app, [string]$name) {
     if ($app.Process.HasExited) { Skip $name 'the app has exited'; return }
     $path = Join-Path $shots "$name.png"
     try { [PseudoCapture]::Save([IntPtr]$app.Window.Current.NativeWindowHandle, $path) }
-    catch { if ($app.Process.HasExited) { Skip $name 'the app exited during the capture'; return } else { throw } }
+    catch {
+        if ($app.Process.HasExited) { Skip $name 'the app exited during the capture'; return }
+
+        # The window's rectangle can read empty for a moment while a dialog opens or the window resizes: try once more,
+        # by the process's main window, before giving up on this capture (not the run).
+        Start-Sleep -Milliseconds 1500
+        $app.Process.Refresh()
+        try { [PseudoCapture]::Save($app.Process.MainWindowHandle, $path) }
+        catch { Skip $name "the capture failed: $($_.Exception.InnerException.Message)"; return }
+    }
     Write-Host "  captured $name"
 }
 
@@ -207,6 +223,29 @@ try {
     }
     Resize $app 640 480
     Shot $app '10-smallest-window'
+
+    # The New project question, its two buttons at the smallest window; Cancel (the dialog's close button) keeps the project.
+    Invoke-Element (Find-Id $app 'NewProjectButton' 3)
+    if (Find-Id $app 'PrimaryButton' 5) {
+        Shot $app '15-new-project-question'
+        Invoke-Element (Find-Id $app 'CloseButton' 2)
+    }
+    else { Skip '15-new-project-question' 'the question did not open' }
+}
+finally { Stop-App $app }
+
+# 2b: the drop question, three buttons sharing the dialog's width, wide and at the smallest window.
+Write-Host 'Run: drop question'
+$app = Start-App ((Common 'drop') + '--sample-frames=12' + "--motion-drop=$broken" + '--motion-drop-delay=8')
+try {
+    Resize $app 1280 800
+    if (Find-Id $app 'SecondaryButton' 40) {
+        Shot $app '16-drop-question'
+        Resize $app 640 480
+        Shot $app '17-drop-question-smallest'
+        Invoke-Element (Find-Id $app 'CloseButton' 2)
+    }
+    else { Skip '16-drop-question' 'the question did not open' }
 }
 finally { Stop-App $app }
 
@@ -239,7 +278,7 @@ finally { Stop-App $app }
 
 Write-Host "Screenshots in $shots"
 if ($skipped.Count -gt 0) { Write-Host "Skipped: $($skipped -join '; ')" }
-foreach ($name in 'empty', 'editing', 'export') {
+foreach ($name in 'empty', 'editing', 'drop', 'export') {
     Get-ChildItem (Join-Path $base "logs-$name") -Filter '10Lapse-*.log' -ErrorAction SilentlyContinue |
         ForEach-Object { Select-String -Path $_.FullName -Pattern ' (WARN|ERROR|CRIT) ' | ForEach-Object { "$name`: $($_.Line)" } }
 }

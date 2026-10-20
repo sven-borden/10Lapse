@@ -36,7 +36,8 @@ public sealed class ProjectTextTests
             _ => TimingSettings.PerPhoto(input),
         };
 
-        Assert.Equal(expected, ProjectText.TimingReadout(count, timing));
+        var (headline, detail) = ProjectText.TimingReadoutParts(count, timing);
+        Assert.Equal(expected, ProjectText.Sentences(headline, detail));
     }
 
     [Theory]
@@ -54,13 +55,13 @@ public sealed class ProjectTextTests
     [Fact]
     public void EverySentenceIsOneFormatStringWithItsOwnPlaceholders()
     {
-        // #39 moves these to resources as they are: whole sentences, singular and plural apart.
-        Assert.Equal("1 photo → {0} at {1}", ProjectText.TimingReadoutOne);
-        Assert.Equal("{0} photos → {1} at {2}", ProjectText.TimingReadoutMany);
+        // Whole sentences; a counted one is a plural family whose forms keep the count's placeholder (#114).
+        Assert.Equal("{0} photo → {1}", ProjectText.TimingHeadline.For(1));
+        Assert.Equal("{0} photos → {1}", ProjectText.TimingHeadline.For(742));
         Assert.Equal("{0} – {1}", ProjectText.WindowTitleSaved);
         Assert.Equal("● {0} – {1}", ProjectText.WindowTitleUnsaved);
-        Assert.Equal("This project's {0} photos and settings will be cleared. The photo files stay on your PC.", ProjectText.NewProjectMessageMany);
-        Assert.DoesNotContain("{", ProjectText.NewProjectMessageOne);
+        Assert.Equal("This project's {0} photos and settings will be cleared. The photo files stay on your PC.", ProjectText.NewProjectMessage.For(2));
+        Assert.DoesNotContain("{", ProjectText.NewProjectMessage.For(1));
         Assert.DoesNotContain("{", ProjectText.NewProjectMessageNoPhotos);
 
         var confirmation = ProjectText.NewProjectConfirmation(2);
@@ -98,11 +99,11 @@ public sealed class ProjectTextTests
         var parts = ProjectText.TimingReadoutParts(count, timing);
 
         Assert.Equal((headline, detail), parts);
-        Assert.Equal(ProjectText.TimingReadout(count, timing), $"{parts.Headline} {parts.Detail}");
+        Assert.Equal($"{headline} {detail}", ProjectText.Sentences(parts.Headline, parts.Detail));
     }
 
     [Fact]
-    public void TheReadoutPartsTakeACultureAndStayInvariantWithoutOne()
+    public void TheReadoutPartsTakeACultureAndUseTheCurrentOneWithout()
     {
         var timing = TimingSettings.PerSecond(new Fraction(30000, 1001));
         var german = System.Globalization.CultureInfo.GetCultureInfo("de-DE");
@@ -110,5 +111,66 @@ public sealed class ProjectTextTests
         Assert.Equal(("1.234 photos → 41,2 s", "at 29,97 fps"), ProjectText.TimingReadoutParts(1234, timing, german));
         Assert.Equal(("1,234 photos → 41.2 s", "at 29.97 fps"), ProjectText.TimingReadoutParts(1234, timing));
         Assert.Equal(("1 photo → 0,5 s", "at 0,5 s per photo"), ProjectText.TimingReadoutParts(1, TimingSettings.PerPhoto(new Fraction(1, 2)), german));
+
+        var before = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = german;
+            Assert.Equal(("1.234 photos → 41,2 s", "at 29,97 fps"), ProjectText.TimingReadoutParts(1234, timing));
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = before;
+        }
+    }
+
+    [Fact]
+    public void CountsSizesAndTimesFollowTheRegionalFormat()
+    {
+        var before = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("de-DE");
+            Assert.Equal("Adding 1.240 of 5.000 photos…", ProjectText.ImportReadingProgress(1240, 5000));
+            Assert.Equal("1.240 photos are only in OneDrive. Download them now? About 2,4 GB.", ProjectText.CloudDownload(1240, 2_600_000_000).Message);
+            Assert.Equal("IMG_0312.JPG · 19:26:05", ProjectText.FilmstripFileCaption("IMG_0312.JPG", new DateTime(2026, 10, 20, 19, 26, 5)));
+
+            // The zero-padded counters and the time codes stay invariant on purpose.
+            Assert.Equal("Frame 1312 of 5000", ProjectText.FrameCaption(1312, 5000));
+            Assert.Equal("00:10.40 / 00:24.73", ProjectText.TimecodeCaption(104_000_000, 247_300_000));
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = before;
+        }
+    }
+
+    [Theory]
+    [InlineData(1, 1, "This photo needs HEIF Image Extensions (free) from Microsoft.")]
+    [InlineData(12, 1, "These 12 photos need HEIF Image Extensions (free) from Microsoft.")]
+    [InlineData(1, 2, "This photo needs 2 extensions from Microsoft. Start with HEIF Image Extensions (free).")]
+    [InlineData(8, 2, "These 8 photos need 2 extensions from Microsoft. Start with HEIF Image Extensions (free).")]
+    public void TheExtensionSentencesAreWholeAndCountTheExtensions(int photos, int extensions, string expected)
+    {
+        PhotoCodecExtension[] needed =
+        [
+            new("HEIF Image Extensions", "9PMMSR1CGPWG"),
+            new("HEVC Video Extensions", "9NMZLZ57R3T7", HasFee: true, IsCodec: true),
+        ];
+
+        Assert.Equal(expected, ProjectText.CodecNeeded(photos, needed[..extensions]));
+        Assert.Equal("Finally, get HEVC Video Extensions (paid). When the install finishes, restart 10Lapse and add the photos again.", ProjectText.CodecNext(needed[1], isLast: true));
+        Assert.Equal("Next, get HEVC Video Extensions (paid).", ProjectText.CodecNext(needed[1], isLast: false));
+    }
+
+    [Fact]
+    public void SentencesQuotingALabelTakeItFromItsOwnString()
+    {
+        Assert.Contains(ProjectText.IncludeSubfolders, ProjectText.ImportNothingFoundSubfolders, StringComparison.Ordinal);
+        Assert.Contains(ProjectText.AddPhotos, ProjectText.ImportNothingFoundSubfolders, StringComparison.Ordinal);
+        Assert.Equal("Removed 3 frames from the project. The photos stay on your PC. Ctrl+Z puts them back.", ProjectText.FilmstripRemoved(3));
+        Assert.Equal("Removed 1 frame from the project. The photo stays on your PC. Ctrl+Z puts it back.", ProjectText.FilmstripRemoved(1));
+        Assert.Equal("Wait. Then go.", ProjectText.Sentences("Wait.", null, string.Empty, "Then go."));
+        Assert.Equal(string.Empty, ProjectText.Sentences());
     }
 }

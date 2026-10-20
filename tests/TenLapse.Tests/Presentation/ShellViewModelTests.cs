@@ -84,6 +84,13 @@ public sealed class ShellViewModelTests
         Assert.Equal(0, shell.CurrentProject.FrameCount);
     }
 
+    // The Timing readout of the project as the Timing panel writes it, in one line.
+    private static string Readout(Project project)
+    {
+        var (headline, detail) = ProjectText.TimingReadoutParts(project.Snapshot.Frames.Length, project.Timing);
+        return ProjectText.Sentences(headline, detail);
+    }
+
     private static ShellViewModel Shell(IDialogService dialogs, Func<Project>? createProject = null, FakeErrorSink? errors = null) =>
         new(dialogs, errors ?? new FakeErrorSink(), createProject);
 
@@ -242,7 +249,7 @@ public sealed class ShellViewModelTests
 
         Assert.Equal(4, added);
         Assert.Equal(again, shell.CurrentProject.Model.Frames);
-        Assert.Equal("4 photos → 0.1 s at 30 fps", shell.CurrentProject.TimingReadout);
+        Assert.Equal("4 photos → 0.1 s at 30 fps", Readout(shell.CurrentProject.Model));
     }
 
     [Fact]
@@ -272,7 +279,7 @@ public sealed class ShellViewModelTests
         Assert.Equal(SortMode.CaptureTime, fresh.SortMode);
         Assert.False(fresh.IsDirty);
         Assert.Equal("10Lapse", shell.Title);
-        Assert.Equal("0 photos → 0.0 s at 30 fps", shell.CurrentProject.TimingReadout);
+        Assert.Equal("0 photos → 0.0 s at 30 fps", Readout(shell.CurrentProject.Model));
     }
 
     [Fact]

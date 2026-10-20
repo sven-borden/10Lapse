@@ -47,6 +47,14 @@ internal static class DebugMotion
             After(shell.DispatcherQueue, delay, log, () => _ = import.ImportAsync([System.IO.Path.GetFullPath(folder)]));
         }
 
+        // --motion-drop=FOLDER drops FOLDER on the window after --motion-drop-delay=S seconds (5 by default), as a real drop
+        // would, so a project that has photos by then asks the drop question (#114: scripts/pseudo-check.ps1 captures it).
+        if (Value(args, "--motion-drop=") is { Length: > 0 } dropped)
+        {
+            var delay = Seconds(Value(args, "--motion-drop-delay=")) ?? 5;
+            After(shell.DispatcherQueue, delay, log, () => _ = import.DropAsync([System.IO.Path.GetFullPath(dropped)]));
+        }
+
         if (Value(args, "--theme-flip-after=") is { Length: > 0 } flips)
         {
             foreach (var at in flips.Split(',').Select(Seconds).OfType<double>())

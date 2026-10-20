@@ -30,7 +30,18 @@ public sealed partial class StringRuleTests
         "ToolTipService.ToolTip", "AutomationProperties.Name", "AutomationProperties.HelpText", "AutomationProperties.FullDescription",
         "AutomationProperties.AcceleratorKey", "AutomationProperties.AccessKey", "AutomationProperties.LocalizedControlType",
         "AutomationProperties.ItemStatus", "AutomationProperties.ItemType", "AutomationProperties.LocalizedLandmarkType",
+        "Subtitle", "AccessKey",
     };
+
+    // The display formatters that are not text classes but write the user's numbers and joins (#114).
+    private static readonly string[] _formatterFiles =
+    [
+        Path.Combine("src", "TenLapse.Core", "Timing", "TimingFormat.cs"),
+        Path.Combine("src", "TenLapse.Presentation", "Timing", "TimingInput.cs"),
+        Path.Combine("src", "TenLapse.Presentation", "Timing", "TimingPanelViewModel.cs"),
+        Path.Combine("src", "TenLapse.Presentation", "Output", "OutputPlan.cs"),
+        Path.Combine("src", "TenLapse.Presentation", "Services", "SkippedFilesInfoBar.cs"),
+    ];
 
     // The value types whose text in XAML is never words (a number, a color, a length).
     private static readonly HashSet<string> _valueElements = new(StringComparer.Ordinal)
@@ -74,6 +85,56 @@ public sealed partial class StringRuleTests
     }
 
     [Fact]
+    public void TextClassesNeitherGlueNorFormatInvariantlyNorChooseAPluralByOne()
+    {
+        var files = SourceFiles("*.cs")
+            .Where(file => IsDisplayText(file, File.ReadAllText(file)))
+            .ToList();
+        Assert.True(files.Count >= 14, "The text classes and formatters were not found: " + string.Join(", ", files.Select(Relative)));
+
+        var offenders = files
+            .SelectMany(file => FormattingViolations(File.ReadAllText(file)).Select(hit => $"{Relative(file)}: {hit}"))
+            .ToList();
+
+        Assert.True(
+            offenders.Count == 0,
+            "Join with a whole format string (ProjectText.SentenceJoin, TimingWords), write numbers in the user's culture, and choose a counted "
+            + "form with a PluralText; mark an intended exception with an \"Invariant on purpose\" or \"Not a plural\" comment on or just above the line:\n"
+            + string.Join('\n', offenders));
+    }
+
+    [Theory]
+    [InlineData("/// <summary>The readout.</summary>\npublic string Readout => $\"{_headline} {_detail}\";")]
+    [InlineData("/// <summary>The notes.</summary>\npublic static string Notes(string[] notes) => string.Join(' ', notes);")]
+    [InlineData("/// <summary>The notes.</summary>\npublic static string Notes(string[] notes) => string.Join(\" \", notes);")]
+    [InlineData("/// <summary>A count.</summary>\nprivate static string Count(int count) => count.ToString(\"N0\", CultureInfo.InvariantCulture);")]
+    [InlineData("/// <summary>A sentence.</summary>\ninternal static string Format(string format, params object[] values) =>\n    string.Format(CultureInfo.InvariantCulture, format, values);")]
+    [InlineData("/// <summary>The message.</summary>\npublic static string Removed(int count) => count == 1 ? RemovedOne : Format(RemovedMany, count);")]
+    [InlineData("/// <summary>The message.</summary>\npublic static string Found(int found) => found switch\n{\n    1 => FoundOne,\n    _ => FoundMany,\n};")]
+    [InlineData("/// <summary>The undo.</summary>\npublic static string Undo(FrameEdit next) => next switch\n{\n    { Count: 1 } => UndoOne,\n    _ => Undo,\n};")]
+    [InlineData("/// <summary>The message.</summary>\npublic static string Removed(int count) => count is 1 ? RemovedOne : Format(RemovedMany, count);")]
+    [InlineData("/// <summary>The message.</summary>\npublic static string Removed(int[] frames) => frames is { Length: 1 } ? RemovedOne : RemovedMany;")]
+    [InlineData("/// <summary>The readout.</summary>\npublic string Readout => _headline + \" \" + _detail;")]
+    [InlineData("/// <summary>The readout.</summary>\npublic string Readout => $\"{_headline}, {_detail}\";")]
+    [InlineData("/// <summary>The readout.</summary>\npublic string Readout => @$\"{_headline} {_detail}\";")]
+    [InlineData("/// <summary>The readout.</summary>\npublic string Readout => $@\"{_headline} {_detail}\";")]
+    [InlineData("/// <summary>The names.</summary>\npublic static string Names(string[] names) => string.Join(\", \", names);")]
+    [InlineData("/// <summary>A label.</summary>\npublic static string Label(CultureInfo? culture) => string.Format(culture ?? CultureInfo.InvariantCulture, LabelFormat, 1.5);")]
+    public void TheFormattingScannerFlagsGluesInvariantNumbersAndOnePlurals(string source) => Assert.NotEmpty(FormattingViolations(source));
+
+    [Theory]
+    [InlineData("/// <summary>The readout.</summary>\npublic string Readout => ProjectText.Sentences(_headline, _detail);")]
+    [InlineData("/// <summary>Log line: the problems.</summary>\npublic static string Problems(string[] problems) => \"Problems: \" + string.Join(\" \", problems);")]
+    [InlineData("/// <summary>Log line: the count.</summary>\npublic static string Logged(int count) => string.Create(CultureInfo.InvariantCulture, $\"{count} {count}\");")]
+    [InlineData("// Invariant on purpose: zero-padded counter digits.\nprivate static string Pad(int value) => value.ToString(CultureInfo.InvariantCulture);")]
+    [InlineData("/// <summary>A pixel size. Invariant on purpose: no grouping.</summary>\npublic static string Size(int width) =>\n    string.Format(CultureInfo.InvariantCulture, SizeFormat, width);")]
+    [InlineData("/// <summary>The move.</summary>\npublic static string Moved(int count) =>\n    // Not a plural: one frame is named by its number.\n    count == 1 ? Named() : Counted(count);")]
+    [InlineData("/// <summary>A count.</summary>\nprivate static string Count(int count) => count.ToString(\"N0\", CultureInfo.CurrentCulture);")]
+    [InlineData("/// <summary>A parse.</summary>\nprivate static bool Read(string text) => decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out _);")]
+    [InlineData("/// <summary>A bound.</summary>\nprivate static long Small(long value) => Math.Max(1, value);")]
+    public void TheFormattingScannerAllowsMarkedExceptionsLogLinesAndParsing(string source) => Assert.Empty(FormattingViolations(source));
+
+    [Fact]
     public void TheManifestKeepsTheStoreNameAndReadsItsDescriptionFromTheResw()
     {
         var root = Path.Combine(DesignFiles.Root, "src", "TenLapse.App");
@@ -104,6 +165,8 @@ public sealed partial class StringRuleTests
     [InlineData("<Style TargetType=\"TextBlock\"><Setter Property=\"Text\" Value=\"Loading\" /></Style>")]
     [InlineData("<TextBlock Text=\"{}{0} photos\" />")]
     [InlineData("<TextBlock Text=\"{Photos} left\" />")]
+    [InlineData("<TeachingTip Subtitle=\"Drop photos here\" />")]
+    [InlineData("<Button AccessKey=\"E\" />")]
     public void TheXamlScannerFlagsALiteral(string element) => Assert.NotEmpty(XamlViolations(Wrap(element)));
 
     [Theory]
@@ -139,6 +202,9 @@ public sealed partial class StringRuleTests
     [InlineData("_infoBars.ShowWithDetails(InfoBarSeverity.Warning, ProjectText.Skipped, [new InfoBarDetail(name, \"Damaged\")]);")]
     [InlineData("var question = new Confirmation(\"Discard changes?\", ProjectText.DiscardMessage, ProjectText.Discard, ProjectText.Cancel);")]
     [InlineData("var question = new Choice(ProjectText.A, ProjectText.B, \"Save\", ProjectText.C, ProjectText.Cancel);")]
+    [InlineData("var picker = new FileSavePicker { SuggestedFileName = \"My video\" };")]
+    [InlineData("_ = MessageBoxW(IntPtr.Zero, \"10Lapse could not start.\", Product.Name, MbOk);")]
+    [InlineData("session.DrawText(\"Can't be read\", rect, color, format);")]
     public void TheCodeScannerFlagsALiteral(string source) => Assert.NotEmpty(CodeViolations(source));
 
     [Theory]
@@ -215,7 +281,7 @@ public sealed partial class StringRuleTests
         var code = string.Join('\n', source.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n')
             .Select(line => line.Trim())
             .Where(line => !line.StartsWith("//", StringComparison.Ordinal)));
-        foreach (var regex in new[] { PropertyLiteral(), AutomationLiteral(), ToolTipLiteral(), NotificationLiteral(), ToastLiteral(), FileTypeLiteral() })
+        foreach (var regex in new[] { PropertyLiteral(), AutomationLiteral(), ToolTipLiteral(), NotificationLiteral(), ToastLiteral(), FileTypeLiteral(), DrawTextLiteral() })
         {
             foreach (Match match in regex.Matches(code))
             {
@@ -245,6 +311,66 @@ public sealed partial class StringRuleTests
         var end = code.IndexOf('\n', index);
         return code[start..(end < 0 ? code.Length : end)];
     }
+
+    // Line by line, each line read with the summary of the member it belongs to: a log line may glue and use the invariant
+    // culture; anything else needs a marker comment on the line or in the four lines above it (or in its summary).
+    private static IEnumerable<string> FormattingViolations(string source)
+    {
+        var lines = source.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        var summary = string.Empty;
+        var doc = new List<string>();
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var line = lines[i].Trim();
+            if (line.StartsWith("///", StringComparison.Ordinal))
+            {
+                doc.Add(line);
+                continue;
+            }
+
+            if (doc.Count > 0)
+            {
+                summary = SummaryText(string.Join('\n', doc));
+                doc.Clear();
+            }
+            else if (Declaration().IsMatch(line))
+            {
+                summary = string.Empty;
+            }
+
+            if (line.StartsWith("//", StringComparison.Ordinal) || LogSummary().IsMatch(summary))
+            {
+                continue;
+            }
+
+            if (GluedPlaceholders().IsMatch(line))
+            {
+                yield return $"glued: {line}";
+            }
+
+            if (InvariantDisplay().IsMatch(line) && !Marked(lines, i, summary, "Invariant on purpose"))
+            {
+                yield return $"invariant: {line}";
+            }
+
+            if (PluralByOne().IsMatch(line) && !Marked(lines, i, summary, "Not a plural"))
+            {
+                yield return $"plural by one: {line}";
+            }
+        }
+    }
+
+    private static bool Marked(string[] lines, int index, string summary, string marker) =>
+        summary.Contains(marker, StringComparison.Ordinal)
+        || lines.Skip(Math.Max(0, index - 4)).Take(Math.Min(index, 4) + 1).Any(line => line.Contains("//", StringComparison.Ordinal) && line.Contains(marker, StringComparison.Ordinal));
+
+    // A text class (ProjectText, TimingWords, ...), one of the display formatters beside them, or a Presentation view model
+    // (FilmstripViewModel, ExportViewModel, ImportViewModel, ...), which fills the text classes' formats.
+    private static bool IsDisplayText(string file, string source) =>
+        (IsTextClass(source) && (file.EndsWith("Text.cs", StringComparison.Ordinal) || file.EndsWith("Words.cs", StringComparison.Ordinal)))
+        || _formatterFiles.Any(formatter => Relative(file).Equals(formatter, StringComparison.OrdinalIgnoreCase))
+        || (Relative(file).StartsWith(Path.Combine("src", "TenLapse.Presentation") + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+            && file.EndsWith("ViewModel.cs", StringComparison.Ordinal));
 
     private static IEnumerable<string> TextClassViolations(string source)
     {
@@ -284,9 +410,12 @@ public sealed partial class StringRuleTests
             .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}Gallery{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
                 && !file.Contains($"{Path.DirectorySeparatorChar}Debugging{Path.DirectorySeparatorChar}", StringComparison.Ordinal));
 
-    // The App's code and Presentation's, except the text classes, which the text class test checks.
+    // The App's code and that of Presentation, Core and Media (#114), except the text classes, which the text class test checks.
     private static IEnumerable<string> CodeFiles() =>
-        AppFiles("*.cs").Concat(ProjectFiles("TenLapse.Presentation", "*.cs").Where(file => !IsTextClass(File.ReadAllText(file))));
+        AppFiles("*.cs").Concat(
+            new[] { "TenLapse.Presentation", "TenLapse.Core", "TenLapse.Media" }
+                .SelectMany(project => ProjectFiles(project, "*.cs"))
+                .Where(file => !IsTextClass(File.ReadAllText(file))));
 
     private static IEnumerable<string> ProjectFiles(string project, string pattern) =>
         SourceFiles(pattern).Where(file => Relative(file).StartsWith(Path.Combine("src", project) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
@@ -305,8 +434,31 @@ public sealed partial class StringRuleTests
         $"<Grid xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">{element}</Grid>";
 
     // label.Text = "…", new TextBlock { Text = "…" }, dialog.Title = $"…".
-    [GeneratedRegex(@"\b(?:Text|Content|Header|PlaceholderText|Title|Message|Label|Description|OnContent|OffContent|PrimaryButtonText|SecondaryButtonText|CloseButtonText|CommitButtonText|KeyboardAcceleratorTextOverride)\s*=\s*\$?@?""(?<value>(?:[^""\\]|\\.)*)""")]
+    [GeneratedRegex(@"\b(?:Text|Content|Header|PlaceholderText|Title|Message|Label|Description|OnContent|OffContent|PrimaryButtonText|SecondaryButtonText|CloseButtonText|CommitButtonText|KeyboardAcceleratorTextOverride|SuggestedFileName|Subtitle)\s*=\s*\$?@?""(?<value>(?:[^""\\]|\\.)*)""")]
     private static partial Regex PropertyLiteral();
+
+    // Win2D's session.DrawText("…", …): the text is the first argument.
+    [GeneratedRegex(@"\bDrawText\(\s*\$?@?""(?<value>(?:[^""\\]|\\.)*)""")]
+    private static partial Regex DrawTextLiteral();
+
+    // Two placeholders glued with a space or a comma in an interpolated string ($"{a} {b}", $"{a}, {b}", @$"…"), two
+    // values glued with a literal of spaces or commas (a + " " + b), or a list joined with one (string.Join(", ", …)).
+    [GeneratedRegex(@"(?:\$@?|@\$)""[^""]*\}[,;]?\s+\{|\+\s*""[ ,;]+""\s*\+|\bstring\.Join\(\s*(?:'[ ,;]'|""[ ,;]+"")")]
+    private static partial Regex GluedPlaceholders();
+
+    // The invariant culture writing a number or a sentence (ToString, string.Format, string.Create), or standing in when no
+    // culture is given (culture ?? CultureInfo.InvariantCulture); parsing is not display.
+    [GeneratedRegex(@"(?:\.ToString\([^;]*|\bstring\.(?:Format|Create)\(\s*|\?\?\s*)CultureInfo\.InvariantCulture")]
+    private static partial Regex InvariantDisplay();
+
+    // A choice of words by "is it one": count == 1, != 1, count is 1, is not 1, a switch arm "1 =>", a property pattern
+    // "Count: 1" or "Length: 1". A fraction's denominator compared with 1 (a whole number) is no such choice.
+    [GeneratedRegex(@"(?<!Denominator\s*)(?:[!=]=|\bis(?:\s+not)?)\s*1\b(?![.\d])|(?:^|[\s(,])1\s*=>|\b(?:Count|Length):\s*1\b")]
+    private static partial Regex PluralByOne();
+
+    // A member declaration without a doc comment ends the previous member's summary.
+    [GeneratedRegex(@"^(?:public|private|internal|protected)\b")]
+    private static partial Regex Declaration();
 
     [GeneratedRegex(@"\bAutomationProperties\.Set(?:Name|HelpText|FullDescription|AcceleratorKey|AccessKey|LocalizedControlType|ItemStatus|ItemType)\([^,]+,\s*\$?@?""(?<value>(?:[^""\\]|\\.)*)""")]
     private static partial Regex AutomationLiteral();
@@ -321,9 +473,9 @@ public sealed partial class StringRuleTests
     [GeneratedRegex(@"\b(?:AddText|SetAttributionText|AppNotificationButton)\(\s*\$?@?""(?<value>(?:[^""\\]|\\.)*)""")]
     private static partial Regex ToastLiteral();
 
-    // new InfoBarRequest(…), new Confirmation(…), new Choice(…), new InfoBarDetail(…), Show(InfoBarSeverity.…, …): the
-    // argument list, with one level of nested calls.
-    [GeneratedRegex(@"(?:\b(?:InfoBarRequest|Confirmation|Choice|InfoBarDetail)|\bShow(?:WithDetails)?(?=\(\s*InfoBarSeverity\.))\((?<args>(?:[^;()""]|""(?:[^""\\]|\\.)*""|\((?:[^;()""]|""(?:[^""\\]|\\.)*"")*\))*)\)")]
+    // new InfoBarRequest(…), new Confirmation(…), new Choice(…), new InfoBarDetail(…), MessageBoxW(…), Show(InfoBarSeverity.…, …):
+    // the argument list, with one level of nested calls.
+    [GeneratedRegex(@"(?:\b(?:InfoBarRequest|Confirmation|Choice|InfoBarDetail|MessageBoxW)|\bShow(?:WithDetails)?(?=\(\s*InfoBarSeverity\.))\((?<args>(?:[^;()""]|""(?:[^""\\]|\\.)*""|\((?:[^;()""]|""(?:[^""\\]|\\.)*"")*\))*)\)")]
     private static partial Regex MessageCall();
 
     [GeneratedRegex(@"\$?@?""(?<value>(?:[^""\\]|\\.)*)""")]

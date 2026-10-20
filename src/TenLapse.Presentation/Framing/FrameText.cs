@@ -49,11 +49,22 @@ public static class FrameText
     /// <summary>The second Fit or Fill choice: the frame is filled and the edges are cut.</summary>
     public static string FillOption => _strings.Get();
 
-    /// <summary>The line under the controls when Fit is chosen.</summary>
+    /// <summary>The line under the controls when Fit is chosen. {0}: <see cref="FitOption"/>.</summary>
     public static string FitHint => _strings.Get();
 
-    /// <summary>The line under the controls when Fill is chosen.</summary>
+    /// <summary>The line under the controls when Fill is chosen. {0}: <see cref="FillOption"/>.</summary>
     public static string FillHint => _strings.Get();
+
+    /// <summary>The Fit or Fill option's label, as its segment shows it.</summary>
+    public static string FitLabel(FitMode fit) => fit == FitMode.Fill ? FillOption : FitOption;
+
+    /// <summary>The line under the controls for <paramref name="fit"/>, with its option's label: "Fit shows the whole photo…".</summary>
+    public static string Hint(FitMode fit) =>
+        Format(CultureInfo.CurrentCulture, fit == FitMode.Fill ? FillHint : FitHint, FitLabel(fit));
+
+    /// <summary>What a screen reader says after a change: "Frame: 16:9, Fit." (the heading, the shape, the option).</summary>
+    public static string Announce(FrameAspect aspect, FitMode fit) =>
+        Format(CultureInfo.CurrentCulture, Announcement, Heading, ShapeFullName(aspect), FitLabel(fit));
 
     /// <summary>Match photos is chosen and the photos' sizes are known. {0}: the width, {1}: the height of the most common photo.</summary>
     public static string MatchingPhotos => _strings.Get();
@@ -73,7 +84,7 @@ public static class FrameText
     /// <summary>The button that closes the suggestion for the project.</summary>
     public static string PortraitDismiss => _strings.Get();
 
-    /// <summary>Said to a screen reader after a change. {0}: the shape's name, {1}: Fit or Fill.</summary>
+    /// <summary>Said to a screen reader after a change. {0}: <see cref="Heading"/>, {1}: the shape's name, {2}: Fit or Fill.</summary>
     public static string Announcement => _strings.Get();
 
     /// <summary>Log context: a frame setting could not be written to the project.</summary>

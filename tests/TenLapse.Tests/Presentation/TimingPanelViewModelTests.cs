@@ -445,13 +445,12 @@ public sealed class TimingPanelViewModelTests
         var panel = Panel(shell, photos: 1);
 
         Assert.Equal("1 photo → 0.0 s", panel.Headline);
-        Assert.Equal(ProjectText.TimingReadout(1, shell.CurrentProject.Model.Timing), panel.Readout);
-        Assert.Equal(shell.CurrentProject.TimingReadout, panel.Readout);
+        Assert.Equal("1 photo → 0.0 s at 30 fps", panel.Readout);
 
         shell.CurrentProject.Model.AddFrames(TestFrames.Folder("b", 4999));
 
         Assert.Equal("5,000 photos → 2 min 47 s", panel.Headline);
-        Assert.Equal(shell.CurrentProject.TimingReadout, panel.Readout);
+        Assert.Equal("5,000 photos → 2 min 47 s at 30 fps", panel.Readout);
     }
 
     [Fact]

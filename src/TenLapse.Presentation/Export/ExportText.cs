@@ -62,7 +62,7 @@ public static class ExportText
     /// <summary>Time left from a minute, with a half minute: {0} the minutes.</summary>
     public static string TimeLeftMinutesHalfFormat => _strings.Get();
 
-    /// <summary>The label of the frame count row.</summary>
+    /// <summary>The label of the frame count row: the frame (one picture of the video) being written.</summary>
     public static string FrameLabel => _strings.Get();
 
     /// <summary>The frame count: {0} the frames written, {1} the total, both zero-padded to the total's width ("0312 of 0742").</summary>
@@ -71,8 +71,8 @@ public static class ExportText
     /// <summary>The label of the speed row.</summary>
     public static string SpeedLabel => _strings.Get();
 
-    /// <summary>The speed: {0} photos per second, one decimal.</summary>
-    public static string SpeedFormat => _strings.Get();
+    /// <summary>The export's speed: {0} photos per second, with one decimal under 10 ("4.3"); the form follows the number as shown.</summary>
+    public static PluralText SpeedPhotos => _strings.Plural();
 
     /// <summary>The speed before it has been measured.</summary>
     public static string SpeedMeasuring => _strings.Get();
@@ -135,11 +135,23 @@ public static class ExportText
     /// <summary>Export tried while photos are still being added.</summary>
     public static string ImportStillRunning => _strings.Get();
 
-    /// <summary>The Save dialog was answered, but the project, its output or the screen changed while it was open.</summary>
-    public static string ChangedDuringDialog => _strings.Get();
+    /// <summary>
+    /// The Save dialog was answered, but the project, its output or the screen changed while it was open. {0} the Export
+    /// button's label (<see cref="ExportVideo"/>).
+    /// </summary>
+    public static string ChangedDuringDialogFormat => _strings.Get();
 
-    /// <summary>The finished video saved, but the preview can't play it (a codec Windows lacks, say).</summary>
-    public static string PremiereCantPlay => _strings.Get();
+    /// <summary><see cref="ChangedDuringDialogFormat"/> with the button it names.</summary>
+    public static string ChangedDuringDialog => string.Format(CultureInfo.CurrentCulture, ChangedDuringDialogFormat, ExportVideo);
+
+    /// <summary>
+    /// The finished video saved, but the preview can't play it (a codec Windows lacks, say). {0} the button's label
+    /// (<see cref="ShowInFolder"/>).
+    /// </summary>
+    public static string PremiereCantPlayFormat => _strings.Get();
+
+    /// <summary><see cref="PremiereCantPlayFormat"/> with the button it names.</summary>
+    public static string PremiereCantPlay => string.Format(CultureInfo.CurrentCulture, PremiereCantPlayFormat, ShowInFolder);
 
     /// <summary>The question when the window closes during an export.</summary>
     public static string CloseTitle => _strings.Get();
@@ -193,11 +205,8 @@ public static class ExportText
     /// <summary>Log: a progress report could not be shown.</summary>
     public static string ProgressFailed => "Showing the export progress failed.";
 
-    /// <summary>What <c>powercfg /requests</c> shows next to 10Lapse while a video is written. {0} the file name.</summary>
-    public static string KeepAwakeReasonFormat => _strings.Get();
-
-    /// <summary>"Exporting Harbor sunset.mp4", for <c>powercfg /requests</c>.</summary>
-    public static string KeepAwakeReason(string fileName) => string.Format(CultureInfo.CurrentCulture, KeepAwakeReasonFormat, fileName);
+    /// <summary>"Exporting Harbor sunset.mp4", what <c>powercfg /requests</c> shows next to 10Lapse (<see cref="RunningNameFormat"/>).</summary>
+    public static string KeepAwakeReason(string fileName) => string.Format(CultureInfo.CurrentCulture, RunningNameFormat, fileName);
 
     /// <summary>Log: Windows would not keep the PC awake for the export (the export goes on).</summary>
     public static string KeepAwakeFailed => "Asking Windows to keep the PC awake during the export failed. The export goes on; the PC may go to sleep.";
@@ -262,22 +271,33 @@ public static class ExportText
     /// <summary>"0312 of 0742": both zero-padded to the total's width (DESIGN.md, the Tabular Rule).</summary>
     public static string Frames(int done, int total, CultureInfo? culture = null)
     {
-        var width = Math.Max(4, total.ToString(CultureInfo.InvariantCulture).Length);
+        var width = Math.Max(4, Digits(total));
         return string.Format(culture ?? CultureInfo.CurrentCulture, FramesFormat, Pad(done, width), Pad(total, width));
     }
 
     /// <summary>"Rendering frame 0313": the 1-based frame being written, zero-padded to the total's width.</summary>
     public static string RenderingFrame(int frameIndex, int total, CultureInfo? culture = null)
     {
-        var width = Math.Max(4, total.ToString(CultureInfo.InvariantCulture).Length);
+        var width = Math.Max(4, Digits(total));
         return string.Format(culture ?? CultureInfo.CurrentCulture, RenderingFrameFormat, Pad(Math.Clamp(frameIndex + 1, 1, Math.Max(1, total)), width));
     }
 
     /// <summary>"4.3 photos per second", or <see cref="SpeedMeasuring"/> before it is known.</summary>
-    public static string Speed(double? framesPerSecond, CultureInfo? culture = null) =>
-        framesPerSecond is > 0 and var speed
-            ? string.Format(culture ?? CultureInfo.CurrentCulture, SpeedFormat, speed.ToString(speed < 10 ? "0.0" : "0", culture ?? CultureInfo.CurrentCulture))
-            : SpeedMeasuring;
+    public static string Speed(double? framesPerSecond, CultureInfo? culture = null)
+    {
+        if (framesPerSecond is not (> 0 and var speed))
+        {
+            return SpeedMeasuring;
+        }
+
+        culture ??= CultureInfo.CurrentCulture;
+        var pattern = speed < 10 ? "0.0" : "0";
+
+        // The plural form follows the number as shown, its decimal included ("1.0 photos per second" in English).
+        // Invariant on purpose: only the digits are read back, to pick the form.
+        var shown = decimal.Parse(speed.ToString(pattern, CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+        return SpeedPhotos.Format(culture, shown, shown.ToString(pattern, culture));
+    }
 
     /// <summary>"4K · H.264 · High".</summary>
     public static string OutputSummary(OutputSettings output, CultureInfo? culture = null)
@@ -302,25 +322,7 @@ public static class ExportText
     /// "1.23 GB"), in units of 1,024 as Explorer counts them; "Less than 1 MB" below a megabyte. The Output panel's
     /// estimate keeps two figures (<see cref="OutputText.Size"/>): it is a guess, this is the file.
     /// </summary>
-    public static string FileSize(long bytes, CultureInfo? culture = null)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(bytes);
-        culture ??= CultureInfo.CurrentCulture;
-        const double megabyte = 1L << 20;
-        const double gigabyte = 1L << 30;
-        if (bytes < megabyte)
-        {
-            return OutputText.UnderOneMegabyte;
-        }
-
-        var megabytes = bytes / megabyte;
-        return Math.Round(megabytes) < 1000
-            ? string.Format(culture, OutputText.Megabytes, ThreeFigures(megabytes, culture))
-            : string.Format(culture, OutputText.Gigabytes, ThreeFigures(Math.Max(1, bytes / gigabyte), culture));
-    }
-
-    private static string ThreeFigures(double value, CultureInfo culture) =>
-        value.ToString(value < 9.995 ? "0.##" : value < 99.95 ? "0.#" : "0", culture);
+    public static string FileSize(long bytes, CultureInfo? culture = null) => OutputText.Size(bytes, 3, culture);
 
     /// <summary>"Videos › 10Lapse": the video's folder by its last two names (one when it is a drive's root).</summary>
     public static string SavedTo(string videoPath)
@@ -363,5 +365,9 @@ public static class ExportText
         return (name.Length == 0 ? Project.DefaultName : name) + ".mp4";
     }
 
+    // Invariant on purpose: zero-padded counter digits keep their width (DESIGN.md, the Tabular Rule).
     private static string Pad(int value, int width) => value.ToString(CultureInfo.InvariantCulture).PadLeft(width, '0');
+
+    // Invariant on purpose: only the number of digits is wanted.
+    private static int Digits(int value) => value.ToString(CultureInfo.InvariantCulture).Length;
 }

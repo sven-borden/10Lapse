@@ -573,6 +573,7 @@ public sealed partial class ImportViewModel : ObservableObject
     // Folders that would not open are not photos: one InfoBar of their own, never the skipped list.
     private void ReportUnopened(List<UnopenedPath> unopened)
     {
+        // Not a plural: one folder is named in its own sentence; several are counted, with a list.
         if (unopened.Count == 1)
         {
             _infoBars.Show(InfoBarSeverity.Caution, ProjectText.ImportFolderFailed(unopened[0].Path));
@@ -589,12 +590,14 @@ public sealed partial class ImportViewModel : ObservableObject
     // The name a new project takes from what was imported: the one folder, or the folder all the files are in.
     private static string? NameFor(ImportRequest request)
     {
+        // Not a plural: a project name, no words chosen.
         if (request.Paths.Count == 1 && Directory.Exists(request.Paths[0]))
         {
             return Project.NameFromFolder(request.Paths[0]);
         }
 
         var parents = request.Paths.Select(Path.GetDirectoryName).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        // Not a plural: all the files in one folder.
         return parents.Count == 1 && parents[0] is { } parent && !request.Paths.Any(Directory.Exists)
             ? Project.NameFromFolder(parent)
             : null;

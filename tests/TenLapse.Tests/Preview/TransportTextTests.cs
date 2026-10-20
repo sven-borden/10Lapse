@@ -115,7 +115,7 @@ public sealed class TransportTextTests
     [Theory]
     [InlineData(312, 742, "0312 / 0742", "Frame 312 of 742")]
     [InlineData(1, 1, "0001 / 0001", "Frame 1 of 1")]
-    [InlineData(7, 12_345, "00007 / 12345", "Frame 7 of 12345")]
+    [InlineData(7, 12_345, "00007 / 12345", "Frame 7 of 12,345")]
     public void TheCounterIsZeroPaddedToTheTotal(int number, int total, string counter, string name)
     {
         Assert.Equal(counter, ProjectText.PreviewCounter(number, total));
@@ -142,7 +142,7 @@ public sealed class TransportTextTests
     [Fact]
     public void ThePreviewsProblemsReadAsSentences()
     {
-        Assert.Equal(ProjectText.PreviewFrameUnreadableOne, ProjectText.PreviewFrameUnreadable(1));
+        Assert.StartsWith("1 photo can't be read, so the preview shows a placeholder for it.", ProjectText.PreviewFrameUnreadable(1), StringComparison.Ordinal);
         Assert.StartsWith("3 photos can't be read", ProjectText.PreviewFrameUnreadable(3), StringComparison.Ordinal);
         Assert.StartsWith("1,200 photos", ProjectText.PreviewFrameUnreadable(1200), StringComparison.Ordinal);
         Assert.Equal("IMG_4402.JPG can't be read", ProjectText.PreviewPlaceholder("IMG_4402.JPG"));

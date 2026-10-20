@@ -81,7 +81,7 @@ public sealed record OutputPlan(
         // Nothing fits this shape (a 10:1 panorama under Match photos) although a plain 16:9 would: the shape is why.
         var shapeLimits = !canExport && formats.Count > 0 && aspect != FrameAspect.Ratio16x9
             && _allResolutions.Any(resolution => capabilities.Supports(effective.Format, resolution, FrameAspect.Ratio16x9, rate, null));
-        return new OutputPlan(preference, canExport ? effective : null, formats, offered, string.Join(' ', notices), aspect, photo, rate, shapeLimits);
+        return new OutputPlan(preference, canExport ? effective : null, formats, offered, ProjectText.Sentences([.. notices]), aspect, photo, rate, shapeLimits);
     }
 
     // Match photos takes the shape of the most common photo; with no sizes read yet it is 16:9, as the video is.

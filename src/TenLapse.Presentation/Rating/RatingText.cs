@@ -16,8 +16,11 @@ public static class RatingText
     /// <summary>The Settings card's title.</summary>
     public static string CardTitle => _strings.Get();
 
-    /// <summary>The Settings card's caption.</summary>
-    public static string CardCaption => _strings.Get();
+    /// <summary>The Settings card's caption. {0} the Rate button's label, {1} the Send feedback button's label.</summary>
+    public static string CardCaptionFormat => _strings.Get();
+
+    /// <summary><see cref="CardCaptionFormat"/> with the buttons it names.</summary>
+    public static string CardCaption => string.Format(CultureInfo.CurrentCulture, CardCaptionFormat, RateButton, FeedbackButton);
 
     /// <summary>The Rate button, and its accessible name.</summary>
     public static string RateButton => _strings.Get();

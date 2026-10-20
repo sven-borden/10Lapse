@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The user-visible text of TimingText.cs (#39), read through TextResources.
+  The user-visible text of TimingText.cs (#39, #114), read through TextResources: the Timing panel, which sets how fast
+  the photos play. The numbers, units and lengths in it ("30 fps", "24.7 s") come from CoreText.resx.
   English is the neutral language. A translation is a copy of this file named TimingText.<culture>.resx (for example
-  TimingText.de.resx) with the values translated; keep the {0} placeholders and their numbers, and keep each entry a
-  whole sentence. The comments say what each placeholder holds.
+  TimingText.de.resx) with the values translated. Keep every {0} placeholder (you may move it); each entry is whole.
+  Values in placeholders arrive already written in the user's regional format, units included where a comment says so.
+  "Keep it to about N characters" is a layout limit: the panel is 280 px wide.
 -->
 <root>
   <resheader name="resmimetype">
@@ -20,118 +22,94 @@
   </resheader>
   <data name="Heading" xml:space="preserve">
     <value>Timing</value>
-    <comment>The section's heading.</comment>
+    <comment>The heading of the Timing panel: how fast the photos play, so how long the video is. Keep it to about 14 characters: it is also a tab in a narrow window, beside Frame and Output.</comment>
   </data>
   <data name="ModesName" xml:space="preserve">
     <value>Speed mode</value>
-    <comment>Name of the segmented control that picks the mode.</comment>
+    <comment>The screen reader name of the three-part switch that picks how the speed is set (Per second, Length, Per photo).</comment>
   </data>
   <data name="ModePerSecond" xml:space="preserve">
     <value>Per second</value>
-    <comment>The first mode: frames per second.</comment>
+    <comment>The first part of the speed switch: set how many photos play per second (frames per second). Keep it to about 11 characters: the three parts share the 280 px row equally (about 93 px each); longer text ends in an ellipsis.</comment>
   </data>
   <data name="ModeLength" xml:space="preserve">
     <value>Length</value>
-    <comment>The second mode: a target length.</comment>
+    <comment>The second part of the speed switch: set how long the whole video lasts, a duration in time (not a distance). Keep it to about 11 characters.</comment>
   </data>
   <data name="ModePerPhoto" xml:space="preserve">
     <value>Per photo</value>
-    <comment>The third mode: seconds for each photo.</comment>
+    <comment>The third part of the speed switch: set how many seconds each photo stays on screen. Keep it to about 11 characters.</comment>
   </data>
   <data name="PresetsFramesPerSecond" xml:space="preserve">
     <value>Frames per second</value>
-    <comment>Name of the presets in Per second mode.</comment>
+    <comment>The screen reader name of the row of preset rates (12 to 60) in Per second mode.</comment>
   </data>
   <data name="PresetsLength" xml:space="preserve">
     <value>Video length</value>
-    <comment>Name of the presets in Length mode.</comment>
+    <comment>The screen reader name of the row of preset lengths (10 s to 60 s) in Length mode.</comment>
   </data>
   <data name="PresetsSecondsPerPhoto" xml:space="preserve">
     <value>Seconds per photo</value>
-    <comment>Name of the presets in Per photo mode.</comment>
+    <comment>The screen reader name of the row of preset times per photo (0.25 s to 5 s) in Per photo mode.</comment>
   </data>
   <data name="CustomFramesPerSecond" xml:space="preserve">
     <value>Custom frames per second</value>
-    <comment>The caption above the box in Per second mode (it is also the box's name for a screen reader).</comment>
+    <comment>The caption over the box for a rate of one's own in Per second mode; also the box's screen reader name.</comment>
   </data>
   <data name="CustomLength" xml:space="preserve">
     <value>Custom length in seconds</value>
-    <comment>The caption above the box in Length mode.</comment>
+    <comment>The caption over the box for a video length of one's own (a duration) in Length mode; also the box's screen reader name.</comment>
   </data>
   <data name="CustomSecondsPerPhoto" xml:space="preserve">
     <value>Custom seconds per photo</value>
-    <comment>The caption above the box in Per photo mode.</comment>
-  </data>
-  <data name="UnitFramesPerSecond" xml:space="preserve">
-    <value>fps</value>
-    <comment>The unit after the box in Per second mode.</comment>
-  </data>
-  <data name="UnitLength" xml:space="preserve">
-    <value>s</value>
-    <comment>The unit after the box in Length mode.</comment>
+    <comment>The caption over the box for a time per photo of one's own in Per photo mode; also the box's screen reader name.</comment>
   </data>
   <data name="UnitSecondsPerPhoto" xml:space="preserve">
     <value>s per photo</value>
-    <comment>The unit after the box in Per photo mode.</comment>
-  </data>
-  <data name="LengthPreset" xml:space="preserve">
-    <value>{0} s</value>
-    <comment>A preset of the Length mode. {0}: the seconds ("30").</comment>
-  </data>
-  <data name="BarStart" xml:space="preserve">
-    <value>0 s</value>
-    <comment>The bar's left end: no time.</comment>
-  </data>
-  <data name="BarMiddle" xml:space="preserve">
-    <value>30 s</value>
-    <comment>The bar's middle: half a minute.</comment>
-  </data>
-  <data name="BarEnd" xml:space="preserve">
-    <value>60 s</value>
-    <comment>The bar's right end: a minute, the longest clip it can show.</comment>
+    <comment>The unit after the box in Per photo mode. Use the same words as CoreText.SecondsPerPhotoFormat without its number. Keep it to about 16 characters.</comment>
   </data>
   <data name="NotANumberFramesPerSecond" xml:space="preserve">
     <value>Type a frame rate from {0} to {1} fps, like 24 or {2}.</value>
-    <comment>The Per second box was left with something that is not a number. {0}: the lowest rate, {1}: the highest, {2}: the NTSC example ("29.97").</comment>
+    <comment>Under the box when what was typed in Per second mode is not a number. {0} the lowest rate ("1"), {1} the highest ("120"), {2} an NTSC rate as example ("29.97"). Use the abbreviation of CoreText.FramesPerSecond.</comment>
   </data>
   <data name="NotANumberLength" xml:space="preserve">
     <value>Type a length in seconds, like 30, or as minutes and seconds, like 1:30. It can be from {0} to {1}.</value>
-    <comment>The Length box was left with something that is not a length. {0}: the shortest length ("0.1 s"), {1}: the longest.</comment>
+    <comment>Under the box when what was typed in Length mode is not a length. {0} the shortest length ("0.1 s"), {1} the longest ("10 h 00 min"). "1:30" is typed with a colon whatever the language.</comment>
   </data>
   <data name="NotANumberSecondsPerPhoto" xml:space="preserve">
     <value>Type how many seconds each photo stays, from {0} to {1}.</value>
-    <comment>The Per photo box was left with something that is not a number. {0}: the shortest time, {1}: the longest.</comment>
+    <comment>Under the box when what was typed in Per photo mode is not a number. {0} the shortest time ("0.01 s"), {1} the longest ("10 s").</comment>
   </data>
   <data name="ClampedFramesPerSecond" xml:space="preserve">
     <value>Frame rates run from {2} to {3} fps, so {0} is now {1}.</value>
-    <comment>A frame rate outside the range was typed. {0}: what was typed, {1}: the value now set ("120 fps"), {2}: the lowest, {3}: the highest.</comment>
+    <comment>Under the box when a rate outside the range was typed. {0} what was typed, as typed ("200"), {1} the rate now set ("120 fps"), {2} the lowest ("1"), {3} the highest ("120").</comment>
   </data>
   <data name="ClampedLength" xml:space="preserve">
     <value>A video can be from {2} to {3} long, so {0} is now {1}.</value>
-    <comment>A length outside the range was typed. {0}: what was typed, {1}: the value now set ("0.1 s"), {2}: the shortest, {3}: the longest.</comment>
+    <comment>Under the box when a length outside the range was typed. {0} what was typed, as typed, {1} the length now set ("0.1 s"), {2} the shortest ("0.1 s"), {3} the longest ("10 h 00 min").</comment>
   </data>
   <data name="ClampedSecondsPerPhoto" xml:space="preserve">
     <value>A photo can stay from {2} to {3}, so {0} is now {1}.</value>
-    <comment>A time per photo outside the range was typed. {0}: what was typed, {1}: the value now set, {2}: the shortest, {3}: the longest.</comment>
+    <comment>Under the box when a time per photo outside the range was typed. {0} what was typed, as typed, {1} the time now set ("10 s"), {2} the shortest, {3} the longest.</comment>
   </data>
   <data name="NtscRate" xml:space="preserve">
     <value>Using the NTSC rate {0} ({1}/{2}).</value>
-    <comment>A frame rate typed in digits became the exact NTSC rate. {0}: the rate ("29.97 fps"), {1}: its numerator, {2}: its denominator.</comment>
+    <comment>Under the box when a typed rate became the exact rate of the NTSC video standard. {0} the rate ("29.97 fps"), {1} and {2} the exact fraction ("30000", "1001"; keep the slash).</comment>
   </data>
   <data name="ThousandsSeparator" xml:space="preserve">
     <value>Type 1000 without a separator, or {0} for one and a half.</value>
-    <comment>One separator followed by exactly three digits was typed ("1,000"); it is refused rather than guessed. {0}: one and a half in the user's culture ("1.5").</comment>
+    <comment>Under the box when "1,000" or "1.000" was typed: it is refused rather than guessed. {0} one and a half written with your decimal separator ("1.5", "1,5"). Keep "1000" as digits.</comment>
   </data>
   <data name="Rounded" xml:space="preserve">
     <value>Rounded to {0}.</value>
-    <comment>More decimals were typed than the box keeps. {0}: the value kept ("37.48 fps").</comment>
+    <comment>Under the box when more decimals were typed than it keeps. {0} the value kept, with its unit ("37.48 fps").</comment>
   </data>
   <data name="LengthTooShort" xml:space="preserve">
     <value>Your photos can't play in {0}: the fastest speed is {1}, so the video is {2} long.</value>
-    <comment>Length mode, the photos cannot play in the target even at the fastest speed. {0}: the target ("30 s"), {1}: the fastest speed ("120 fps"), {2}: the length the video has instead.</comment>
+    <comment>Length mode, when the photos cannot play in the chosen length even at the fastest speed. {0} the chosen length ("30 s"), {1} the fastest speed ("120 fps"), {2} the length the video has instead ("41.7 s").</comment>
   </data>
   <data name="LengthTooLong" xml:space="preserve">
     <value>Your photos can't fill {0}: the slowest speed is {1}, so the video is {2} long.</value>
-    <comment>Length mode, the photos cannot fill the target even at the slowest speed. {0}: the target, {1}: the slowest speed ("10 s per photo"), {2}: the length the video has instead.</comment>
+    <comment>Length mode, when the photos cannot fill the chosen length even at the slowest speed. {0} the chosen length, {1} the slowest speed ("10 s per photo"), {2} the length the video has instead.</comment>
   </data>
 </root>

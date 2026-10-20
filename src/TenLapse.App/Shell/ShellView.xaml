@@ -378,6 +378,7 @@
         <!--
           Import progress (#12): a 16 px ring (the indicator color, from the ProgressRing override), "Adding 1,240 of
           5,000 photos…" and Cancel, while an import runs. Indeterminate while the photos are listed, then it fills.
+          The text wraps to a second line before it is cut (#114), so a longer language keeps its numbers at 640 px.
         -->
         <Grid
           x:Name="ImportProgress"
@@ -408,8 +409,10 @@
             VerticalAlignment="Center"
             Foreground="{ThemeResource InkSecondaryBrush}"
             Style="{StaticResource BodyTabularTextStyle}"
+            MaxLines="2"
             Text="{x:Bind Import.ProgressText, Mode=OneWay}"
-            TextTrimming="CharacterEllipsis" />
+            TextTrimming="CharacterEllipsis"
+            TextWrapping="Wrap" />
           <Button
             x:Name="CancelImportButton"
             Grid.Column="2"

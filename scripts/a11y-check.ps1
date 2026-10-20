@@ -290,8 +290,14 @@ if (Want 'keys') {
         while (-not $picker -and (Get-Date) -lt $until -and -not $app.Process.HasExited) {
             Start-Sleep -Milliseconds 300
             $windows = $AE::RootElement.FindAll($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ProcessIdProperty, $app.Process.Id)))
-            $picker = @($windows) | Where-Object { $_.Current.ClassName -eq '#32770' } | Select-Object -First 1
+            # The picker is a Win32 dialog: class #32770 on older builds; on newer ones (26300) another class, so any
+            # window of the process that is not XAML (a ContentDialog is) and not the main window counts.
+            $picker = @($windows) | Where-Object { $_.Current.ClassName -eq '#32770' -or ($_.Current.FrameworkId -ne 'XAML' -and $_.Current.NativeWindowHandle -ne $app.Window.Current.NativeWindowHandle) } | Select-Object -First 1
             if (-not $picker) { $picker = $app.Window.FindFirst($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ClassNameProperty, '#32770'))) }
+            if (-not $picker) {
+                $picker = @($app.Window.FindAll($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Window)))) |
+                    Where-Object { $_.Current.FrameworkId -ne 'XAML' } | Select-Object -First 1
+            }
         }
         if ($picker) {
             $summary.Add("ctrl+o opened '$($picker.Current.Name)' ($($picker.Current.ClassName)); closed through UIA")

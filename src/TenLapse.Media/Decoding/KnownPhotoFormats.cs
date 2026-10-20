@@ -27,23 +27,26 @@ public sealed record KnownPhotoFormat(string Name, IReadOnlyList<string> Extensi
 /// </summary>
 public static class KnownPhotoFormats
 {
+    // The names are the Store's own, in the user's language (StoreExtensionText, #114), read once with this table: the UI
+    // language is set before the first import. The product IDs are the same everywhere.
+
     /// <summary>HEIF Image Extensions: the HEIF decoder, which reads HEIC, HEIF and AVIF files (the container).</summary>
-    public static readonly PhotoCodecExtension HeifExtension = new("HEIF Image Extensions", "9PMMSR1CGPWG");
+    public static readonly PhotoCodecExtension HeifExtension = new(StoreExtensionText.HeifImageExtensions, "9PMMSR1CGPWG");
 
     /// <summary>HEVC Video Extensions: the codec of HEIC photos (the iPhone default). A fresh Windows 11 has the HEIF decoder but not this.</summary>
-    public static readonly PhotoCodecExtension HevcExtension = new("HEVC Video Extensions", "9NMZLZ57R3T7", HasFee: true, IsCodec: true);
+    public static readonly PhotoCodecExtension HevcExtension = new(StoreExtensionText.HevcVideoExtensions, "9NMZLZ57R3T7", HasFee: true, IsCodec: true);
 
     /// <summary>AV1 Video Extension: the codec of AVIF photos.</summary>
-    public static readonly PhotoCodecExtension Av1Extension = new("AV1 Video Extension", "9MVZQVXJBQ9V", IsCodec: true);
+    public static readonly PhotoCodecExtension Av1Extension = new(StoreExtensionText.Av1VideoExtension, "9MVZQVXJBQ9V", IsCodec: true);
 
     /// <summary>Webp Image Extensions.</summary>
-    public static readonly PhotoCodecExtension WebpExtension = new("Webp Image Extensions", "9PG2DK419DRG");
+    public static readonly PhotoCodecExtension WebpExtension = new(StoreExtensionText.WebpImageExtensions, "9PG2DK419DRG");
 
     /// <summary>JPEG XL Image Extension.</summary>
-    public static readonly PhotoCodecExtension JpegXlExtension = new("JPEG XL Image Extension", "9MZPRTH5C0TB");
+    public static readonly PhotoCodecExtension JpegXlExtension = new(StoreExtensionText.JpegXlImageExtension, "9MZPRTH5C0TB");
 
     /// <summary>Raw Image Extension: camera RAW files.</summary>
-    public static readonly PhotoCodecExtension RawExtension = new("Raw Image Extension", "9NCTDW2W1BH8");
+    public static readonly PhotoCodecExtension RawExtension = new(StoreExtensionText.RawImageExtension, "9NCTDW2W1BH8");
 
     /// <summary>The HEIF entry (also in <see cref="All"/>).</summary>
     public static readonly KnownPhotoFormat Heif = new("HEIF", [".heic", ".heif", ".hif"], HeifExtension, HevcExtension);

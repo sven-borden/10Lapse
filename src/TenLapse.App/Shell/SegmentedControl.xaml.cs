@@ -116,6 +116,9 @@ public sealed partial class SegmentedControl : UserControl
                 Content = text,
             };
             AutomationProperties.SetName(button, i < names.Count ? names[i] : labels[i]);
+
+            // A label cut short by its ellipsis shows whole in a tooltip (#114); a label that fits has none.
+            text.IsTextTrimmedChanged += (label, _) => ToolTipService.SetToolTip(button, label.IsTextTrimmed ? label.Text : null);
             button.Checked += OnChecked;
             button.KeyDown += OnKeyDown;
             Grid.SetColumn(button, i);
