@@ -137,12 +137,33 @@ public sealed class TimingFormatTests
     }
 
     [Fact]
-    public void LabelsUseOnlyTheWordsOfTimingWords()
+    public void LabelsFillTheWholeFormatsOfTimingWords()
     {
-        Assert.Equal($"30 {TimingWords.FramesPerSecond}", TimingFormat.FrameRate(new Fraction(30, 1)));
-        Assert.Equal($"2 {TimingWords.Second} {TimingWords.PerPhoto}", TimingFormat.FrameRate(new Fraction(1, 2)));
-        Assert.Equal($"1 {TimingWords.Minute} 12 {TimingWords.Second}", TimingFormat.Duration(72 * Second));
-        Assert.Equal($"1 {TimingWords.Hour} 02 {TimingWords.Minute}", TimingFormat.Duration(3720 * Second));
+        var invariant = System.Globalization.CultureInfo.InvariantCulture;
+        Assert.Equal(string.Format(invariant, TimingWords.FramesPerSecondFormat, "30"), TimingFormat.FrameRate(new Fraction(30, 1)));
+        Assert.Equal(string.Format(invariant, TimingWords.SecondsPerPhotoFormat, "2"), TimingFormat.FrameRate(new Fraction(1, 2)));
+        Assert.Equal(string.Format(invariant, TimingWords.MinutesSecondsFormat, "1", "12"), TimingFormat.Duration(72 * Second));
+        Assert.Equal(string.Format(invariant, TimingWords.HoursMinutesFormat, "1", "02"), TimingFormat.Duration(3720 * Second));
+        Assert.Equal(string.Format(invariant, TimingWords.SecondsFormat, "24.7"), TimingFormat.Duration(247 * Second / 10));
+    }
+
+    [Theory]
+    [InlineData(0, 1, "0 s")]
+    [InlineData(30, 1, "30 s")]
+    [InlineData(1, 4, "0.25 s")]
+    [InlineData(1, 2, "0.5 s")]
+    public void SecondsIsANumberOfSecondsAsALabel(long num, long den, string expected)
+    {
+        Assert.Equal(expected, TimingFormat.Seconds(new Fraction(num, den)));
+        Assert.Equal(expected.Replace('.', ','), TimingFormat.Seconds(new Fraction(num, den), System.Globalization.CultureInfo.GetCultureInfo("fr-FR")));
+    }
+
+    [Fact]
+    public void FramesPerSecondNeverSwitchesToThePerPhotoForm()
+    {
+        Assert.Equal("0.5 fps", TimingFormat.FramesPerSecond(new Fraction(1, 2)));
+        Assert.Equal("29,97 fps", TimingFormat.FramesPerSecond(new Fraction(30000, 1001), System.Globalization.CultureInfo.GetCultureInfo("de-DE")));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TimingFormat.Seconds(new Fraction(-1, 1)));
     }
 
     [Fact]

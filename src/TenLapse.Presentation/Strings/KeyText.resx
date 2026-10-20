@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The user-visible text of Keyboard/KeyText.cs (#38, #39), read through TextResources.
-  English is the neutral language. A translation is a copy of this file named KeyText.<culture>.resx (for example
-  KeyText.de.resx) with the values translated; keep the {0} placeholders and their numbers. The letters of the shortcuts
-  are fixed in code: translate only the names Windows gives the modifier keys and the space bar in the language.
+  The keyboard shortcuts' words (#38, #39, #114), read through TextResources by KeyText.cs. Each shortcut appears twice:
+  as a tooltip shows it ("Ctrl+O") and as a screen reader names it ("Control+O"). The letters are fixed in code; translate
+  only the names of the keys, exactly as Windows names them on a keyboard of your language (German: "Strg", "Umschalt",
+  "Leertaste", "Esc"; French: "Ctrl", "Maj", "Espace", "Échap"). Keep the plus signs.
+  A translation is a copy of this file named KeyText.<culture>.resx (for example KeyText.de.resx).
 -->
 <root>
   <resheader name="resmimetype">
@@ -20,23 +21,23 @@
   </resheader>
   <data name="ShortcutTipFormat" xml:space="preserve">
     <value>{0} ({1})</value>
-    <comment>A tooltip with the shortcut: {0} the control's name ("New project"), {1} its shortcut ("Ctrl+N").</comment>
+    <comment>A tooltip with a shortcut. {0} the control's name ("New project"), {1} its shortcut ("Ctrl+N").</comment>
   </data>
   <data name="ChooseFolderShortcut" xml:space="preserve">
     <value>Ctrl+O</value>
-    <comment>Choose folder's shortcut in a tooltip and beside the Add photos menu item. The letter is fixed in code; translate only "Ctrl", as Windows names that key in the language.</comment>
+    <comment>Choose folder's shortcut, in a tooltip and beside the Add photos menu item. The letter O is fixed; translate only "Ctrl", as Windows names that key on a keyboard of your language.</comment>
   </data>
   <data name="ChooseFolderKeys" xml:space="preserve">
     <value>Control+O</value>
-    <comment>Choose folder's shortcut as a screen reader names it (its accelerator key). Translate only "Control".</comment>
+    <comment>Choose folder's shortcut as a screen reader names it. Translate only "Control", as Windows names that key in your language.</comment>
   </data>
   <data name="ChoosePhotosShortcut" xml:space="preserve">
     <value>Ctrl+Shift+O</value>
-    <comment>Choose photos' shortcut in a tooltip and beside the Add photos menu item. Translate only "Ctrl" and "Shift".</comment>
+    <comment>Choose photos' shortcut, in a tooltip and beside the Add photos menu item. Translate only "Ctrl" and "Shift", as Windows names those keys on a keyboard of your language.</comment>
   </data>
   <data name="ChoosePhotosKeys" xml:space="preserve">
     <value>Control+Shift+O</value>
-    <comment>Choose photos' shortcut as a screen reader names it (its accelerator key). Translate only "Control" and "Shift".</comment>
+    <comment>Choose photos' shortcut as a screen reader names it. Translate only "Control" and "Shift".</comment>
   </data>
   <data name="NewProjectShortcut" xml:space="preserve">
     <value>Ctrl+N</value>
@@ -44,22 +45,18 @@
   </data>
   <data name="NewProjectKeys" xml:space="preserve">
     <value>Control+N</value>
-    <comment>New project's shortcut as a screen reader names it (its accelerator key). Translate only "Control".</comment>
+    <comment>New project's shortcut as a screen reader names it. Translate only "Control".</comment>
   </data>
   <data name="ExportShortcut" xml:space="preserve">
     <value>Ctrl+E</value>
     <comment>Export video's shortcut in its tooltip. Translate only "Ctrl".</comment>
   </data>
-  <data name="PlayShortcut" xml:space="preserve">
-    <value>Space</value>
-    <comment>The play button's key in its tooltip: the name Windows gives the space bar in the language.</comment>
-  </data>
   <data name="PlayKeys" xml:space="preserve">
     <value>Space</value>
-    <comment>The play button's key as a screen reader names it (its accelerator key).</comment>
+    <comment>The preview's play key, the space bar: in the play button's tooltip and as a screen reader names it. The name Windows gives the space bar on a keyboard of your language ("Leertaste" in German).</comment>
   </data>
   <data name="BackKeys" xml:space="preserve">
     <value>Escape</value>
-    <comment>Settings' Back button's key as a screen reader names it (its accelerator key; Alt+Left and the mouse's back button work too).</comment>
+    <comment>The key of the Settings page's Back button as a screen reader names it: the Escape key, as Windows names it in your language ("Esc" in German, "Échap" in French).</comment>
   </data>
 </root>

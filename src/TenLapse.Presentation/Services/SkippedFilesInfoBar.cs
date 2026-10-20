@@ -26,9 +26,7 @@ public static class SkippedFilesInfoBar
             return null;
         }
 
-        var message = details.Length == 1
-            ? SkippedFileText.SkippedOne
-            : string.Format(CultureInfo.InvariantCulture, SkippedFileText.SkippedMany, details.Length.ToString("N0", CultureInfo.InvariantCulture));
+        var message = SkippedFileText.Skipped.Format(CultureInfo.CurrentCulture, details.Length, details.Length.ToString("N0", CultureInfo.CurrentCulture));
         return new InfoBarRequest(InfoBarSeverity.Caution, message, details: details);
     }
 }

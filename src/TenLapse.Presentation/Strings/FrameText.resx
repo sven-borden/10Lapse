@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The user-visible text of FrameText.cs (#39), read through TextResources.
+  The user-visible text of FrameText.cs (#39, #114), read through TextResources: the Frame panel, which sets the video's
+  shape (16:9, 9:16, ...) and how the photos fill it. Here "frame" means the video's picture area, its shape; elsewhere
+  (the filmstrip, the export) a frame is one picture of the video.
   English is the neutral language. A translation is a copy of this file named FrameText.<culture>.resx (for example
-  FrameText.de.resx) with the values translated; keep the {0} placeholders and their numbers, and keep each entry a
-  whole sentence. The comments say what each placeholder holds.
+  FrameText.de.resx) with the values translated. Keep every {0} placeholder (you may move it); each entry is whole.
+  "Keep it to about N characters" is a layout limit: the panel is 280 px wide.
 -->
 <root>
   <resheader name="resmimetype">
@@ -20,66 +22,66 @@
   </resheader>
   <data name="Heading" xml:space="preserve">
     <value>Frame</value>
-    <comment>The section's heading.</comment>
+    <comment>The heading of the Frame panel: the video's picture area, its shape and how the photos fill it (as a picture frame), not one picture of the video. Keep it to about 14 characters: it is also a tab in a narrow window, beside Timing and Output.</comment>
   </data>
   <data name="ShapeName" xml:space="preserve">
     <value>Shape</value>
-    <comment>Name of the segmented control that picks the shape (the prototype calls it Shape).</comment>
+    <comment>The screen reader name of the row that picks the video's shape (Match, 16:9, 9:16, 1:1, 4:5, 4:3): its aspect ratio.</comment>
   </data>
   <data name="FitName" xml:space="preserve">
     <value>Fit</value>
-    <comment>Name of the segmented control that picks Fit or Fill.</comment>
+    <comment>The screen reader name of the two-part switch that picks Fit or Fill: how a photo of another shape is placed in the frame. A noun for that choice ("Fit" as in "fit to frame"), not the option FitOption.</comment>
   </data>
   <data name="ShapeMatch" xml:space="preserve">
     <value>Match</value>
-    <comment>The first shape, as the segment shows it: the shape of the photos themselves. Keep it to about six letters: six equal segments share the 280 px row, and a longer word ends in an ellipsis (its screen reader name is ShapeMatchName).</comment>
+    <comment>The first shape, as its segment shows it: take the shape of the photos themselves. Keep it to about 6 characters: six equal segments share the 280 px row (about 46 px each), and a longer word ends in an ellipsis (its screen reader name is ShapeMatchName).</comment>
   </data>
   <data name="ShapeMatchName" xml:space="preserve">
     <value>Match photos</value>
-    <comment>The first shape, as a screen reader names it.</comment>
+    <comment>The first shape as a screen reader names it, and in sentences: the video takes the photos' shape.</comment>
   </data>
   <data name="FitOption" xml:space="preserve">
     <value>Fit</value>
-    <comment>The first Fit or Fill choice: the whole photo, with bars where the shapes differ.</comment>
+    <comment>The first part of the Fit or Fill switch: show the whole photo, with bars where its shape differs from the frame's. A verb or short noun. Keep it to about 12 characters: the two parts share the 280 px row.</comment>
   </data>
   <data name="FillOption" xml:space="preserve">
     <value>Fill</value>
-    <comment>The second Fit or Fill choice: the frame is filled and the edges are cut.</comment>
+    <comment>The second part of the Fit or Fill switch: fill the frame and cut the photo's edges. Keep it to about 12 characters.</comment>
   </data>
   <data name="FitHint" xml:space="preserve">
     <value>Fit shows the whole photo with bars where shapes differ.</value>
-    <comment>The line under the controls when Fit is chosen.</comment>
+    <comment>The line under the switches when Fit is chosen. Start with the same word as FitOption.</comment>
   </data>
   <data name="FillHint" xml:space="preserve">
     <value>Fill crops the edges so the frame has no bars.</value>
-    <comment>The line under the controls when Fill is chosen.</comment>
+    <comment>The line under the switches when Fill is chosen. Start with the same word as FillOption.</comment>
   </data>
   <data name="MatchingPhotos" xml:space="preserve">
     <value>Matching your photos: {0} × {1}.</value>
-    <comment>Match photos is chosen and the photos' sizes are known. {0}: the width, {1}: the height of the most common photo.</comment>
+    <comment>The line under the switches when Match photos is chosen and the photos' sizes are known. {0} the width, {1} the height of the most common photo, in pixels ("4032", "3024", written without grouping).</comment>
   </data>
   <data name="MatchingNoPhotos" xml:space="preserve">
     <value>Matching your photos. Until their sizes are known the shape is 16:9.</value>
-    <comment>Match photos is chosen but no photo size is known yet (no photos, or none read), so the video is 16:9.</comment>
+    <comment>The same line when no photo size is known yet (no photos, or none read), so the video is 16:9.</comment>
   </data>
   <data name="NoSize" xml:space="preserve">
     <value>Photos this wide or tall are too large to export on this PC. Pick a fixed shape such as 16:9.</value>
-    <comment>Match photos gives a shape so wide or tall that no size can be exported on this PC; says what to do instead.</comment>
+    <comment>The line when Match photos gives a shape so wide or tall that no size can be exported on this PC; says what to do instead.</comment>
   </data>
   <data name="PortraitHint" xml:space="preserve">
     <value>Most of your photos are portrait, so 9:16 suits them better.</value>
-    <comment>The quiet line when most photos are portrait and the shape is landscape.</comment>
+    <comment>A quiet suggestion when most photos are portrait (taller than wide) and the shape is landscape.</comment>
   </data>
   <data name="PortraitApply" xml:space="preserve">
     <value>Use 9:16</value>
-    <comment>The button that applies the suggestion.</comment>
+    <comment>The suggestion's button that switches to 9:16. Keep it to about 14 characters.</comment>
   </data>
   <data name="PortraitDismiss" xml:space="preserve">
     <value>Dismiss</value>
-    <comment>The button that closes the suggestion for the project.</comment>
+    <comment>The suggestion's button that hides it for this project. Keep it to about 14 characters.</comment>
   </data>
   <data name="Announcement" xml:space="preserve">
     <value>Frame: {0}, {1}.</value>
-    <comment>Said to a screen reader after a change. {0}: the shape's name, {1}: Fit or Fill.</comment>
+    <comment>Read by a screen reader after a change in the Frame panel. {0} the shape's name ("16:9", "Match photos"), {1} FitOption or FillOption.</comment>
   </data>
 </root>

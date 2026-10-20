@@ -118,17 +118,17 @@
             HorizontalAlignment="Left"
             Foreground="{ThemeResource InkSecondaryBrush}"
             Style="{StaticResource CaptionTabularTextStyle}"
-            Text="{x:Bind presentation:TimingText.BarStart}" />
+            Text="{x:Bind ViewModel.BarStart}" />
           <TextBlock
             HorizontalAlignment="Center"
             Foreground="{ThemeResource InkSecondaryBrush}"
             Style="{StaticResource CaptionTabularTextStyle}"
-            Text="{x:Bind presentation:TimingText.BarMiddle}" />
+            Text="{x:Bind ViewModel.BarMiddle}" />
           <TextBlock
             HorizontalAlignment="Right"
             Foreground="{ThemeResource InkSecondaryBrush}"
             Style="{StaticResource CaptionTabularTextStyle}"
-            Text="{x:Bind presentation:TimingText.BarEnd}" />
+            Text="{x:Bind ViewModel.BarEnd}" />
         </Grid>
       </StackPanel>
     </StackPanel>

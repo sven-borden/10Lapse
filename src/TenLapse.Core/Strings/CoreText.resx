@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The user-visible words of Core (#39): the timing units of TimingWords and Project.DefaultName, read through TextResources.
-  English is the neutral language. A translation is a copy of this file named CoreText.<culture>.resx (for example
-  CoreText.de.resx) with the values translated; keep the {0} placeholders and their numbers, and keep each entry a
-  whole sentence. The comments say what each placeholder holds.
+  The user-visible words of Core (#39, #114): the timing units and formats of TimingWords and Project.DefaultName, read
+  through TextResources. English is the neutral language. A translation is a copy of this file named
+  CoreText.<culture>.resx (for example CoreText.de.resx) with the values translated; keep the {0} placeholders and their
+  numbers, and keep each entry whole. The comments say what each placeholder holds.
 -->
 <root>
   <resheader name="resmimetype">
@@ -20,26 +20,34 @@
   </resheader>
   <data name="Second" xml:space="preserve">
     <value>s</value>
-    <comment>Seconds, as in "24.7 s". Also the unit the Timing box accepts when the user types a duration ("2 s"), so keep it short and easy to type.</comment>
-  </data>
-  <data name="Minute" xml:space="preserve">
-    <value>min</value>
-    <comment>Minutes, as in "1 min 12 s".</comment>
-  </data>
-  <data name="Hour" xml:space="preserve">
-    <value>h</value>
-    <comment>Hours, as in "1 h 02 min".</comment>
+    <comment>The symbol for seconds, alone: shown after the Timing panel's box in Length mode, and the unit the box accepts when the user types it ("2 s"). Use the same symbol as in SecondsFormat. Keep it short and easy to type (the English "s" is always accepted too).</comment>
   </data>
   <data name="FramesPerSecond" xml:space="preserve">
     <value>fps</value>
-    <comment>Frames per second, as in "30 fps". Also the unit the Timing box accepts when the user types a rate ("30 fps"), so keep it short and easy to type.</comment>
+    <comment>The abbreviation for frames per second, alone: shown after the Timing panel's box in Per second mode, and the unit the box accepts when the user types it ("30 fps"). Use the same abbreviation as in FramesPerSecondFormat. Keep it short and easy to type (the English "fps" is always accepted too).</comment>
   </data>
-  <data name="PerPhoto" xml:space="preserve">
-    <value>per photo</value>
-    <comment>The per-photo suffix, as in "2 s per photo".</comment>
+  <data name="SecondsFormat" xml:space="preserve">
+    <value>{0} s</value>
+    <comment>A number of seconds: a video length under a minute ("24.7 s"), a Length or Per photo preset ("30 s", "0.25 s"), the ends of the length bar ("0 s", "60 s"). {0} the number, already written with your decimal separator. Keep it as short as the English: five presets share a 280 px row.</comment>
+  </data>
+  <data name="MinutesSecondsFormat" xml:space="preserve">
+    <value>{0} min {1} s</value>
+    <comment>A video length from one minute to under an hour ("1 min 12 s"). {0} the whole minutes, {1} the whole seconds (0 to 59).</comment>
+  </data>
+  <data name="HoursMinutesFormat" xml:space="preserve">
+    <value>{0} h {1} min</value>
+    <comment>A video length from one hour ("1 h 02 min"). {0} the whole hours, {1} the minutes, always two digits ("02").</comment>
+  </data>
+  <data name="FramesPerSecondFormat" xml:space="preserve">
+    <value>{0} fps</value>
+    <comment>A frame rate ("30 fps", "29.97 fps"). {0} the rate, already written with your decimal separator.</comment>
+  </data>
+  <data name="SecondsPerPhotoFormat" xml:space="preserve">
+    <value>{0} s per photo</value>
+    <comment>How long each photo stays on screen ("2 s per photo", "0.5 s per photo"). {0} the seconds, already written with your decimal separator. Use the same words as TimingText.UnitSecondsPerPhoto.</comment>
   </data>
   <data name="DefaultName" xml:space="preserve">
     <value>Timelapse</value>
-    <comment>The name of a project that has no folder name to take (the window title, the Save dialog's suggestion).</comment>
+    <comment>The name of a project that has no folder name to take: the window title and the file name the Save dialog suggests ("Timelapse.mp4"), so use no character a file name cannot have (\ / : * ? " &lt; &gt; |).</comment>
   </data>
 </root>

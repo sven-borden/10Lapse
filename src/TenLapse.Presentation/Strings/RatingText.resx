@@ -20,19 +20,19 @@
   </resheader>
   <data name="CardTitle" xml:space="preserve">
     <value>Feedback</value>
-    <comment>The Settings card's title.</comment>
+    <comment>The title of the Settings card with the Rate and Send feedback buttons (a noun: what users tell the developer).</comment>
   </data>
-  <data name="CardCaption" xml:space="preserve">
-    <value>Rate 10Lapse opens its page in the Microsoft Store. Send feedback opens GitHub in your browser. 10Lapse sends nothing itself.</value>
-    <comment>The Settings card's caption.</comment>
+  <data name="CardCaptionFormat" xml:space="preserve">
+    <value>{0} opens its page in the Microsoft Store. {1} opens GitHub in your browser. 10Lapse sends nothing itself.</value>
+    <comment>The text under the Feedback card's title. {0} the Rate button's label (RateButton, "Rate 10Lapse"), {1} the Send feedback button's label (FeedbackButton).</comment>
   </data>
   <data name="RateButton" xml:space="preserve">
     <value>Rate 10Lapse</value>
-    <comment>The Rate button, and its accessible name.</comment>
+    <comment>A button on the Feedback card that opens 10Lapse's review page in the Microsoft Store; also its screen reader name. Keep it to about 18 characters: it sits beside Send feedback, and both move under the text in a narrow window.</comment>
   </data>
   <data name="FeedbackButton" xml:space="preserve">
     <value>Send feedback</value>
-    <comment>The Send feedback button, and its accessible name.</comment>
+    <comment>A button on the Feedback card that opens the project's GitHub issues in the browser; also its screen reader name. Keep it to about 18 characters.</comment>
   </data>
   <data name="RateTip" xml:space="preserve">
     <value>Opens the Microsoft Store</value>
@@ -44,10 +44,10 @@
   </data>
   <data name="RateFailed" xml:space="preserve">
     <value>The Microsoft Store didn't open. Open the Store yourself and search for 10Lapse to rate it.</value>
-    <comment>The InfoBar when the Store would not open.</comment>
+    <comment>A message bar when the Store would not open.</comment>
   </data>
   <data name="FeedbackFailed" xml:space="preserve">
     <value>Your browser didn't open. Go to github.com/sven-borden/10Lapse/issues to send your feedback.</value>
-    <comment>The InfoBar when the browser would not open.</comment>
+    <comment>A message bar when the browser would not open. Keep the address as it is.</comment>
   </data>
 </root>

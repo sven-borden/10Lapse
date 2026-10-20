@@ -136,13 +136,22 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
         _ => TimingText.CustomSecondsPerPhoto,
     };
 
-    /// <summary>The unit after the box: "fps", "s" or "s per photo".</summary>
+    /// <summary>The unit after the box: "fps", "s" or "s per photo"; the first two are the units the box accepts when typed.</summary>
     public string ValueUnit => Mode switch
     {
-        SpeedMode.PerSecond => TimingText.UnitFramesPerSecond,
-        SpeedMode.Length => TimingText.UnitLength,
+        SpeedMode.PerSecond => TimingWords.FramesPerSecond,
+        SpeedMode.Length => TimingWords.Second,
         _ => TimingText.UnitSecondsPerPhoto,
     };
+
+    /// <summary>The length bar's left end, "0 s", in the panel's culture.</summary>
+    public string BarStart => TimingFormat.Seconds(new Fraction(0, 1), Culture);
+
+    /// <summary>The length bar's middle, "30 s": half a minute.</summary>
+    public string BarMiddle => TimingFormat.Seconds(new Fraction((long)BarSeconds / 2, 1), Culture);
+
+    /// <summary>The length bar's right end, "60 s": a minute, the longest video it shows.</summary>
+    public string BarEnd => TimingFormat.Seconds(new Fraction((long)BarSeconds, 1), Culture);
 
     /// <summary>The mode's value as the box shows it, in the user's culture ("29,97" in German): the stored value, never the typed text.</summary>
     public string ValueText => _valueText;
@@ -153,8 +162,8 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
     /// <summary>The second line: "at 30 fps", "at 24.73 fps" or "at 2 s per photo".</summary>
     public string Detail => _detail;
 
-    /// <summary>The whole readout in one sentence: "742 photos → 24.7 s at 30 fps".</summary>
-    public string Readout => $"{_headline} {_detail}";
+    /// <summary>The whole readout in one sentence: "742 photos → 24.7 s at 30 fps" (<see cref="ProjectText.SentenceJoin"/>).</summary>
+    public string Readout => ProjectText.Sentences(_headline, _detail);
 
     /// <summary>What the panel did with the last entry (refused, held to the range, rounded); empty when it was used as typed or after another change.</summary>
     public string Message
@@ -342,11 +351,7 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
 
     private void Announce()
     {
-        var text = _message.Length > 0 ? $"{_message} {Readout}" : Readout;
-        if (_noticeAppeared && _notice.Length > 0)
-        {
-            text = $"{text} {_notice}";
-        }
+        var text = ProjectText.Sentences(_message, Readout, _noticeAppeared ? _notice : null);
 
         _noticeAppeared = false;
         Announced?.Invoke(this, text);
@@ -418,7 +423,7 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
                     _noticeAppeared = true;
                     if (!_editing)
                     {
-                        Announced?.Invoke(this, $"{_notice} {Readout}");
+                        Announced?.Invoke(this, ProjectText.Sentences(_notice, Readout));
                         _noticeAppeared = false;
                     }
                 }
@@ -441,13 +446,8 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
 
     private static string PresetLabel(SpeedMode mode, Fraction preset, CultureInfo culture)
     {
-        var number = TimingFormat.Decimal(preset, culture);
-        return mode switch
-        {
-            SpeedMode.PerSecond => number,
-            SpeedMode.Length => TimingText.Format(culture, TimingText.LengthPreset, number),
-            _ => $"{number} {TimingWords.Second}",
-        };
+        // Per second presets are bare numbers ("24"), the others seconds ("30 s", "0.25 s").
+        return mode == SpeedMode.PerSecond ? TimingFormat.Decimal(preset, culture) : TimingFormat.Seconds(preset, culture);
     }
 
     private static int IndexOf(IReadOnlyList<Fraction> presets, Fraction value)

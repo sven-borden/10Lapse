@@ -139,7 +139,7 @@ public sealed class CodecExtensionPrompts
         {
             _infoBars.Show(new InfoBarRequest(
                 InfoBarSeverity.Caution,
-                ProjectText.CodecNext(needed[index + 1]),
+                ProjectText.CodecNext(needed[index + 1], isLast: index + 2 == needed.Count),
                 ProjectText.CodecGetFromStore,
                 () => OpenAsync(needed, index + 1),
                 showsNext: true));

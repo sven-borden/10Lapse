@@ -1,6 +1,7 @@
 using System.Globalization;
 using TenLapse.Core.Projects;
 using TenLapse.Core.Text;
+using TenLapse.Core.Timing;
 
 namespace TenLapse.Presentation;
 
@@ -48,26 +49,12 @@ public static class TimingText
     /// <summary>The caption above the box in Per photo mode.</summary>
     public static string CustomSecondsPerPhoto => _strings.Get();
 
-    /// <summary>The unit after the box in Per second mode.</summary>
-    public static string UnitFramesPerSecond => _strings.Get();
-
-    /// <summary>The unit after the box in Length mode.</summary>
-    public static string UnitLength => _strings.Get();
-
-    /// <summary>The unit after the box in Per photo mode.</summary>
+    /// <summary>
+    /// The unit after the box in Per photo mode ("s per photo"). The other two modes show Core's
+    /// <see cref="TimingWords.FramesPerSecond"/> and <see cref="TimingWords.Second"/>, the units the box also accepts, so
+    /// the label and what may be typed cannot disagree.
+    /// </summary>
     public static string UnitSecondsPerPhoto => _strings.Get();
-
-    /// <summary>A preset of the Length mode. {0}: the seconds ("30").</summary>
-    public static string LengthPreset => _strings.Get();
-
-    /// <summary>The bar's left end: no time.</summary>
-    public static string BarStart => _strings.Get();
-
-    /// <summary>The bar's middle: half a minute.</summary>
-    public static string BarMiddle => _strings.Get();
-
-    /// <summary>The bar's right end: a minute, the longest clip it can show.</summary>
-    public static string BarEnd => _strings.Get();
 
     /// <summary>The Per second box was left with something that is not a number. {0}: the lowest rate, {1}: the highest, {2}: the NTSC example ("29.97").</summary>
     public static string NotANumberFramesPerSecond => _strings.Get();

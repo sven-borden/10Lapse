@@ -51,10 +51,6 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial bool IsDirty { get; private set; }
 
-    /// <summary>"742 photos → 24.7 s at 30 fps" (#17).</summary>
-    [ObservableProperty]
-    public partial string TimingReadout { get; private set; }
-
     /// <summary>True when the project has at least one frame.</summary>
     public bool HasFrames => FrameCount > 0;
 
@@ -152,7 +148,7 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     private void OnModelChanged(object? sender, ProjectChangedEventArgs e) => Refresh();
 
     // The generated setters compare before they notify, so refreshing every value raises only what changed.
-    [MemberNotNull(nameof(Name), nameof(TimingReadout))]
+    [MemberNotNull(nameof(Name))]
     private void Refresh()
     {
         var snapshot = Model.Snapshot;
@@ -160,6 +156,5 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
         SkippedFileCount = snapshot.SkippedFiles.Length;
         Name = snapshot.Name;
         IsDirty = snapshot.IsDirty;
-        TimingReadout = ProjectText.TimingReadout(snapshot.Frames.Length, snapshot.Timing);
     }
 }

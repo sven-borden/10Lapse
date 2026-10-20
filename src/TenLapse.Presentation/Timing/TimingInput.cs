@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 
@@ -34,6 +35,10 @@ public readonly record struct TimingEntry(bool IsValid, Fraction Value, string M
 /// </summary>
 public static class TimingInput
 {
+    // The English units, accepted whatever the language: not shown text, so they stay in code.
+    private const string InvariantFramesPerSecond = "fps";
+    private const string InvariantSecond = "s";
+
     /// <summary>The lowest value the field accepts.</summary>
     public static Fraction Min(TimingField field) => field switch
     {
@@ -66,13 +71,15 @@ public static class TimingInput
             return TimingFormat.Duration(value.Numerator * FrameTiming.TicksPerSecond, culture);
         }
 
-        var unit = field == TimingField.FramesPerSecond ? TimingWords.FramesPerSecond : TimingWords.Second;
-        return $"{Number(value, culture)} {unit}";
+        return field == TimingField.FramesPerSecond ? TimingFormat.FramesPerSecond(value, culture) : TimingFormat.Seconds(value, culture);
     }
 
     /// <summary>
-    /// Reads <paramref name="text"/> for <paramref name="field"/>. A trailing unit the panel itself shows ("fps", "s") is
-    /// ignored. Length also takes minutes and seconds ("1:30") and hours ("1:02:03").
+    /// Reads <paramref name="text"/> for <paramref name="field"/>. A trailing unit is ignored: the one the panel shows in
+    /// the user's language (<see cref="TimingWords.FramesPerSecond"/>, <see cref="TimingWords.Second"/>) and the English
+    /// "fps" and "s", which work in every language. The text is normalized first (Unicode NFKC), so full-width digits and
+    /// letters typed with an East Asian input method ("３０ｆｐｓ") read as "30fps". Length also takes minutes and seconds
+    /// ("1:30") and hours ("1:02:03").
     /// </summary>
     /// <param name="field">The box.</param>
     /// <param name="text">What was typed.</param>
@@ -80,7 +87,7 @@ public static class TimingInput
     public static TimingEntry Parse(TimingField field, string? text, CultureInfo culture)
     {
         ArgumentNullException.ThrowIfNull(culture);
-        var typed = (text ?? string.Empty).Trim();
+        var typed = (text ?? string.Empty).Normalize(NormalizationForm.FormKC).Trim();
         var body = StripUnit(field, typed);
         var (reading, value) = Read(field, body);
         if (reading != Reading.NotANumber && LooksLikeThousands(body) && !(reading == Reading.Value && IsNtsc(field, value)))
@@ -206,10 +213,13 @@ public static class TimingInput
 
     private static string StripUnit(TimingField field, string text)
     {
-        string[] units = field == TimingField.FramesPerSecond ? [TimingWords.FramesPerSecond] : [TimingWords.Second];
+        // The unit in the user's language first, then the English one; normalized as the typed text is.
+        string[] units = field == TimingField.FramesPerSecond
+            ? [TimingWords.FramesPerSecond.Normalize(NormalizationForm.FormKC), InvariantFramesPerSecond]
+            : [TimingWords.Second.Normalize(NormalizationForm.FormKC), InvariantSecond];
         foreach (var unit in units)
         {
-            if (text.EndsWith(unit, StringComparison.OrdinalIgnoreCase) && text.Length > unit.Length)
+            if (unit.Length > 0 && text.EndsWith(unit, StringComparison.OrdinalIgnoreCase) && text.Length > unit.Length)
             {
                 return text[..^unit.Length].TrimEnd();
             }

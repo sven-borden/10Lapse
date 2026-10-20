@@ -19,16 +19,15 @@ public sealed class ProjectViewModelTests
         Assert.Equal(742, viewModel.FrameCount);
         Assert.True(viewModel.HasFrames);
         Assert.True(viewModel.IsDirty);
-        Assert.Equal("742 photos → 24.7 s at 30 fps", viewModel.TimingReadout);
         Assert.Equal(
-            [nameof(ProjectViewModel.FrameCount), nameof(ProjectViewModel.HasFrames), nameof(ProjectViewModel.IsDirty), nameof(ProjectViewModel.TimingReadout)],
+            [nameof(ProjectViewModel.FrameCount), nameof(ProjectViewModel.HasFrames), nameof(ProjectViewModel.IsDirty)],
             raised);
 
+        // The readout lives in the Timing panel (#17); a speed change raises nothing here.
         raised.Clear();
         viewModel.Model.Timing = TimingSettings.PerSecond(new Fraction(24, 1));
 
-        Assert.Equal([nameof(ProjectViewModel.TimingReadout)], raised);
-        Assert.Equal("742 photos → 30.9 s at 24 fps", viewModel.TimingReadout);
+        Assert.Empty(raised);
     }
 
     [Fact]

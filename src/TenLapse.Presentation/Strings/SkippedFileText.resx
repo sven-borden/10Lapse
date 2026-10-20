@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The user-visible text of SkippedFileText.cs (#39), read through TextResources.
+  The words for photos an import could not read (#13, #39, #114), read through TextResources by SkippedFileText.cs.
   English is the neutral language. A translation is a copy of this file named SkippedFileText.<culture>.resx (for example
-  SkippedFileText.de.resx) with the values translated; keep the {0} placeholders and their numbers, and keep each entry a
-  whole sentence. The comments say what each placeholder holds.
+  SkippedFileText.de.resx) with the values translated. Skipped_one / Skipped_other are the forms of one counted sentence
+  (add Skipped_many where your language has it). The reasons are short fragments shown after a file name in the message
+  bar's list ("IMG_4402.HEIC   Damaged file: it ends early"): sentence case, no final period, about 45 characters at most
+  so a line fits the list beside the file name. Some also appear inside the sentence "Photo {0}, {1}, can't be read ({2})."
 -->
 <root>
   <resheader name="resmimetype">
@@ -18,60 +20,60 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="SkippedOne" xml:space="preserve">
-    <value>1 photo couldn't be read and was skipped.</value>
-    <comment>The InfoBar for one skipped photo.</comment>
+  <data name="Skipped_one" xml:space="preserve">
+    <value>{0} photo couldn't be read and was skipped.</value>
+    <comment>A message bar after an import; View list shows the file and why. {0} the number of photos ("1").</comment>
   </data>
-  <data name="SkippedMany" xml:space="preserve">
+  <data name="Skipped_other" xml:space="preserve">
     <value>{0} photos couldn't be read and were skipped.</value>
-    <comment>The InfoBar for several skipped photos. {0} the count ("3", "1,204").</comment>
+    <comment>A message bar after an import; View list shows each file and why. {0} the number of photos ("3", "1,204").</comment>
   </data>
   <data name="UnsupportedFormat" xml:space="preserve">
     <value>Not a photo format Windows can read</value>
-    <comment>SkipReason.UnsupportedFormat.</comment>
+    <comment>Why a file was skipped: Windows has no decoder for its format. A fragment after the file name, no final period.</comment>
   </data>
   <data name="DecodeFailed" xml:space="preserve">
     <value>Damaged file</value>
-    <comment>SkipReason.DecodeFailed.</comment>
+    <comment>Why a file was skipped: its data is corrupt. A fragment, no final period.</comment>
   </data>
   <data name="AccessDenied" xml:space="preserve">
     <value>No permission to open it</value>
-    <comment>SkipReason.AccessDenied.</comment>
+    <comment>Why a file was skipped: Windows denied access to it. A fragment, no final period.</comment>
   </data>
   <data name="FileNotFound" xml:space="preserve">
     <value>No longer there: moved, deleted or disconnected</value>
-    <comment>SkipReason.FileNotFound.</comment>
+    <comment>Why a file was skipped: it disappeared during the import. A fragment, no final period.</comment>
   </data>
   <data name="Other" xml:space="preserve">
     <value>Couldn't be read</value>
-    <comment>SkipReason.Other.</comment>
+    <comment>Why a file was skipped, when no better reason is known. A fragment, no final period.</comment>
   </data>
   <data name="EmptyFile" xml:space="preserve">
     <value>Empty file (0 bytes)</value>
-    <comment>SkipReason.EmptyFile, the prototype's words.</comment>
+    <comment>Why a file was skipped: it has no data. A fragment, no final period; use your language's word or symbol for bytes.</comment>
   </data>
   <data name="Truncated" xml:space="preserve">
     <value>Damaged file: it ends early</value>
-    <comment>SkipReason.Truncated, the prototype's words.</comment>
+    <comment>Why a file was skipped: the file is cut short (an interrupted copy). A fragment, no final period.</comment>
   </data>
   <data name="NeedsExtension" xml:space="preserve">
     <value>Needs a free extension from the Microsoft Store</value>
-    <comment>SkipReason.NeedsExtension; #14's own InfoBar names the extension and opens the Store.</comment>
+    <comment>Why a file was skipped: Windows needs a free Store extension to read its format; another message bar names it and opens the Store. A fragment, no final period.</comment>
   </data>
   <data name="FileInUse" xml:space="preserve">
     <value>In use by another app</value>
-    <comment>SkipReason.FileInUse.</comment>
+    <comment>Why a file was skipped: another app holds it locked. A fragment, no final period.</comment>
   </data>
   <data name="ImageTooLarge" xml:space="preserve">
     <value>Too large to open</value>
-    <comment>SkipReason.ImageTooLarge.</comment>
+    <comment>Why a file was skipped: the image is too large to decode. A fragment, no final period.</comment>
   </data>
   <data name="CloudFileOffline" xml:space="preserve">
     <value>In the cloud and not available offline</value>
-    <comment>SkipReason.CloudFileOffline.</comment>
+    <comment>Why a file was skipped: it is an online-only file of a cloud service and the PC is offline. A fragment, no final period.</comment>
   </data>
   <data name="CloudOnly" xml:space="preserve">
     <value>Only in OneDrive, not on this PC</value>
-    <comment>SkipReason.CloudOnly: the user chose not to download it.</comment>
+    <comment>Why a file was skipped: it is only in OneDrive and the user chose not to download it. A fragment, no final period.</comment>
   </data>
 </root>

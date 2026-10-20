@@ -6,17 +6,14 @@ namespace TenLapse.Presentation;
 /// <summary>
 /// The words for photos that could not be read (#13): the InfoBar sentence and one short reason per file, as the
 /// prototype's list shows them ("IMG_4402.HEIC — Damaged file: it ends early"). Same rules as
-/// <see cref="ProjectText"/>: whole strings, singular and plural separate, read from <c>Strings/SkippedFileText.resx</c> (#39).
+/// <see cref="ProjectText"/>: whole strings, a plural family for the count, read from <c>Strings/SkippedFileText.resx</c> (#39).
 /// </summary>
 public static class SkippedFileText
 {
     private static readonly TextResources _strings = new("TenLapse.Presentation.Strings.SkippedFileText", typeof(SkippedFileText).Assembly);
 
-    /// <summary>The InfoBar for one skipped photo.</summary>
-    public static string SkippedOne => _strings.Get();
-
-    /// <summary>The InfoBar for several skipped photos. {0} the count ("3", "1,204").</summary>
-    public static string SkippedMany => _strings.Get();
+    /// <summary>The InfoBar for skipped photos. {0} the count ("3", "1,204").</summary>
+    public static PluralText Skipped => _strings.Plural();
 
     /// <summary><see cref="SkipReason.UnsupportedFormat"/>.</summary>
     public static string UnsupportedFormat => _strings.Get();

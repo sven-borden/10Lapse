@@ -6,9 +6,10 @@ namespace TenLapse.Presentation;
 
 /// <summary>
 /// Every user-visible word of the Output panel (#23), as whole format strings read from <c>Strings/OutputText.resx</c>
-/// (#39); log contexts stay here in English. The resolution and codec names are technical names and stay in code. The file size is the one
-/// number here written in the user's culture (a decimal comma in German or French); the sizes of the video are
-/// plain integers.
+/// (#39); log contexts stay here in English. The resolution and codec names are technical names and stay in code. The
+/// file size is written in the user's culture (a decimal comma in German or French), through the one size formatter
+/// (<see cref="Size(long, int, CultureInfo?)"/>) the export and the OneDrive question use too; the pixel sizes of the
+/// video are plain integers, invariant on purpose.
 /// </summary>
 public static class OutputText
 {
@@ -96,7 +97,10 @@ public static class OutputText
         _ => throw new ArgumentOutOfRangeException(nameof(resolution), resolution, "Unknown resolution."),
     };
 
-    /// <summary>The list entry for a resolution: "1080p · 1920 × 1080" (the size follows the frame shape).</summary>
+    /// <summary>
+    /// The list entry for a resolution: "1080p · 1920 × 1080" (the size follows the frame shape). Invariant on purpose:
+    /// a pixel size is written without grouping in every language, as Windows' display settings write it.
+    /// </summary>
     public static string ResolutionOption(OutputResolution resolution, PixelSize size) =>
         string.Format(CultureInfo.InvariantCulture, ResolutionOptionFormat, ResolutionName(resolution), size.Width, size.Height);
 
@@ -109,7 +113,7 @@ public static class OutputText
     };
 
     /// <summary>The list entry for a format: "MP4 · H.264".</summary>
-    public static string FormatOption(VideoFormat format) => string.Format(CultureInfo.InvariantCulture, FormatOptionFormat, CodecName(format));
+    public static string FormatOption(VideoFormat format) => string.Format(CultureInfo.CurrentCulture, FormatOptionFormat, CodecName(format));
 
     /// <summary>The list entry for a quality.</summary>
     public static string QualityOption(OutputQuality quality) => quality switch
@@ -130,45 +134,52 @@ public static class OutputText
     }
 
     /// <summary>
-    /// A file size without false precision: two significant figures ("4.2 MB", "37 MB", "180 MB", "1.8 GB"),
-    /// in units of 1,024 as Explorer counts them, and "Less than 1 MB" below a megabyte. The number is written in
-    /// <paramref name="culture"/> ("1,8 GB" in German).
+    /// An estimated file size without false precision: two significant figures ("4.2 MB", "37 MB", "180 MB", "1.8 GB");
+    /// see <see cref="Size(long, int, CultureInfo?)"/>.
     /// </summary>
-    public static string Size(long bytes, CultureInfo? culture = null)
+    public static string Size(long bytes, CultureInfo? culture = null) => Size(bytes, 2, culture);
+
+    /// <summary>
+    /// The one file-size formatter (#114): <paramref name="figures"/> significant figures, trailing zeros left out ("4.2 MB",
+    /// "173 MB", "1.23 GB"), in units of 1,024 as Explorer counts them, gigabytes from what rounds to 1000 MB, and "Less
+    /// than 1 MB" below a megabyte. The number is written in <paramref name="culture"/> ("1,8 GB" in German), the current
+    /// culture when null. The Output panel's estimate and the OneDrive question use two figures, the finished file three.
+    /// </summary>
+    public static string Size(long bytes, int figures, CultureInfo? culture = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(bytes);
+        ArgumentOutOfRangeException.ThrowIfLessThan(figures, 1);
         culture ??= CultureInfo.CurrentCulture;
         if (bytes < Megabyte)
         {
             return UnderOneMegabyte;
         }
 
-        var megabytes = TwoFigures((double)bytes / Megabyte);
+        var megabytes = Significant((double)bytes / Megabyte, figures);
         if (megabytes < 1000)
         {
             return string.Format(culture, Megabytes, Number(megabytes, culture));
         }
 
         // A size that rounds up to 1000 MB is nearly a gigabyte: say "1 GB", never "0.97 GB" next to figures in MB.
-        return string.Format(culture, Gigabytes, Number(Math.Max(1, TwoFigures((double)bytes / Gigabyte)), culture));
+        return string.Format(culture, Gigabytes, Number(Math.Max(1, Significant((double)bytes / Gigabyte, figures)), culture));
     }
 
     private const long Megabyte = 1L << 20;
     private const long Gigabyte = 1L << 30;
 
-    // Rounded to two significant figures: 4.23 to 4.2, 37.4 to 37, 183 to 180, 0.97 stays.
-    private static double TwoFigures(double value)
+    // Rounded half away from zero to that many significant figures: with two, 4.23 to 4.2, 37.4 to 37, 183 to 180.
+    private static double Significant(double value, int figures)
     {
         if (value <= 0)
         {
             return 0;
         }
 
-        var scale = Math.Pow(10, Math.Floor(Math.Log10(value)) - 1);
+        var scale = Math.Pow(10, Math.Floor(Math.Log10(value)) - (figures - 1));
         return Math.Round(value / scale, MidpointRounding.AwayFromZero) * scale;
     }
 
-    // One decimal under 10 ("4.2", "5" for 5.0), none from 10 up; always the culture's own separator.
-    private static string Number(double value, CultureInfo culture) =>
-        value < 10 ? value.ToString("0.##", culture) : value.ToString("0", culture);
+    // Up to two decimals, trailing zeros left out ("4.2", "5" for 5.0, "1.23"); always the culture's own separator.
+    private static string Number(double value, CultureInfo culture) => value.ToString("0.##", culture);
 }

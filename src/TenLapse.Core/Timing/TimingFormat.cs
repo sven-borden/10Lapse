@@ -3,8 +3,10 @@ using System.Globalization;
 namespace TenLapse.Core.Timing;
 
 /// <summary>
-/// The text of the speed readout ("742 photos → 24.7 s at 30 fps"): durations and frame-rate
-/// labels. Words come from <see cref="TimingWords"/>; numbers use the invariant culture for now.
+/// The text of the speed readout ("742 photos → 24.7 s at 30 fps"): durations and frame-rate labels. The words are
+/// whole format strings from <see cref="TimingWords"/> (#114); the numbers are written with the decimal separator of the
+/// culture each method is given, the invariant culture (a dot) when none is. Callers that show the text pass the
+/// user's culture. <see cref="Timecode"/> alone is invariant on purpose.
 /// </summary>
 public static class TimingFormat
 {
@@ -26,23 +28,53 @@ public static class TimingFormat
         var tenths = DivideRounded(ticks, TicksPerTenth);
         if (tenths < 600)
         {
-            return $"{Number(tenths / 10)}{Separator(culture)}{Number(tenths % 10)} {TimingWords.Second}";
+            return Fill(culture, TimingWords.SecondsFormat, $"{Number(tenths / 10)}{Separator(culture)}{Number(tenths % 10)}");
         }
 
         var seconds = DivideRounded(ticks, FrameTiming.TicksPerSecond);
         if (seconds < 3600)
         {
-            return $"{Number(seconds / 60)} {TimingWords.Minute} {Number(seconds % 60)} {TimingWords.Second}";
+            return Fill(culture, TimingWords.MinutesSecondsFormat, Number(seconds / 60), Number(seconds % 60));
         }
 
         var minutes = DivideRounded(ticks, TicksPerMinute);
-        return $"{Number(minutes / 60)} {TimingWords.Hour} {(minutes % 60).ToString("D2", CultureInfo.InvariantCulture)} {TimingWords.Minute}";
+        return Fill(culture, TimingWords.HoursMinutesFormat, Number(minutes / 60), Two(minutes % 60));
+    }
+
+    /// <summary>
+    /// A number of seconds as a label: "30 s", "0.25 s", "0 s" (up to two decimals, trailing zeros dropped, the decimal
+    /// separator of <paramref name="culture"/>). The Length and Per photo presets, the ends of the length bar, and a
+    /// typed length or time per photo in the Timing panel's sentences.
+    /// </summary>
+    /// <param name="seconds">Zero or more seconds.</param>
+    /// <param name="culture">The culture whose decimal separator is used; the invariant culture (a dot) when null.</param>
+    public static string Seconds(Fraction seconds, CultureInfo? culture = null)
+    {
+        if (seconds.Numerator < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(seconds), seconds, "A number of seconds cannot be negative.");
+        }
+
+        return Fill(culture, TimingWords.SecondsFormat, Localized(Hundredths(seconds.Numerator, seconds.Denominator), culture));
+    }
+
+    /// <summary>
+    /// A rate in frames per second whatever its size: "30 fps", "29.97 fps", "0.5 fps" (up to two decimals). The readout
+    /// uses <see cref="FrameRate"/>, which says the per-photo form below 1 fps.
+    /// </summary>
+    /// <param name="rate">A positive rate.</param>
+    /// <param name="culture">The culture whose decimal separator is used; the invariant culture (a dot) when null.</param>
+    public static string FramesPerSecond(Fraction rate, CultureInfo? culture = null)
+    {
+        RequirePositive(rate);
+        return Fill(culture, TimingWords.FramesPerSecondFormat, Localized(Hundredths(rate.Numerator, rate.Denominator), culture));
     }
 
     /// <summary>
     /// A time code: "00:05.26", minutes and seconds with hundredths, both two digits; from an hour the hours lead
     /// ("1:02:03.40"). The hundredths are cut, not rounded, so a frame's start never reads later than it is and
-    /// nothing carries ("00:59.99", never "01:00.00" before the minute).
+    /// nothing carries ("00:59.99", never "01:00.00" before the minute). Invariant on purpose: a time code is the same
+    /// clock notation in every language, as in a video editor, and keeps its width (DESIGN.md, the Tabular Rule).
     /// </summary>
     public static string Timecode(long ticks)
     {
@@ -63,9 +95,7 @@ public static class TimingFormat
     public static string FrameRate(Fraction rate, CultureInfo? culture = null)
     {
         RequirePositive(rate);
-        return rate >= new Fraction(1, 1)
-            ? $"{Localized(Hundredths(rate.Numerator, rate.Denominator), culture)} {TimingWords.FramesPerSecond}"
-            : SecondsPerPhoto(rate, culture);
+        return rate >= new Fraction(1, 1) ? FramesPerSecond(rate, culture) : SecondsPerPhoto(rate, culture);
     }
 
     /// <summary>
@@ -96,8 +126,12 @@ public static class TimingFormat
         var seconds = rate.Denominator * 10 >= rate.Numerator
             ? Hundredths(rate.Denominator, rate.Numerator)
             : ThreeSignificant(rate.Denominator, rate.Numerator);
-        return $"{Localized(seconds, culture)} {TimingWords.Second} {TimingWords.PerPhoto}";
+        return Fill(culture, TimingWords.SecondsPerPhotoFormat, Localized(seconds, culture));
     }
+
+    // A format of TimingWords filled with numbers already written as text.
+    private static string Fill(CultureInfo? culture, string format, params object[] numbers) =>
+        string.Format(culture ?? CultureInfo.InvariantCulture, format, numbers);
 
     /// <summary><c>numerator / denominator</c> (below 0.1) rounded half up to three significant figures, trailing zeros dropped.</summary>
     private static string ThreeSignificant(long numerator, long denominator)

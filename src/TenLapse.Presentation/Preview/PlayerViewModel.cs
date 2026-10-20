@@ -126,7 +126,7 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
     public string PlayPauseName => IsPlaying ? ProjectText.PreviewPause : ProjectText.PreviewPlay;
 
     /// <summary>The play button's tooltip, with its key: "Play (Space)" or "Pause (Space)" (#38).</summary>
-    public string PlayPauseTip => Keyboard.KeyText.Tip(PlayPauseName, Keyboard.KeyText.PlayShortcut);
+    public string PlayPauseTip => Keyboard.KeyText.Tip(PlayPauseName, Keyboard.KeyText.PlayKeys);
 
     /// <summary>The play button.</summary>
     public IRelayCommand PlayPauseCommand { get; }

@@ -142,7 +142,7 @@ public sealed class TransportTextTests
     [Fact]
     public void ThePreviewsProblemsReadAsSentences()
     {
-        Assert.Equal(ProjectText.PreviewFrameUnreadableOne, ProjectText.PreviewFrameUnreadable(1));
+        Assert.StartsWith("1 photo can't be read, so the preview shows a placeholder for it.", ProjectText.PreviewFrameUnreadable(1), StringComparison.Ordinal);
         Assert.StartsWith("3 photos can't be read", ProjectText.PreviewFrameUnreadable(3), StringComparison.Ordinal);
         Assert.StartsWith("1,200 photos", ProjectText.PreviewFrameUnreadable(1200), StringComparison.Ordinal);
         Assert.Equal("IMG_4402.JPG can't be read", ProjectText.PreviewPlaceholder("IMG_4402.JPG"));

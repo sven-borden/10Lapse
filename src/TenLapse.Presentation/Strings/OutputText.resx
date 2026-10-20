@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The user-visible text of OutputText.cs (#39), read through TextResources.
+  The user-visible text of OutputText.cs (#39, #114), read through TextResources: the Output panel and the file sizes.
   English is the neutral language. A translation is a copy of this file named OutputText.<culture>.resx (for example
-  OutputText.de.resx) with the values translated; keep the {0} placeholders and their numbers, and keep each entry a
-  whole sentence. The comments say what each placeholder holds.
+  OutputText.de.resx) with the values translated. Keep every {0} placeholder (you may move it); each entry is whole.
+  Numbers arrive already written in the user's regional format. "Keep it to about N characters" is a layout limit: the
+  panel is 280 px wide.
 -->
 <root>
   <resheader name="resmimetype">
@@ -20,82 +21,82 @@
   </resheader>
   <data name="Heading" xml:space="preserve">
     <value>Output</value>
-    <comment>The section's heading.</comment>
+    <comment>The heading of the Output panel: the settings of the video file the export writes (resolution, format, quality). A noun. Keep it to about 14 characters: it is also a tab in a narrow window, beside Timing and Frame.</comment>
   </data>
   <data name="ResolutionLabel" xml:space="preserve">
     <value>Resolution</value>
-    <comment>The resolution list's label.</comment>
+    <comment>The label over the list of video sizes (720p to 4K).</comment>
   </data>
   <data name="FormatLabel" xml:space="preserve">
     <value>Format</value>
-    <comment>The format list's label.</comment>
+    <comment>The label over the list of file formats and codecs ("MP4 · H.264").</comment>
   </data>
   <data name="QualityLabel" xml:space="preserve">
     <value>Quality</value>
-    <comment>The quality list's label.</comment>
+    <comment>The label over the list of quality levels (Standard, High, Maximum): how much detail the video keeps, which sets its file size.</comment>
   </data>
   <data name="Checking" xml:space="preserve">
     <value>Checking what this PC can encode…</value>
-    <comment>Shown in place of the lists until the startup probe has said what this PC can encode.</comment>
+    <comment>Shown in place of the lists until the start-up check has found which video encoders this PC has.</comment>
   </data>
   <data name="Ready" xml:space="preserve">
     <value>Output options are ready.</value>
-    <comment>Said to a screen reader when the lists appear in place of Checking.</comment>
+    <comment>Read by a screen reader when the lists appear in place of Checking.</comment>
   </data>
   <data name="ConservativeNote" xml:space="preserve">
     <value>10Lapse couldn't check this PC's video encoders, so it offers H.264 up to 1080p.</value>
-    <comment>The note when the probe failed or timed out. It stands in for EncoderCapabilities.Summary.</comment>
+    <comment>The note under the lists when the start-up check of the encoders failed or timed out.</comment>
   </data>
   <data name="FormatReplaced" xml:space="preserve">
     <value>{0} can't be exported on this PC, so {1} is selected.</value>
-    <comment>A format was replaced because this PC cannot export it. {0}: the format's name ("HEVC"); {1}: the one selected now.</comment>
+    <comment>A notice: a format was replaced because this PC cannot export it. {0} the format chosen before ("HEVC"), {1} the one selected now ("H.264").</comment>
   </data>
   <data name="ResolutionReplaced" xml:space="preserve">
     <value>{0} can't be exported on this PC with these settings, so {1} is selected.</value>
-    <comment>A resolution was replaced because this PC cannot export it with the project's settings. {0}: the old one ("4K"); {1}: the new one.</comment>
+    <comment>A notice: a resolution was replaced because this PC cannot export it with the project's settings. {0} the one chosen before ("4K"), {1} the one selected now ("1440p").</comment>
   </data>
   <data name="ResolutionReplacedByShape" xml:space="preserve">
     <value>{0} isn't available for this shape on this PC, so {1} is selected. Your {0} choice comes back with a shape that allows it.</value>
-    <comment>A resolution was replaced because this PC cannot export it in the current frame shape; the choice returns with the old shape. {0}: the chosen one ("4K"); {1}: the one selected now.</comment>
+    <comment>A notice: a resolution was replaced because this PC cannot export it in the frame shape chosen now; the choice returns with another shape. {0} the one chosen ("4K"), {1} the one selected now.</comment>
   </data>
   <data name="KeepSelected" xml:space="preserve">
     <value>Use these settings</value>
-    <comment>The button under a replacement notice that stores the selected settings in place of the earlier choice.</comment>
+    <comment>The button under a replacement notice that keeps the selected settings in place of the earlier choice. Keep it to about 24 characters.</comment>
   </data>
   <data name="EstimateAbout" xml:space="preserve">
     <value>About {0}</value>
-    <comment>The estimate. {0}: the size from Size.</comment>
+    <comment>The Output panel's estimate of the video's file size. {0} the size ("180 MB").</comment>
   </data>
   <data name="Megabytes" xml:space="preserve">
     <value>{0} MB</value>
-    <comment>A size in megabytes. {0}: the number.</comment>
+    <comment>A file size in megabytes: the estimate, the finished file, the photos to download from OneDrive. {0} the number, already written with your decimal separator ("4.2", "173"). Use your language's symbol for megabytes.</comment>
   </data>
   <data name="Gigabytes" xml:space="preserve">
     <value>{0} GB</value>
-    <comment>A size in gigabytes. {0}: the number.</comment>
+    <comment>A file size in gigabytes. {0} the number, already written with your decimal separator ("1.8"). Use your language's symbol for gigabytes.</comment>
   </data>
   <data name="UnderOneMegabyte" xml:space="preserve">
     <value>Less than 1 MB</value>
-    <comment>The estimate when the file stays under a megabyte.</comment>
+    <comment>A file size under one megabyte, shown alone (the estimate, the finished file), so it starts with a capital letter.</comment>
   </data>
   <data name="ResolutionOptionFormat" xml:space="preserve">
     <value>{0} · {1} × {2}</value>
-    <comment>The list entry for a resolution. {0} its name ("1080p"), {1} the width, {2} the height, in pixels.</comment>
+    <comment>An item of the Resolution list. {0} its name ("1080p"), {1} the width, {2} the height, in pixels ("1920", "1080", written without grouping).</comment>
   </data>
   <data name="FormatOptionFormat" xml:space="preserve">
     <value>MP4 · {0}</value>
-    <comment>The list entry for a format. {0} the codec ("H.264", "HEVC").</comment>
+    <comment>An item of the Format list. {0} the codec ("H.264", "HEVC"). MP4 is the file type's name; keep it.</comment>
   </data>
   <data name="QualityStandard" xml:space="preserve">
     <value>Standard</value>
-    <comment>The quality list's lowest bitrate.</comment>
+    <comment>The lowest quality level in the Quality list (the smallest file). An adjective agreeing with your word for "quality" (QualityLabel), as a list item. Keep it to about 14 characters.</comment>
   </data>
   <data name="QualityHigh" xml:space="preserve">
     <value>High</value>
-    <comment>The quality list's default bitrate.</comment>
+    <comment>The default quality level in the Quality list; also the last part of the export panel's Output row ("4K · H.264 · High"). An adjective agreeing with your word for "quality". Keep it to about 14 characters.</comment>
   </data>
   <data name="QualityMaximum" xml:space="preserve">
     <value>Maximum</value>
-    <comment>The quality list's highest bitrate.</comment>
+    <comment>The highest quality level in the Quality list (the largest file). An adjective agreeing with your word for "quality". Keep it to about 14 characters.</comment>
   </data>
 </root>
