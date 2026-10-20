@@ -20,9 +20,32 @@
     mspdbcmf.exe) after the upload file is already written, and the build exits 1.
     So the upload has no symbols package (mspdbcmf.exe ships only with Visual
     Studio): Store crash reports in Partner Center Health will not be symbolicated.
+
+    Every pack then checks what it built and stays quiet when all is well. It
+    exits 1, listing each problem, when the x64 or ARM64 package (or the bundle) has the
+    wrong identity or version, a target other than Windows.Desktop 10.0.22000.0,
+    any capability but runFullTrust, no Windows App Runtime 2 dependency, a
+    resources.pri without the AppDescription string, or Debug-only code (the
+    Debugging and Gallery types, or any of their launch switches, in the
+    TenLapse assemblies).
+
+    Every flight or Store upload needs a higher version than the last one, and a
+    last digit of 0 (the Store reserves it):
+
+        pwsh -File scripts/pack.ps1 -Version 3.0.1.0
+
+    writes it into Package.appxmanifest, then packs. It refuses a version that is
+    not four numbers, does not end in .0, or is not above the manifest's.
+    -BumpOnly writes the version and stops (no build). -ManifestPath points the
+    version change at another manifest; it exists for the self-check
+    (tests/TenLapse.Tests/Code/PackVersionTests.cs) and is not needed otherwise.
 #>
 [CmdletBinding()]
-param()
+param(
+    [string]$Version,
+    [switch]$BumpOnly,
+    [string]$ManifestPath
+)
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -30,7 +53,48 @@ Set-StrictMode -Version Latest
 $root = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $root 'src\TenLapse.App\TenLapse.App.csproj'
 $outDir = Join-Path $root 'dist\store'
-$manifestPath = Join-Path $root 'src\TenLapse.App\Package.appxmanifest'
+$manifestPath = if ($ManifestPath) { $ManifestPath } else { Join-Path $root 'src\TenLapse.App\Package.appxmanifest' }
+
+function Stop-Pack([string]$message) {
+    Write-Host "pack: FAILED, $message" -ForegroundColor Red
+    exit 1
+}
+
+# Version rules of a Store upload: four numbers, a last digit of 0, above the last one.
+$versionPattern = '(?s)(<Identity\b[^>]*?\sVersion=")([^"]*)(")'
+function Test-UploadVersion([string]$candidate, [version]$current) {
+    $parsed = $null
+    if ($candidate -notmatch '^\d+\.\d+\.\d+\.\d+$' -or -not [version]::TryParse($candidate, [ref]$parsed)) {
+        return "'$candidate' is not four numbers like 3.0.1.0"
+    }
+    if ($parsed.Revision -ne 0) { return "'$candidate' must end in .0 (the Store reserves the fourth part)" }
+    if ($parsed.Major -gt 65535 -or $parsed.Minor -gt 65535 -or $parsed.Build -gt 65535) { return "'$candidate' has a part above 65535" }
+    if ($parsed -le $current) { return "'$candidate' is not above the current version $current" }
+    return $null
+}
+
+$manifestText = [System.IO.File]::ReadAllText($manifestPath)
+$versionMatch = [regex]::Match($manifestText, $versionPattern)
+$currentVersion = $null
+if (-not $versionMatch.Success -or -not [version]::TryParse($versionMatch.Groups[2].Value, [ref]$currentVersion)) {
+    Stop-Pack "$manifestPath has no readable Identity Version"
+}
+if ($Version) {
+    $problem = Test-UploadVersion $Version $currentVersion
+    if ($problem) { Stop-Pack "-Version $problem" }
+    $bytes = [System.IO.File]::ReadAllBytes($manifestPath)
+    $hasBom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
+    $newText = $manifestText.Remove($versionMatch.Groups[2].Index, $versionMatch.Groups[2].Length).Insert($versionMatch.Groups[2].Index, $Version)
+    [System.IO.File]::WriteAllText($manifestPath, $newText, [System.Text.UTF8Encoding]::new($hasBom))
+    Write-Host "pack: version $currentVersion -> $Version in $manifestPath"
+    $manifestText = $newText
+    $currentVersion = [version]$Version
+}
+if ($BumpOnly) {
+    if (-not $Version) { Stop-Pack '-BumpOnly needs -Version' }
+    exit 0
+}
+$manifestVersion = $currentVersion.ToString()
 
 # The identity of the existing Store listing. Partner Center rejects any other, so
 # these literals are checked against the manifest and the built bundle on purpose.
@@ -94,9 +158,115 @@ if ($exitCode -ne 0 -or $upload.Count -ne 1) {
     exit 1
 }
 
-# The upload wraps the bundle; check it holds both architectures and the Store identity.
+# What a Store upload must hold, checked in each architecture's package (the bundle's .msix parts). The function
+# returns the problems it found as strings; none means the package is what the Store listing and 3.0 need.
+$minWindows = '10.0.22000.0'
+$latin1 = [System.Text.Encoding]::Latin1
+
+function Read-ZipBytes([System.IO.Compression.ZipArchiveEntry]$zipEntry) {
+    $buffer = [System.IO.MemoryStream]::new()
+    $stream = $zipEntry.Open()
+    try { $stream.CopyTo($buffer) } finally { $stream.Dispose() }
+    return , $buffer.ToArray()
+}
+
+# The string literals the Debug-only code reads (the Debugging and Gallery folders), e.g. "--sample-frames". Release
+# removes those folders from the build (TenLapse.App.csproj), so none may be left in a shipped assembly.
+function Get-DebugLiteral {
+    $folders = Get-ChildItem (Join-Path $root 'src') -Directory -Recurse |
+        Where-Object { $_.Name -in 'Debugging', 'Gallery' -and $_.FullName -notmatch '[\\/](obj|bin)[\\/]' }
+    $literals = foreach ($folder in $folders) {
+        foreach ($file in Get-ChildItem $folder.FullName -Filter '*.cs' -File -Recurse) {
+            foreach ($m in [regex]::Matches([System.IO.File]::ReadAllText($file.FullName), '"(--[A-Za-z0-9][^"\s]*)"')) { $m.Groups[1].Value }
+        }
+    }
+    return @($literals | Sort-Object -Unique)
+}
+
+# True when a managed assembly holds the exact string literal (the #US heap: a length byte, UTF-16, a flag byte), so a
+# Release log line that merely mentions a switch does not count. $text is the assembly's bytes as Latin-1 characters.
+function Test-ExactLiteral([string]$text, [string]$literal) {
+    $utf16 = (($literal.ToCharArray() | ForEach-Object { "$_" }) -join "`0") + "`0"
+    $length = 2 * $literal.Length + 1
+    $prefix = if ($length -lt 0x80) { [string][char]$length } else { ([string][char](0x80 -bor ($length -shr 8))) + [char]($length -band 0xFF) }
+    return $text.Contains($prefix + $utf16, [System.StringComparison]::Ordinal)
+}
+
+function Get-ArchPackageProblem([System.IO.Compression.ZipArchive]$package, [string]$arch, [string[]]$debugLiterals, [string]$descriptionText) {
+    $problems = [System.Collections.Generic.List[string]]::new()
+    $manifestEntry = $package.GetEntry('AppxManifest.xml')
+    if (-not $manifestEntry) { return @("the $arch package has no AppxManifest.xml") }
+    $built = [xml]::new()
+    $built.Load([System.IO.MemoryStream]::new((Read-ZipBytes $manifestEntry)))
+    $ns = [System.Xml.XmlNamespaceManager]::new($built.NameTable)
+    $ns.AddNamespace('m', 'http://schemas.microsoft.com/appx/manifest/foundation/windows10')
+    $ns.AddNamespace('uap', 'http://schemas.microsoft.com/appx/manifest/uap/windows10')
+
+    $id = $built.SelectSingleNode('//m:Identity', $ns)
+    if ($id.GetAttribute('Name') -ne $expectedName -or $id.GetAttribute('Publisher') -ne $expectedPublisher) {
+        $problems.Add("the $arch package Identity is $($id.GetAttribute('Name')) / $($id.GetAttribute('Publisher')), expected $expectedName / $expectedPublisher")
+    }
+    if ($id.GetAttribute('Version') -ne $manifestVersion) {
+        $problems.Add("the $arch package Version is $($id.GetAttribute('Version')), the manifest says $manifestVersion")
+    }
+    $families = @($built.SelectNodes('//m:Dependencies/m:TargetDeviceFamily', $ns))
+    if ($families.Count -ne 1 -or $families[0].GetAttribute('Name') -ne 'Windows.Desktop' -or $families[0].GetAttribute('MinVersion') -ne $minWindows) {
+        $found = ($families | ForEach-Object { "$($_.GetAttribute('Name')) $($_.GetAttribute('MinVersion'))" }) -join ', '
+        $problems.Add("the $arch package targets '$found'; it must be exactly Windows.Desktop $minWindows")
+    }
+    $capabilities = @($built.SelectNodes('//m:Capabilities/*', $ns) | ForEach-Object { $_.GetAttribute('Name') })
+    if (($capabilities -join ',') -ne 'runFullTrust') {
+        $problems.Add("the $arch package capabilities are '$($capabilities -join ', ')'; they must be exactly runFullTrust")
+    }
+    if (-not $built.SelectSingleNode("//m:PackageDependency[@Name='Microsoft.WindowsAppRuntime.2']", $ns)) {
+        $problems.Add("the $arch package has no Microsoft.WindowsAppRuntime.2 dependency")
+    }
+    $description = $built.SelectSingleNode('//uap:VisualElements', $ns).GetAttribute('Description')
+    if ($description -ne 'ms-resource:AppDescription') {
+        $problems.Add("the $arch package Description is '$description', expected ms-resource:AppDescription")
+    }
+
+    # resources.pri: the AppDescription resource exists and carries the text of Strings/en-US/Resources.resw.
+    $pri = $package.GetEntry('resources.pri')
+    if (-not $pri) {
+        $problems.Add("the $arch package has no resources.pri, so ms-resource:AppDescription cannot resolve")
+    }
+    else {
+        $priText = $latin1.GetString((Read-ZipBytes $pri))
+        foreach ($needle in 'AppDescription', $descriptionText) {
+            $wide = ($needle.ToCharArray() | ForEach-Object { "$_" }) -join "`0"
+            if (-not $priText.Contains($needle, [System.StringComparison]::Ordinal) -and -not $priText.Contains($wide, [System.StringComparison]::Ordinal)) {
+                $problems.Add("the $arch resources.pri does not hold '$needle'")
+            }
+        }
+    }
+
+    # No Debug-only code: the Debugging and Gallery namespaces and their launch switches, in our own assemblies.
+    foreach ($assembly in $package.Entries | Where-Object { $_.FullName -match '^TenLapse[^/\\]*\.(dll|exe)$' }) {
+        $assemblyText = $latin1.GetString((Read-ZipBytes $assembly))
+        foreach ($namespace in 'TenLapse.Debugging', 'TenLapse.Gallery') {
+            if ($assemblyText.Contains("`0$namespace`0", [System.StringComparison]::Ordinal)) {
+                $problems.Add("$arch $($assembly.FullName) holds the Debug-only namespace $namespace")
+            }
+        }
+        foreach ($literal in $debugLiterals) {
+            if (Test-ExactLiteral $assemblyText $literal) {
+                $problems.Add("$arch $($assembly.FullName) holds the Debug switch '$literal'")
+            }
+        }
+    }
+    return $problems
+}
+
+# The upload wraps the bundle; check it holds both architectures and the Store identity, then each package in it.
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $bundle = Get-ChildItem $outDir -Filter '*.msixbundle' -File -Recurse | Select-Object -First 1
+$debugLiterals = Get-DebugLiteral
+if ($debugLiterals.Count -eq 0) { Stop-Pack 'found no Debug launch switches in the sources, so the Debug-only code check cannot work; has the Debugging folder moved?' }
+$resourcesPath = Join-Path $root 'src\TenLapse.App\Strings\en-US\Resources.resw'
+$descriptionNode = ([xml](Get-Content $resourcesPath -Raw)).SelectSingleNode("//data[@name='AppDescription']/value")
+if (-not $descriptionNode -or -not $descriptionNode.InnerText) { Stop-Pack "$resourcesPath has no AppDescription string" }
+$packageProblems = [System.Collections.Generic.List[string]]::new()
 $zip = [System.IO.Compression.ZipFile]::OpenRead($bundle.FullName)
 try {
     $parts = @($zip.Entries | Where-Object { $_.FullName -like '*.msix' } | ForEach-Object { $_.FullName })
@@ -107,6 +277,14 @@ try {
     }
     $reader = [System.IO.StreamReader]::new($entry.Open())
     try { $bundleManifest = [xml]$reader.ReadToEnd() } finally { $reader.Dispose() }
+    foreach ($arch in 'x64', 'arm64') {
+        $partName = $parts | Where-Object { $_ -like "*_$arch.msix" } | Select-Object -First 1
+        if (-not $partName) { continue }
+        $partStream = [System.IO.MemoryStream]::new((Read-ZipBytes $zip.GetEntry($partName)))
+        $package = [System.IO.Compression.ZipArchive]::new($partStream, [System.IO.Compression.ZipArchiveMode]::Read)
+        try { foreach ($problem in (Get-ArchPackageProblem $package $arch $debugLiterals $descriptionNode.InnerText.Trim())) { $packageProblems.Add($problem) } }
+        finally { $package.Dispose() }
+    }
 }
 finally { $zip.Dispose() }
 foreach ($arch in 'x64', 'arm64') {
@@ -114,6 +292,11 @@ foreach ($arch in 'x64', 'arm64') {
         Write-Host "pack: FAILED, the bundle has no $arch package" -ForegroundColor Red
         exit 1
     }
+}
+if ($packageProblems.Count -gt 0) {
+    Write-Host "pack: FAILED, $($packageProblems.Count) problem(s) in the packages:" -ForegroundColor Red
+    $packageProblems | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+    exit 1
 }
 
 $identity = $bundleManifest.SelectSingleNode("//*[local-name()='Identity']")
@@ -129,8 +312,8 @@ if ($bundlePublisher -ne $expectedPublisher) {
     Write-Host "pack: FAILED, the bundle Identity Publisher is '$bundlePublisher', expected '$expectedPublisher'" -ForegroundColor Red
     exit 1
 }
-if (-not [version]::TryParse($bundleVersionText, [ref]$bundleVersion) -or $bundleVersion.Revision -ne 0 -or $bundleVersion -le $legacyVersion) {
-    Write-Host "pack: FAILED, the bundle Version is '$bundleVersionText'; it must be above $legacyVersion and end in .0 (the Store reserves the fourth part)" -ForegroundColor Red
+if (-not [version]::TryParse($bundleVersionText, [ref]$bundleVersion) -or $bundleVersion.Revision -ne 0 -or $bundleVersion -le $legacyVersion -or $bundleVersionText -ne $manifestVersion) {
+    Write-Host "pack: FAILED, the bundle Version is '$bundleVersionText'; it must be $manifestVersion (the manifest), above $legacyVersion and ending in .0 (the Store reserves the fourth part)" -ForegroundColor Red
     exit 1
 }
 

@@ -10,7 +10,7 @@ A package flight is a private build of the existing 10Lapse product that only th
 pwsh -File scripts/pack.ps1
 ```
 
-It prints the path of `dist/store/TenLapse.App_<version>_x64_arm64_bundle.msixupload` (about 124 MB, unsigned on purpose, the Store signs it). It fails with exit 1 and one line saying why if anything in the package is wrong (identity, version, device family, capabilities, runtime dependency, resources, Debug-only code). Silence about checks means they passed.
+It prints the path of `dist/store/TenLapse.App_<version>_x64_arm64_bundle.msixupload` (about 124 MB, unsigned on purpose, the Store signs it). It fails with exit 1 and lists what is wrong if anything in the packages is wrong (identity, version, device family, capabilities, runtime dependency, resources, Debug-only code). Silence about checks means they passed.
 
 - The first flight is `3.0.0.0`, which is already in the manifest. Every later upload needs a higher version and a last digit of 0: `pwsh -File scripts/pack.ps1 -Version 3.0.1.0` writes it into `src/TenLapse.App/Package.appxmanifest` (and refuses anything that is not higher, or does not end in `.0`), then builds. Commit the manifest change with the fix it ships.
 - Nothing in `dist/` is ever committed.
