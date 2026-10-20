@@ -359,7 +359,7 @@
     <value>{0} (gratis)</value>
   </data>
   <data name="CodecFee" xml:space="preserve">
-    <value>{0} (de pago)</value>
+    <value>{0} (de pago)</value>
   </data>
   <data name="CodecNeedsOne_one" xml:space="preserve">
     <value>Esta foto necesita una extensión de Microsoft: {1}.</value>
