@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  German (de) translation of SkippedFileText.resx (#116). The English file's comments are the brief for each key.
+  The reasons stay under 45 characters and start with a capital, as the English fragments do.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Skipped_one" xml:space="preserve">
+    <value>{0} Foto konnte nicht gelesen werden und wurde übersprungen.</value>
+  </data>
+  <data name="Skipped_other" xml:space="preserve">
+    <value>{0} Fotos konnten nicht gelesen werden und wurden übersprungen.</value>
+  </data>
+  <data name="UnsupportedFormat" xml:space="preserve">
+    <value>Kein Fotoformat, das Windows lesen kann</value>
+  </data>
+  <data name="DecodeFailed" xml:space="preserve">
+    <value>Beschädigte Datei</value>
+  </data>
+  <data name="AccessDenied" xml:space="preserve">
+    <value>Keine Berechtigung zum Öffnen</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>Fehlt: verschoben, gelöscht oder getrennt</value>
+  </data>
+  <data name="Other" xml:space="preserve">
+    <value>Nicht lesbar</value>
+  </data>
+  <data name="EmptyFile" xml:space="preserve">
+    <value>Leere Datei (0 Byte)</value>
+  </data>
+  <data name="Truncated" xml:space="preserve">
+    <value>Beschädigte Datei: unvollständig</value>
+  </data>
+  <data name="NeedsExtension" xml:space="preserve">
+    <value>Erweiterung aus dem Microsoft Store nötig</value>
+  </data>
+  <data name="FileInUse" xml:space="preserve">
+    <value>In einer anderen App geöffnet</value>
+  </data>
+  <data name="ImageTooLarge" xml:space="preserve">
+    <value>Zu groß zum Öffnen</value>
+  </data>
+  <data name="CloudFileOffline" xml:space="preserve">
+    <value>In der Cloud und nicht offline verfügbar</value>
+  </data>
+  <data name="CloudOnly" xml:space="preserve">
+    <value>Nur in OneDrive, nicht auf diesem PC</value>
+  </data>
+</root>

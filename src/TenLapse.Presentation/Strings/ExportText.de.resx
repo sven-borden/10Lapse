@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  German (de) translation of ExportText.resx (#116). The English file's comments are the brief for each key.
+  German has no _many plural form.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ExportVideo" xml:space="preserve">
+    <value>Exportieren</value>
+  </data>
+  <data name="ExportingButton" xml:space="preserve">
+    <value>Wird exportiert…</value>
+  </data>
+  <data name="Exporting" xml:space="preserve">
+    <value>Wird exportiert</value>
+  </data>
+  <data name="RunningNameFormat" xml:space="preserve">
+    <value>{0} wird exportiert</value>
+  </data>
+  <data name="PercentFormat" xml:space="preserve">
+    <value>{0} %</value>
+  </data>
+  <data name="ProgressName" xml:space="preserve">
+    <value>Exportfortschritt</value>
+  </data>
+  <data name="GettingReady" xml:space="preserve">
+    <value>Wird vorbereitet…</value>
+  </data>
+  <data name="EstimatingTimeLeft" xml:space="preserve">
+    <value>Restzeit wird berechnet…</value>
+  </data>
+  <data name="Finishing" xml:space="preserve">
+    <value>Datei wird fertiggestellt…</value>
+  </data>
+  <data name="TimeLeftSecondsFormat" xml:space="preserve">
+    <value>Noch ca. {0} s</value>
+  </data>
+  <data name="TimeLeftMinutesFormat" xml:space="preserve">
+    <value>Noch ca. {0} min</value>
+  </data>
+  <data name="TimeLeftMinutesHalfFormat" xml:space="preserve">
+    <value>Noch ca. {0} min 30 s</value>
+  </data>
+  <data name="FrameLabel" xml:space="preserve">
+    <value>Bild</value>
+  </data>
+  <data name="FramesFormat" xml:space="preserve">
+    <value>{0} von {1}</value>
+  </data>
+  <data name="SpeedLabel" xml:space="preserve">
+    <value>Tempo</value>
+  </data>
+  <data name="SpeedPhotos_one" xml:space="preserve">
+    <value>{0} Foto pro Sekunde</value>
+  </data>
+  <data name="SpeedPhotos_other" xml:space="preserve">
+    <value>{0} Fotos pro Sekunde</value>
+  </data>
+  <data name="SpeedMeasuring" xml:space="preserve">
+    <value>Wird gemessen…</value>
+  </data>
+  <data name="OutputLabel" xml:space="preserve">
+    <value>Ausgabe</value>
+  </data>
+  <data name="OutputSummaryFormat" xml:space="preserve">
+    <value>{0} · {1} · {2}</value>
+  </data>
+  <data name="MinimizeHint" xml:space="preserve">
+    <value>Sie können 10Lapse minimieren. Der Export läuft weiter, und Windows benachrichtigt Sie, wenn er fertig ist.</value>
+  </data>
+  <data name="CancelExport" xml:space="preserve">
+    <value>Export abbrechen</value>
+  </data>
+  <data name="RenderingFrameFormat" xml:space="preserve">
+    <value>Bild {0} wird gerendert</value>
+  </data>
+  <data name="ReadyFormat" xml:space="preserve">
+    <value>{0} ist fertig</value>
+  </data>
+  <data name="ReadySummaryFormat" xml:space="preserve">
+    <value>{0} · {1} · {2} · {3}</value>
+  </data>
+  <data name="ExportedInLabel" xml:space="preserve">
+    <value>Exportiert in</value>
+  </data>
+  <data name="SavedToLabel" xml:space="preserve">
+    <value>Gespeichert in</value>
+  </data>
+  <data name="SavedToFormat" xml:space="preserve">
+    <value>{0} › {1}</value>
+  </data>
+  <data name="Play" xml:space="preserve">
+    <value>Wiedergeben</value>
+  </data>
+  <data name="PlayName" xml:space="preserve">
+    <value>Video wiedergeben</value>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>Im Ordner anzeigen</value>
+  </data>
+  <data name="BackToEditing" xml:space="preserve">
+    <value>Zurück zur Bearbeitung</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Export abgebrochen. Die unfertige Datei wurde entfernt.</value>
+  </data>
+  <data name="CancelledFileLeft" xml:space="preserve">
+    <value>Export abgebrochen. Die unfertige Datei konnte noch nicht entfernt werden; 10Lapse entfernt sie beim nächsten Start.</value>
+  </data>
+  <data name="EditsWait" xml:space="preserve">
+    <value>Das Projekt kann während des Exports nicht geändert werden. Warten Sie, bis er fertig ist, oder brechen Sie den Export ab.</value>
+  </data>
+  <data name="ImportStillRunning" xml:space="preserve">
+    <value>Es werden noch Fotos hinzugefügt. Exportieren Sie, sobald alle da sind.</value>
+  </data>
+  <data name="ChangedDuringDialogFormat" xml:space="preserve">
+    <value>Der Export wurde nicht gestartet, weil sich das Projekt oder seine Ausgabe geändert hat, während das Dialogfeld „Speichern unter“ geöffnet war. Wählen Sie erneut „{0}“.</value>
+  </data>
+  <data name="PremiereCantPlayFormat" xml:space="preserve">
+    <value>Das Video wurde gespeichert, aber 10Lapse kann es hier nicht wiedergeben. Öffnen Sie es über „{0}“, um es zu prüfen.</value>
+  </data>
+  <data name="CloseTitle" xml:space="preserve">
+    <value>Export beenden und schließen?</value>
+  </data>
+  <data name="CloseMessage" xml:space="preserve">
+    <value>Das Video ist noch nicht fertig. 10Lapse beendet den Export und entfernt die unfertige Datei.</value>
+  </data>
+  <data name="CloseConfirm" xml:space="preserve">
+    <value>Beenden und schließen</value>
+  </data>
+  <data name="CloseCancel" xml:space="preserve">
+    <value>Weiter exportieren</value>
+  </data>
+  <data name="FileTypeName" xml:space="preserve">
+    <value>MP4-Video</value>
+  </data>
+  <data name="StartedFormat" xml:space="preserve">
+    <value>{0} wird exportiert.</value>
+  </data>
+  <data name="ProgressAnnouncementFormat" xml:space="preserve">
+    <value>{0} Prozent exportiert.</value>
+  </data>
+  <data name="FailedAnnouncement" xml:space="preserve">
+    <value>Der Export ist fehlgeschlagen.</value>
+  </data>
+  <data name="FinishingAnnouncement" xml:space="preserve">
+    <value>Die Datei wird fertiggestellt.</value>
+  </data>
+  <data name="FailedNotificationFormat" xml:space="preserve">
+    <value>{0} konnte nicht exportiert werden. Öffnen Sie 10Lapse, um den Grund zu sehen.</value>
+  </data>
+  <data name="ExportKeys" xml:space="preserve">
+    <value>Strg+E</value>
+  </data>
+</root>

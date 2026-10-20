@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  German (de) names of the Microsoft Store extensions (#116): each value is the title the Store catalog returns for the
+  product ID with locale de-DE (market DE; de-CH gives the same), checked 2026-10-20 through
+  storeedgefd.dsx.mp.microsoft.com/v9.0/products/<ID>?market=DE&locale=de-DE, the service the Store app reads.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HeifImageExtensions" xml:space="preserve">
+    <value>HEIF-Bilderweiterung</value>
+  </data>
+  <data name="HevcVideoExtensions" xml:space="preserve">
+    <value>HEVC-Videoerweiterungen</value>
+  </data>
+  <data name="Av1VideoExtension" xml:space="preserve">
+    <value>AV1-Videoerweiterung</value>
+  </data>
+  <data name="WebpImageExtensions" xml:space="preserve">
+    <value>WebP-Bilderweiterung</value>
+  </data>
+  <data name="JpegXlImageExtension" xml:space="preserve">
+    <value>JPEG XL-Bilderweiterung</value>
+  </data>
+  <data name="RawImageExtension" xml:space="preserve">
+    <value>Raw-Bilderweiterung</value>
+  </data>
+</root>
