@@ -2,8 +2,9 @@
 
 The text Sven pastes into Partner Center for the 3.0 update (#42, #119): Apps and games, 10Lapse, the 3.0 submission,
 Store listings, Portuguese (Brazil). The package declares Brazilian Portuguese from
-`src/TenLapse.App/Strings/pt-BR/Resources.resw`, so Partner Center offers a pt-BR listing. Portugal gets no listing of
-its own: the Store shows the pt-BR one there, as the app shows its pt-BR text to pt-PT users (#113).
+`src/TenLapse.App/Strings/pt-BR/Resources.resw`, so Partner Center offers a pt-BR listing. Portugal: Sven decides in
+Partner Center whether to add a Portuguese (Portugal) listing that reuses this text; without one, customers in Portugal
+may see the default English listing. The app itself shows its pt-BR text to pt-PT users (#113).
 
 This file has the structure of `docs/store/listing.md`, with the same fields, limits and rules; read that file for
 where each limit comes from. Only the text inside the boxes is Portuguese; the notes stay in English for Sven. Lengths
@@ -18,12 +19,12 @@ As in English, the text says only what 3.0 does.
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,901.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,902.
 
 ```text
 Transforme uma pasta de fotos em um vídeo timelapse suave, em até 4K.
 
-Você fotografou um pôr do sol, uma tempestade chegando ou uma obra a partir de um tripé, uma foto a cada poucos segundos, e agora tem uma pasta com centenas ou milhares de fotos. O 10Lapse transforma essas fotos em vídeo: solte a pasta na janela, confira a visualização e exporte um MP4.
+Você fotografou um pôr do sol, uma tempestade chegando ou uma obra com a câmera no tripé, uma foto a cada poucos segundos, e agora tem uma pasta com centenas ou milhares de fotos. O 10Lapse transforma essas fotos em vídeo: solte a pasta na janela, confira a visualização e exporte um MP4.
 
 Como funciona
 1. Escolha uma pasta, selecione fotos ou arraste-as para a janela. O 10Lapse lê JPEG, PNG, TIFF, HEIC e os arquivos RAW da maioria das câmeras, e coloca as fotos na ordem em que foram tiradas.
@@ -59,7 +60,7 @@ Crie um vídeo timelapse com as centenas de fotos de uma sessão no tripé: defi
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,411. Like the English one, it does not claim a crash rate.
+Limit 1,500 characters. This draft: 1,389. Like the English one, it does not claim a crash rate.
 
 ```text
 O 10Lapse 3.0 foi refeito do zero para o Windows 11.
@@ -68,7 +69,7 @@ O 10Lapse 3.0 foi refeito do zero para o Windows 11.
 - Importa fotos HEIC e .jpeg. HEIC requer "Extensão da Imagem HEIF" (grátis) e "Extensões de Vídeo HEVC" (compra necessária) da Microsoft Store; o 10Lapse indica qual está faltando.
 - Exportação em até 4K, em H.264, ou em HEVC quando o PC é compatível, com progresso, tempo restante e um botão Cancelar que para a exportação em menos de um segundo.
 - Continua funcionando quando você muda de janela ou minimiza: a exportação segue, com o progresso na barra de tarefas e uma notificação quando o vídeo fica pronto.
-- Nova velocidade Por foto para apresentações de slides, ao lado de quadros por segundo e duração do vídeo.
+- Novo modo Por foto, para apresentações de slides, ao lado de Por segundo e Duração.
 - Visualização ao vivo e tira de filme: percorra, avance, remova ou reordene fotos e desfaça.
 - Proporções para TV, celular e redes sociais: 16:9, 9:16, 1:1, 4:5, 4:3 ou a proporção das suas fotos.
 - O 10Lapse lembra a última velocidade, proporção e saída para o próximo projeto.
@@ -93,7 +94,7 @@ Taxas de quadros exatas de 0,1 a 120 fps, inclusive 29,97
 Número de fotos, velocidade e duração do vídeo sempre na tela
 Proporções: igual às fotos, 16:9, 9:16, 1:1, 4:5 ou 4:3, com Ajustar ou Preencher
 Visualização ao vivo igual ao vídeo exportado
-Tira de filme com miniaturas, marcadores de fotos faltando, remoção e desfazer
+Tira de filme com miniaturas, marcadores de fotos faltando, remoção e opção de desfazer
 MP4 em H.264 (ou HEVC quando o PC é compatível) em 720p, 1080p, 1440p ou 4K, com três níveis de qualidade
 Estimativa do tamanho do arquivo antes de exportar
 Exporta com o codificador de vídeo da placa de vídeo quando o PC tem um
@@ -109,7 +110,7 @@ Lembra a última velocidade, proporção e saída que você usou
 
 At most 7 terms (Store Policies: no more than seven unique terms or phrases, relevant to the app, no other product's
 name). **Verify** in the form: it has allowed 30 characters per term and 21 words across all terms. These 7 are
-9 to 22 characters, 15 words in all. Brazilian users search the English words too ("timelapse",
+9 to 22 characters, 16 words in all. Brazilian users search the English words too ("timelapse",
 "stop motion", "slideshow"); "apresentação de slides" is the Portuguese name Windows and Office use for a slideshow.
 
 ```text
@@ -119,7 +120,7 @@ fotos para vídeo
 stop motion
 slideshow
 apresentação de slides
-sequência de imagens
+criar vídeo com fotos
 ```
 
 ## Additional system requirements
