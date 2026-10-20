@@ -88,8 +88,8 @@ install or uninstall (the wording tells the user to restart).
   with no extension InfoBar.
 - [ ] **3.8 HEVC export without the HEVC extension** (#9, PR #68). Expect:
   HEVC is not offered as a format and the Output panel's line says "This PC
-  cannot play HEVC video" (a PC can have an HEVC encoder in its GPU driver
-  but no decoder; PR #68).
+  cannot play HEVC video, so it does not export it." (a PC can have an HEVC
+  encoder in its GPU driver but no decoder; PR #68).
 - [ ] **3.9 HEVC export with the extension** (#9). Expect: HEVC is offered
   where a hardware or software HEVC encoder works; the exported file plays in
   the PC's default player.
@@ -180,9 +180,11 @@ uncropped (Fit) or filling (Fill) and not stretched.
 ### 5.3 Timing (#10, #17)
 
 - [ ] **5.3.1 Per second** (#17). Do: pick 12, 24, 25, 30, 50, 60; type 29.97,
-  23,976, 200, abc. Expect: 29.97 is the exact 30000/1001; a dot or a comma is
-  the decimal point; 200 gives "Frame rates run from 1 to 120 fps, so 200 is now
-  120 fps."; text that is not a number is refused with a sentence.
+  23,976, 200, abc, 1,000. Expect: 29.97 is the exact 30000/1001; a dot or a
+  comma is the decimal point; 200 gives "Frame rates run from 1 to 120 fps, so
+  200 is now 120 fps."; 1,000 is refused with "Type 1000 without a separator,
+  or 1.5 for one and a half." (not read as 1000 or 1.0; the example follows the
+  PC's decimal mark); text that is not a number is refused with a sentence.
 - [ ] **5.3.2 Length and Per photo** (#17). Do: 10, 15, 30, 60 s, `1:30`; 0.25,
   0.5, 1, 2, 5 s. Expect: "at 24.73 fps" style rate under the readout; a line
   when the photos cannot reach the target at 1 to 120 fps.
@@ -201,10 +203,11 @@ uncropped (Fit) or filling (Fill) and not stretched.
 
 - [ ] **5.5.1 Only what this PC can do** (#9, #23, PR #76). Run: all. Expect:
   resolution, format and quality lists offer only what the PC confirmed (a size
-  it cannot encode is absent, not greyed), with one line saying why ("This PC's
-  graphics hardware exports up to 1440p." style). Write down what each machine
-  offers: it differs per GPU, and a size offered only through the slower
-  software encoder says so.
+  it cannot encode is absent, not greyed), with one line saying why. Write
+  down which line each machine shows: "This PC's graphics hardware exports up
+  to {size}." or "...; larger sizes use the slower software encoder." or "This
+  PC's graphics hardware cannot encode {size}; the slower software encoder
+  exports up to {size}." (6.5 relies on the last two).
 - [ ] **5.5.2 Checking state** (#23, #90). Expect: right after launch the
   section reads "Checking what this PC can encode..." for a few seconds on a
   new machine or driver (the probe takes about 4 s cold, 0.02 to 0.25 s cached),
@@ -240,7 +243,9 @@ uncropped (Fit) or filling (Fill) and not stretched.
 - [ ] **5.7.3 Mouse wheel and touch scrolling** (#20, #24). Never tried. Also
   during an export.
 - [ ] **5.7.4 Context menu and tooltips** (#20, #39). Never seen: right-click a
-  thumbnail, hover the controls. Expect: English, no raw key names.
+  thumbnail, hover the controls. Expect: English, no raw key names; the menu
+  lists Remove from project (Delete), Undo (Ctrl+Z), Move earlier (Alt+Left)
+  and Move later (Alt+Right), each with its key shown.
 
 ### 5.8 Export (#8, #22, #24, #34)
 
@@ -384,8 +389,9 @@ Run at 100, 150 and 200 %.
   480 DIPs, also after maximize and restore, at every scale.
 - [ ] **5.13.4 Narrow export and finished** (#36, #24). Expect: two columns,
   the tabs hidden; Cancel export, Play, Show in folder and Back to editing
-  stay in view at 640 x 480; the time-left line wraps to two lines, and "Finishing the file..." wraps
-  without clipping (never caught on screen, #103).
+  stay in view at 640 x 480; the time-left line wraps to two lines, and
+  "Finishing the file..." wraps without clipping (never caught on screen,
+  #103).
 - [ ] **5.13.5 Moving between monitors of different scale** (#82, #94). A DPI
   change was never tried (it needs a second monitor). Do: drag the window across.
   Expect: layout and sharpness follow, the docked or narrow state matches the
@@ -504,6 +510,11 @@ theme.
 - [ ] **7.10 Finished state with Narrator** (#24, #38). Expect: focus lands on
   *Play the video*, and Narrator reads the "<name>.mp4 is ready" title and the
   summary line.
+- [ ] **7.11 Reorder with the keyboard** (#20, #38, PR #82). Focus a thumbnail
+  (or select several) and press Alt+Left and Alt+Right. Expect: the selected
+  frames move one place earlier or later,
+  the order becomes manual (5.2.2). Alt+arrows with another control focused
+  do nothing to the strip.
 
 ## 8. Known and accepted
 
