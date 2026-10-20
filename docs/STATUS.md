@@ -4,7 +4,7 @@ Updated 2026-10-20. Roadmap: the pinned #59 and the milestones. Working agreemen
 
 ## Now
 
-2026-10-20: **Translations before the flight (Sven): wave 21**, #113 merged (PR #120), #114 (Opus) in flight. Then the five languages, #115 to #119. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
+2026-10-20: **Translations before the flight (Sven): wave 22 in flight**, #115 fr and #116 de (Opus). Wave 21 merged (#113 PR #120, #114 PR #121); the English key set is final. Then #117 to #119. Once #119 merges, the orchestrator runs `scripts/pack.ps1` for the flight; a `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
 
 ## Waves
 
@@ -270,18 +270,14 @@ Details are in each PR's "What the next issues should know".
   arrival develop and cascade, retime and reframe, InfoBar hold);
   `scripts/motion-check.ps1`; Debug `--motion-log`, `--motion-import=`,
   `--theme-flip-after=`, `--motion-infobar-after=`.
-- #101 PR #102: no elapsed-time floor within a timer tick (about 15.6 ms) of a
-  real timeout; a timeout is proved by its effect (state, log line), ceilings
-  are generous. The "cancel within 1 s" bounds stay (product promise). If a
-  timing test flakes again, look first at `ImportPerformanceTests` (UI
-  round-trip ceilings) and the `EncoderProbeTests` cached-load ratio.
+- #101 PR #102: timeouts are proved by their effect, ceilings are generous.
+  If a timing test flakes, look first at `ImportPerformanceTests` and the
+  `EncoderProbeTests` cached-load ratio.
 - #39 PR #103: strings in `.resx` and `TextResources`, `StringRuleTests`,
   `--pseudo-loc` and `scripts/pseudo-check.ps1`; Frame segments end in an
   ellipsis if too long, the export time-left line wraps to two lines.
-- #104 PR #105: a thread's allocation count sometimes jumps about 8 KB across
-  one read while other test classes run (cause unknown; not GC, pools or
-  tiering). `AllocatedByRead` takes the least of a few warm reads; a flatness
-  test (1,000 vs 65,535 IFD entries, +256 bytes) keeps the #84 guarantee.
+- #104 PR #105: `AllocatedByRead` takes the least of a few warm reads (a
+  thread's count jumps about 8 KB at random); a flatness test keeps #84.
 - #38 PR #106: names, landmarks and headings; shortcuts in `ShellShortcuts`
   (only where their control is on screen, never on Settings or under a
   dialog; a pending Timing entry is committed first); focus targets in
@@ -313,3 +309,10 @@ Details are in each PR's "What the next issues should know".
   plural categories per language, resx ↔ resw); scripts pass `--lang=en-US`;
   `store-screenshots.ps1 -Language`; test matrix 5.17. A translation adds
   files only (`ResourceLanguages.Shipped` lists all six).
+- #114 PR #121: `Plural`/`PluralText` (CLDR cardinal rules; keys `X_one`,
+  `X_other`, `X_many` in fr/es/it/pt-BR only; each key keeps exactly the
+  English placeholders); display numbers in `CurrentCulture` ("Invariant on
+  purpose" / "Not a plural" comments mark exceptions, `StringRuleTests`
+  enforces); Store names in `Media/Strings/StoreExtensionText.resx`, never
+  bound to an article or pronoun; `WrapRow`/`WrapLayout`; Debug
+  `--motion-drop=`. `a11y-check.ps1` finds the build-26300 folder picker.
