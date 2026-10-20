@@ -65,8 +65,8 @@ public sealed partial class ExportPanel : UserControl
         Gate.Detach();
     }
 
-    /// <summary>The running part is on screen: focus goes to the progress bar, where Narrator reads the progress.</summary>
-    internal bool FocusRunning() => Progress.Focus(FocusState.Programmatic);
+    /// <summary>The running part is on screen: focus goes to its title, "Exporting Harbor sunset.mp4", which Enter cannot act on.</summary>
+    internal bool FocusRunning() => RunningStop.Focus(FocusState.Programmatic);
 
     /// <summary>The finished part is coming: focus goes to Play the video.</summary>
     internal bool FocusFinished() => PlayButton.Focus(FocusState.Programmatic);

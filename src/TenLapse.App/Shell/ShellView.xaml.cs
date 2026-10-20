@@ -439,7 +439,7 @@ public sealed partial class ShellView : UserControl
         FocusTarget.SettingsButton => SettingsButton.Focus(FocusState.Programmatic),
         FocusTarget.ChooseFolder => FirstLaunch.FocusChooseFolder(),
         FocusTarget.Play => Transport.FocusPlay(),
-        FocusTarget.ExportProgress => ExportSection.FocusRunning(),
+        FocusTarget.ExportTitle => ExportSection.FocusRunning(),
         FocusTarget.PlayVideo => ExportSection.FocusFinished(),
         FocusTarget.ExportButton => ExportButton.Focus(FocusState.Programmatic),
         _ => false,
@@ -460,7 +460,7 @@ public sealed partial class ShellView : UserControl
     }
 
     // The inspector column follows the export (#24): the sections, the export panel or the finished state, swapped with
-    // the motion spec's Gate timing. Focus goes where the user continues: the progress bar (Narrator reads it), Play, or
+    // the motion spec's Gate timing. Focus goes where the user continues: the export's title (a heading), Play, or
     // back to the Export button.
     private void OnExportPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

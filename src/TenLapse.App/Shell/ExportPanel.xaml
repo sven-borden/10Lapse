@@ -83,12 +83,19 @@
         <StackPanel x:Name="RunningHead" Spacing="{StaticResource SpacingXl}">
           <StackPanel Spacing="{StaticResource SpacingXxs}">
             <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind export:ExportText.Exporting}" />
-            <TextBlock
-              x:Name="RunningTitle"
+            <!-- Where focus lands as the export starts: a heading named "Exporting Harbor sunset.mp4" that Enter cannot act on. -->
+            <shell:FocusStop
+              x:Name="RunningStop"
+              HorizontalContentAlignment="Stretch"
               AutomationProperties.HeadingLevel="Level2"
-              Style="{StaticResource SubtitleTextStyle}"
-              Text="{x:Bind ViewModel.FileName, Mode=OneWay}"
-              TextTrimming="CharacterEllipsis" />
+              AutomationProperties.Name="{x:Bind export:ExportText.RunningName(ViewModel.FileName), Mode=OneWay}">
+              <TextBlock
+                x:Name="RunningTitle"
+                AutomationProperties.AccessibilityView="Raw"
+                Style="{StaticResource SubtitleTextStyle}"
+                Text="{x:Bind ViewModel.FileName, Mode=OneWay}"
+                TextTrimming="CharacterEllipsis" />
+            </shell:FocusStop>
           </StackPanel>
 
           <StackPanel Spacing="10">
@@ -115,13 +122,15 @@
                 TextTrimming="CharacterEllipsis"
                 TextWrapping="WrapWholeWords" />
             </Grid>
-            <!-- A tab stop, so focus lands here as the export starts and Narrator reads "Export progress, 46". -->
+            <!--
+              Not a tab stop: Narrator reads every percent of a focused bar. It stays in the UIA tree ("Export progress, 46"),
+              and the export's own announcements say the progress every ten percent at most.
+            -->
             <ProgressBar
               x:Name="Progress"
               AutomationProperties.Name="{x:Bind export:ExportText.ProgressName}"
-              IsTabStop="True"
+              IsTabStop="False"
               Maximum="100"
-              UseSystemFocusVisuals="True"
               Value="{x:Bind ViewModel.Percent, Mode=OneWay}" />
           </StackPanel>
 

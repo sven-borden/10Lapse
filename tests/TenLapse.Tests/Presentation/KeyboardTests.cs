@@ -92,7 +92,7 @@ public sealed class KeyboardTests
         Assert.Equal(FocusTarget.Keep, FocusTargets.AfterScreenChange(from, to, focusLost: false));
 
     [Theory]
-    [InlineData(ExportPanelState.Exporting, true, FocusTarget.ExportProgress)]
+    [InlineData(ExportPanelState.Exporting, true, FocusTarget.ExportTitle)]
     [InlineData(ExportPanelState.Finished, true, FocusTarget.PlayVideo)]
     [InlineData(ExportPanelState.Editing, true, FocusTarget.ExportButton)]
     [InlineData(ExportPanelState.Editing, false, FocusTarget.Play)]

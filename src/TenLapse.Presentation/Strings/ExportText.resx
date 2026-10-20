@@ -30,6 +30,10 @@
     <value>Exporting</value>
     <comment>The caption over the file name while the export runs.</comment>
   </data>
+  <data name="RunningNameFormat" xml:space="preserve">
+    <value>Exporting {0}</value>
+    <comment>A screen reader's name for the running export's title, where the focus lands as the export starts: {0} the file name.</comment>
+  </data>
   <data name="PercentFormat" xml:space="preserve">
     <value>{0}%</value>
     <comment>The large percent: {0} the whole percent.</comment>

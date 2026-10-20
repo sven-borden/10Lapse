@@ -40,7 +40,7 @@ public enum ExportPanelState
 /// import or a new project is refused with one InfoBar sentence. The preview shows the frame being written, the
 /// filmstrip dims the frames not written yet, and the taskbar button shows the progress. Progress reaches the panel
 /// through a <see cref="Progress{T}"/> made on the UI thread and is shown at most every <see cref="MinProgressInterval"/>
-/// (each phase change and the last frame always). Narrator hears the start, every ten percent at most, "Finishing the
+/// (each phase change and the last frame always). Narrator hears the start, every ten percent at most (and never within <see cref="MinAnnouncementInterval"/>), "Finishing the
 /// file." once the last frame is in, and the end (ready, or stopped; a cancel is said by its InfoBar).
 /// </para>
 /// <para>
@@ -52,6 +52,12 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
 {
     /// <summary>The shortest gap between two progress updates of the panel (except phase changes and the last frame).</summary>
     public static readonly TimeSpan MinProgressInterval = TimeSpan.FromMilliseconds(100);
+
+    /// <summary>
+    /// The shortest gap between the export's start and a progress announcement, and between two of them (#38): a fast GPU
+    /// export passes ten percent every few hundred milliseconds, faster than Narrator can say it. As the import's 5 s.
+    /// </summary>
+    public static readonly TimeSpan MinAnnouncementInterval = TimeSpan.FromSeconds(5);
 
     /// <summary>How long a close waits for a cancelled export to remove its unfinished file before the window goes anyway.</summary>
     public static readonly TimeSpan CloseLimit = TimeSpan.FromSeconds(2);
@@ -76,6 +82,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     private ExportStatus? _applied;
     private TimeSpan _appliedAt;
     private int _announcedTenth;
+    private TimeSpan _announcedAt;
     private bool _closing;
     private bool _disposed;
 
@@ -461,6 +468,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     {
         _applied = null;
         _announcedTenth = 0;
+        _announcedAt = _clock();
         FileName = fileName;
         OutputSummary = ExportText.OutputSummary(output);
         // The numbers first, so the film gate starts the new export at 0 rather than where the last one ended.
@@ -544,9 +552,10 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         }
 
         var tenth = ExportText.WholePercent(status.Fraction) / 10;
-        if (tenth > _announcedTenth && tenth < 10)
+        if (tenth > _announcedTenth && tenth < 10 && now - _announcedAt >= MinAnnouncementInterval)
         {
             _announcedTenth = tenth;
+            _announcedAt = now;
             Announced?.Invoke(this, ExportText.ProgressAnnouncement(tenth * 10));
         }
     }

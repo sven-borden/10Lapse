@@ -32,6 +32,12 @@ public static class ExportText
     /// <summary>The caption over the file name while the export runs.</summary>
     public static string Exporting => _strings.Get();
 
+    /// <summary>The running title's name for a screen reader, where focus lands as the export starts: {0} the file name.</summary>
+    public static string RunningNameFormat => _strings.Get();
+
+    /// <summary>"Exporting Harbor sunset.mp4", the running title's name for a screen reader.</summary>
+    public static string RunningName(string? fileName) => string.Format(CultureInfo.CurrentCulture, RunningNameFormat, fileName ?? string.Empty);
+
     /// <summary>The large percent: {0} the whole percent.</summary>
     public static string PercentFormat => _strings.Get();
 

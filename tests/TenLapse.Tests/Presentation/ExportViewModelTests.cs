@@ -644,9 +644,8 @@ public sealed class ExportViewModelTests
         app.Exporter.Finish(app.Video());
         app.Settle();
 
-        var percents = app.Announced.Where(line => line.EndsWith(" percent exported.", StringComparison.Ordinal)).ToList();
-        Assert.InRange(percents.Count, 1, 9);
-        Assert.Equal(percents.Distinct().Count(), percents.Count);
+        // A one-second export is over before the first progress announcement may come (MinAnnouncementInterval).
+        Assert.DoesNotContain(app.Announced, line => line.EndsWith(" percent exported.", StringComparison.Ordinal));
         Assert.Equal("Exporting Harbor sunset.mp4.", app.Announced[0]);
         Assert.Equal(["Finishing the file.", "Harbor sunset.mp4 is ready"], app.Announced[^2..]);
         Assert.Single(app.Announced, line => line == ExportText.FinishingAnnouncement);
@@ -658,10 +657,11 @@ public sealed class ExportViewModelTests
         using var app = new ExportHarness(frames: 100, capabilities: _everything);
         app.StartExport();
 
+        // A minute's export: ten percent every 6 s, each one said.
         for (var frame = 1; frame <= 100; frame++)
         {
-            app.Now = TimeSpan.FromMilliseconds(200 * frame);
-            app.Report(ExportPhase.Encoding, frame, 5, TimeSpan.FromSeconds(10));
+            app.Now = TimeSpan.FromMilliseconds(600 * frame);
+            app.Report(ExportPhase.Encoding, frame, 1.7, TimeSpan.FromSeconds(60));
         }
 
         app.Exporter.Finish(app.Video());
@@ -674,6 +674,29 @@ public sealed class ExportViewModelTests
                 "60 percent exported.", "70 percent exported.", "80 percent exported.", "90 percent exported.",
                 "Harbor sunset.mp4 is ready",
             ],
+            app.Announced);
+    }
+
+    [Fact]
+    public void AFastExportIsHeardAtMostEveryFiveSeconds()
+    {
+        // #38 review: a GPU export passed ten percent every 0.3 s, and Narrator got 12 sentences in 2.9 s.
+        using var app = new ExportHarness(frames: 100, capabilities: _everything);
+        app.StartExport();
+
+        // 20 s: ten percent every 2 s.
+        for (var frame = 1; frame <= 100; frame++)
+        {
+            app.Now = TimeSpan.FromMilliseconds(200 * frame);
+            app.Report(ExportPhase.Encoding, frame, 5, TimeSpan.FromSeconds(10));
+        }
+
+        app.Exporter.Finish(app.Video());
+        app.Settle();
+
+        // At 5 s (25 %), 10 s (50 %) and 15 s (75 %): the newest whole ten each time.
+        Assert.Equal(
+            ["Exporting Harbor sunset.mp4.", "20 percent exported.", "50 percent exported.", "70 percent exported.", "Harbor sunset.mp4 is ready"],
             app.Announced);
     }
 

@@ -33,8 +33,8 @@ public enum FocusTarget
     /// <summary>The command bar's Settings button.</summary>
     SettingsButton,
 
-    /// <summary>The export panel's progress bar, where a screen reader reads the progress.</summary>
-    ExportProgress,
+    /// <summary>The export panel's title, "Exporting Harbor sunset.mp4": a heading Enter cannot act on (not the progress bar, whose every percent Narrator would read, nor Cancel export).</summary>
+    ExportTitle,
 
     /// <summary>The finished state's Play the video.</summary>
     PlayVideo,
@@ -81,7 +81,7 @@ public static class FocusTargets
     /// <param name="exportButtonShown">The Export button is on screen and enabled (with frames and an output to export).</param>
     public static FocusTarget AfterExport(ExportPanelState state, bool exportButtonShown) => state switch
     {
-        ExportPanelState.Exporting => FocusTarget.ExportProgress,
+        ExportPanelState.Exporting => FocusTarget.ExportTitle,
         ExportPanelState.Finished => FocusTarget.PlayVideo,
 
         // Cancelled, failed or back to editing: where the export began, or the preview when it cannot begin again.
