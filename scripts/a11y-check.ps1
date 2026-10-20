@@ -4,7 +4,7 @@
     the Tab order on each (#38).
 
 .DESCRIPTION
-    Runs the Debug app three times with --focus-walk and drives it through UI Automation patterns on its own window and
+    Runs the Debug app five times with --focus-walk and drives it through UI Automation patterns on its own window and
     Debug launch switches only (no synthetic input, no Windows setting changed). On each screen it runs the scan, which
     writes <screen>.txt (one line per failure) and, for a screen with failures, an .a11ytest file that opens in
     Accessibility Insights, into %LOCALAPPDATA%\Temp\claude\<Branch>\a11y\<Label>:
@@ -22,9 +22,11 @@
 
     The fourth run (shortcuts) proves the keyboard-only path without pressing a key: Debug --shortcut-after runs Ctrl+O,
     Ctrl+N, Ctrl+E, Ctrl+N, Ctrl+E and Ctrl+O at fixed seconds through the method each keyboard accelerator calls, on
-    Editing, the question, the finished state, the Empty screen and the Settings page; focus-keys.log says which applied.
+    Editing (with "24" typed into the Timing box and not committed), the question, the finished state, the Empty screen
+    and the Settings page; focus-keys.log says which applied. The fifth run (newproject) confirms New project with an
+    InfoBar open; focus-newproject.log shows where focus landed.
     Each scan also lists the screen's accelerator keys (UIA AcceleratorKey) in summary.txt. -Only empty,editing,export,keys
-    runs just those runs.
+    runs just those runs (also newproject).
 
     With --focus-walk the app writes focus.log into each run's log folder: after each screen change it records where
     focus landed, walks the Tab order (FocusManager.TryMoveFocus, in the app) with each stop's name, and puts focus back.
@@ -56,7 +58,7 @@ $samples = Join-Path $base 'samples'
 $broken = Join-Path $base 'broken-photos'
 Remove-Item $results -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $base, $results, $samples, $broken | Out-Null
-foreach ($name in 'empty', 'editing', 'export', 'keys') { Remove-Item (Join-Path $base "a11y-logs-$name") -Recurse -Force -ErrorAction SilentlyContinue }
+foreach ($name in 'empty', 'editing', 'export', 'keys', 'newproject') { Remove-Item (Join-Path $base "a11y-logs-$name") -Recurse -Force -ErrorAction SilentlyContinue }
 Copy-Item (Join-Path $root 'tests/TenLapse.Tests/Fixtures/Photos/*') $broken -Force
 
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
@@ -93,7 +95,7 @@ function Stop-App($app) {
     if (-not $app.Process.HasExited) { Stop-Process -Id $app.Process.Id -Force; $app.Process.WaitForExit() }
 }
 
-# -Only empty,editing,export,keys runs just those runs.
+# -Only empty,editing,export,keys runs just those runs (also newproject).
 $Only = @($Only | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 function Want([string]$name) { $Only.Count -eq 0 -or $Only -contains $name }
 
@@ -105,13 +107,35 @@ function Skip([string]$name, [string]$why) {
     Write-Host "  skipped $name`: $why"
 }
 
+$notScanned = [System.Collections.Generic.List[string]]::new()
+
+# Runs the scan tool on the app's window. Exit 0: the scan ran, and its line is "<name>: N failures". Any other exit: it
+# could not run (an element went away under it, say), so it tries once more, then records the screen as not scanned and
+# the script fails at the end. Never records a stack trace as a result.
+function Invoke-Scan($app, [string]$name) {
+    $line = ''
+    for ($try = 1; $try -le 2; $try++) {
+        if ($app.Process.HasExited) { Skip $name 'the app has exited'; return }
+        $output = @(& $scanner $app.Process.Id $results $name 2>&1)
+        $code = $LASTEXITCODE
+        $line = "$($output | Select-Object -Last 1)"
+        if ($code -eq 0) {
+            $summary.Add($line)
+            Write-Host "  $line"
+            return
+        }
+        Write-Host "  scan $try of $name could not run (exit $code): $line"
+        Start-Sleep -Milliseconds 1000
+    }
+    $notScanned.Add($name)
+    $summary.Add("$name`: NOT SCANNED ($line)")
+}
+
 # Waits for the screen to settle (motion, the focus walk), then scans it.
 function Scan($app, [string]$name) {
     Start-Sleep -Milliseconds 2500
     if ($app.Process.HasExited) { Skip $name 'the app has exited'; return }
-    $line = & $scanner $app.Process.Id $results $name 2>&1 | Select-Object -Last 1
-    $summary.Add("$line")
-    Write-Host "  $line"
+    Invoke-Scan $app $name
     # The accelerator keys a screen reader hears on this screen (UIA AcceleratorKey), on screen only.
     $hasKey = New-Object System.Windows.Automation.NotCondition((New-Object System.Windows.Automation.PropertyCondition($AE::AcceleratorKeyProperty, '')))
     $keys = @($app.Window.FindAll($Tree::Descendants, $hasKey)) | Where-Object { -not $_.Current.IsOffscreen } |
@@ -152,6 +176,11 @@ function Resize($app, [double]$width, [double]$height) {
         $transform.Resize($width, $height)
         Start-Sleep -Milliseconds 800
     }
+}
+
+function Wait-Until($app, [double]$second) {
+    $left = $second - ((Get-Date) - $app.Process.StartTime).TotalSeconds
+    if ($left -gt 0) { Start-Sleep -Milliseconds ([int]($left * 1000)) }
 }
 
 function Keep-FocusLog([string]$name) {
@@ -221,15 +250,13 @@ if (Want 'export') {
             if ($app.Window.TryGetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern, [ref]$windowPattern)) { $windowPattern.Close() }
             $keep = Find-Id $app 'CloseButton' 5
             if ($keep) {
-                $line = & $scanner $app.Process.Id $results 'close-question' 2>&1 | Select-Object -Last 1
-                $summary.Add("$line"); Write-Host "  $line"
+                Invoke-Scan $app 'close-question'
                 Invoke-Element $keep
             }
             else { Skip 'close-question' 'the export had finished before the close step' }
         }
         if (-not $app.Process.HasExited -and (Find-Id $app 'CancelButton' 0.5)) {
-            $line = & $scanner $app.Process.Id $results 'export-running' 2>&1 | Select-Object -Last 1
-            $summary.Add("$line"); Write-Host "  $line"
+            Invoke-Scan $app 'export-running'
         }
         else { Skip 'export-running' 'the export had finished before the scan' }
         Find-Id $app 'PlayButton' 240 | Out-Null
@@ -249,11 +276,7 @@ if (Want 'keys') {
     Write-Host 'Run: shortcuts'
     $export2 = Join-Path $base 'a11y-keys.mp4'
     Remove-Item $export2 -ErrorAction SilentlyContinue
-    $app = Start-App ((Common 'keys') + '--sample-frames=400' + '--output=2160' + "--export-to=$export2" + '--export-wait' + '--shortcut-after=ctrl+o@8,ctrl+n@14,ctrl+e@22,ctrl+n@36,ctrl+e@39,ctrl+o@48')
-    function Wait-Until($app, [double]$second) {
-        $left = $second - ((Get-Date) - $app.Process.StartTime).TotalSeconds
-        if ($left -gt 0) { Start-Sleep -Milliseconds ([int]($left * 1000)) }
-    }
+    $app = Start-App ((Common 'keys') + '--sample-frames=400' + '--output=2160' + "--export-to=$export2" + '--export-wait' + '--shortcut-after=ctrl+o@8,ctrl+n@14,ctrl+e@26,ctrl+n@40,ctrl+e@43,ctrl+o@52')
     try {
         Resize $app 1280 800
         # Ctrl+O at 8 s: the folder picker is a second window of the process.
@@ -274,28 +297,69 @@ if (Want 'keys') {
         # Ctrl+N at 14 s: the project has changes, so it asks first.
         Wait-Until $app 14
         if (Find-Id $app 'PrimaryButton' 8) {
-            $line = & $scanner $app.Process.Id $results 'new-project-question' 2>&1 | Select-Object -Last 1
-            $summary.Add("$line"); Write-Host "  $line"
+            Invoke-Scan $app 'new-project-question'
             Invoke-Element (Find-Id $app 'CloseButton' 2)
         }
         else { Skip 'new-project-question' 'no question appeared' }
-        # Ctrl+E at 22 s, the finished state, Ctrl+N at 36 s, Ctrl+E at 39 s on the Empty screen, then Settings.
-        Wait-Until $app 41
+        # "24" typed into the Timing box and not committed (ValuePattern sets the text without focus or Enter), as a user
+        # who types and presses Ctrl+E at once: the export must take it (#38 review, M1). 400 frames at 24 fps are 16.7 s,
+        # at the default 30 fps 13.3 s.
+        $box = @($app.Window.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, 'Custom frames per second')))) |
+            Where-Object { -not $_.Current.IsOffscreen } | Select-Object -First 1
+        if ($box -and ((Get-Date) - $app.Process.StartTime).TotalSeconds -lt 25) {
+            $box.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('24')
+            $summary.Add("timing box before ctrl+e: '$($box.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value)' typed, not committed")
+        }
+        else { Skip 'ctrl+e typed rate' 'the Timing box was not found before Ctrl+E' }
+        # Ctrl+E at 26 s, the finished state: its summary says the video's length.
+        if (Find-Id $app 'PlayButton' 60) {
+            Start-Sleep -Seconds 1
+            $texts = @($app.Window.FindAll($Tree::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text))))
+            $finished = $texts | Where-Object { $_.Current.Name -match ' s · ' } | Select-Object -First 1
+            $summary.Add("ctrl+e finished: '$(if ($finished) { $finished.Current.Name })' (16.7 s means the typed 24 fps)")
+        }
+        # Ctrl+N at 40 s, Ctrl+E at 43 s on the Empty screen, then Settings.
+        Wait-Until $app 45
         if (Find-Id $app 'ChooseFolderButton' 5) { $summary.Add('ctrl+n after the export: the Empty screen') }
         Invoke-Element (Find-Id $app 'SettingsButton' 2)
-        # Ctrl+O at 48 s on the Settings page.
-        Wait-Until $app 51
+        # Ctrl+O at 52 s on the Settings page.
+        Wait-Until $app 55
         Invoke-Element (Find-Id $app 'BackButton' 2)
         Start-Sleep -Seconds 2
     }
     finally { Stop-App $app; Keep-FocusLog 'keys' }
+}
+
+# 5: New project with an InfoBar open (#38 review, M2): the skipped-photos InfoBar of the broken test photos stays open,
+# Ctrl+N at 15 s asks first, the question is confirmed through UIA, and focus-newproject.log must show the Empty screen's
+# focus on Choose folder, not on the InfoBar's Dismiss.
+if (Want 'newproject') {
+    Write-Host 'Run: New project with an InfoBar open'
+    $app = Start-App ((Common 'newproject') + "--motion-import=$broken" + '--motion-import-delay=1' + '--shortcut-after=ctrl+n@15')
+    try {
+        Resize $app 1280 800
+        if (Find-Id $app 'ShellInfoBar' 14) { $summary.Add('newproject: the skipped-photos InfoBar is open before Ctrl+N') }
+        Wait-Until $app 15
+        $confirm = Find-Id $app 'PrimaryButton' 8
+        if ($confirm) {
+            $summary.Add("newproject: the question asked; confirmed '$($confirm.Current.Name)'")
+            Invoke-Element $confirm
+        }
+        Start-Sleep -Seconds 4
+    }
+    finally { Stop-App $app; Keep-FocusLog 'newproject' }
+    $log = Join-Path $results 'focus-newproject.log'
+    if (Test-Path $log) {
+        $landing = Select-String -Path $log -Pattern '^\s*\d+ screen: Empty' -Context 0, 1 | Select-Object -Last 1
+        $summary.Add("newproject: $(if ($landing) { ($landing.Line.Trim() + ' / ' + $landing.Context.PostContext[0].Trim()) } else { 'no Empty screen in the focus log' })")
+    }
 }
 Remove-Item (Join-Path $base 'a11y-export.mp4'), (Join-Path $base 'a11y-keys.mp4') -ErrorAction SilentlyContinue
 
 $summary | Set-Content (Join-Path $results 'summary.txt')
 Write-Host "Results in $results"
 if ($skipped.Count -gt 0) { Write-Host "Skipped: $($skipped -join '; ')" }
-foreach ($name in 'empty', 'editing', 'export', 'keys') {
+foreach ($name in 'empty', 'editing', 'export', 'keys', 'newproject') {
     Get-ChildItem (Join-Path $base "a11y-logs-$name") -Filter '10Lapse-*.log' -ErrorAction SilentlyContinue |
         ForEach-Object { Select-String -Path $_.FullName -Pattern ' (WARN|ERROR|CRIT) ' | ForEach-Object { "$name`: $($_.Line)" } }
 }
@@ -303,4 +367,9 @@ foreach ($name in 'empty', 'editing', 'export', 'keys') {
 if ($Clean) {
     Get-ChildItem $base -Exclude 'a11y' | Remove-Item -Recurse -Force
     Write-Host "Removed the test data under $base (kept a11y)"
+}
+
+if ($notScanned.Count -gt 0) {
+    Write-Host "NOT SCANNED (the scan could not run twice): $($notScanned -join ', ')"
+    exit 1
 }

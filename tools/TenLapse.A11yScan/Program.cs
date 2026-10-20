@@ -3,7 +3,8 @@
 //   TenLapse.A11yScan <pid> <output-folder> <screen-name>
 // Writes <screen-name>.txt (one line per failure: rule, what it means, the element and its parents) and keeps the
 // .a11ytest file Axe writes for a scan with failures (it opens in Accessibility Insights, with a screenshot). Prints
-// "<screen-name>: N failures" and exits 0 when the scan ran (whatever it found), 1 when it could not run. Read-only:
+// "<screen-name>: N failures" and exits 0 when the scan ran (whatever it found), 1 with one line when it could not run
+// (any exception). Read-only:
 // it reads the UI Automation tree and sends no input. See scripts/a11y-check.ps1.
 using System.Globalization;
 using System.Text;
@@ -56,9 +57,12 @@ try
     Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{screen}: {total} failures"));
     return 0;
 }
-catch (Exception exception) when (exception is AxeWindowsAutomationException or InvalidOperationException or IOException)
+catch (Exception exception)
 {
-    Console.Error.WriteLine($"{screen}: the scan could not run: {exception.Message}");
+    // Whatever stopped it (Axe, a UI Automation element that went away mid-scan, the disk), one line and exit 1: the
+    // script records the screen as not scanned instead of a stack trace.
+    var message = exception.Message.ReplaceLineEndings(" ");
+    Console.Error.WriteLine($"{screen}: the scan could not run: {exception.GetType().Name}: {message}");
     return 1;
 }
 
