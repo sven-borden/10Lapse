@@ -112,6 +112,14 @@ public sealed partial class StringRuleTests
     [InlineData("/// <summary>The message.</summary>\npublic static string Removed(int count) => count == 1 ? RemovedOne : Format(RemovedMany, count);")]
     [InlineData("/// <summary>The message.</summary>\npublic static string Found(int found) => found switch\n{\n    1 => FoundOne,\n    _ => FoundMany,\n};")]
     [InlineData("/// <summary>The undo.</summary>\npublic static string Undo(FrameEdit next) => next switch\n{\n    { Count: 1 } => UndoOne,\n    _ => Undo,\n};")]
+    [InlineData("/// <summary>The message.</summary>\npublic static string Removed(int count) => count is 1 ? RemovedOne : Format(RemovedMany, count);")]
+    [InlineData("/// <summary>The message.</summary>\npublic static string Removed(int[] frames) => frames is { Length: 1 } ? RemovedOne : RemovedMany;")]
+    [InlineData("/// <summary>The readout.</summary>\npublic string Readout => _headline + \" \" + _detail;")]
+    [InlineData("/// <summary>The readout.</summary>\npublic string Readout => $\"{_headline}, {_detail}\";")]
+    [InlineData("/// <summary>The readout.</summary>\npublic string Readout => @$\"{_headline} {_detail}\";")]
+    [InlineData("/// <summary>The readout.</summary>\npublic string Readout => $@\"{_headline} {_detail}\";")]
+    [InlineData("/// <summary>The names.</summary>\npublic static string Names(string[] names) => string.Join(\", \", names);")]
+    [InlineData("/// <summary>A label.</summary>\npublic static string Label(CultureInfo? culture) => string.Format(culture ?? CultureInfo.InvariantCulture, LabelFormat, 1.5);")]
     public void TheFormattingScannerFlagsGluesInvariantNumbersAndOnePlurals(string source) => Assert.NotEmpty(FormattingViolations(source));
 
     [Theory]
@@ -356,10 +364,13 @@ public sealed partial class StringRuleTests
         summary.Contains(marker, StringComparison.Ordinal)
         || lines.Skip(Math.Max(0, index - 4)).Take(Math.Min(index, 4) + 1).Any(line => line.Contains("//", StringComparison.Ordinal) && line.Contains(marker, StringComparison.Ordinal));
 
-    // A text class (ProjectText, TimingWords, ...) or one of the display formatters beside them; not a model that reads one string.
+    // A text class (ProjectText, TimingWords, ...), one of the display formatters beside them, or a Presentation view model
+    // (FilmstripViewModel, ExportViewModel, ImportViewModel, ...), which fills the text classes' formats.
     private static bool IsDisplayText(string file, string source) =>
         (IsTextClass(source) && (file.EndsWith("Text.cs", StringComparison.Ordinal) || file.EndsWith("Words.cs", StringComparison.Ordinal)))
-        || _formatterFiles.Any(formatter => Relative(file).Equals(formatter, StringComparison.OrdinalIgnoreCase));
+        || _formatterFiles.Any(formatter => Relative(file).Equals(formatter, StringComparison.OrdinalIgnoreCase))
+        || (Relative(file).StartsWith(Path.Combine("src", "TenLapse.Presentation") + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+            && file.EndsWith("ViewModel.cs", StringComparison.Ordinal));
 
     private static IEnumerable<string> TextClassViolations(string source)
     {
@@ -430,17 +441,19 @@ public sealed partial class StringRuleTests
     [GeneratedRegex(@"\bDrawText\(\s*\$?@?""(?<value>(?:[^""\\]|\\.)*)""")]
     private static partial Regex DrawTextLiteral();
 
-    // Two placeholders glued with a space in an interpolated string ($"{a} {b}"), or a list joined with a space.
-    [GeneratedRegex(@"\$@?""[^""]*\}\s+\{|\bstring\.Join\(\s*(?:' '|"" "")")]
+    // Two placeholders glued with a space or a comma in an interpolated string ($"{a} {b}", $"{a}, {b}", @$"…"), two
+    // values glued with a literal of spaces or commas (a + " " + b), or a list joined with one (string.Join(", ", …)).
+    [GeneratedRegex(@"(?:\$@?|@\$)""[^""]*\}[,;]?\s+\{|\+\s*""[ ,;]+""\s*\+|\bstring\.Join\(\s*(?:'[ ,;]'|""[ ,;]+"")")]
     private static partial Regex GluedPlaceholders();
 
-    // The invariant culture writing a number or a sentence (ToString, string.Format, string.Create); parsing is not display.
-    [GeneratedRegex(@"(?:\.ToString\([^;]*|\bstring\.(?:Format|Create)\(\s*)CultureInfo\.InvariantCulture")]
+    // The invariant culture writing a number or a sentence (ToString, string.Format, string.Create), or standing in when no
+    // culture is given (culture ?? CultureInfo.InvariantCulture); parsing is not display.
+    [GeneratedRegex(@"(?:\.ToString\([^;]*|\bstring\.(?:Format|Create)\(\s*|\?\?\s*)CultureInfo\.InvariantCulture")]
     private static partial Regex InvariantDisplay();
 
-    // A choice of words by "is it one": count == 1, != 1, a switch arm "1 =>", a property pattern "Count: 1". A fraction's
-    // denominator compared with 1 (a whole number) is no such choice.
-    [GeneratedRegex(@"(?<!Denominator\s*)[!=]=\s*1\b(?![.\d])|(?:^|[\s(,])1\s*=>|\bCount:\s*1\b")]
+    // A choice of words by "is it one": count == 1, != 1, count is 1, is not 1, a switch arm "1 =>", a property pattern
+    // "Count: 1" or "Length: 1". A fraction's denominator compared with 1 (a whole number) is no such choice.
+    [GeneratedRegex(@"(?<!Denominator\s*)(?:[!=]=|\bis(?:\s+not)?)\s*1\b(?![.\d])|(?:^|[\s(,])1\s*=>|\b(?:Count|Length):\s*1\b")]
     private static partial Regex PluralByOne();
 
     // A member declaration without a doc comment ends the previous member's summary.

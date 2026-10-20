@@ -632,6 +632,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
     // played on after the user picked the focused frame) gives way to the focused frame. A selection the user made stays.
     private void TakeFocused(int focused)
     {
+        // Not a plural: a selection of one frame, no words chosen.
         if (_followed && ItemAt(focused) is { } item && !(_selected.Count == 1 && _selected.Contains(item.Id)))
         {
             SelectOnly(item.Id);
@@ -791,7 +792,7 @@ public sealed partial class FilmstripViewModel : ObservableObject, IDisposable
         }
 
         // A selection of the one frame at the playhead follows it; an empty selection falls back to it. Not during a
-        // drag: the frames that move were taken when it started.
+        // drag: the frames that move were taken when it started. Not a plural: a selection of one frame, no words chosen.
         if (_suppressFollow == 0 && _dragIds is null && id is { } playhead
             && (_selected.Count == 0 || (_selected.Count == 1 && previous is { } was && was != playhead && _selected.Contains(was))))
         {
