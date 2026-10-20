@@ -146,7 +146,7 @@
 
           <Grid ColumnSpacing="{StaticResource SpacingLg}" RowSpacing="{StaticResource SpacingSm}">
             <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="Auto" MaxWidth="120" />
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
@@ -154,20 +154,20 @@
               <RowDefinition Height="Auto" />
               <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <TextBlock Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.FrameLabel}" />
+            <TextBlock Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.FrameLabel}" TextWrapping="Wrap" />
             <TextBlock
               Grid.Column="1"
               AutomationProperties.Name="{x:Bind export:ExportText.FrameLabel}"
               Style="{StaticResource BodyTabularTextStyle}"
               Text="{x:Bind ViewModel.FramesText, Mode=OneWay}" />
-            <TextBlock Grid.Row="1" Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.SpeedLabel}" />
+            <TextBlock Grid.Row="1" Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.SpeedLabel}" TextWrapping="Wrap" />
             <TextBlock
               Grid.Row="1"
               Grid.Column="1"
               Style="{StaticResource BodyTabularTextStyle}"
               Text="{x:Bind ViewModel.SpeedText, Mode=OneWay}"
               TextWrapping="Wrap" />
-            <TextBlock Grid.Row="2" Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.OutputLabel}" />
+            <TextBlock Grid.Row="2" Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.OutputLabel}" TextWrapping="Wrap" />
             <TextBlock
               Grid.Row="2"
               Grid.Column="1"
@@ -270,16 +270,16 @@
 
           <Grid ColumnSpacing="{StaticResource SpacingLg}" RowSpacing="{StaticResource SpacingSm}">
             <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="Auto" MaxWidth="120" />
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
               <RowDefinition Height="Auto" />
               <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <TextBlock Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.ExportedInLabel}" />
+            <TextBlock Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.ExportedInLabel}" TextWrapping="Wrap" />
             <TextBlock Grid.Column="1" Style="{StaticResource BodyTabularTextStyle}" Text="{x:Bind ViewModel.ExportedInText, Mode=OneWay}" />
-            <TextBlock Grid.Row="1" Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.SavedToLabel}" />
+            <TextBlock Grid.Row="1" Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource BodyTextStyle}" Text="{x:Bind export:ExportText.SavedToLabel}" TextWrapping="Wrap" />
             <TextBlock
               Grid.Row="1"
               Grid.Column="1"
@@ -288,7 +288,8 @@
               TextTrimming="CharacterEllipsis" />
           </Grid>
 
-          <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+          <!-- The two buttons sit side by side and wrap to two lines when a translation makes them wider than the panel (#114). -->
+          <shell:WrapRow Spacing="{StaticResource SpacingSm}">
             <!-- The screen's one accent button: plays the video in the preview from frame one. -->
             <Button
               x:Name="PlayButton"
@@ -314,7 +315,7 @@
               AutomationProperties.Name="{x:Bind export:ExportText.ShowInFolder}"
               Command="{x:Bind ViewModel.ShowInFolderCommand}"
               Content="{x:Bind export:ExportText.ShowInFolder}" />
-          </StackPanel>
+          </shell:WrapRow>
 
           <HyperlinkButton
             x:Name="BackButton"

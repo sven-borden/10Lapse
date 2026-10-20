@@ -13,6 +13,10 @@ public sealed class ContentDialogService(Func<XamlRoot?> xamlRoot) : IDialogServ
     // their turn here, and each waits for any ContentDialog it did not open, so none is lost or read as "no".
     private readonly DialogQueue _queue = new();
 
+    // A button label that wraps, centered (#114).
+    private static readonly Lazy<DataTemplate> _wrappingLabel = new(() => (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+        """<DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"><TextBlock Text="{Binding}" TextAlignment="Center" TextWrapping="Wrap" /></DataTemplate>"""));
+
     /// <summary>True while a <see cref="ContentDialog"/> is open on the window (the rating prompt never lands on one).</summary>
     public bool HasOpenDialog => xamlRoot() is { } root && VisualTreeHelper.GetOpenPopupsForXamlRoot(root).Any(popup => popup.Child is ContentDialog);
 
@@ -103,6 +107,32 @@ public sealed class ContentDialogService(Func<XamlRoot?> xamlRoot) : IDialogServ
             dialog.RequestedTheme = content.ActualTheme;
         }
 
+        dialog.Opened += OnOpened;
         return dialog;
+    }
+
+    // The dialog's buttons share its width equally; a label longer than its share (German, French, #114) wraps to a
+    // second line instead of being cut off. Set on each button once the template is in place; the default button's
+    // accent style, which the dialog swaps in, leaves this template alone.
+    private static void OnOpened(ContentDialog sender, ContentDialogOpenedEventArgs args)
+    {
+        sender.Opened -= OnOpened;
+        foreach (var button in Descendants(sender).OfType<Button>().Where(button => button.Name is "PrimaryButton" or "SecondaryButton" or "CloseButton"))
+        {
+            button.ContentTemplate = _wrappingLabel.Value;
+        }
+    }
+
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            yield return child;
+            foreach (var descendant in Descendants(child))
+            {
+                yield return descendant;
+            }
+        }
     }
 }
