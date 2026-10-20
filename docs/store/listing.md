@@ -17,7 +17,7 @@ they ship.
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,461.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,606.
 
 ```text
 Turn a folder of photos into a smooth timelapse video, up to 4K.
@@ -28,13 +28,13 @@ How it works
 1. Choose a folder, pick photos, or drag them onto the window. 10Lapse reads JPEG, PNG, TIFF, HEIC and the RAW files of most cameras, and puts them in the order they were taken.
 2. Set the speed one of three ways: frames per second, the length the video should have, or seconds per photo for a slideshow. The numbers are always on screen, for example "742 photos → 24.7 s at 30 fps".
 3. Pick the shape: match your photos, 16:9 for YouTube and TV, 9:16 for phone stories and reels, 1:1, 4:5 or 4:3. Fit keeps the whole photo; Fill crops the edges so there are no bars.
-4. Export an MP4 in H.264 or HEVC at 720p, 1080p, 1440p or 4K. The preview draws every frame with the same code as the export, so the video looks the way the preview did.
+4. Export an MP4 at 720p, 1080p, 1440p or 4K, in H.264, or in HEVC where the PC can encode and play it. The preview draws every frame with the same code as the export, so the video looks like the preview.
 
-The details
+Editing and export
 - Scrub through the sequence, step frame by frame, and remove a blurry photo or drag one into place. Ctrl+Z puts it back. Removing a photo takes it out of the video, never off your disk.
 - Gap markers in the filmstrip show where photos seem to be missing.
 - Frame rates are exact, 29.97 included, from 0.1 to 120 frames per second.
-- The Output panel shows the file size before you export.
+- The Output panel estimates the file size before you export.
 - The export uses the graphics card's video encoder where the PC has one. It keeps the PC awake until the video is done, keeps going when you minimize the window, and stops within a second when you cancel.
 - When the video is ready, play it right there or open its folder.
 - If something goes wrong, 10Lapse says what happened and what to do next.
@@ -43,37 +43,38 @@ Private by design
 10Lapse works offline. There is no account, no analytics and no network access: your photos and videos never leave your PC.
 
 Made for Windows 11
-Light and dark follow Windows, and high contrast themes work too. Every action has a keyboard shortcut or a Tab stop, screen readers hear every control and the export's progress, and animations follow the Windows setting.
+10Lapse 3.0 needs Windows 11 on an x64 or ARM64 PC; on Windows 10, the Store offers the older 10Lapse 2.1.1 instead. Light, dark and high contrast themes follow Windows, and so do animations. Everything works from the keyboard, and screen readers announce every control and the export's progress.
 
-Optional extensions from the Microsoft Store add more photo formats: HEIF Image Extensions with HEVC Video Extensions for HEIC photos, and Raw Image Extension for camera RAW files. 10Lapse names the one that is missing and opens its Store page.
+Optional extensions from the Microsoft Store add more photo formats: HEIC photos need HEIF Image Extensions (free) and HEVC Video Extensions (paid), and camera RAW files need Raw Image Extension (free). 10Lapse names the one that is missing and links to its Store page.
 ```
 
 ## Short description
 
 Limit 1,000 characters; Microsoft recommends under 270, because some views cut it there. It shows above the
-description, so it says the same thing in other words. This draft: 228.
+description, so it says the same thing in other words. This draft: 218.
 
 ```text
-Point 10Lapse at the hundreds of photos from a tripod shoot and get a timelapse video: set the speed and the shape, see it play, and export an MP4 up to 4K. It works offline, with no account, and your photos never leave your PC.
+Make a timelapse video from the hundreds of photos of a tripod shoot: set the speed and the shape, watch it play, and export an MP4 up to 4K. 10Lapse works offline, with no account, and your photos never leave your PC.
 ```
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,062. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
+Limit 1,500 characters. This draft: 1,286. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
 does; it does not claim a crash rate.
 
 ```text
-10Lapse 3.0 is a new app, rebuilt from the ground up for Windows 11.
+10Lapse 3.0 is rebuilt from the ground up for Windows 11.
 
-- Starts and keeps running: 3.0 is new code. When something does go wrong, it shows a message that says what happened and what to do, instead of closing.
-- HEIC and .jpeg photos import. HEIC needs the HEIF Image Extensions and HEVC Video Extensions; 10Lapse tells you if one is missing.
-- Export up to 4K, in H.264 or HEVC, with progress, the time left and a Cancel button that answers within a second.
+- Rewritten from scratch, so the code behind the 2.1.1 crashes is gone. When something goes wrong, 10Lapse says what happened and what to do next.
+- Imports HEIC and .jpeg photos. HEIC needs HEIF Image Extensions (free) and HEVC Video Extensions (paid) from the Microsoft Store; 10Lapse tells you which one is missing.
+- Export up to 4K, in H.264, or HEVC where the PC supports it, with progress, the time left and a Cancel button that stops the export within a second.
+- Keeps working when you switch away or minimize: the export goes on, with progress on the taskbar and a notification when the video is ready.
 - A new Per photo speed for slideshows, beside frames per second and video length.
 - A live preview and a filmstrip: scrub, step, remove or reorder photos, and undo.
-- Frame shapes for every screen: 16:9, 9:16, 1:1, 4:5, 4:3 or the shape of your photos.
+- Frame shapes for TVs, phones and social posts: 16:9, 9:16, 1:1, 4:5, 4:3 or the shape of your photos.
 - Your last speed, frame shape and output are remembered for the next project.
 - Light and dark themes, keyboard shortcuts, screen reader support and high contrast.
-- Still private: no account, no network access, your photos never leave your PC.
+- Private: no account, and now no network access at all; your photos never leave your PC.
 
 3.0 needs Windows 11 on an x64 or ARM64 PC. On Windows 10 the Store keeps 10Lapse 2.1.1.
 ```
@@ -81,20 +82,20 @@ does; it does not claim a crash rate.
 ## Product features
 
 Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 19 are 36
-to 79 characters each.
+to 100 characters each.
 
 ```text
 Turns a folder of photos into a timelapse video, up to 4K
 Import a folder, chosen photos, or drag them onto the window
-Reads JPEG, PNG, TIFF, HEIC and camera RAW files
+Reads JPEG, PNG and TIFF; HEIC and camera RAW with Microsoft Store extensions
 Puts photos in the order they were taken; drag a thumbnail to move it
 Speed by frames per second, by video length, or by seconds per photo
 Exact frame rates from 0.1 to 120 fps, 29.97 included
 Photo count, speed and video length always on screen
 Frame shapes: match the photos, 16:9, 9:16, 1:1, 4:5 or 4:3, with Fit or Fill
-Live preview that draws frames with the same code as the export
+Live preview that matches the exported video
 Filmstrip with thumbnails, gap markers for missing photos, remove and undo
-MP4 in H.264 or HEVC at 720p, 1080p, 1440p or 4K, in three quality levels
+MP4 in H.264 (or HEVC where the PC supports it) at 720p, 1080p, 1440p or 4K, in three quality levels
 File size estimate before you export
 Exports on the graphics card's video encoder where the PC has one
 Keeps exporting when minimized, and keeps the PC awake until it is done
@@ -125,15 +126,15 @@ timelapse
 
 Up to 11 items each for minimum and recommended hardware, 200 characters each; the Store adds the bullets. The
 Properties page's own system requirements (Windows 11, x64 and ARM64) come from the package. These items are 32 to
-99 characters.
+113 characters.
 
 Minimum hardware:
 
 ```text
 Windows 11 on an x64 or ARM64 PC
-Optional, for HEIC photos: HEIF Image Extensions and HEVC Video Extensions from the Microsoft Store
-Optional, for camera RAW photos: Raw Image Extension from the Microsoft Store
-Optional, for HEVC video: HEVC Video Extensions and a graphics card that encodes HEVC
+Optional, for HEIC photos: HEIF Image Extensions (free) and HEVC Video Extensions (paid) from the Microsoft Store
+Optional, for camera RAW photos: Raw Image Extension (free) from the Microsoft Store
+Optional, for HEVC video: HEVC Video Extensions (paid) and a graphics card that encodes HEVC
 ```
 
 Recommended hardware:
@@ -145,34 +146,49 @@ A graphics card with a hardware video encoder, for faster export
 
 What each extension adds, for Sven's answers to reviews (#44), not for a field:
 
-- HEIF Image Extensions (free) and HEVC Video Extensions (sold in the Store): HEIC and HEIF photos from phones.
+- HEIF Image Extensions (free) and HEVC Video Extensions (paid): HEIC and HEIF photos from phones.
   Without them, those photos are skipped and an InfoBar names the missing extension with a button to its Store page.
 - Raw Image Extension (free): RAW files from most cameras (CR2, CR3, NEF, ARW, RAF, ORF, RW2 and more). DNG opens
   without it. A RAW with a JPEG twin of the same name imports once, as the JPEG.
-- HEVC Video Extensions: HEVC (H.265) output. 10Lapse offers HEVC only when the PC can both encode it and play it
+- HEVC Video Extensions (paid): HEVC (H.265) output. 10Lapse offers HEVC only when the PC can both encode it and play it
   back; otherwise the Format list has H.264 only.
 
 ## Screenshots
 
 Desktop: PNG, 1366 x 768 or larger in landscape or portrait, up to 3840 x 2160, under 50 MB each, up to 10. Captions
 200 characters each. Keep key content in the top two thirds (the Store may lay text over the bottom third).
-`scripts/store-screenshots.ps1` makes them into `dist/store-screenshots/` (git-ignored): see its help for
-`-PhotoFolder`, which imports a real set (#30) instead of the generated sunsets and gives better pictures.
-Upload in this order; captions are 55 to 97 characters.
+`scripts/store-screenshots.ps1` makes them into `dist/store-screenshots/` (git-ignored).
+
+The uploaded set comes from a real shoot: Sven chooses the photos (as in #30) and runs
+`pwsh -File scripts/store-screenshots.ps1 -PhotoFolder <a tripod shoot> -SlideshowFolder <about 24 photos>`.
+`-SlideshowFolder` feeds the Per photo shot (06); without it, that shot uses 24 generated photos. Without
+`-PhotoFolder` the script uses generated sunsets at 4500 x 3000 (about 2 GB of temporary data, deleted at the end):
+they only check the layout and give the export shots realistic speeds; do not upload them.
+
+Upload six, in this order; captions are 55 to 91 characters.
 
 | File | Size | Caption |
 |---|---|---|
 | `02-editing.png` | 1920 x 1080 | `See the whole sequence play, with the photo count, speed and video length always on screen.` |
-| `03-vertical.png` | 1920 x 1080 | `Frame it 9:16 for phone stories and reels, or 16:9, 1:1, 4:5 and 4:3.` |
-| `04-exporting.png` | 1920 x 1080 | `Export an MP4 up to 4K and watch every frame pass through the gate.` |
+| `03-vertical.png` | 1920 x 1080 | `Frame it 9:16 for phone stories and reels, or 16:9, 1:1, 4:5 or 4:3.` |
+| `04-exporting.png` | 1920 x 1080 | `Export an MP4 up to 4K and watch each frame as it is rendered, with the time left.` |
 | `05-finished.png` | 1920 x 1080 | `Play the finished video right away, or open its folder.` |
-| `06-per-photo.png` | 1920 x 1080 | `Set seconds per photo for a slideshow, frames per second, or the length you want.` |
+| `06-per-photo.png` | 1920 x 1080 | `Make a slideshow with seconds per photo, or set frames per second or the video's length.` |
 | `01-first-launch.png` | 1920 x 1080 | `Drop a folder of photos to start. Your photos never leave your PC.` |
-| `08-narrow.png` | 768 x 1366 | `Works in a small window too, with the settings in tabs under the preview.` |
-| `07-settings.png` | 1920 x 1080 | `Settings: reset the defaults, or copy diagnostics for a bug report. Nothing is sent from your PC.` |
 
-The editing shot leads because it shows the job; the start screen comes later because it shows no photos. Drop the
-narrow (portrait) and Settings shots first if the set should be shorter.
+The editing shot leads because it shows the job; the start screen comes last because it shows no photos. The script
+also makes 07-settings and 08-narrow; do not upload them (Settings shows no photos; the narrow shot is portrait at
+768 x 1366, below #42's 1920 x 1080).
+
+## Until 3.0 is public (#7)
+
+A listing-only edit to the 2.1.1 description, no package needed: replace its last line, "BETA REALEASE! SOME
+FUNCTIONALITIES MAY NOT WORK CORRECTLY", with the line below. The 3.0 description above replaces the whole text once
+3.0 ships. This draft: 63 characters.
+
+```text
+10Lapse 3.0 is being rebuilt from the ground up for Windows 11.
+```
 
 ## Copyright and trademark info
 
@@ -186,7 +202,8 @@ rights (README.md); the 2.x listing's earlier years can go in front if Sven want
 ## Fields to leave as they are
 
 - Product name: 10Lapse (the reserved name and the manifest's `DisplayName`).
-- Short title, sort title, voice title: empty (Xbox and voice only).
+- Short title and voice title: empty (Xbox and voice only). Sort title: Ten Lapse (Sven's call), so a search for the name
+  spelled out finds it.
 - Additional license terms: empty (the Store's standard license applies).
 - Trailers and Store logos: #43 (trailer) and #37 (icon) own them.
 - Outside the listing, on the Properties page: the privacy policy URL is
