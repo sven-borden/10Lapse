@@ -1,0 +1,544 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Brazilian Portuguese (pt-BR) translation of ProjectText.resx (#119). The comments of the English file are the brief
+  for each key. Form of address: você, with the imperative as Windows 11 writes it ("Tente novamente"). "o 10Lapse"
+  takes the article, as "o Windows" does.
+  Plurals: _one covers 0, 1 and 1,5 in pt-BR; _many is for exact millions ("1.000.000 de fotos") and is added where the
+  count stands before a noun.
+  Words: "remover" takes frames out of the project, "excluir" deletes from the disk; Ctrl+Z "coloca de volta" (never
+  "Refazer", Windows' Redo). Price labels "(grátis)" and "(compra necessária)" agree with no Store name, singular or
+  plural; the codec sentences put the name after a colon, so no article or preposition meets it.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NewProject" xml:space="preserve">
+    <value>Novo projeto</value>
+  </data>
+  <data name="UnsavedChangesName" xml:space="preserve">
+    <value>Alterações não salvas</value>
+  </data>
+  <data name="InspectorTabsName" xml:space="preserve">
+    <value>Painel</value>
+  </data>
+  <data name="StartRegionName" xml:space="preserve">
+    <value>Início</value>
+  </data>
+  <data name="StageRegionName" xml:space="preserve">
+    <value>Visualização</value>
+  </data>
+  <data name="InspectorRegionName" xml:space="preserve">
+    <value>Configurações do vídeo</value>
+  </data>
+  <data name="RegionLandmarkType" xml:space="preserve">
+    <value>região</value>
+  </data>
+  <data name="SentenceJoin" xml:space="preserve">
+    <value>{0} {1}</value>
+  </data>
+  <data name="WindowTitleSaved" xml:space="preserve">
+    <value>{0} – {1}</value>
+  </data>
+  <data name="WindowTitleUnsaved" xml:space="preserve">
+    <value>● {0} – {1}</value>
+  </data>
+  <data name="NewProjectTitle" xml:space="preserve">
+    <value>Iniciar um novo projeto?</value>
+  </data>
+  <data name="NewProjectMessageNoPhotos" xml:space="preserve">
+    <value>As configurações deste projeto serão descartadas.</value>
+  </data>
+  <data name="NewProjectMessage_one" xml:space="preserve">
+    <value>A foto e as configurações deste projeto serão descartadas. O arquivo da foto continua no seu PC.</value>
+  </data>
+  <data name="NewProjectMessage_many" xml:space="preserve">
+    <value>Este projeto tem {0} de fotos. Elas e as configurações serão descartadas do projeto; os arquivos das fotos continuam no seu PC.</value>
+  </data>
+  <data name="NewProjectMessage_other" xml:space="preserve">
+    <value>As {0} fotos e as configurações deste projeto serão descartadas. Os arquivos das fotos continuam no seu PC.</value>
+  </data>
+  <data name="NewProjectConfirm" xml:space="preserve">
+    <value>Iniciar novo projeto</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="InfoBarActionFailed" xml:space="preserve">
+    <value>Não foi possível concluir essa ação devido a um problema inesperado. Tente novamente e, se isso continuar acontecendo, reinicie o 10Lapse.</value>
+  </data>
+  <data name="InfoBarShowDetails" xml:space="preserve">
+    <value>Ver lista</value>
+  </data>
+  <data name="InfoBarHideDetails" xml:space="preserve">
+    <value>Ocultar lista</value>
+  </data>
+  <data name="InfoBarDismiss" xml:space="preserve">
+    <value>Fechar</value>
+  </data>
+  <data name="ErrorUnexpected" xml:space="preserve">
+    <value>Algo inesperado interrompeu essa ação. Tente novamente e, se isso continuar acontecendo, copie o diagnóstico em um relatório de bug.</value>
+  </data>
+  <data name="ErrorUnhandled" xml:space="preserve">
+    <value>O 10Lapse encontrou um problema inesperado e continuou funcionando. Se algo parecer errado, reinicie o 10Lapse.</value>
+  </data>
+  <data name="ErrorFileNotFoundNamed" xml:space="preserve">
+    <value>Não foi possível encontrar {0}. O arquivo pode ter sido movido, renomeado ou excluído; verifique se ele ainda existe e tente novamente.</value>
+  </data>
+  <data name="ErrorFileNotFound" xml:space="preserve">
+    <value>Não foi possível encontrar um arquivo. Ele pode ter sido movido, renomeado ou excluído; verifique se ele ainda existe e tente novamente.</value>
+  </data>
+  <data name="ErrorFolderNotFound" xml:space="preserve">
+    <value>Não foi possível encontrar uma pasta. Verifique se ela ainda existe e se a unidade dela está conectada e tente novamente.</value>
+  </data>
+  <data name="ErrorPathTooLong" xml:space="preserve">
+    <value>O caminho de um arquivo é longo demais para o Windows. Mova o arquivo para uma pasta com um caminho mais curto e tente novamente.</value>
+  </data>
+  <data name="ErrorAccessDenied" xml:space="preserve">
+    <value>O Windows não permitiu que o 10Lapse abrisse um arquivo ou uma pasta. Verifique se você tem acesso a esse local ou escolha outro e tente novamente.</value>
+  </data>
+  <data name="ErrorFileInUse" xml:space="preserve">
+    <value>Um arquivo está aberto em outro aplicativo. Feche-o nesse aplicativo e tente novamente.</value>
+  </data>
+  <data name="ErrorDiskFull" xml:space="preserve">
+    <value>O disco está cheio. Libere espaço ou escolha outra unidade e tente novamente.</value>
+  </data>
+  <data name="ErrorOutOfMemory" xml:space="preserve">
+    <value>O PC ficou sem memória. Feche alguns outros aplicativos e tente novamente.</value>
+  </data>
+  <data name="ErrorDriveDisconnected" xml:space="preserve">
+    <value>A unidade ou a pasta de rede foi desconectada. Conecte-a novamente e tente de novo.</value>
+  </data>
+  <data name="ErrorCannotRead" xml:space="preserve">
+    <value>Não é possível ler um arquivo: a unidade ou o cartão de memória em que ele está pode estar danificado. Copie as fotos para outra unidade e tente novamente.</value>
+  </data>
+  <data name="ErrorClipboardBusy" xml:space="preserve">
+    <value>Outro aplicativo está usando a área de transferência. Tente novamente daqui a pouco.</value>
+  </data>
+  <data name="ExportFailedEncoderUnavailable" xml:space="preserve">
+    <value>O Windows não conseguiu carregar um codificador de vídeo. Instale as atualizações mais recentes do Windows e do driver gráfico e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedSettingsRejected" xml:space="preserve">
+    <value>O codificador de vídeo não aceita essas configurações. Escolha uma resolução ou uma taxa de quadros menor e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedEncoder" xml:space="preserve">
+    <value>O codificador de vídeo parou com um erro. Exporte novamente e, se isso continuar acontecendo, atualize o driver gráfico.</value>
+  </data>
+  <data name="ExportFailedEncoderStalled" xml:space="preserve">
+    <value>O codificador de vídeo parou de responder. Exporte novamente e, se isso continuar acontecendo, atualize o driver gráfico.</value>
+  </data>
+  <data name="ExportFailedEncoderStuck" xml:space="preserve">
+    <value>Uma exportação anterior deixou o codificador de vídeo travado. Reinicie o 10Lapse e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedFolderNotWritable" xml:space="preserve">
+    <value>O 10Lapse não pode salvar vídeos nessa pasta. Escolha outra pasta e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedFileInUse" xml:space="preserve">
+    <value>O arquivo de vídeo está aberto em outro aplicativo. Feche-o nesse aplicativo e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedFolderMissing" xml:space="preserve">
+    <value>Não foi possível encontrar a pasta do vídeo. Conecte a unidade dela ou escolha outra pasta e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedDiskFull" xml:space="preserve">
+    <value>O disco está cheio. Libere espaço ou escolha uma pasta em outra unidade e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedNoGraphicsDevice" xml:space="preserve">
+    <value>Este PC não tem um dispositivo gráfico capaz de exportar vídeo. Atualize o driver gráfico e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedGraphicsDeviceLost" xml:space="preserve">
+    <value>O driver gráfico foi reiniciado durante a exportação. Exporte novamente e, se isso continuar acontecendo, atualize o driver gráfico.</value>
+  </data>
+  <data name="ExportFailedOutOfMemory" xml:space="preserve">
+    <value>Não há memória suficiente para exportar. Feche alguns outros aplicativos ou escolha uma resolução menor e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedPhotoUnreadable" xml:space="preserve">
+    <value>Não é possível ler uma foto do projeto. Remova-a ou corrija o arquivo e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedPhotoUnreadableNamed" xml:space="preserve">
+    <value>Não é possível ler a foto {0}, {1} ({2}). Remova-a do projeto ou corrija o arquivo e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedPhotoUnreadableNamedNoReason" xml:space="preserve">
+    <value>Não é possível ler a foto {0}, {1}. Remova-a do projeto ou corrija o arquivo e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedDrawing" xml:space="preserve">
+    <value>O 10Lapse não conseguiu desenhar um quadro do vídeo. Exporte novamente e, se isso continuar acontecendo, atualize o driver gráfico.</value>
+  </data>
+  <data name="ExportSavedBesideFormat" xml:space="preserve">
+    <value>{0} está aberto em outro aplicativo, então o vídeo foi salvo como {1}.</value>
+  </data>
+  <data name="CopyDiagnostics" xml:space="preserve">
+    <value>Copiar diagnóstico</value>
+  </data>
+  <data name="DiagnosticsCopied" xml:space="preserve">
+    <value>Diagnóstico copiado. Cole-o em uma issue do GitHub ou em um email.</value>
+  </data>
+  <data name="StartupFailed" xml:space="preserve">
+    <value>O 10Lapse não conseguiu iniciar devido a um problema inesperado. Reinicie o PC e tente novamente; se isso continuar acontecendo, reinstale o 10Lapse pela Microsoft Store.&#xA;&#xA;O log está em {0}.</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Configurações</value>
+  </data>
+  <data name="SettingsButton" xml:space="preserve">
+    <value>Configurações</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Voltar</value>
+  </data>
+  <data name="SettingsAboutSection" xml:space="preserve">
+    <value>Sobre</value>
+  </data>
+  <data name="DiagnosticsCardTitle" xml:space="preserve">
+    <value>Diagnóstico</value>
+  </data>
+  <data name="DiagnosticsCardCaption" xml:space="preserve">
+    <value>Copia as versões do aplicativo e do Windows, sua placa de vídeo, os codificadores de vídeo e as últimas 200 linhas do log, para colar em um relatório de bug. As linhas do log podem citar os arquivos e as pastas com que o 10Lapse trabalhou, mas nunca contêm as próprias fotos. Nada é enviado do seu PC.</value>
+  </data>
+  <data name="SettingsDefaultsSection" xml:space="preserve">
+    <value>Padrões</value>
+  </data>
+  <data name="ResetCardTitle" xml:space="preserve">
+    <value>Restaurar os padrões</value>
+  </data>
+  <data name="ResetCardCaption" xml:space="preserve">
+    <value>O 10Lapse começa cada projeto com a última velocidade, proporção e saída que você usou. Isto as restaura para os valores de uma instalação nova, inclusive no projeto aberto, e esquece as pastas em que os seletores abrem. Suas fotos não são alteradas.</value>
+  </data>
+  <data name="ResetButton" xml:space="preserve">
+    <value>Redefinir</value>
+  </data>
+  <data name="ResetDone" xml:space="preserve">
+    <value>As configurações voltaram aos padrões.</value>
+  </data>
+  <data name="TimingHeadline_one" xml:space="preserve">
+    <value>{0} foto → {1}</value>
+  </data>
+  <data name="TimingHeadline_many" xml:space="preserve">
+    <value>{0} de fotos → {1}</value>
+  </data>
+  <data name="TimingHeadline_other" xml:space="preserve">
+    <value>{0} fotos → {1}</value>
+  </data>
+  <data name="TimingDetail" xml:space="preserve">
+    <value>a {0}</value>
+  </data>
+  <data name="PreviewPlay" xml:space="preserve">
+    <value>Reproduzir</value>
+  </data>
+  <data name="PreviewPause" xml:space="preserve">
+    <value>Pausar</value>
+  </data>
+  <data name="PreviewScrubberName" xml:space="preserve">
+    <value>Quadro</value>
+  </data>
+  <data name="PositionOfTotal" xml:space="preserve">
+    <value>{0} / {1}</value>
+  </data>
+  <data name="FrameOfTotal" xml:space="preserve">
+    <value>Quadro {0} de {1}</value>
+  </data>
+  <data name="PreviewTimecodeNameFormat" xml:space="preserve">
+    <value>Tempo {0} de {1}</value>
+  </data>
+  <data name="PreviewPlaceholderFormat" xml:space="preserve">
+    <value>Não é possível ler {0}</value>
+  </data>
+  <data name="PreviewUnreadablePhotos_one" xml:space="preserve">
+    <value>Não é possível ler {0} foto, então a visualização mostra um espaço reservado no lugar dela. Restaure ou substitua a foto antes de exportar.</value>
+  </data>
+  <data name="PreviewUnreadablePhotos_many" xml:space="preserve">
+    <value>Não é possível ler {0} de fotos, então a visualização mostra espaços reservados no lugar delas. Restaure ou substitua as fotos antes de exportar.</value>
+  </data>
+  <data name="PreviewUnreadablePhotos_other" xml:space="preserve">
+    <value>Não é possível ler {0} fotos, então a visualização mostra espaços reservados no lugar delas. Restaure ou substitua as fotos antes de exportar.</value>
+  </data>
+  <data name="PreviewCacheFailed" xml:space="preserve">
+    <value>Não é possível salvar as cópias de visualização das suas fotos, então a visualização pode ficar lenta. Suas fotos e a exportação não são afetadas.</value>
+  </data>
+  <data name="AddPhotos" xml:space="preserve">
+    <value>Adicionar fotos</value>
+  </data>
+  <data name="ChooseFolder" xml:space="preserve">
+    <value>Escolher pasta…</value>
+  </data>
+  <data name="ChoosePhotos" xml:space="preserve">
+    <value>Escolher fotos…</value>
+  </data>
+  <data name="IncludeSubfolders" xml:space="preserve">
+    <value>Incluir subpastas</value>
+  </data>
+  <data name="ImportLooking" xml:space="preserve">
+    <value>Procurando fotos…</value>
+  </data>
+  <data name="ImportFound_one" xml:space="preserve">
+    <value>{0} foto encontrada…</value>
+  </data>
+  <data name="ImportFound_many" xml:space="preserve">
+    <value>{0} de fotos encontradas…</value>
+  </data>
+  <data name="ImportFound_other" xml:space="preserve">
+    <value>{0} fotos encontradas…</value>
+  </data>
+  <data name="ImportAdding_one" xml:space="preserve">
+    <value>Adicionando {1} foto…</value>
+  </data>
+  <data name="ImportAdding_many" xml:space="preserve">
+    <value>Adicionando {0} de {1} de fotos…</value>
+  </data>
+  <data name="ImportAdding_other" xml:space="preserve">
+    <value>Adicionando {0} de {1} fotos…</value>
+  </data>
+  <data name="ImportCancelName" xml:space="preserve">
+    <value>Parar de adicionar fotos</value>
+  </data>
+  <data name="ImportDone_one" xml:space="preserve">
+    <value>{0} foto no projeto.</value>
+  </data>
+  <data name="ImportDone_many" xml:space="preserve">
+    <value>{0} de fotos no projeto.</value>
+  </data>
+  <data name="ImportDone_other" xml:space="preserve">
+    <value>{0} fotos no projeto.</value>
+  </data>
+  <data name="DragCaptionAny" xml:space="preserve">
+    <value>Adicionar fotos</value>
+  </data>
+  <data name="DragCaptionPhotos_one" xml:space="preserve">
+    <value>Adicionar {0} foto</value>
+  </data>
+  <data name="DragCaptionPhotos_many" xml:space="preserve">
+    <value>Adicionar {0} de fotos</value>
+  </data>
+  <data name="DragCaptionPhotos_other" xml:space="preserve">
+    <value>Adicionar {0} fotos</value>
+  </data>
+  <data name="DragCaptionSettingsOpen" xml:space="preserve">
+    <value>Feche as Configurações para adicionar fotos</value>
+  </data>
+  <data name="DropTitle" xml:space="preserve">
+    <value>Adicionar estas fotos a este projeto?</value>
+  </data>
+  <data name="DropMessage_one" xml:space="preserve">
+    <value>Este projeto tem {0} foto. Adicione as novas fotos a ele ou inicie um novo projeto só com as novas. Um novo projeto descarta a foto e as configurações deste; o arquivo continua no seu PC.</value>
+  </data>
+  <data name="DropMessage_many" xml:space="preserve">
+    <value>Este projeto tem {0} de fotos. Adicione as novas fotos a ele ou inicie um novo projeto só com as novas. Um novo projeto descarta as fotos e as configurações deste; os arquivos continuam no seu PC.</value>
+  </data>
+  <data name="DropMessage_other" xml:space="preserve">
+    <value>Este projeto tem {0} fotos. Adicione as novas fotos a ele ou inicie um novo projeto só com as novas. Um novo projeto descarta as fotos e as configurações deste; os arquivos continuam no seu PC.</value>
+  </data>
+  <data name="DropAddToProject" xml:space="preserve">
+    <value>Adicionar ao projeto</value>
+  </data>
+  <data name="ImportNothingFound" xml:space="preserve">
+    <value>Nenhuma foto que o 10Lapse consiga ler foi encontrada ali. Escolha uma pasta ou arquivos com fotos JPEG, PNG, TIFF ou de outros formatos e tente novamente.</value>
+  </data>
+  <data name="ImportNothingFoundSubfoldersFormat" xml:space="preserve">
+    <value>Nenhuma foto foi encontrada nessa pasta. Se elas estiverem nas subpastas, ative “{0}” no menu “{1}” e tente novamente.</value>
+  </data>
+  <data name="ImportAlreadyAdded" xml:space="preserve">
+    <value>Essas fotos já estão neste projeto.</value>
+  </data>
+  <data name="ImportStoppedNone" xml:space="preserve">
+    <value>A adição de fotos foi interrompida. Nenhuma foto foi adicionada.</value>
+  </data>
+  <data name="ImportStoppedAdded_one" xml:space="preserve">
+    <value>A adição de fotos foi interrompida. {0} foto foi adicionada.</value>
+  </data>
+  <data name="ImportStoppedAdded_many" xml:space="preserve">
+    <value>A adição de fotos foi interrompida. {0} de fotos foram adicionadas.</value>
+  </data>
+  <data name="ImportStoppedAdded_other" xml:space="preserve">
+    <value>A adição de fotos foi interrompida. {0} fotos foram adicionadas.</value>
+  </data>
+  <data name="ImportFolderFailedNamed" xml:space="preserve">
+    <value>Não foi possível abrir a pasta {0}. Verifique se a unidade ou o cartão de memória dela está conectado e se você consegue abri-la no Explorador de Arquivos e adicione-a novamente.</value>
+  </data>
+  <data name="ImportFoldersNotOpened_other" xml:space="preserve">
+    <value>Não foi possível abrir {0} pastas. Verifique se as unidades ou os cartões de memória delas estão conectados e se você consegue abri-las no Explorador de Arquivos e adicione-as novamente.</value>
+  </data>
+  <data name="CloudDownloadTitle" xml:space="preserve">
+    <value>Baixar do OneDrive?</value>
+  </data>
+  <data name="CloudDownloadQuestion_one" xml:space="preserve">
+    <value>{0} foto está só no OneDrive. Baixar agora? Cerca de {1}.</value>
+  </data>
+  <data name="CloudDownloadQuestion_many" xml:space="preserve">
+    <value>{0} de fotos estão só no OneDrive. Baixar agora? Cerca de {1}.</value>
+  </data>
+  <data name="CloudDownloadQuestion_other" xml:space="preserve">
+    <value>{0} fotos estão só no OneDrive. Baixar agora? Cerca de {1}.</value>
+  </data>
+  <data name="CloudDownloadConfirm" xml:space="preserve">
+    <value>Baixar</value>
+  </data>
+  <data name="CloudDownloadSkip_one" xml:space="preserve">
+    <value>Pular a foto</value>
+  </data>
+  <data name="CloudDownloadSkip_other" xml:space="preserve">
+    <value>Pular as fotos</value>
+  </data>
+  <data name="CodecGetFromStore" xml:space="preserve">
+    <value>Abrir na Microsoft Store</value>
+  </data>
+  <data name="CodecFree" xml:space="preserve">
+    <value>{0} (grátis)</value>
+  </data>
+  <data name="CodecFee" xml:space="preserve">
+    <value>{0} (compra necessária)</value>
+  </data>
+  <data name="CodecNeedsOne_one" xml:space="preserve">
+    <value>Esta foto precisa de uma extensão da Microsoft: {1}.</value>
+  </data>
+  <data name="CodecNeedsOne_many" xml:space="preserve">
+    <value>Estas {0} de fotos precisam de uma extensão da Microsoft: {1}.</value>
+  </data>
+  <data name="CodecNeedsOne_other" xml:space="preserve">
+    <value>Estas {0} fotos precisam de uma extensão da Microsoft: {1}.</value>
+  </data>
+  <data name="CodecNeedsSeveral_one" xml:space="preserve">
+    <value>Esta foto precisa de {1} extensões da Microsoft. Comece por esta: {2}.</value>
+  </data>
+  <data name="CodecNeedsSeveral_many" xml:space="preserve">
+    <value>Estas {0} de fotos precisam de {1} extensões da Microsoft. Comece por esta: {2}.</value>
+  </data>
+  <data name="CodecNeedsSeveral_other" xml:space="preserve">
+    <value>Estas {0} fotos precisam de {1} extensões da Microsoft. Comece por esta: {2}.</value>
+  </data>
+  <data name="CodecNextFormat" xml:space="preserve">
+    <value>Agora, obtenha a próxima: {0}.</value>
+  </data>
+  <data name="CodecLastFormat" xml:space="preserve">
+    <value>Por fim, obtenha a última: {0}. Quando a instalação terminar, reinicie o 10Lapse e adicione as fotos novamente.</value>
+  </data>
+  <data name="CodecStoreFallbackFormat" xml:space="preserve">
+    <value>Não foi possível abrir a Microsoft Store. Pesquise “{0}” na Store e instale a extensão; depois, reinicie o 10Lapse e adicione as fotos novamente.</value>
+  </data>
+  <data name="FirstLaunchTitle" xml:space="preserve">
+    <value>Solte uma pasta de fotos para criar um timelapse</value>
+  </data>
+  <data name="FirstLaunchDropTitle" xml:space="preserve">
+    <value>Solte para começar seu timelapse</value>
+  </data>
+  <data name="FirstLaunchExplanationFormat" xml:space="preserve">
+    <value>O {0} transforma suas fotos em vídeo. Tire uma foto a cada poucos segundos: {1} fotos viram um vídeo de {3} segundos a {2} quadros por segundo.</value>
+  </data>
+  <data name="FirstLaunchPrivacy" xml:space="preserve">
+    <value>Suas fotos nunca saem deste PC.</value>
+  </data>
+  <data name="FirstLaunchChooseFolder" xml:space="preserve">
+    <value>Escolher pasta</value>
+  </data>
+  <data name="FirstLaunchChoosePhotos" xml:space="preserve">
+    <value>Escolher fotos</value>
+  </data>
+  <data name="FilmstripName" xml:space="preserve">
+    <value>Tira de filme</value>
+  </data>
+  <data name="FilmstripItemNameFormat" xml:space="preserve">
+    <value>Quadro {0}, {1}</value>
+  </data>
+  <data name="FilmstripCaptionSelected_other" xml:space="preserve">
+    <value>{1} · {0} selecionados</value>
+  </data>
+  <data name="FilmstripFileTimeFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="FilmstripGapMissing_one" xml:space="preserve">
+    <value>Parece faltar {0} foto antes desta: a numeração dos arquivos pula um número.</value>
+  </data>
+  <data name="FilmstripGapMissing_many" xml:space="preserve">
+    <value>Parecem faltar {0} de fotos antes desta: a numeração dos arquivos pula {0} de números.</value>
+  </data>
+  <data name="FilmstripGapMissing_other" xml:space="preserve">
+    <value>Parecem faltar {0} fotos antes desta: a numeração dos arquivos pula {0} números.</value>
+  </data>
+  <data name="FilmstripGapPause" xml:space="preserve">
+    <value>Podem faltar fotos antes desta: ela foi tirada {0} depois da anterior, quando o normal era cerca de {1}.</value>
+  </data>
+  <data name="FilmstripPlayheadStatus" xml:space="preserve">
+    <value>Exibido na visualização</value>
+  </data>
+  <data name="FilmstripRemove" xml:space="preserve">
+    <value>Remover do projeto</value>
+  </data>
+  <data name="FilmstripUndo" xml:space="preserve">
+    <value>Desfazer</value>
+  </data>
+  <data name="FilmstripMoveEarlier" xml:space="preserve">
+    <value>Mover para antes</value>
+  </data>
+  <data name="FilmstripMoveLater" xml:space="preserve">
+    <value>Mover para depois</value>
+  </data>
+  <data name="FilmstripRemoveKeys" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="FilmstripUndoKeys" xml:space="preserve">
+    <value>Ctrl+Z</value>
+  </data>
+  <data name="FilmstripMoveEarlierKeys" xml:space="preserve">
+    <value>Alt+Seta para a esquerda</value>
+  </data>
+  <data name="FilmstripMoveLaterKeys" xml:space="preserve">
+    <value>Alt+Seta para a direita</value>
+  </data>
+  <data name="FilmstripThumbnailSize" xml:space="preserve">
+    <value>Tamanho das miniaturas</value>
+  </data>
+  <data name="FilmstripRemovedFrames_one" xml:space="preserve">
+    <value>{0} quadro removido do projeto. A foto continua no seu PC. {1} coloca o quadro de volta.</value>
+  </data>
+  <data name="FilmstripRemovedFrames_many" xml:space="preserve">
+    <value>{0} de quadros removidos do projeto. As fotos continuam no seu PC. {1} coloca os quadros de volta.</value>
+  </data>
+  <data name="FilmstripRemovedFrames_other" xml:space="preserve">
+    <value>{0} quadros removidos do projeto. As fotos continuam no seu PC. {1} coloca os quadros de volta.</value>
+  </data>
+  <data name="FilmstripRestoredFrames_one" xml:space="preserve">
+    <value>{0} quadro colocado de volta.</value>
+  </data>
+  <data name="FilmstripRestoredFrames_many" xml:space="preserve">
+    <value>{0} de quadros colocados de volta.</value>
+  </data>
+  <data name="FilmstripRestoredFrames_other" xml:space="preserve">
+    <value>{0} quadros colocados de volta.</value>
+  </data>
+  <data name="FilmstripRestoredNone" xml:space="preserve">
+    <value>Nada para colocar de volta: essas fotos já estão no projeto outra vez.</value>
+  </data>
+  <data name="FilmstripUndoRemove_one" xml:space="preserve">
+    <value>Desfazer a remoção de {0} quadro</value>
+  </data>
+  <data name="FilmstripUndoRemove_many" xml:space="preserve">
+    <value>Desfazer a remoção de {0} de quadros</value>
+  </data>
+  <data name="FilmstripUndoRemove_other" xml:space="preserve">
+    <value>Desfazer a remoção de {0} quadros</value>
+  </data>
+  <data name="FilmstripUndoMove" xml:space="preserve">
+    <value>Desfazer a movimentação</value>
+  </data>
+  <data name="FilmstripReorderUndone" xml:space="preserve">
+    <value>Os quadros voltaram à ordem anterior.</value>
+  </data>
+  <data name="FilmstripNothingToUndo" xml:space="preserve">
+    <value>Nada para desfazer.</value>
+  </data>
+  <data name="FilmstripMovedFrame" xml:space="preserve">
+    <value>Quadro {0} movido para a posição {1}.</value>
+  </data>
+  <data name="FilmstripMovedFrames_many" xml:space="preserve">
+    <value>{0} de quadros movidos para a posição {1}.</value>
+  </data>
+  <data name="FilmstripMovedFrames_other" xml:space="preserve">
+    <value>{0} quadros movidos para a posição {1}.</value>
+  </data>
+</root>

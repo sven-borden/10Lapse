@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Brazilian Portuguese (pt-BR) translation of RatingText.resx (#119). The comments of the English file are the brief for
+  each key. Form of address: você. "Comentários" is the word Windows uses for feedback (Hub de Comentários).
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CardTitle" xml:space="preserve">
+    <value>Comentários</value>
+  </data>
+  <data name="CardCaptionFormat" xml:space="preserve">
+    <value>“{0}” abre a página do aplicativo na Microsoft Store. “{1}” abre o GitHub no seu navegador. O 10Lapse não envia nada por conta própria.</value>
+  </data>
+  <data name="RateButton" xml:space="preserve">
+    <value>Avaliar o 10Lapse</value>
+  </data>
+  <data name="FeedbackButton" xml:space="preserve">
+    <value>Enviar comentários</value>
+  </data>
+  <data name="RateTip" xml:space="preserve">
+    <value>Abre a Microsoft Store</value>
+  </data>
+  <data name="FeedbackTip" xml:space="preserve">
+    <value>Abre o GitHub no seu navegador</value>
+  </data>
+  <data name="RateFailed" xml:space="preserve">
+    <value>A Microsoft Store não abriu. Abra a Store e pesquise 10Lapse para avaliar o aplicativo.</value>
+  </data>
+  <data name="FeedbackFailed" xml:space="preserve">
+    <value>Seu navegador não abriu. Acesse github.com/sven-borden/10Lapse/issues para enviar seus comentários.</value>
+  </data>
+</root>

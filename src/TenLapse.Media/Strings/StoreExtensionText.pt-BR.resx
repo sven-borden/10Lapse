@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Brazilian Portuguese (pt-BR) names of the Microsoft Store extensions (#119): the ProductTitle the Store catalog gives
+  for each product ID (displaycatalog.mp.microsoft.com, market BR, language pt-BR, checked 2026-10-20). Copied exactly,
+  capitals included ("Extensão da Imagem HEIF" has "da", the others "de"). Do not translate them.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HeifImageExtensions" xml:space="preserve">
+    <value>Extensão da Imagem HEIF</value>
+  </data>
+  <data name="HevcVideoExtensions" xml:space="preserve">
+    <value>Extensões de Vídeo HEVC</value>
+  </data>
+  <data name="Av1VideoExtension" xml:space="preserve">
+    <value>Extensão de Vídeo AV1</value>
+  </data>
+  <data name="WebpImageExtensions" xml:space="preserve">
+    <value>Extensão de Imagem WebP</value>
+  </data>
+  <data name="JpegXlImageExtension" xml:space="preserve">
+    <value>Extensão de Imagem JPEG XL</value>
+  </data>
+  <data name="RawImageExtension" xml:space="preserve">
+    <value>Extensão de Imagem Raw</value>
+  </data>
+</root>
