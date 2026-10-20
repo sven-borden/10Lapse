@@ -5,8 +5,8 @@
   takes the article, as "o Windows" does.
   Plurals: _one covers 0, 1 and 1,5 in pt-BR; _many is for exact millions ("1.000.000 de fotos") and is added where the
   count stands before a noun.
-  Words: "remover" takes frames out of the project, "excluir" deletes from the disk; Ctrl+Z "coloca de volta" (never
-  "Refazer", Windows' Redo). Price labels "(grátis)" and "(compra necessária)" agree with no Store name, singular or
+  Words: "remover" takes frames out of the project, "excluir" deletes from the disk; Ctrl+Z "devolve ao projeto", the mirror of
+  "remover do projeto" (never "Restaurar", the Recycle Bin's Restore, nor "Refazer", Windows' Redo). Price labels "(grátis)" and "(compra necessária)" agree with no Store name, singular or
   plural; the codec sentences put the name after a colon, so no article or preposition meets it.
 -->
 <root>
@@ -494,25 +494,25 @@
     <value>Tamanho das miniaturas</value>
   </data>
   <data name="FilmstripRemovedFrames_one" xml:space="preserve">
-    <value>{0} quadro removido do projeto. A foto continua no seu PC. {1} coloca o quadro de volta.</value>
+    <value>{0} quadro removido do projeto. A foto continua no seu PC. {1} devolve o quadro ao projeto.</value>
   </data>
   <data name="FilmstripRemovedFrames_many" xml:space="preserve">
-    <value>{0} de quadros removidos do projeto. As fotos continuam no seu PC. {1} coloca os quadros de volta.</value>
+    <value>{0} de quadros removidos do projeto. As fotos continuam no seu PC. {1} devolve os quadros ao projeto.</value>
   </data>
   <data name="FilmstripRemovedFrames_other" xml:space="preserve">
-    <value>{0} quadros removidos do projeto. As fotos continuam no seu PC. {1} coloca os quadros de volta.</value>
+    <value>{0} quadros removidos do projeto. As fotos continuam no seu PC. {1} devolve os quadros ao projeto.</value>
   </data>
   <data name="FilmstripRestoredFrames_one" xml:space="preserve">
-    <value>{0} quadro colocado de volta.</value>
+    <value>{0} quadro devolvido ao projeto.</value>
   </data>
   <data name="FilmstripRestoredFrames_many" xml:space="preserve">
-    <value>{0} de quadros colocados de volta.</value>
+    <value>{0} de quadros devolvidos ao projeto.</value>
   </data>
   <data name="FilmstripRestoredFrames_other" xml:space="preserve">
-    <value>{0} quadros colocados de volta.</value>
+    <value>{0} quadros devolvidos ao projeto.</value>
   </data>
   <data name="FilmstripRestoredNone" xml:space="preserve">
-    <value>Nada para colocar de volta: essas fotos já estão no projeto outra vez.</value>
+    <value>Nada para devolver: essas fotos já estão no projeto outra vez.</value>
   </data>
   <data name="FilmstripUndoRemove_one" xml:space="preserve">
     <value>Desfazer a remoção de {0} quadro</value>
