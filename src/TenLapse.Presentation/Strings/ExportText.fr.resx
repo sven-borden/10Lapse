@@ -45,13 +45,13 @@
     <value>Finalisation du fichier…</value>
   </data>
   <data name="TimeLeftSecondsFormat" xml:space="preserve">
-    <value>Temps restant : environ {0} s</value>
+    <value>Reste environ {0} s</value>
   </data>
   <data name="TimeLeftMinutesFormat" xml:space="preserve">
-    <value>Temps restant : environ {0} min</value>
+    <value>Reste environ {0} min</value>
   </data>
   <data name="TimeLeftMinutesHalfFormat" xml:space="preserve">
-    <value>Temps restant : environ {0} min 30 s</value>
+    <value>Reste environ {0} min 30 s</value>
   </data>
   <data name="FrameLabel" xml:space="preserve">
     <value>Image</value>

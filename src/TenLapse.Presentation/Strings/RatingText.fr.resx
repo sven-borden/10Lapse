@@ -21,7 +21,7 @@
     <value>Commentaires</value>
   </data>
   <data name="CardCaptionFormat" xml:space="preserve">
-    <value>« {0} » ouvre la page de 10Lapse dans le Microsoft Store. « {1} » ouvre GitHub dans votre navigateur. 10Lapse n’envoie rien lui-même.</value>
+    <value>« {0} » ouvre la page de 10Lapse dans le Microsoft Store. « {1} » ouvre GitHub dans votre navigateur. 10Lapse n’envoie rien de son côté.</value>
   </data>
   <data name="RateButton" xml:space="preserve">
     <value>Noter 10Lapse</value>

@@ -318,13 +318,13 @@
     <value>Ajouter ces photos à ce projet ?</value>
   </data>
   <data name="DropMessage_one" xml:space="preserve">
-    <value>Ce projet contient {0} photo. Ajoutez-y les nouvelles photos, ou commencez un nouveau projet avec seulement celles-ci. Un nouveau projet retire la photo et les paramètres de celui-ci ; le fichier reste sur votre PC.</value>
+    <value>Ce projet contient {0} photo. Ajoutez-y les nouvelles photos, ou commencez un nouveau projet avec seulement celles-ci. Le nouveau projet remplace celui-ci, sa photo et ses paramètres ; le fichier reste sur votre PC.</value>
   </data>
   <data name="DropMessage_other" xml:space="preserve">
-    <value>Ce projet contient {0} photos. Ajoutez-y les nouvelles photos, ou commencez un nouveau projet avec seulement celles-ci. Un nouveau projet retire les photos et les paramètres de celui-ci ; les fichiers restent sur votre PC.</value>
+    <value>Ce projet contient {0} photos. Ajoutez-y les nouvelles photos, ou commencez un nouveau projet avec seulement celles-ci. Le nouveau projet remplace celui-ci, ses photos et ses paramètres ; les fichiers restent sur votre PC.</value>
   </data>
   <data name="DropMessage_many" xml:space="preserve">
-    <value>Ce projet contient {0} de photos. Ajoutez-y les nouvelles photos, ou commencez un nouveau projet avec seulement celles-ci. Un nouveau projet retire les photos et les paramètres de celui-ci ; les fichiers restent sur votre PC.</value>
+    <value>Ce projet contient {0} de photos. Ajoutez-y les nouvelles photos, ou commencez un nouveau projet avec seulement celles-ci. Le nouveau projet remplace celui-ci, ses photos et ses paramètres ; les fichiers restent sur votre PC.</value>
   </data>
   <data name="DropAddToProject" xml:space="preserve">
     <value>Ajouter au projet</value>
