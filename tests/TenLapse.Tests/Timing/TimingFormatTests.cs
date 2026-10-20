@@ -147,6 +147,24 @@ public sealed class TimingFormatTests
         Assert.Equal(string.Format(invariant, TimingWords.SecondsFormat, "24.7"), TimingFormat.Duration(247 * Second / 10));
     }
 
+    [Fact]
+    public void WithoutACultureTheCurrentCultureWritesTheNumbers()
+    {
+        var before = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("de-DE");
+            Assert.Equal("24,7 s", TimingFormat.Duration(247 * Second / 10));
+            Assert.Equal("29,97 fps", TimingFormat.FrameRate(new Fraction(30000, 1001)));
+            Assert.Equal("0,25", TimingFormat.Decimal(new Fraction(1, 4)));
+            Assert.Equal("0.25", TimingFormat.Decimal(new Fraction(1, 4), System.Globalization.CultureInfo.InvariantCulture));
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = before;
+        }
+    }
+
     [Theory]
     [InlineData(30, 1, "30 s")]
     [InlineData(1, 4, "0.25 s")]

@@ -174,7 +174,7 @@ public static class TimingInput
         }
 
         var typed = decimal.TryParse(body.Replace(',', '.'), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number);
-        return !typed || number != decimal.Parse(TimingFormat.Decimal(value), CultureInfo.InvariantCulture);
+        return !typed || number != decimal.Parse(TimingFormat.Decimal(value, CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
     }
 
     // One separator followed by exactly three digits after a non-zero whole part ("1,000", "1.000", "12.345") reads as a thousands

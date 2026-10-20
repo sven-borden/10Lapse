@@ -5,8 +5,9 @@ namespace TenLapse.Core.Timing;
 /// <summary>
 /// The text of the speed readout ("742 photos → 24.7 s at 30 fps"): durations and frame-rate labels. The words are
 /// whole format strings from <see cref="TimingWords"/> (#114); the numbers are written with the decimal separator of the
-/// culture each method is given, the invariant culture (a dot) when none is. Callers that show the text pass the
-/// user's culture. <see cref="Timecode"/> alone is invariant on purpose.
+/// culture each method is given, the current culture when none is, as the other display formatters do. A caller that
+/// needs the invariant dot (to read the digits back) passes the invariant culture. <see cref="Timecode"/> alone is
+/// invariant on purpose.
 /// </summary>
 public static class TimingFormat
 {
@@ -20,7 +21,7 @@ public static class TimingFormat
     /// never "60.0 s", and 3599.5 s reads "1 h 00 min".
     /// </summary>
     /// <param name="ticks">The length in 100 ns ticks.</param>
-    /// <param name="culture">The culture whose decimal separator is used; the invariant culture (a dot) when null.</param>
+    /// <param name="culture">The culture whose decimal separator is used; the current culture when null.</param>
     public static string Duration(long ticks, CultureInfo? culture = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(ticks);
@@ -47,7 +48,7 @@ public static class TimingFormat
     /// in the Timing panel's sentences.
     /// </summary>
     /// <param name="seconds">A positive number of seconds.</param>
-    /// <param name="culture">The culture whose decimal separator is used; the invariant culture (a dot) when null.</param>
+    /// <param name="culture">The culture whose decimal separator is used; the current culture when null.</param>
     public static string Seconds(Fraction seconds, CultureInfo? culture = null)
     {
         RequirePositive(seconds);
@@ -56,7 +57,7 @@ public static class TimingFormat
 
     /// <summary>Whole seconds as a label, zero included: "0 s", "60 s" (the ends of the length bar).</summary>
     /// <param name="seconds">Zero or more whole seconds.</param>
-    /// <param name="culture">The culture of the digits; the invariant culture when null.</param>
+    /// <param name="culture">The culture of the digits; the current culture when null.</param>
     public static string WholeSeconds(long seconds, CultureInfo? culture = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(seconds);
@@ -68,7 +69,7 @@ public static class TimingFormat
     /// uses <see cref="FrameRate"/>, which says the per-photo form below 1 fps.
     /// </summary>
     /// <param name="rate">A positive rate.</param>
-    /// <param name="culture">The culture whose decimal separator is used; the invariant culture (a dot) when null.</param>
+    /// <param name="culture">The culture whose decimal separator is used; the current culture when null.</param>
     public static string FramesPerSecond(Fraction rate, CultureInfo? culture = null)
     {
         RequirePositive(rate);
@@ -96,7 +97,7 @@ public static class TimingFormat
     /// zeros dropped) from 1 fps up, and the per-photo form "2 s per photo" below 1 fps.
     /// </summary>
     /// <param name="rate">A positive rate.</param>
-    /// <param name="culture">The culture whose decimal separator is used; the invariant culture (a dot) when null.</param>
+    /// <param name="culture">The culture whose decimal separator is used; the current culture when null.</param>
     public static string FrameRate(Fraction rate, CultureInfo? culture = null)
     {
         RequirePositive(rate);
@@ -110,7 +111,7 @@ public static class TimingFormat
     /// disagree.
     /// </summary>
     /// <param name="value">A positive value.</param>
-    /// <param name="culture">The culture whose decimal separator is used; the invariant culture (a dot) when null.</param>
+    /// <param name="culture">The culture whose decimal separator is used; the current culture when null.</param>
     public static string Decimal(Fraction value, CultureInfo? culture = null)
     {
         RequirePositive(value);
@@ -124,7 +125,7 @@ public static class TimingFormat
     /// Trailing zeros are dropped.
     /// </summary>
     /// <param name="rate">A positive rate.</param>
-    /// <param name="culture">The culture whose decimal separator is used; the invariant culture (a dot) when null.</param>
+    /// <param name="culture">The culture whose decimal separator is used; the current culture when null.</param>
     public static string SecondsPerPhoto(Fraction rate, CultureInfo? culture = null)
     {
         RequirePositive(rate);
@@ -136,7 +137,7 @@ public static class TimingFormat
 
     // A format of TimingWords filled with numbers already written as text.
     private static string Fill(CultureInfo? culture, string format, params object[] numbers) =>
-        string.Format(culture ?? CultureInfo.InvariantCulture, format, numbers);
+        string.Format(culture ?? CultureInfo.CurrentCulture, format, numbers);
 
     /// <summary><c>numerator / denominator</c> (below 0.1) rounded half up to three significant figures, trailing zeros dropped.</summary>
     private static string ThreeSignificant(long numerator, long denominator)
@@ -157,7 +158,7 @@ public static class TimingFormat
         return text.EndsWith('.') ? text[..^1] : text;
     }
 
-    private static string Separator(CultureInfo? culture) => culture?.NumberFormat.NumberDecimalSeparator ?? ".";
+    private static string Separator(CultureInfo? culture) => (culture ?? CultureInfo.CurrentCulture).NumberFormat.NumberDecimalSeparator;
 
     // Swaps the invariant dot of a formatted number for the culture's decimal separator.
     private static string Localized(string text, CultureInfo? culture)
