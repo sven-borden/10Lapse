@@ -32,7 +32,7 @@ Cómo funciona
 4. Exporta un MP4 en 720p, 1080p, 1440p o 4K, en H.264, o en HEVC si el equipo puede codificarlo y reproducirlo. La vista previa dibuja cada fotograma con el mismo código que la exportación, así que el video se ve igual que la vista previa.
 
 Edición y exportación
-- Recorre la secuencia, avanza fotograma a fotograma, y quita una foto movida o arrástrala a su sitio. Ctrl+Z la restaura. Quitar una foto la saca del video, nunca de tu disco.
+- Recorre la secuencia, avanza fotograma a fotograma, y quita una foto borrosa (Ctrl+Z la devuelve) o arrastra otra a su sitio. Quitar una foto la saca del video, nunca de tu disco.
 - Las marcas de la tira de fotogramas muestran dónde parece que faltan fotos.
 - Las velocidades de fotogramas son exactas, 29,97 incluida, de 0,1 a 120 fotogramas por segundo.
 - El panel Salida calcula el tamaño del archivo antes de exportar.

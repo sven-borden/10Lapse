@@ -454,19 +454,19 @@
     <value>Tamaño de las miniaturas</value>
   </data>
   <data name="FilmstripRemovedFrames_one" xml:space="preserve">
-    <value>Se quitó {0} fotograma del proyecto. La foto sigue en tu equipo. {1} lo restaura.</value>
+    <value>Se quitó {0} fotograma del proyecto. La foto sigue en tu equipo. {1} lo devuelve al proyecto.</value>
   </data>
   <data name="FilmstripRemovedFrames_other" xml:space="preserve">
-    <value>Se quitaron {0} fotogramas del proyecto. Las fotos siguen en tu equipo. {1} los restaura.</value>
+    <value>Se quitaron {0} fotogramas del proyecto. Las fotos siguen en tu equipo. {1} los devuelve al proyecto.</value>
   </data>
   <data name="FilmstripRestoredFrames_one" xml:space="preserve">
-    <value>Se restauró {0} fotograma.</value>
+    <value>Se devolvió {0} fotograma al proyecto.</value>
   </data>
   <data name="FilmstripRestoredFrames_other" xml:space="preserve">
-    <value>Se restauraron {0} fotogramas.</value>
+    <value>Se devolvieron {0} fotogramas al proyecto.</value>
   </data>
   <data name="FilmstripRestoredNone" xml:space="preserve">
-    <value>Nada que restaurar: esas fotos vuelven a estar en el proyecto.</value>
+    <value>Nada que devolver: esas fotos ya están otra vez en el proyecto.</value>
   </data>
   <data name="FilmstripUndoRemove_one" xml:space="preserve">
     <value>Deshacer: quitar {0} fotograma</value>
