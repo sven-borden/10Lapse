@@ -79,12 +79,14 @@ public sealed class KeyboardTests
     [InlineData(ShellScreen.Settings, ShellScreen.Editing, true, FocusTarget.SettingsButton)]
     [InlineData(ShellScreen.Empty, ShellScreen.Editing, true, FocusTarget.Play)]
     [InlineData(ShellScreen.Editing, ShellScreen.Empty, true, FocusTarget.ChooseFolder)]
+
+    // An InfoBar's Dismiss or the command bar still had the focus after New project's question (#38 review, M2).
+    [InlineData(ShellScreen.Editing, ShellScreen.Empty, false, FocusTarget.ChooseFolder)]
     public void AScreenChangePutsTheFocusOnItsNextStep(ShellScreen from, ShellScreen to, bool focusLost, FocusTarget expected) =>
         Assert.Equal(expected, FocusTargets.AfterScreenChange(from, to, focusLost));
 
     [Theory]
     [InlineData(ShellScreen.Empty, ShellScreen.Editing)]
-    [InlineData(ShellScreen.Editing, ShellScreen.Empty)]
     [InlineData(ShellScreen.Editing, ShellScreen.Editing)]
     public void AFocusTheChangeDidNotTakeAwayStays(ShellScreen from, ShellScreen to) =>
         Assert.Equal(FocusTarget.Keep, FocusTargets.AfterScreenChange(from, to, focusLost: false));

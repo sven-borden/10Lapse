@@ -377,8 +377,8 @@ public sealed partial class ShellView : UserControl
     }
 
     // Focus after a screen change (FocusTargets, #38), so the keyboard and a screen reader stay where the user goes on:
-    // opening Settings puts it on Back and leaving on the Settings button; the first photos landing put it on Play and New
-    // project on Choose folder, but only when the change took the focus away (a control still on screen keeps it). After
+    // opening Settings puts it on Back and leaving on the Settings button; New project on Choose folder; the first photos
+    // landing put it on Play, but only when the change took the focus away (a control still on screen keeps it). After
     // the state change has shown the target.
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

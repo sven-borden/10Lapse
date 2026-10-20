@@ -66,9 +66,13 @@ public static class FocusTargets
         (_, ShellScreen.Settings) => FocusTarget.Back,
         (ShellScreen.Settings, _) => FocusTarget.SettingsButton,
 
-        // The first photos arrived: the preview is what to look at next. A new project: choose the next photos.
+        // The first photos arrived: the preview is what to look at next, unless the focus is still on screen (the
+        // import's Cancel).
         (ShellScreen.Empty, ShellScreen.Editing) when focusLost => FocusTarget.Play,
-        (ShellScreen.Editing, ShellScreen.Empty) when focusLost => FocusTarget.ChooseFolder,
+
+        // A new project: choose the next photos, always. The focus the New project question hands back can sit on an
+        // InfoBar's button or in the command bar, where Enter would act on something unrelated.
+        (ShellScreen.Editing, ShellScreen.Empty) => FocusTarget.ChooseFolder,
         _ => FocusTarget.Keep,
     };
 
