@@ -252,41 +252,13 @@ public sealed partial class FilmstripView : UserControl
         ViewModel = null;
     }
 
-    /// <summary>The realized thumbnails that show an item, in playback order.</summary>
+    /// <summary>
+    /// The realized thumbnails that show an item, in playback order: UI Automation's children, also the ones the repeater
+    /// keeps realized outside the viewport (they read as off screen, with no clickable point, so Narrator's scan mode
+    /// reads on past the viewport's edge and the selection holds every realized selected frame).
+    /// </summary>
     internal IEnumerable<FilmstripThumb> RealizedThumbs() =>
         _realized.Values.Where(thumb => thumb.Item is not null).OrderBy(thumb => thumb.Item!.Number);
-
-    /// <summary>
-    /// UI Automation's children (#38): the realized thumbnails inside the scroller's viewport, and the focused one wherever it
-    /// is. The repeater keeps a few more realized either side and re-uses them as the strip scrolls (an export scrolls it
-    /// all the time); one of those, still at its old place or waiting for its new one, would read as off screen with a
-    /// clickable point on screen, which Accessibility Insights fails. The Scroll pattern brings the rest in.
-    /// </summary>
-    internal IEnumerable<FilmstripThumb> ThumbsOnScreen()
-    {
-        var focused = XamlRoot is { } root ? FocusManager.GetFocusedElement(root) : null;
-        var viewport = new Rect(0, 0, Scroller.ViewportWidth, Scroller.ViewportHeight);
-        return RealizedThumbs().Where(thumb => ReferenceEquals(thumb, focused) || IsInViewport(thumb, viewport));
-    }
-
-    private bool IsInViewport(FilmstripThumb thumb, Rect viewport)
-    {
-        if (thumb.ActualWidth <= 0 || thumb.ActualHeight <= 0)
-        {
-            return false;
-        }
-
-        try
-        {
-            var bounds = thumb.TransformToVisual(Scroller).TransformBounds(new Rect(0, 0, thumb.ActualWidth, thumb.ActualHeight));
-            return bounds.Right > viewport.Left && bounds.Left < viewport.Right;
-        }
-        catch (ArgumentException)
-        {
-            // Not in the scroller's tree (being taken out): not on screen.
-            return false;
-        }
-    }
 
     /// <summary>The list's automation peer.</summary>
     internal AutomationPeer ListPeer() =>

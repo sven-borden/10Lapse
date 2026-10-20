@@ -7,7 +7,7 @@ namespace TenLapse.Filmstrip;
 
 /// <summary>
 /// The filmstrip's list host (#20): the scroller, the repeater and the drag layer. To UI Automation it is the list itself,
-/// named "Filmstrip": its children are the thumbnails on screen in playback order (<see cref="FilmstripView.ThumbsOnScreen"/>),
+/// named "Filmstrip": its children are the realized thumbnails in playback order (<see cref="FilmstripView.RealizedThumbs"/>),
 /// its Selection pattern holds the selected ones among them, and its Scroll pattern is the scroller's. Narrator hears removals and undos through it.
 /// </summary>
 public sealed partial class FilmstripList : Grid
@@ -26,11 +26,11 @@ public sealed partial class FilmstripList : Grid
 
         public IRawElementProviderSimple[] GetSelection() =>
             owner.Strip is { } strip
-                ? [.. strip.ThumbsOnScreen().Where(thumb => thumb.Item?.IsSelected == true).Select(thumb => ProviderFromPeer(CreatePeerForElement(thumb)))]
+                ? [.. strip.RealizedThumbs().Where(thumb => thumb.Item?.IsSelected == true).Select(thumb => ProviderFromPeer(CreatePeerForElement(thumb)))]
                 : [];
 
         protected override IList<AutomationPeer> GetChildrenCore() =>
-            owner.Strip is { } strip ? [.. strip.ThumbsOnScreen().Select(CreatePeerForElement)] : [];
+            owner.Strip is { } strip ? [.. strip.RealizedThumbs().Select(CreatePeerForElement)] : [];
 
         protected override object? GetPatternCore(PatternInterface patternInterface) => patternInterface switch
         {
