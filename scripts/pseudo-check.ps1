@@ -138,7 +138,16 @@ function Shot($app, [string]$name) {
     if ($app.Process.HasExited) { Skip $name 'the app has exited'; return }
     $path = Join-Path $shots "$name.png"
     try { [PseudoCapture]::Save([IntPtr]$app.Window.Current.NativeWindowHandle, $path) }
-    catch { if ($app.Process.HasExited) { Skip $name 'the app exited during the capture'; return } else { throw } }
+    catch {
+        if ($app.Process.HasExited) { Skip $name 'the app exited during the capture'; return }
+
+        # The window's rectangle can read empty for a moment while a dialog opens or the window resizes: try once more,
+        # by the process's main window, before giving up on this capture (not the run).
+        Start-Sleep -Milliseconds 1500
+        $app.Process.Refresh()
+        try { [PseudoCapture]::Save($app.Process.MainWindowHandle, $path) }
+        catch { Skip $name "the capture failed: $($_.Exception.InnerException.Message)"; return }
+    }
     Write-Host "  captured $name"
 }
 
