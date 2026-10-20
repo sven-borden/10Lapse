@@ -4,6 +4,7 @@ using TenLapse.Presentation.Services;
 
 namespace TenLapse.Tests.Presentation;
 
+[UseCulture("en-US")]
 public sealed class SkippedFilesInfoBarTests
 {
     [Fact]

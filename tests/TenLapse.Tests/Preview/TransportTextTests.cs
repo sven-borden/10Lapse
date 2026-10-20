@@ -7,6 +7,7 @@ using TenLapse.Tests.Presentation;
 
 namespace TenLapse.Tests.Preview;
 
+[UseCulture("en-US")]
 public sealed class TransportTextTests
 {
     [Theory]
@@ -115,7 +116,7 @@ public sealed class TransportTextTests
     [Theory]
     [InlineData(312, 742, "0312 / 0742", "Frame 312 of 742")]
     [InlineData(1, 1, "0001 / 0001", "Frame 1 of 1")]
-    [InlineData(7, 12_345, "00007 / 12345", "Frame 7 of 12345")]
+    [InlineData(7, 12_345, "00007 / 12345", "Frame 7 of 12,345")]
     public void TheCounterIsZeroPaddedToTheTotal(int number, int total, string counter, string name)
     {
         Assert.Equal(counter, ProjectText.PreviewCounter(number, total));

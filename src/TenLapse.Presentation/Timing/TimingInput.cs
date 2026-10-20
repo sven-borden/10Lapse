@@ -199,6 +199,7 @@ public static class TimingInput
     // Rounds half up to the field's decimals. A value that is not already that precise is reported as rounded.
     private static (Reading Reading, Fraction Value, bool Rounded) KeepDecimals(TimingField field, Fraction value)
     {
+        // Not a plural: one decimal (tenths) or two (hundredths).
         var step = Decimals(field) == 1 ? 10 : 100;
         if (step % value.Denominator == 0)
         {

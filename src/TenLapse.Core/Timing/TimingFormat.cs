@@ -42,20 +42,25 @@ public static class TimingFormat
     }
 
     /// <summary>
-    /// A number of seconds as a label: "30 s", "0.25 s", "0 s" (up to two decimals, trailing zeros dropped, the decimal
-    /// separator of <paramref name="culture"/>). The Length and Per photo presets, the ends of the length bar, and a
-    /// typed length or time per photo in the Timing panel's sentences.
+    /// A number of seconds as a label: "30 s", "0.25 s" (up to two decimals, trailing zeros dropped, the decimal
+    /// separator of <paramref name="culture"/>). The Length and Per photo presets, and a typed length or time per photo
+    /// in the Timing panel's sentences.
     /// </summary>
-    /// <param name="seconds">Zero or more seconds.</param>
+    /// <param name="seconds">A positive number of seconds.</param>
     /// <param name="culture">The culture whose decimal separator is used; the invariant culture (a dot) when null.</param>
     public static string Seconds(Fraction seconds, CultureInfo? culture = null)
     {
-        if (seconds.Numerator < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(seconds), seconds, "A number of seconds cannot be negative.");
-        }
-
+        RequirePositive(seconds);
         return Fill(culture, TimingWords.SecondsFormat, Localized(Hundredths(seconds.Numerator, seconds.Denominator), culture));
+    }
+
+    /// <summary>Whole seconds as a label, zero included: "0 s", "60 s" (the ends of the length bar).</summary>
+    /// <param name="seconds">Zero or more whole seconds.</param>
+    /// <param name="culture">The culture of the digits; the invariant culture when null.</param>
+    public static string WholeSeconds(long seconds, CultureInfo? culture = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(seconds);
+        return Fill(culture, TimingWords.SecondsFormat, seconds);
     }
 
     /// <summary>
@@ -146,6 +151,7 @@ public static class TimingFormat
         }
 
         var scaled = (((Int128)numerator * scale * 2) + denominator) / (2 * (Int128)denominator);
+        // Invariant on purpose: digits only; Localized puts in the culture's decimal separator.
         var digits = ((long)scaled).ToString(CultureInfo.InvariantCulture).PadLeft(decimals + 1, '0');
         var text = $"{digits[..^decimals]}.{digits[^decimals..]}".TrimEnd('0');
         return text.EndsWith('.') ? text[..^1] : text;
@@ -178,6 +184,7 @@ public static class TimingFormat
         {
             0 => Number(whole),
             _ when fraction % 10 == 0 => $"{Number(whole)}.{Number(fraction / 10)}",
+            // Invariant on purpose: digits and a dot; Localized puts in the culture's decimal separator.
             _ => $"{Number(whole)}.{fraction.ToString("D2", CultureInfo.InvariantCulture)}",
         };
     }
@@ -186,7 +193,9 @@ public static class TimingFormat
     private static long DivideRounded(long value, long unit) =>
         (value / unit) + ((value % unit) * 2 >= unit ? 1 : 0);
 
+    // Invariant on purpose: ASCII digits without grouping (no length or rate here reaches a thousand units of its kind).
     private static string Number(long value) => value.ToString(CultureInfo.InvariantCulture);
 
+    // Invariant on purpose: two digits, as the minutes of "1 h 02 min" and a time code.
     private static string Two(long value) => value.ToString("D2", CultureInfo.InvariantCulture);
 }

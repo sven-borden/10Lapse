@@ -6,6 +6,7 @@ using TenLapse.Presentation.Services;
 namespace TenLapse.Tests.Import;
 
 /// <summary>#14 through the import: photos Windows cannot decode for want of an extension, and what the user is told.</summary>
+[UseCulture("en-US")]
 public sealed class ImportCodecExtensionTests
 {
     private static ScriptedImportSource Source(int heic, int broken, params PhotoCodecExtension[] needed)
@@ -36,7 +37,7 @@ public sealed class ImportCodecExtensionTests
         await harness.ImportAsync(@"C:\Scripted");
 
         var bar = Assert.Single(harness.InfoBars.Shown);
-        Assert.Equal("These 300 photos need the free HEIF Image Extensions from Microsoft.", bar.Message);
+        Assert.Equal("These 300 photos need the HEIF Image Extensions (free) from Microsoft.", bar.Message);
         Assert.Equal("Get it from the Store", bar.ActionLabel);
         Assert.Equal(300, harness.Project.SkippedFiles.Length);
         Assert.Single(harness.Project.Frames);
@@ -67,7 +68,7 @@ public sealed class ImportCodecExtensionTests
         await harness.ImportAsync(@"C:\Scripted");
 
         var bar = Assert.Single(harness.InfoBars.Shown);
-        Assert.Equal("These 12 photos need the HEVC Video Extensions from Microsoft, which costs a small fee.", bar.Message);
+        Assert.Equal("These 12 photos need the HEVC Video Extensions (small fee) from Microsoft.", bar.Message);
         Assert.Equal("Get it from the Store", bar.ActionLabel);
     }
 
@@ -83,7 +84,7 @@ public sealed class ImportCodecExtensionTests
         Assert.Equal("2 photos couldn't be read and were skipped.", list.Message);
         Assert.All(list.Details, detail => Assert.StartsWith("BAD_", detail.Text, StringComparison.Ordinal));
         var prompt = harness.InfoBars.Shown.Single(bar => !bar.HasDetails);
-        Assert.Equal("These 12 photos need the free HEIF Image Extensions from Microsoft.", prompt.Message);
+        Assert.Equal("These 12 photos need the HEIF Image Extensions (free) from Microsoft.", prompt.Message);
     }
 
     [Fact]
@@ -116,7 +117,7 @@ public sealed class ImportCodecExtensionTests
 
         var bar = Assert.Single(harness.InfoBars.Shown);
         Assert.Equal(
-            "These 8 photos need two extensions from Microsoft: the free HEIF Image Extensions, then the HEVC Video Extensions (a small fee).",
+            "These 8 photos need 2 extensions from Microsoft. Start with the HEIF Image Extensions (free).",
             bar.Message);
     }
 

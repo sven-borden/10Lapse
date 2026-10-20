@@ -6,6 +6,7 @@ using TenLapse.Tests.Projects;
 
 namespace TenLapse.Tests.Presentation;
 
+[UseCulture("en-US")]
 public sealed class ShellViewModelTests
 {
     [Fact]

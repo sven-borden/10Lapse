@@ -7,6 +7,7 @@ using TenLapse.Tests.Projects;
 
 namespace TenLapse.Tests.Presentation;
 
+[UseCulture("en-US")]
 public sealed class FilmstripViewModelTests
 {
     private long _now;
@@ -602,7 +603,8 @@ public sealed class FilmstripViewModelTests
         var player = new PlayerViewModel(shell, new FakeErrorSink(), () => _now, 1000);
         using var strip = new FilmstripViewModel(shell, player, new FakeErrorSink());
 
-        Assert.Equal("IMG_0312.JPG · 19:26:05", strip.FileText);
+        // The capture time in the regional long time format (#114): 24-hour in most of Europe, "7:26:05 PM" in en-US.
+        Assert.Equal($"IMG_0312.JPG · {new DateTime(2026, 6, 21, 19, 26, 5).ToString("T", System.Globalization.CultureInfo.CurrentCulture)}", strip.FileText);
         Assert.Equal("Frame 0001 of 0001", strip.CaptionText);
     }
 

@@ -148,7 +148,6 @@ public sealed class TimingFormatTests
     }
 
     [Theory]
-    [InlineData(0, 1, "0 s")]
     [InlineData(30, 1, "30 s")]
     [InlineData(1, 4, "0.25 s")]
     [InlineData(1, 2, "0.5 s")]
@@ -163,7 +162,9 @@ public sealed class TimingFormatTests
     {
         Assert.Equal("0.5 fps", TimingFormat.FramesPerSecond(new Fraction(1, 2)));
         Assert.Equal("29,97 fps", TimingFormat.FramesPerSecond(new Fraction(30000, 1001), System.Globalization.CultureInfo.GetCultureInfo("de-DE")));
-        Assert.Throws<ArgumentOutOfRangeException>(() => TimingFormat.Seconds(new Fraction(-1, 1)));
+        Assert.Equal("0 s", TimingFormat.WholeSeconds(0));
+        Assert.Equal("60 s", TimingFormat.WholeSeconds(60, System.Globalization.CultureInfo.GetCultureInfo("de-DE")));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TimingFormat.WholeSeconds(-1));
     }
 
     [Fact]

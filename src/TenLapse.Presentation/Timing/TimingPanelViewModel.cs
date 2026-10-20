@@ -145,13 +145,13 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
     };
 
     /// <summary>The length bar's left end, "0 s", in the panel's culture.</summary>
-    public string BarStart => TimingFormat.Seconds(new Fraction(0, 1), Culture);
+    public string BarStart => TimingFormat.WholeSeconds(0, Culture);
 
     /// <summary>The length bar's middle, "30 s": half a minute.</summary>
-    public string BarMiddle => TimingFormat.Seconds(new Fraction((long)BarSeconds / 2, 1), Culture);
+    public string BarMiddle => TimingFormat.WholeSeconds((long)BarSeconds / 2, Culture);
 
     /// <summary>The length bar's right end, "60 s": a minute, the longest video it shows.</summary>
-    public string BarEnd => TimingFormat.Seconds(new Fraction((long)BarSeconds, 1), Culture);
+    public string BarEnd => TimingFormat.WholeSeconds((long)BarSeconds, Culture);
 
     /// <summary>The mode's value as the box shows it, in the user's culture ("29,97" in German): the stored value, never the typed text.</summary>
     public string ValueText => _valueText;

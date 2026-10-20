@@ -10,9 +10,10 @@ using TenLapse.Presentation;
 namespace TenLapse.Tests.Presentation;
 
 /// <summary>
-/// The resource files behind the text classes (#39): every property reads a string that exists, every string in a
-/// file is read by a property, every sentence still formats (also pseudo-localized), and pseudo-localization keeps
-/// the placeholders. The English words themselves are pinned by each panel's own tests.
+/// The resource files behind the text classes (#39, #114): every property reads a string that exists, every string in a
+/// file is read by a property (a plural family <c>X_one</c>/<c>X_other</c> by a <see cref="PluralText"/> property
+/// <c>X</c>), every sentence still formats (in the invariant and in a German culture, also pseudo-localized), and
+/// pseudo-localization keeps the placeholders. The English words themselves are pinned by each panel's own tests.
 /// </summary>
 public sealed partial class TextResourcesTests
 {
@@ -20,7 +21,7 @@ public sealed partial class TextResourcesTests
 
     [Fact]
     public void EveryTextClassIsFound() =>
-        Assert.True(Holders().Count >= 9, "Found: " + string.Join(", ", Holders().Select(holder => holder.Resources.BaseName)));
+        Assert.True(Holders().Count >= 10, "Found: " + string.Join(", ", Holders().Select(holder => holder.Resources.BaseName)));
 
     [Theory]
     [MemberData(nameof(Files))]
@@ -32,6 +33,14 @@ public sealed partial class TextResourcesTests
             var value = (string?)property.GetValue(null);
             Assert.False(string.IsNullOrEmpty(value), $"{property.DeclaringType!.Name}.{property.Name} is empty.");
         }
+
+        foreach (var property in holder.Readers.SelectMany(PluralProperties))
+        {
+            var plural = (PluralText)property.GetValue(null)!;
+            Assert.Equal(property.Name, plural.Key);
+            Assert.False(string.IsNullOrEmpty(plural.For(1)), $"{property.Name} has no form for 1.");
+            Assert.False(string.IsNullOrEmpty(plural.For(2)), $"{property.Name} has no form for 2.");
+        }
     }
 
     [Theory]
@@ -40,12 +49,39 @@ public sealed partial class TextResourcesTests
     {
         var holder = Holder(baseName);
         var properties = holder.Readers.SelectMany(StringProperties).ToDictionary(property => property.Name, StringComparer.Ordinal);
+        var plurals = holder.Readers.SelectMany(PluralProperties).ToDictionary(property => property.Name, StringComparer.Ordinal);
         var keys = holder.Resources.Keys();
         Assert.NotEmpty(keys);
         foreach (var key in keys)
         {
+            if (PluralKey().Match(key) is { Success: true } plural)
+            {
+                Assert.True(plurals.ContainsKey(plural.Groups["family"].Value), $"{baseName}.resx has {key}, which no PluralText property reads.");
+                continue;
+            }
+
             Assert.True(properties.TryGetValue(key, out var property), $"{baseName}.resx has {key}, which no property reads.");
             Assert.Equal(holder.Resources.Get(key), (string?)property.GetValue(null));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Files))]
+    public void EveryPluralFamilyHasItsOtherFormAndEnglishHasNoMany(string baseName)
+    {
+        var holder = Holder(baseName);
+        var keys = holder.Resources.Keys().ToHashSet(StringComparer.Ordinal);
+        foreach (var property in holder.Readers.SelectMany(PluralProperties))
+        {
+            Assert.Contains(property.Name + "_other", keys);
+            Assert.DoesNotContain(property.Name + "_many", keys);
+
+            // The one form says nothing the other form does not: its placeholders are among the other form's.
+            if (keys.Contains(property.Name + "_one"))
+            {
+                var other = Placeholders(holder.Resources.Get(property.Name + "_other")).ToHashSet();
+                Assert.All(Placeholders(holder.Resources.Get(property.Name + "_one")), index => Assert.Contains(index, other));
+            }
         }
     }
 
@@ -57,12 +93,15 @@ public sealed partial class TextResourcesTests
         foreach (var key in holder.Resources.Keys())
         {
             var value = holder.Resources.Get(key);
-            var arguments = Enumerable.Range(0, Placeholders(value).DefaultIfEmpty(-1).Max() + 1).Select(index => (object)(index + 1)).ToArray();
+            var arguments = Enumerable.Range(0, Placeholders(value).DefaultIfEmpty(-1).Max() + 1).Select(index => (object)(1234.5 + index)).ToArray();
             var pseudo = PseudoLocalization.Apply(value);
 
             Assert.Equal(Placeholders(value).Order(), Placeholders(pseudo).Order());
-            _ = string.Format(CultureInfo.InvariantCulture, value, arguments);
-            _ = string.Format(CultureInfo.InvariantCulture, pseudo, arguments);
+            foreach (var culture in new[] { CultureInfo.InvariantCulture, CultureInfo.CurrentCulture, CultureInfo.GetCultureInfo("de-DE") })
+            {
+                _ = string.Format(culture, value, arguments);
+                _ = string.Format(culture, pseudo, arguments);
+            }
         }
     }
 
@@ -72,12 +111,38 @@ public sealed partial class TextResourcesTests
         var resources = new TextResources("TenLapse.Presentation.Strings.ProjectText", typeof(ProjectText).Assembly);
         var exception = Assert.Throws<System.Resources.MissingManifestResourceException>(() => resources.Get("NoSuchString"));
         Assert.Contains("ProjectText.resx", exception.Message, StringComparison.Ordinal);
+        Assert.Throws<System.Resources.MissingManifestResourceException>(() => resources.Plural("NoSuchFamily").For(2));
     }
 
     [Fact]
-    public void PseudoLocalizationAccentsBracketsAndLengthens()
+    public void APluralFamilyFallsBackToItsOtherForm()
     {
-        Assert.Equal("[Åðð þĥöţöš !]", PseudoLocalization.Apply("Add photos"));
+        var before = CultureInfo.CurrentUICulture;
+        try
+        {
+            // French has a "many" form for exact millions; the English file has none, so the other form is used.
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr-FR");
+            Assert.Equal(ProjectText.ImportDone.For(2), ProjectText.ImportDone.For(1_000_000));
+
+            // French puts 0 in "one".
+            Assert.Equal(ProjectText.ImportDone.For(1), ProjectText.ImportDone.For(0));
+
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+            Assert.Equal("{0} photo in the project.", ProjectText.ImportDone.For(1));
+            Assert.Equal("{0} photos in the project.", ProjectText.ImportDone.For(0));
+            Assert.Equal("{0} photos per second", TenLapse.Presentation.Export.ExportText.SpeedPhotos.For(1.0m));
+            Assert.Equal("{0} photo per second", TenLapse.Presentation.Export.ExportText.SpeedPhotos.For(1m));
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = before;
+        }
+    }
+
+    [Fact]
+    public void PseudoLocalizationAccentsBracketsAndLengthensShortTextMost()
+    {
+        Assert.Equal("[Åðð þĥöţöš !!!!!]", PseudoLocalization.Apply("Add photos"));
         Assert.Equal(string.Empty, PseudoLocalization.Apply(string.Empty));
 
         var sentence = ProjectText.DiagnosticsCardCaption;
@@ -86,6 +151,13 @@ public sealed partial class TextResourcesTests
         Assert.EndsWith("]", pseudo, StringComparison.Ordinal);
         Assert.InRange(pseudo.Length, sentence.Length * 1.39, sentence.Length * 1.45);
         Assert.DoesNotContain(pseudo, char.IsAsciiLetter);
+
+        // A label doubles, a short phrase grows by more than half.
+        Assert.InRange(PseudoLocalization.Apply("Fill").Length, 8, 10);
+        Assert.InRange(PseudoLocalization.Apply("Per second").Length / 10.0, 1.75, 1.9);
+        Assert.InRange(PseudoLocalization.Apply("Stop adding photos").Length / 18.0, 1.55, 1.7);
+        Assert.True(PseudoLocalization.Growth(3) > PseudoLocalization.Growth(15));
+        Assert.True(PseudoLocalization.Growth(15) > PseudoLocalization.Growth(200));
     }
 
     [Theory]
@@ -102,7 +174,7 @@ public sealed partial class TextResourcesTests
         }
 
         Assert.Contains("→", PseudoLocalization.Apply("{0} → {1}"), StringComparison.Ordinal);
-        Assert.Equal("[{{ţ}} !]", PseudoLocalization.Apply("{{t}}"));
+        Assert.StartsWith("[{{ţ}} !", PseudoLocalization.Apply("{{t}}"), StringComparison.Ordinal);
     }
 
     private static IEnumerable<int> Placeholders(string format) =>
@@ -112,8 +184,15 @@ public sealed partial class TextResourcesTests
     [GeneratedRegex(@"(?<!\{)\{(\d+)(?:[,:][^}]*)?\}")]
     private static partial Regex Placeholder();
 
+    // A plural family's form: X_one, X_many, X_other.
+    [GeneratedRegex(@"^(?<family>\w+?)_(?:one|many|other)$")]
+    private static partial Regex PluralKey();
+
     private static IEnumerable<PropertyInfo> StringProperties(Type type) =>
         type.GetProperties(BindingFlags.Public | BindingFlags.Static).Where(property => property.PropertyType == typeof(string) && property.GetIndexParameters().Length == 0);
+
+    private static IEnumerable<PropertyInfo> PluralProperties(Type type) =>
+        type.GetProperties(BindingFlags.Public | BindingFlags.Static).Where(property => property.PropertyType == typeof(PluralText));
 
     private static (TextResources Resources, Type[] Readers) Holder(string baseName) =>
         Holders().Single(holder => holder.Resources.BaseName == baseName);

@@ -878,7 +878,7 @@ public static class ProjectText
     /// <summary>A thumbnail's name for Narrator. {0} the frame number from 1, not padded ("312"), {1} the file name ("IMG_0312.JPG").</summary>
     public static string FilmstripItemNameFormat => _strings.Get();
 
-    /// <summary>The caption with several frames selected. {0} the frame caption ("Frame 0312 of 0742"), {1} how many are selected, 2 or more ("3").</summary>
+    /// <summary>The caption with several frames selected. {0} how many are selected, 2 or more ("3"), {1} the frame caption ("Frame 0312 of 0742").</summary>
     public static PluralText FilmstripCaptionSelected => _strings.Plural();
 
     /// <summary>The file caption with a capture time. {0} the file name, {1} the time the photo was taken, in the user's time format ("19:26:05").</summary>

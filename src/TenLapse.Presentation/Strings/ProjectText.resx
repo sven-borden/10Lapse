@@ -540,15 +540,15 @@
     <comment>A thumbnail's name for a screen reader. {0} its frame number from 1, not padded ("312"), {1} the photo's file name ("IMG_0312.JPG").</comment>
   </data>
   <data name="FilmstripCaptionSelected_other" xml:space="preserve">
-    <value>{0} · {1} selected</value>
-    <comment>The caption over the filmstrip with several frames selected. {0} the frame caption (FrameOfTotal, "Frame 0312 of 0742"), {1} how many frames are selected, always 2 or more ("3"), so English has no _one form.</comment>
+    <value>{1} · {0} selected</value>
+    <comment>The caption over the filmstrip with several frames selected. {0} how many frames are selected, always 2 or more ("3"), so English has no _one form; {1} the frame caption (FrameOfTotal, "Frame 0312 of 0742").</comment>
   </data>
   <data name="FilmstripFileTimeFormat" xml:space="preserve">
     <value>{0} · {1}</value>
     <comment>The file caption over the filmstrip. {0} the file name, {1} the time the photo was taken, in your regional time format ("19:26:05").</comment>
   </data>
   <data name="FilmstripGapMissing_one" xml:space="preserve">
-    <value>{0} photo seems to be missing before this one: the file numbers skip {0}.</value>
+    <value>{0} photo seems to be missing before this one: the file numbers skip one.</value>
     <comment>A gap marker's tooltip in the filmstrip (also read by a screen reader). {0} how many file numbers are skipped ("1").</comment>
   </data>
   <data name="FilmstripGapMissing_other" xml:space="preserve">

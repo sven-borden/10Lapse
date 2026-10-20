@@ -371,4 +371,33 @@ public sealed class TimingInputTests
             }
         }
     }
+
+    [Theory]
+    [InlineData("30 fps", 30, 1)]
+    [InlineData("30fps", 30, 1)]
+    [InlineData("30 FPS", 30, 1)]
+    [InlineData("３０", 30, 1)]
+    [InlineData("２９．９７ ｆｐｓ", 30000, 1001)]
+    [InlineData("24,5 fps", 49, 2)]
+    public void TheEnglishUnitAndFullWidthDigitsAreReadInEveryLanguage(string text, long numerator, long denominator)
+    {
+        foreach (var culture in new[] { _en, _de, _fr })
+        {
+            var entry = Fps(text, culture);
+            Assert.True(entry.IsValid, $"{text} in {culture.Name}: {entry.Message}");
+            Assert.Equal(new Fraction(numerator, denominator), entry.Value);
+        }
+
+        Assert.Equal(new Fraction(90, 1), Length("1：30").Value);
+        Assert.Equal(new Fraction(2, 1), Length("2 s").Value);
+        Assert.Equal(new Fraction(1, 2), Photo("０.5s").Value);
+    }
+
+    [Fact]
+    public void TheUnitShownAfterTheBoxIsTheUnitTheBoxReads()
+    {
+        // The label after the box and the unit typed come from the same string, so they cannot disagree (#114).
+        Assert.Equal(new Fraction(30, 1), Fps("30 " + TimingWords.FramesPerSecond).Value);
+        Assert.Equal(new Fraction(45, 1), Length("45 " + TimingWords.Second).Value);
+    }
 }

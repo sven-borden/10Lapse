@@ -23,7 +23,7 @@ internal static class StartupFailure
     {
         try
         {
-            var text = string.Format(CultureInfo.InvariantCulture, ProjectText.StartupFailed, logFolder);
+            var text = string.Format(CultureInfo.CurrentCulture, ProjectText.StartupFailed, logFolder);
             _ = MessageBoxW(IntPtr.Zero, text, Product.Name, MbOk | MbIconError);
         }
         catch (Exception)
