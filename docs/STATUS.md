@@ -30,13 +30,11 @@ a time.
 Nothing blocks the build loop.
 
 - After certification: #44 rollout (gradual or not, answer the existing
-  reviews, the `v3.0.0` tag). **Open: the 2.1.1 packages were removed from
-  submission 4**, so Windows 10 has no package: existing 2.1.1 installs stay
-  but get no update, new Windows 10 customers cannot get the app, and the
-  listing text (all six languages) still says the Store offers 2.1.1 there.
-  Decide: put a Windows 10 package back (a rebuilt 2.1.1 would need a version
-  above the published one) or accept Windows 11 only and fix the listing text.
-  Also check what the mandatory-update and gradual-rollout boxes say.
+  reviews, the `v3.0.0` tag). The submitted listing text (all six
+  languages) still has the sentence that Windows 10 keeps 2.1.1; the
+  `listing*.md` files no longer do. Fix it in the first listing update, with
+  no resubmission just for that. Also check what the mandatory-update and
+  gradual-rollout boxes say.
 - A native read of the fr, de, es, it and pt-BR texts where he can; whether
   Portugal gets a pt-PT listing reusing the pt-BR text (else it may show
   English); a real-timelapse trailer later (#43's original brief).
@@ -53,8 +51,8 @@ Nothing blocks the build loop.
   package, which the Store installs with the app; it is not self-contained.
   Debug builds run unpackaged for local checks.
 - 2026-10-19 (Sven, #2): Windows 11 only (minimum 10.0.22000.0, #96), x64 and
-  ARM64, no x86; Windows 10 devices were to keep 2.1.1, but the 2.1.1
-  packages were removed from submission 4 (2026-10-21, see Owner items).
+  ARM64, no x86. The plan was that Windows 10 devices keep 2.1.1; see the
+  2026-10-21 entry below.
 - 2026-10-20 (Sven, reverses "English only in 3.0" from #2): 3.0 ships in
   en-US, fr, de, es, it and pt-BR, built before the flight. Neutral cultures
   serve every region; pt-BR is regional (pt-PT maps to it). The 2026-10-20
@@ -154,6 +152,11 @@ Nothing blocks the build loop.
   #42 and #43 completed. The showreel is the trailer (a real-timelapse trailer
   can follow in a listing update); its thumbnail and six captions are in
   `docs/store/showreel/`. `flight.md` stays as the recipe for a later flight.
+- 2026-10-21 (Sven): Windows 10 is not supported. The 2.1.1 packages were
+  removed from submission 4, so a Windows 10 PC that has 2.1.1 keeps it with no
+  updates and a new Windows 10 customer cannot get the app. Accepted
+  (Windows 10 support ended 2025-10-14). This replaces "Windows 10 devices
+  keep 2.1.1" (#2, 2026-10-19).
 - 2026-10-20 (Sven, #42): the Store screenshots use the generated sample
   photos (`scripts/store-screenshots.ps1`, "more polished"), not a real shoot.
 - 2026-10-20 (Sven): videos under `docs/` are stored in Git LFS (`.gitattributes`). GitHub Free includes 10 GB of

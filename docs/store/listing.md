@@ -11,13 +11,15 @@ and the [Store Policies](https://learn.microsoft.com/en-us/windows/apps/publish/
 **verify** is not on those pages; check it against the form. Lengths count characters as Partner Center does, a line
 break as one. Copy each field from inside its box: the boxes are plain text, without Markdown.
 
+The Windows 10 sentence of the first submission ("the Store offers 2.1.1") is gone from this file: Windows 10 is not supported (2026-10-21). The submitted listings still have it; drop it in the next listing update.
+
 The text says only what 3.0 does. Not in 3.0, so not in the listing: music or sound, deflicker, stabilization, GIF
 output, saving a project, a watch folder, 8K, a sample sequence (#30). Those belong to 3.1 issues; add them here when
 they ship.
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,606.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,541.
 
 ```text
 Turn a folder of photos into a smooth timelapse video, up to 4K.
@@ -43,7 +45,7 @@ Private by design
 10Lapse works offline. There is no account, no analytics and no network access: your photos and videos never leave your PC.
 
 Made for Windows 11
-10Lapse 3.0 needs Windows 11 on an x64 or ARM64 PC; on Windows 10, the Store offers the older 10Lapse 2.1.1 instead. Light, dark and high contrast themes follow Windows, and so do animations. Everything works from the keyboard, and screen readers announce every control and the export's progress.
+10Lapse 3.0 needs Windows 11 on an x64 or ARM64 PC. Light, dark and high contrast themes follow Windows, and so do animations. Everything works from the keyboard, and screen readers announce every control and the export's progress.
 
 Optional extensions from the Microsoft Store add more photo formats: HEIC photos need HEIF Image Extension (free) and HEVC Video Extensions (paid), and camera RAW files need Raw Image Extension (free). 10Lapse names the one that is missing and links to its Store page.
 ```
@@ -59,7 +61,7 @@ Make a timelapse video from the hundreds of photos of a tripod shoot: set the sp
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,286. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
+Limit 1,500 characters. This draft: 1,241. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
 does; it does not claim a crash rate.
 
 ```text
@@ -76,7 +78,7 @@ does; it does not claim a crash rate.
 - Light and dark themes, keyboard shortcuts, screen reader support and high contrast.
 - Private: no account, and now no network access at all; your photos never leave your PC.
 
-3.0 needs Windows 11 on an x64 or ARM64 PC. On Windows 10 the Store keeps 10Lapse 2.1.1.
+3.0 needs Windows 11 on an x64 or ARM64 PC.
 ```
 
 ## Product features
