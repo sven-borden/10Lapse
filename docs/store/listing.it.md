@@ -16,18 +16,18 @@ names one. As in English, the text says only what 3.0 does.
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,909.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,921.
 
 ```text
 Trasforma una cartella di foto in un video timelapse fluido, fino a 4K.
 
-Hai fotografato un tramonto, un temporale in arrivo o un cantiere dal treppiede, una foto ogni pochi secondi, e ora hai una cartella con centinaia o migliaia di foto. 10Lapse le riproduce come un video: trascina la cartella sulla finestra, controlla l'anteprima ed esporta un MP4.
+Hai fotografato un tramonto, un temporale in arrivo o un cantiere dal treppiede, una foto a intervalli di pochi secondi, e ora hai una cartella con centinaia o migliaia di foto. 10Lapse le riproduce come un video: trascina la cartella sulla finestra, controlla l'anteprima ed esporta un MP4.
 
 Come funziona
 1. Scegli una cartella, seleziona le foto o trascinale sulla finestra. 10Lapse legge JPEG, PNG, TIFF, HEIC e i file RAW della maggior parte delle fotocamere, e mette le foto nell'ordine in cui sono state scattate.
 2. Imposta la velocità in uno di tre modi: fotogrammi al secondo, la durata che deve avere il video oppure secondi per foto, per una presentazione. I numeri sono sempre sullo schermo, ad esempio “742 foto → 24,7 s a 30 fps”.
 3. Scegli le proporzioni: come le tue foto, 16:9 per YouTube e la TV, 9:16 per storie e reel sul telefono, 1:1, 4:5 o 4:3. “Adatta” mostra la foto intera; “Riempi” ritaglia i bordi per non lasciare bande.
-4. Esporta un MP4 a 720p, 1080p, 1440p o 4K, in H.264 oppure in HEVC se il PC può codificarlo e riprodurlo. L'anteprima disegna ogni fotogramma con lo stesso codice dell'esportazione, quindi il video è identico all'anteprima.
+4. Esporta un MP4 a 720p, 1080p, 1440p o 4K, in H.264 oppure in HEVC se il PC può codificarlo e riprodurlo. L'anteprima disegna ogni fotogramma con lo stesso codice dell'esportazione, quindi il video corrisponde all'anteprima.
 
 Modifica ed esportazione
 - Scorri la sequenza, avanza un fotogramma alla volta, rimuovi una foto mossa o trascinala al suo posto. Ctrl+Z la rimette nel progetto. Rimuovere una foto la toglie dal video, mai dal disco.
@@ -58,7 +58,7 @@ Crea un video timelapse dalle centinaia di foto scattate dal treppiede: imposta 
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,442. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
+Limit 1,500 characters. This draft: 1,459. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
 does; it does not claim a crash rate.
 
 ```text
@@ -66,9 +66,9 @@ does; it does not claim a crash rate.
 
 - Riscritto da capo, quindi il codice che causava gli arresti anomali della 2.1.1 non c'è più. Quando qualcosa va storto, 10Lapse ti dice cosa è successo e cosa fare.
 - Importa foto HEIC e .jpeg. Le HEIC richiedono Estensioni immagini HEIF (gratis) ed Estensioni video HEVC (a pagamento) da Microsoft Store; 10Lapse ti dice quale manca.
-- Esporta fino a 4K, in H.264 o in HEVC se il PC lo supporta, con avanzamento, tempo rimanente e un pulsante Annulla che ferma l'esportazione entro un secondo.
+- Esporta fino a 4K, in H.264 o in HEVC se il PC lo supporta, con avanzamento, tempo rimanente e il pulsante “Annulla esportazione” che ferma l'esportazione entro un secondo.
 - Continua a funzionare quando passi a un'altra app o riduci la finestra a icona: l'esportazione prosegue, con l'avanzamento sulla barra delle applicazioni e una notifica quando il video è pronto.
-- Una nuova velocità Per foto per le presentazioni, accanto a fotogrammi al secondo e durata del video.
+- Una nuova modalità “Per foto” per le presentazioni, accanto a fotogrammi al secondo e durata del video.
 - Anteprima dal vivo e pellicola: scorri, avanza, rimuovi o riordina le foto e annulla.
 - Proporzioni per TV, telefoni e social: 16:9, 9:16, 1:1, 4:5, 4:3 o quelle delle tue foto.
 - L'ultima velocità, le ultime proporzioni e l'ultimo output restano per il progetto successivo.
@@ -80,7 +80,7 @@ La 3.0 richiede Windows 11 su un PC x64 o ARM64. Su Windows 10 lo Store mantiene
 
 ## Product features
 
-Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 19 are 46
+Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 19 are 44
 to 115 characters each.
 
 ```text
@@ -92,12 +92,12 @@ Velocità in fotogrammi al secondo, in base alla durata del video o in secondi p
 Frequenze fotogrammi esatte da 0,1 a 120 fps, 29,97 compreso
 Numero di foto, velocità e durata del video sempre sullo schermo
 Proporzioni: come le foto, 16:9, 9:16, 1:1, 4:5 o 4:3, con “Adatta” o “Riempi”
-Anteprima dal vivo identica al video esportato
+Anteprima dal vivo fedele al video esportato
 Pellicola con miniature, segni dove mancano foto, rimozione e annullamento
 MP4 in H.264 (o HEVC se il PC lo supporta) a 720p, 1080p, 1440p o 4K, con tre livelli di qualità
 Stima delle dimensioni del file prima dell'esportazione
 Esporta con il codificatore video della scheda grafica, se il PC ne ha uno
-Continua a esportare anche a icona e tiene il PC attivo finché il video non è pronto
+Continua a esportare anche con la finestra ridotta a icona e tiene il PC attivo finché il video non è pronto
 Riproduci il video finito nell'app o apri la sua cartella
 Messaggi chiari che dicono cosa è andato storto e cosa fare
 Funziona offline: nessun account, nessun dato di utilizzo, le foto non lasciano mai il PC
@@ -109,7 +109,7 @@ Ricorda l'ultima velocità, le ultime proporzioni e l'ultimo output
 
 At most 7 terms (Store Policies: no more than seven unique terms or phrases, relevant to the app, no other product's
 name). **Verify** in the form: it has allowed 30 characters per term and 21 words across all terms. These 7 are
-9 to 20 characters, 14 words in all. "timelapse" and "time lapse" stay: Italian users search the English
+9 to 20 characters, 15 words in all. "timelapse" and "time lapse" stay: Italian users search the English
 words too.
 
 ```text
@@ -118,7 +118,7 @@ time lapse
 creare timelapse
 video da foto
 stop motion
-presentazione
+presentazione foto
 sequenza di immagini
 ```
 
