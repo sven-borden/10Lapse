@@ -174,6 +174,7 @@ function Read-ZipBytes([System.IO.Compression.ZipArchiveEntry]$zipEntry) {
 
 # The string literals the Debug-only code reads (the Debugging and Gallery folders), e.g. "--sample-frames". Release
 # removes those folders from the build (TenLapse.App.csproj), so none may be left in a shipped assembly.
+# Only whole "--x" literals are found: a switch built by concatenation or from a const prefix would be invisible.
 function Get-DebugLiteral {
     $folders = Get-ChildItem (Join-Path $root 'src') -Directory -Recurse |
         Where-Object { $_.Name -in 'Debugging', 'Gallery' -and $_.FullName -notmatch '[\\/](obj|bin)[\\/]' }
