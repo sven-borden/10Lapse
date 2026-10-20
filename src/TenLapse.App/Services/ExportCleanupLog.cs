@@ -10,17 +10,18 @@ namespace TenLapse.Services;
 /// </summary>
 internal static class ExportCleanupLog
 {
-    /// <summary>Subscribes the log and sets the journal; then deletes the leftovers on the thread pool. Call once, before any export.</summary>
-    public static void Start(ILog log)
+    /// <summary>Subscribes the log and sets the journal (<paramref name="journalFile"/>, <c>AppFolders.UnfinishedExportsFile</c>); then deletes the leftovers on the thread pool. Call once, before any export.</summary>
+    public static void Start(ILog log, string journalFile)
     {
         ArgumentNullException.ThrowIfNull(log);
+        ArgumentException.ThrowIfNullOrWhiteSpace(journalFile);
         ExportCleanup.Failed += (_, failure) => log.Warning(
             failure.Exception is null
                 ? $"Export clean-up of {failure.Path}: gave up trying to {failure.Step}; an encoder call never returned."
                 : $"Export clean-up of {failure.Path}: could not {failure.Step}.",
             failure.Exception);
 
-        var journal = new PartialFileJournal(AppEnvironment.UnfinishedExportsFile());
+        var journal = new PartialFileJournal(journalFile);
         ExportCleanup.Journal = journal;
         _ = Task.Run(() =>
         {

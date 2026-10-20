@@ -28,7 +28,7 @@ internal sealed class EncoderStartup
     /// Readies the probe, or the load of its cache file when that is still valid for this PC (about 0.25 s; a cold probe
     /// about 3.5 s), to run at <see cref="Start"/>.
     /// </summary>
-    /// <param name="cachePath">The cache file, <see cref="AppEnvironment.EncoderCacheFile"/>.</param>
+    /// <param name="cachePath">The cache file, <c>AppFolders.EncoderCacheFile</c>.</param>
     /// <param name="trace">The start-up trace (#90): whether the cache answered or the probe ran cold, and when the answer came.</param>
     public EncoderStartup(string cachePath, StartupTrace trace)
     {
