@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. 2026-10-20: #106 (#38 accessibility) merged. **3.0 is code-complete.** Release prep (Sven's pick): #107 test matrix and #108 flight prep merged (`docs/test-matrix.md`, `docs/release/`). #111 (#110 Debug journal path) merged. In flight: PR #109 (#42 listing drafts) fix round. Each PR says Refs; the issues close once Sven's part is done.
+2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. 2026-10-20: #106 (#38 accessibility) merged. **3.0 is code-complete.** Release prep (Sven's pick): #107 test matrix and #108 flight prep merged (`docs/test-matrix.md`, `docs/release/`). #111 (#110 Debug journal path) and #109 (#42 listing drafts) merged. **Release prep done; nothing in flight.** Next steps are Sven's: Partner Center (flight per `docs/release/flight.md`, listing per `docs/store/listing.md`), then the test pass (`docs/test-matrix.md`). Each PR says Refs; the issues close once Sven's part is done.
 
 ## Waves
 
@@ -18,7 +18,7 @@ Waves 0 to 16 are done; every issue in them is under Merged below. #90
 | Wave | Issue | Model | Area | Status |
 |---|---|---|---|---|
 | 17-20 | #39, #101, #104, #38, #41, #40, #110 | | | merged (#40, #41 issues open) |
-| 20 | #42 Listing drafts and screenshots | O | `docs/store/`, screenshot script | PR #109, fix round |
+| 20 | #42 Listing drafts and screenshots | O | `docs/store/`, screenshot script | merged #109 (issue open) |
 
 After wave 18, 3.0 is code-complete. Milestones 4 (private beta) and 5
 (relaunch) are mostly owner work; milestone 6 (3.1 creative tools) gets its
@@ -284,3 +284,8 @@ Details are in each PR's "What the next issues should know".
 - #110 PR #111: `Core/Settings/AppFolders.Resolve` computes every app path
   once (defaults plus the Debug folder switches); the export journal sits
   beside the log folder in use. Release and packaged paths are unchanged.
+- #42 PR #109 (refs only): `docs/store/listing.md` (en-US description, What's
+  new, 19 features, 7 search terms, requirements, captions, the #7 interim
+  line; HEVC Video Extensions marked paid; Windows 11 stated), and
+  `scripts/store-screenshots.ps1` (8 shots to `dist/store-screenshots/`;
+  upload 02-06 and 01). Debug `--sample-plain`.
