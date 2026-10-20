@@ -54,7 +54,7 @@
     <value>s por foto</value>
   </data>
   <data name="NotANumberFramesPerSecond" xml:space="preserve">
-    <value>Digite uma taxa de quadros de {0} a {1} fps, como 24 ou {2}.</value>
+    <value>Digite uma taxa de quadros de {0} a {1} fps, como 24 ou {2}.</value>
   </data>
   <data name="NotANumberLength" xml:space="preserve">
     <value>Digite uma duração em segundos, como 30, ou em minutos e segundos, como 1:30. Ela pode ir de {0} a {1}.</value>
@@ -63,7 +63,7 @@
     <value>Digite quantos segundos cada foto fica na tela, de {0} a {1}.</value>
   </data>
   <data name="ClampedFramesPerSecond" xml:space="preserve">
-    <value>A taxa de quadros vai de {2} a {3} fps, então {0} passou a ser {1}.</value>
+    <value>A taxa de quadros vai de {2} a {3} fps, então {0} passou a ser {1}.</value>
   </data>
   <data name="ClampedLength" xml:space="preserve">
     <value>Um vídeo pode durar de {2} a {3}, então {0} passou a ser {1}.</value>

@@ -54,13 +54,13 @@
     <value>Cerca de {0}</value>
   </data>
   <data name="Megabytes" xml:space="preserve">
-    <value>{0} MB</value>
+    <value>{0} MB</value>
   </data>
   <data name="Gigabytes" xml:space="preserve">
-    <value>{0} GB</value>
+    <value>{0} GB</value>
   </data>
   <data name="UnderOneMegabyte" xml:space="preserve">
-    <value>Menos de 1 MB</value>
+    <value>Menos de 1 MB</value>
   </data>
   <data name="ResolutionOptionFormat" xml:space="preserve">
     <value>{0} · {1} × {2}</value>
