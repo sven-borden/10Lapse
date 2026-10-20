@@ -38,7 +38,7 @@ body:
     id: diagnostics
     attributes:
       label: Diagnostics
-      description: In 10Lapse open Settings, choose Copy diagnostics, then paste here. It lists the app version, your Windows version, the video encoders and the last log lines, and may include folder and file names. No photos.
+      description: Paste it if the app opens. In 10Lapse open Settings, choose Copy diagnostics, then paste here. It lists the app version, your Windows version, the video encoders and the last log lines, and may include folder and file names. No photos.
       render: text
     validations:
-      required: true
+      required: false
