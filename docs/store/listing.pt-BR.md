@@ -157,7 +157,7 @@ What each extension adds, for Sven's answers to Brazilian reviews (#44), not for
 
 Desktop: PNG, 1366 x 768 or larger, up to 10, captions 200 characters each; the rules are those of `listing.md`.
 `pwsh -File scripts/store-screenshots.ps1 -Language pt-BR` makes the Brazilian set into
-`dist/store-screenshots/pt-BR/` (git-ignored) from the same generated sample photos as the English set, so the app
+`docs/store/screenshots/pt-BR/` (in Git LFS) from the same generated sample photos as the English set, so the app
 shows its Portuguese text.
 
 Upload six, in the English order; captions are 54 to 112 characters.

@@ -156,8 +156,8 @@ market, and the app keeps that exact spelling.
 
 Desktop: PNG, 1366 x 768 or larger in landscape or portrait, up to 3840 x 2160, under 50 MB each, up to 10. Captions
 200 characters each. Keep key content in the top two thirds (the Store may lay text over the bottom third).
-`pwsh -File scripts/store-screenshots.ps1 -Language es` makes the Spanish set into `dist/store-screenshots/es/`
-(git-ignored), from the same generated sample photos as the English set.
+`pwsh -File scripts/store-screenshots.ps1 -Language es` makes the Spanish set into `docs/store/screenshots/es/`
+(in Git LFS), from the same generated sample photos as the English set.
 
 Upload six, in this order; captions are 59 to 122 characters.
 

@@ -155,8 +155,8 @@ What each extension adds, for Sven's answers to French reviews (#44), not for a 
 ## Screenshots
 
 Desktop: PNG, 1366 x 768 or larger, up to 10, captions 200 characters each; the rules are those of `listing.md`.
-`pwsh -File scripts/store-screenshots.ps1 -Language fr` makes the French set into `dist/store-screenshots/fr/`
-(git-ignored) from the same generated sample photos as the English set, so the app shows its French text.
+`pwsh -File scripts/store-screenshots.ps1 -Language fr` makes the French set into `docs/store/screenshots/fr/`
+(in Git LFS) from the same generated sample photos as the English set, so the app shows its French text.
 
 Upload six, in the English order; captions are 61 to 116 characters.
 
