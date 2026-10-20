@@ -6,7 +6,8 @@
   Mexico, the US and Latin America, and the RAE accepts "video" in Spain too; Store names keep their exact spelling
   ("Extensión de vídeo AV1"). UI labels named inside a sentence stand in quotation marks (“…”). An exact million takes
   "de" ("1.000.000 de fotos", RAE DPD "cardinales"), so a counted sentence that changes has a _many form; a family
-  without one falls back to _other.
+  without one falls back to _other. In _many an article or demonstrative before {0} agrees with "millón", not with
+  "fotos" ("Los {0} de fotos", "Estos {0} de fotos"). FilmstripCaptionSelected has no noun after {0}, so no _many.
 -->
 <root>
   <resheader name="resmimetype">
@@ -62,6 +63,9 @@
   </data>
   <data name="NewProjectMessage_other" xml:space="preserve">
     <value>Las {0} fotos se quitarán de este proyecto y se descartará su configuración. Los archivos de las fotos siguen en tu equipo.</value>
+  </data>
+  <data name="NewProjectMessage_many" xml:space="preserve">
+    <value>Los {0} de fotos se quitarán de este proyecto y se descartará su configuración. Los archivos de las fotos siguen en tu equipo.</value>
   </data>
   <data name="NewProjectConfirm" xml:space="preserve">
     <value>Nuevo proyecto</value>
@@ -219,6 +223,9 @@
   <data name="TimingHeadline_other" xml:space="preserve">
     <value>{0} fotos → {1}</value>
   </data>
+  <data name="TimingHeadline_many" xml:space="preserve">
+    <value>{0} de fotos → {1}</value>
+  </data>
   <data name="TimingDetail" xml:space="preserve">
     <value>a {0}</value>
   </data>
@@ -249,6 +256,9 @@
   <data name="PreviewUnreadablePhotos_other" xml:space="preserve">
     <value>No se pueden leer {0} fotos, así que la vista previa muestra marcadores de posición en su lugar. Restáuralas o sustitúyelas antes de exportar.</value>
   </data>
+  <data name="PreviewUnreadablePhotos_many" xml:space="preserve">
+    <value>No se pueden leer {0} de fotos, así que la vista previa muestra marcadores de posición en su lugar. Restáuralas o sustitúyelas antes de exportar.</value>
+  </data>
   <data name="PreviewCacheFailed" xml:space="preserve">
     <value>No se pueden guardar las copias de vista previa de tus fotos, así que la vista previa puede ir lenta. Tus fotos y la exportación no se ven afectadas.</value>
   </data>
@@ -273,11 +283,17 @@
   <data name="ImportFound_other" xml:space="preserve">
     <value>{0} fotos encontradas…</value>
   </data>
+  <data name="ImportFound_many" xml:space="preserve">
+    <value>{0} de fotos encontradas…</value>
+  </data>
   <data name="ImportAdding_one" xml:space="preserve">
     <value>Agregando {1} foto…</value>
   </data>
   <data name="ImportAdding_other" xml:space="preserve">
     <value>Agregando {0} de {1} fotos…</value>
+  </data>
+  <data name="ImportAdding_many" xml:space="preserve">
+    <value>Agregando {0} de {1} de fotos…</value>
   </data>
   <data name="ImportCancelName" xml:space="preserve">
     <value>Dejar de agregar fotos</value>
@@ -288,6 +304,9 @@
   <data name="ImportDone_other" xml:space="preserve">
     <value>{0} fotos en el proyecto.</value>
   </data>
+  <data name="ImportDone_many" xml:space="preserve">
+    <value>{0} de fotos en el proyecto.</value>
+  </data>
   <data name="DragCaptionAny" xml:space="preserve">
     <value>Agregar fotos</value>
   </data>
@@ -296,6 +315,9 @@
   </data>
   <data name="DragCaptionPhotos_other" xml:space="preserve">
     <value>Agregar {0} fotos</value>
+  </data>
+  <data name="DragCaptionPhotos_many" xml:space="preserve">
+    <value>Agregar {0} de fotos</value>
   </data>
   <data name="DragCaptionSettingsOpen" xml:space="preserve">
     <value>Cierra Configuración para agregar fotos</value>
@@ -308,6 +330,9 @@
   </data>
   <data name="DropMessage_other" xml:space="preserve">
     <value>Este proyecto tiene {0} fotos. Agrega las nuevas a este proyecto o empieza un proyecto nuevo solo con ellas. Si empiezas uno nuevo, este pierde sus fotos y su configuración; los archivos siguen en tu equipo.</value>
+  </data>
+  <data name="DropMessage_many" xml:space="preserve">
+    <value>Este proyecto tiene {0} de fotos. Agrega las nuevas a este proyecto o empieza un proyecto nuevo solo con ellas. Si empiezas uno nuevo, este pierde sus fotos y su configuración; los archivos siguen en tu equipo.</value>
   </data>
   <data name="DropAddToProject" xml:space="preserve">
     <value>Agregar al proyecto</value>
@@ -330,11 +355,17 @@
   <data name="ImportStoppedAdded_other" xml:space="preserve">
     <value>Se dejaron de agregar fotos. Se agregaron {0} fotos.</value>
   </data>
+  <data name="ImportStoppedAdded_many" xml:space="preserve">
+    <value>Se dejaron de agregar fotos. Se agregaron {0} de fotos.</value>
+  </data>
   <data name="ImportFolderFailedNamed" xml:space="preserve">
     <value>No se pudo abrir la carpeta {0}. Comprueba que su unidad o tarjeta de memoria está conectada y que puedes abrirla en el Explorador de archivos, y vuelve a agregarla.</value>
   </data>
   <data name="ImportFoldersNotOpened_other" xml:space="preserve">
     <value>No se pudieron abrir {0} carpetas. Comprueba que sus unidades o tarjetas de memoria están conectadas y que puedes abrirlas en el Explorador de archivos, y vuelve a agregarlas.</value>
+  </data>
+  <data name="ImportFoldersNotOpened_many" xml:space="preserve">
+    <value>No se pudieron abrir {0} de carpetas. Comprueba que sus unidades o tarjetas de memoria están conectadas y que puedes abrirlas en el Explorador de archivos, y vuelve a agregarlas.</value>
   </data>
   <data name="CloudDownloadTitle" xml:space="preserve">
     <value>¿Descargar de OneDrive?</value>
@@ -344,6 +375,9 @@
   </data>
   <data name="CloudDownloadQuestion_other" xml:space="preserve">
     <value>{0} fotos solo están en OneDrive. ¿Quieres descargarlas ahora? Tamaño: aprox. {1}.</value>
+  </data>
+  <data name="CloudDownloadQuestion_many" xml:space="preserve">
+    <value>{0} de fotos solo están en OneDrive. ¿Quieres descargarlas ahora? Tamaño: aprox. {1}.</value>
   </data>
   <data name="CloudDownloadConfirm" xml:space="preserve">
     <value>Descargar</value>
@@ -369,11 +403,17 @@
   <data name="CodecNeedsOne_other" xml:space="preserve">
     <value>Estas {0} fotos necesitan una extensión de Microsoft: {1}.</value>
   </data>
+  <data name="CodecNeedsOne_many" xml:space="preserve">
+    <value>Estos {0} de fotos necesitan una extensión de Microsoft: {1}.</value>
+  </data>
   <data name="CodecNeedsSeveral_one" xml:space="preserve">
     <value>Esta foto necesita {1} extensiones de Microsoft. Empieza por la primera: {2}.</value>
   </data>
   <data name="CodecNeedsSeveral_other" xml:space="preserve">
     <value>Estas {0} fotos necesitan {1} extensiones de Microsoft. Empieza por la primera: {2}.</value>
+  </data>
+  <data name="CodecNeedsSeveral_many" xml:space="preserve">
+    <value>Estos {0} de fotos necesitan {1} extensiones de Microsoft. Empieza por la primera: {2}.</value>
   </data>
   <data name="CodecNextFormat" xml:space="preserve">
     <value>Ahora obtén la siguiente: {0}.</value>
@@ -420,6 +460,9 @@
   <data name="FilmstripGapMissing_other" xml:space="preserve">
     <value>Parece que faltan {0} fotos antes de esta: la numeración de los archivos se salta {0}.</value>
   </data>
+  <data name="FilmstripGapMissing_many" xml:space="preserve">
+    <value>Parece que faltan {0} de fotos antes de esta: la numeración de los archivos se salta {0}.</value>
+  </data>
   <data name="FilmstripGapPause" xml:space="preserve">
     <value>Puede que falten fotos antes de esta: se tomó {0} después de la anterior, cuando lo habitual era alrededor de {1}.</value>
   </data>
@@ -459,11 +502,17 @@
   <data name="FilmstripRemovedFrames_other" xml:space="preserve">
     <value>Se quitaron {0} fotogramas del proyecto. Las fotos siguen en tu equipo. {1} los devuelve al proyecto.</value>
   </data>
+  <data name="FilmstripRemovedFrames_many" xml:space="preserve">
+    <value>Se quitaron {0} de fotogramas del proyecto. Las fotos siguen en tu equipo. {1} los devuelve al proyecto.</value>
+  </data>
   <data name="FilmstripRestoredFrames_one" xml:space="preserve">
     <value>Se devolvió {0} fotograma al proyecto.</value>
   </data>
   <data name="FilmstripRestoredFrames_other" xml:space="preserve">
     <value>Se devolvieron {0} fotogramas al proyecto.</value>
+  </data>
+  <data name="FilmstripRestoredFrames_many" xml:space="preserve">
+    <value>Se devolvieron {0} de fotogramas al proyecto.</value>
   </data>
   <data name="FilmstripRestoredNone" xml:space="preserve">
     <value>Nada que devolver: esas fotos ya están otra vez en el proyecto.</value>
@@ -473,6 +522,9 @@
   </data>
   <data name="FilmstripUndoRemove_other" xml:space="preserve">
     <value>Deshacer: quitar {0} fotogramas</value>
+  </data>
+  <data name="FilmstripUndoRemove_many" xml:space="preserve">
+    <value>Deshacer: quitar {0} de fotogramas</value>
   </data>
   <data name="FilmstripUndoMove" xml:space="preserve">
     <value>Deshacer: mover</value>
@@ -488,5 +540,8 @@
   </data>
   <data name="FilmstripMovedFrames_other" xml:space="preserve">
     <value>Se movieron {0} fotogramas a la posición {1}.</value>
+  </data>
+  <data name="FilmstripMovedFrames_many" xml:space="preserve">
+    <value>Se movieron {0} de fotogramas a la posición {1}.</value>
   </data>
 </root>

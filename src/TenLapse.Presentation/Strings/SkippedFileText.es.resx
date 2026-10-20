@@ -27,6 +27,9 @@
   <data name="Skipped_other" xml:space="preserve">
     <value>{0} fotos no se pudieron leer y se omitieron.</value>
   </data>
+  <data name="Skipped_many" xml:space="preserve">
+    <value>{0} de fotos no se pudieron leer y se omitieron.</value>
+  </data>
   <data name="UnsupportedFormat" xml:space="preserve">
     <value>No es un formato de foto que Windows pueda leer</value>
   </data>
