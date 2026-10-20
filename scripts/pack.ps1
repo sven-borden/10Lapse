@@ -247,7 +247,10 @@ function Get-ArchPackageProblem([System.IO.Compression.ZipArchive]$package, [str
     foreach ($assembly in $package.Entries | Where-Object { $_.FullName -match '^TenLapse[^/\\]*\.(dll|exe)$' }) {
         $assemblyText = $latin1.GetString((Read-ZipBytes $assembly))
         foreach ($namespace in 'TenLapse.Debugging', 'TenLapse.Gallery') {
-            if ($assemblyText.Contains("`0$namespace`0", [System.StringComparison]::Ordinal)) {
+            # The metadata strings heap holds a namespace as one string, so a sub-namespace (TenLapse.Gallery.Pages) is
+            # found by the prefix.
+            if ($assemblyText.Contains("`0$namespace`0", [System.StringComparison]::Ordinal) -or
+                $assemblyText.Contains("`0$namespace.", [System.StringComparison]::Ordinal)) {
                 $problems.Add("$arch $($assembly.FullName) holds the Debug-only namespace $namespace")
             }
         }
