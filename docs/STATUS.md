@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. 2026-10-20: #106 (#38 accessibility) merged. **3.0 is code-complete.** Release prep (Sven's pick): #107 test matrix and #108 flight prep merged (`docs/test-matrix.md`, `docs/release/`). In flight: PR #109 (#42 listing drafts) fix round, with #110 (Debug journal path) beside it. Each PR says Refs; the issues close once Sven's part is done.
+2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. 2026-10-20: #106 (#38 accessibility) merged. **3.0 is code-complete.** Release prep (Sven's pick): #107 test matrix and #108 flight prep merged (`docs/test-matrix.md`, `docs/release/`). #111 (#110 Debug journal path) merged. In flight: PR #109 (#42 listing drafts) fix round. Each PR says Refs; the issues close once Sven's part is done.
 
 ## Waves
 
@@ -17,14 +17,8 @@ Waves 0 to 16 are done; every issue in them is under Merged below. #90
 
 | Wave | Issue | Model | Area | Status |
 |---|---|---|---|---|
-| 17 | #39 Strings to resource files | O | every view (Opus: resw/resx split) | merged #103 |
-| 17 | #104 Flaky allocation count (bug) | S | `tests/` Ordering | merged #105 |
-| 17 | #101 Flaky timing lower bound (bug) | S | `tests/` timing asserts | merged #102 |
-| 18 | #38 Accessibility pass | O | every view, `tools/` Axe.Windows scan | merged #106 |
-| 19 | #40 Flight prep (package check, guides) | S | `scripts/pack.ps1`, `docs/release/` | merged #108 (issue open) |
-| 19 | #41 Test matrix document | S | `docs/test-matrix.md` | merged #107 (issue open) |
+| 17-20 | #39, #101, #104, #38, #41, #40, #110 | | | merged (#40, #41 issues open) |
 | 20 | #42 Listing drafts and screenshots | O | `docs/store/`, screenshot script | PR #109, fix round |
-| 20 | #110 Debug journal path (bug) | S | `AppEnvironment`, `App.xaml.cs` | in progress |
 
 After wave 18, 3.0 is code-complete. Milestones 4 (private beta) and 5
 (relaunch) are mostly owner work; milestone 6 (3.1 creative tools) gets its
@@ -287,3 +281,6 @@ Details are in each PR's "What the next issues should know".
   `ms-resource:` description, no Debug code) and bumps with `-Version x.y.z.0`
   (writes the manifest before building). `docs/release/flight.md` (Sven's
   Partner Center steps), `docs/release/beta-testers.md`, beta report form.
+- #110 PR #111: `Core/Settings/AppFolders.Resolve` computes every app path
+  once (defaults plus the Debug folder switches); the export journal sits
+  beside the log folder in use. Release and packaged paths are unchanged.
