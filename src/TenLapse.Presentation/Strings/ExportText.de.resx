@@ -41,7 +41,7 @@
     <value>Restzeit wird berechnet…</value>
   </data>
   <data name="Finishing" xml:space="preserve">
-    <value>Datei wird fertiggestellt…</value>
+    <value>Wird abgeschlossen…</value>
   </data>
   <data name="TimeLeftSecondsFormat" xml:space="preserve">
     <value>Noch ca. {0} s</value>
@@ -101,13 +101,13 @@
     <value>{0} › {1}</value>
   </data>
   <data name="Play" xml:space="preserve">
-    <value>Wiedergeben</value>
+    <value>Abspielen</value>
   </data>
   <data name="PlayName" xml:space="preserve">
-    <value>Video wiedergeben</value>
+    <value>Video abspielen</value>
   </data>
   <data name="ShowInFolder" xml:space="preserve">
-    <value>Im Ordner anzeigen</value>
+    <value>Ordner öffnen</value>
   </data>
   <data name="BackToEditing" xml:space="preserve">
     <value>Zurück zur Bearbeitung</value>
@@ -128,7 +128,7 @@
     <value>Der Export wurde nicht gestartet, weil sich das Projekt oder seine Ausgabe geändert hat, während das Dialogfeld „Speichern unter“ geöffnet war. Wählen Sie erneut „{0}“.</value>
   </data>
   <data name="PremiereCantPlayFormat" xml:space="preserve">
-    <value>Das Video wurde gespeichert, aber 10Lapse kann es hier nicht wiedergeben. Öffnen Sie es über „{0}“, um es zu prüfen.</value>
+    <value>Das Video wurde gespeichert, aber 10Lapse kann es hier nicht wiedergeben. Prüfen Sie es über „{0}“ in einer anderen App.</value>
   </data>
   <data name="CloseTitle" xml:space="preserve">
     <value>Export beenden und schließen?</value>
@@ -155,7 +155,7 @@
     <value>Der Export ist fehlgeschlagen.</value>
   </data>
   <data name="FinishingAnnouncement" xml:space="preserve">
-    <value>Die Datei wird fertiggestellt.</value>
+    <value>Die Datei wird abgeschlossen.</value>
   </data>
   <data name="FailedNotificationFormat" xml:space="preserve">
     <value>{0} konnte nicht exportiert werden. Öffnen Sie 10Lapse, um den Grund zu sehen.</value>

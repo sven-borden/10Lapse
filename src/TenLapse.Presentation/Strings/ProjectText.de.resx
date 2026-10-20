@@ -360,22 +360,22 @@
     <value>{0} (kostenpflichtig)</value>
   </data>
   <data name="CodecNeedsOne_one" xml:space="preserve">
-    <value>Dieses Foto benötigt {1} von Microsoft.</value>
+    <value>Dieses Foto benötigt eine Erweiterung von Microsoft: {1}.</value>
   </data>
   <data name="CodecNeedsOne_other" xml:space="preserve">
-    <value>Diese {0} Fotos benötigen {1} von Microsoft.</value>
+    <value>Diese {0} Fotos benötigen eine Erweiterung von Microsoft: {1}.</value>
   </data>
   <data name="CodecNeedsSeveral_one" xml:space="preserve">
-    <value>Dieses Foto benötigt {1} Erweiterungen von Microsoft. Beginnen Sie mit {2}.</value>
+    <value>Dieses Foto benötigt {1} Erweiterungen von Microsoft. Als Erstes: {2}.</value>
   </data>
   <data name="CodecNeedsSeveral_other" xml:space="preserve">
-    <value>Diese {0} Fotos benötigen {1} Erweiterungen von Microsoft. Beginnen Sie mit {2}.</value>
+    <value>Diese {0} Fotos benötigen {1} Erweiterungen von Microsoft. Als Erstes: {2}.</value>
   </data>
   <data name="CodecNextFormat" xml:space="preserve">
-    <value>Installieren Sie als Nächstes {0}.</value>
+    <value>Als Nächstes: {0}.</value>
   </data>
   <data name="CodecLastFormat" xml:space="preserve">
-    <value>Installieren Sie zuletzt {0}. Wenn die Installation abgeschlossen ist, starten Sie 10Lapse neu, und fügen Sie die Fotos erneut hinzu.</value>
+    <value>Zum Schluss: {0}. Wenn die Installation abgeschlossen ist, starten Sie 10Lapse neu, und fügen Sie die Fotos erneut hinzu.</value>
   </data>
   <data name="CodecStoreFallbackFormat" xml:space="preserve">
     <value>Der Microsoft Store konnte nicht geöffnet werden. Suchen Sie im Store nach „{0}“, und installieren Sie die Erweiterung. Starten Sie dann 10Lapse neu, und fügen Sie die Fotos erneut hinzu.</value>

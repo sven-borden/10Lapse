@@ -80,9 +80,9 @@
     <value>Gerundet auf {0}.</value>
   </data>
   <data name="LengthTooShort" xml:space="preserve">
-    <value>Ihre Fotos passen nicht in {0}: Das höchste Tempo ist {1}, deshalb ist das Video {2} lang.</value>
+    <value>Ihre Fotos passen nicht in {0}: Das schnellste Tempo ist {1}, deshalb ist das Video {2} lang.</value>
   </data>
   <data name="LengthTooLong" xml:space="preserve">
-    <value>Ihre Fotos können {0} nicht füllen: Das niedrigste Tempo ist {1}, deshalb ist das Video {2} lang.</value>
+    <value>Ihre Fotos reichen nicht für {0}: Das langsamste Tempo ist {1}, deshalb ist das Video {2} lang.</value>
   </data>
 </root>
