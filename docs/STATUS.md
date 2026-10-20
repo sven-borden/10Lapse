@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. 2026-10-20: #106 (#38 accessibility) merged. **3.0 is code-complete.** In flight (Sven's pick, release prep): #40 flight package and guides, with #41 test matrix document beside it; then #42 listing drafts. Each PR says Refs; the issues close once Sven's part is done.
+2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. 2026-10-20: #106 (#38 accessibility) merged. **3.0 is code-complete.** Release prep (Sven's pick): #107 test matrix and #108 flight prep merged (`docs/test-matrix.md`, `docs/release/`). In flight: PR #109 (#42 listing drafts) fix round, with #110 (Debug journal path) beside it. Each PR says Refs; the issues close once Sven's part is done.
 
 ## Waves
 
@@ -21,9 +21,10 @@ Waves 0 to 16 are done; every issue in them is under Merged below. #90
 | 17 | #104 Flaky allocation count (bug) | S | `tests/` Ordering | merged #105 |
 | 17 | #101 Flaky timing lower bound (bug) | S | `tests/` timing asserts | merged #102 |
 | 18 | #38 Accessibility pass | O | every view, `tools/` Axe.Windows scan | merged #106 |
-| 19 | #40 Flight prep (package check, guides) | S | `scripts/pack.ps1`, `docs/release/` | in progress |
-| 19 | #41 Test matrix document | S | `docs/test-matrix.md` | in progress |
-| 20 | #42 Listing drafts and screenshots | O | `docs/store/`, screenshot script | |
+| 19 | #40 Flight prep (package check, guides) | S | `scripts/pack.ps1`, `docs/release/` | merged #108 (issue open) |
+| 19 | #41 Test matrix document | S | `docs/test-matrix.md` | merged #107 (issue open) |
+| 20 | #42 Listing drafts and screenshots | O | `docs/store/`, screenshot script | PR #109, fix round |
+| 20 | #110 Debug journal path (bug) | S | `AppEnvironment`, `App.xaml.cs` | in progress |
 
 After wave 18, 3.0 is code-complete. Milestones 4 (private beta) and 5
 (relaunch) are mostly owner work; milestone 6 (3.1 creative tools) gets its
@@ -36,6 +37,9 @@ Nothing blocks the build loop. Everything below waits until release is near
 
 - Before the first 3.0 submission, one Partner Center visit: the #7
   description line, and the privacy URL pointed at `PRIVACY.md` on GitHub.
+- #42 screenshots: a real photo set (a tripod shoot) for
+  `scripts/store-screenshots.ps1 -PhotoFolder`; the generated sunsets only
+  check the layout. Sort title "Ten Lapse" is Sven's call.
 - #30 Sample sequence: deferred. #29 ships without the *Try a sample* button;
   add it once a set exists.
 - Release: #40 flight, #42 listing, #43 trailer, #44 rollout, #58 pricing.
@@ -120,16 +124,12 @@ Nothing blocks the build loop. Everything below waits until release is near
   `AppEnvironment.EncoderCacheFile()`.
 - 2026-10-18 (#13 review): RAW+JPEG pairs with the same base name in one
   folder import once, keeping the JPEG (#12).
-- 2026-10-19 (#12): `IPhotoImportSource` lives in Core; Media's
-  `PhotoImporter` implements it; Presentation's `ImportViewModel` drives it.
-  Import fills in two phases (list, then read metadata with 8 readers). OneDrive
-  online-only files are not read silently: one question per import ("N photos
-  are only in OneDrive. Download them now? About X GB."), default *Skip them*
-  (`SkipReason.CloudOnly`). Junctions and symlinks are not followed (cloud
-  reparse folders are). A RAW is dropped only when a readable non-RAW twin
-  exists. Folders that will not open get their own InfoBar, not a skipped
-  photo. `ApplyDefaultSort` only on a project that was empty and unsorted by
-  the user during the import. Drops are refused while Settings is open.
+- 2026-10-19 (#12): `IPhotoImportSource` (Core), `PhotoImporter` (Media),
+  `ImportViewModel` (Presentation); two phases (list, then metadata with 8
+  readers). OneDrive online-only files: one question per import, default
+  *Skip them*. Junctions and symlinks are not followed. A RAW is dropped only
+  when a readable non-RAW twin exists. Unopenable folders get their own
+  InfoBar. Drops are refused while Settings is open.
 - 2026-10-19 (#34): the 1 GB export memory target applies on PCs with 8 GB RAM
   or less or an iGPU (decode 4 ahead, 3 threads: 932 MB peak private at 24 MP
   to 4K, thin margin). Larger PCs use 8 and 6 for speed (about 1.3 GB).
@@ -175,16 +175,11 @@ Nothing blocks the build loop. Everything below waits until release is near
 - 2026-10-19 (#90, PR #91): every framework callback (`AppWindow.Closing`,
   `Changed`, `Destroying`, backdrop, lambda handlers) runs through `RunLogged`;
   `FrameworkCallbackRuleTests` catches lambda and method-group handlers.
-  `OnClosing` is one `RunLogged` call into `WindowCloseGate`: a throw logs,
-  stops a running export and lets the window close. A Mica failure is log-only
-  (the flat fallback is the documented look; it retries on the next connection).
-  The encoder probe starts after the first frame (`FirstFrameRendered`, or
-  10 s): cold, the first frame comes about 180 ms sooner; warm, the panel
-  settles about 0.4 s later. `StartupTrace` logs start-up phases until the
-  first frame and the applied probe answer. Launch-crash counts use
-  `scripts/launch-test.ps1` (`-Plain` or under `tools/TenLapse.CrashCatcher`).
-  Not reproduced in 980 launches; #90 stays open until it is seen or the beta
-  is clean.
+  `OnClosing` goes through `WindowCloseGate` (a throw logs, stops the export,
+  lets the window close). A Mica failure is log-only (flat fallback). The
+  encoder probe starts after the first frame. `StartupTrace` logs start-up
+  phases; `scripts/launch-test.ps1` counts launch crashes. Not reproduced in
+  980 launches; #90 stays open until seen or the beta is clean.
 - 2026-10-19 (#37): the 16, 20, 24 and 32 px icons are full-bleed pixel-grid
   variants, not the canvas's padded tile, so they stay crisp. The splash is dark
   Mica `#1F1E1D` in both themes. The bundle keeps every scale in the main
@@ -284,3 +279,10 @@ Details are in each PR's "What the next issues should know".
   InkSecondary to WindowText. `tools/TenLapse.A11yScan` (Axe.Windows) via
   `scripts/a11y-check.ps1`: 0 failures on 13 screens. Debug `--focus-walk`,
   `--shortcut-after`. Manual checks are on #41.
+- #41 PR #107 (refs only): `docs/test-matrix.md`, 119 rows from every merged
+  PR's unchecked items, Windows 11 only; Sven and the testers tick it off.
+- #40 PR #108 (refs only): `scripts/pack.ps1` checks every package (identity,
+  version, Windows 11 minimum, only `runFullTrust`, App Runtime 2,
+  `ms-resource:` description, no Debug code) and bumps with `-Version x.y.z.0`
+  (writes the manifest before building). `docs/release/flight.md` (Sven's
+  Partner Center steps), `docs/release/beta-testers.md`, beta report form.
