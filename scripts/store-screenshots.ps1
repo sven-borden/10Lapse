@@ -287,7 +287,12 @@ function Shot([string]$id, [string]$name, [scriptblock]$body, [string[]]$alsoOwn
 # Sizes the window right after the start and says whether the shot can go on; a size this monitor cannot reach skips
 # the shot (and the shots it owns) before any waiting.
 function Sized($app, [string]$size, [string[]]$names) {
-    if (Set-ClientSize $app $size) { return $true }
+    # A window still busy starting (generating photos, say) may not offer TransformPattern yet: try for about 15 s.
+    $until = (Get-Date).AddSeconds(15)
+    do {
+        if (Set-ClientSize $app $size) { return $true }
+        Start-Sleep -Milliseconds 1000
+    } while ((Get-Date) -lt $until -and -not $app.Process.HasExited)
     foreach ($name in $names) { $missed.Add("$name (the window cannot reach $size here)") }
     $false
 }
