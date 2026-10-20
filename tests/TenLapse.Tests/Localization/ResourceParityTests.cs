@@ -15,14 +15,27 @@ namespace TenLapse.Tests.Localization;
 /// description, and the language's declaration to the package and the Store) and back, with the keys of the en-US one;</item>
 /// <item>every language is one <see cref="ResourceLanguages.Shipped"/> names, spelled the same.</item>
 /// </list>
-/// Plurals (#114: <c>X_one</c>, <c>X_many</c>, <c>X_other</c>): a language has its own set of categories, so a key
-/// <c>X_zero|one|two|few|many</c> whose <c>X_other</c> is in the English file may be missing or extra; <c>X_other</c> is
-/// always required, and a category's placeholders are those of its English counterpart (<c>X_other</c> when English has
-/// none).
+/// Plurals (#114: <c>X_one</c>, <c>X_many</c>, <c>X_other</c>): every category the English file has is required, like
+/// any key. A language may add a category English lacks only when its CLDR cardinal rule has it (<c>X_many</c> in
+/// French, Spanish, Italian and Portuguese, optional there: it falls back to <c>X_other</c>); a category the language
+/// never uses (<c>X_few</c>, or <c>X_many</c> in German) is a problem. An added category's placeholders are those of
+/// <c>X_other</c>. Where English has placeholders, the translation must also parse as a composite format.
 /// </summary>
 public sealed partial class ResourceParityTests
 {
     private static readonly string[] _pluralCategories = ["zero", "one", "two", "few", "many"];
+
+    // The CLDR cardinal categories of each shipped language (other included). Switch this to #114's Plural rules once
+    // that merges, so the test and the runtime share one table.
+    private static readonly Dictionary<string, string[]> _languageCategories = new(StringComparer.Ordinal)
+    {
+        [ResourceLanguages.English] = ["one", "other"],
+        ["de"] = ["one", "other"],
+        ["fr"] = ["one", "many", "other"],
+        ["es"] = ["one", "many", "other"],
+        ["it"] = ["one", "many", "other"],
+        ["pt-BR"] = ["one", "many", "other"],
+    };
 
     [Fact]
     public void EveryTranslatedResxHasTheEnglishKeysAndPlaceholders()
@@ -37,7 +50,7 @@ public sealed partial class ResourceParityTests
                 continue;
             }
 
-            problems.AddRange(Compare(Strings(english), Strings(file.Path), Relative(file.Path)));
+            problems.AddRange(Compare(Strings(english), Strings(file.Path), file.Language!, Relative(file.Path)));
         }
 
         Assert.True(problems.Count == 0, string.Join(Environment.NewLine, problems));
@@ -83,7 +96,7 @@ public sealed partial class ResourceParityTests
         var english = Strings(ReswPath(ResourceLanguages.English));
         foreach (var language in resw)
         {
-            problems.AddRange(Compare(english, Strings(ReswPath(language)), Relative(ReswPath(language))));
+            problems.AddRange(Compare(english, Strings(ReswPath(language)), language, Relative(ReswPath(language))));
         }
 
         Assert.True(problems.Count == 0, string.Join(Environment.NewLine, problems));
@@ -130,7 +143,7 @@ public sealed partial class ResourceParityTests
             ["Literal"] = "{0} reste du texte, {{1}} aussi",
         };
 
-        var problems = Compare(english, translated, "X.fr.resx");
+        var problems = Compare(english, translated, "fr", "X.fr.resx");
 
         Assert.Equal(4, problems.Count);
         Assert.Contains(problems, problem => problem.Contains("misses Dropped", StringComparison.Ordinal));
@@ -141,28 +154,59 @@ public sealed partial class ResourceParityTests
     }
 
     [Fact]
-    public void APluralLanguageMayDropOrAddCategoriesButNotOther()
+    public void APluralTranslationKeepsTheEnglishCategoriesAndAddsOnlyItsOwn()
     {
         var english = new Dictionary<string, string> { ["Photos_one"] = "{0} photo", ["Photos_other"] = "{0} photos" };
 
-        Assert.Empty(Compare(english, new Dictionary<string, string> { ["Photos_other"] = "{0} Fotos" }, "X.de.resx"));
-        Assert.Empty(Compare(english, new Dictionary<string, string> { ["Photos_one"] = "{0} foto", ["Photos_many"] = "{0} de fotos", ["Photos_other"] = "{0} fotos" }, "X.es.resx"));
-        var missingOther = Compare(english, new Dictionary<string, string> { ["Photos_one"] = "{0} photo" }, "X.fr.resx");
+        // English's one and other are required, in every language.
+        var missingOne = Compare(english, new Dictionary<string, string> { ["Photos_other"] = "{0} Fotos" }, "de", "X.de.resx");
+        Assert.Contains(missingOne, problem => problem.Contains("misses Photos_one", StringComparison.Ordinal));
+        var missingOther = Compare(english, new Dictionary<string, string> { ["Photos_one"] = "{0} photo" }, "fr", "X.fr.resx");
         Assert.Contains(missingOther, problem => problem.Contains("misses Photos_other", StringComparison.Ordinal));
+
+        // many where the language has it, and optional there (it falls back to other).
+        Assert.Empty(Compare(english, new Dictionary<string, string> { ["Photos_one"] = "{0} foto", ["Photos_many"] = "{0} de fotos", ["Photos_other"] = "{0} fotos" }, "es", "X.es.resx"));
+        Assert.Empty(Compare(english, new Dictionary<string, string> { ["Photos_one"] = "{0} photo", ["Photos_other"] = "{0} photos" }, "fr", "X.fr.resx"));
+        Assert.Empty(Compare(english, new Dictionary<string, string> { ["Photos_one"] = "{0} foto", ["Photos_many"] = "{0} de fotos", ["Photos_other"] = "{0} fotos" }, "pt-BR", "X.pt-BR.resx"));
+
+        // A category the language never uses.
+        var germanMany = Compare(english, new Dictionary<string, string> { ["Photos_one"] = "{0} Foto", ["Photos_many"] = "{0} Fotos", ["Photos_other"] = "{0} Fotos" }, "de", "X.de.resx");
+        Assert.Contains(germanMany, problem => problem.Contains("Photos_many", StringComparison.Ordinal) && problem.Contains("de never uses", StringComparison.Ordinal));
+        var englishMany = Compare(english, new Dictionary<string, string> { ["Photos_one"] = "{0} photo", ["Photos_many"] = "{0} photos", ["Photos_other"] = "{0} photos" }, ResourceLanguages.English, "Resources.resw");
+        Assert.Single(englishMany);
+        foreach (var category in new[] { "zero", "two", "few" })
+        {
+            var key = $"Photos_{category}";
+            var problems = Compare(english, new Dictionary<string, string> { ["Photos_one"] = "{0} foto", [key] = "{0} foto", ["Photos_other"] = "{0} foto" }, "it", "X.it.resx");
+            Assert.Single(problems);
+            Assert.Contains($"{key}: the plural category {category}, which it never uses", problems[0], StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void ATranslationThatDoesNotParseAsAFormatIsAProblem()
+    {
+        var english = new Dictionary<string, string> { ["Count"] = "{0} photos", ["Plain"] = "No photo" };
+
+        var problems = Compare(english, new Dictionary<string, string> { ["Count"] = "{0} photos }", ["Plain"] = "Aucune photo }" }, "fr", "X.fr.resx");
+
+        // Plain has no placeholder in English, so it is shown as is and a brace is just text.
+        Assert.Single(problems);
+        Assert.Contains("Count is not a valid format string", problems[0], StringComparison.Ordinal);
     }
 
     [Fact]
     public void AnEmptyTranslationIsAProblem()
     {
-        var problems = Compare(new Dictionary<string, string> { ["Save"] = "Save" }, new Dictionary<string, string> { ["Save"] = " " }, "X.it.resx");
+        var problems = Compare(new Dictionary<string, string> { ["Save"] = "Save" }, new Dictionary<string, string> { ["Save"] = " " }, "it", "X.it.resx");
         Assert.Contains(problems, problem => problem.Contains("Save is empty", StringComparison.Ordinal));
     }
 
-    /// <summary>The problems of one translated file against its English one.</summary>
-    internal static List<string> Compare(IReadOnlyDictionary<string, string> english, IReadOnlyDictionary<string, string> translated, string name)
+    /// <summary>The problems of one translated file, in <paramref name="language"/>, against its English one.</summary>
+    internal static List<string> Compare(IReadOnlyDictionary<string, string> english, IReadOnlyDictionary<string, string> translated, string language, string name)
     {
         var problems = new List<string>();
-        foreach (var key in english.Keys.Where(key => !IsOptionalPlural(key, english.ContainsKey)).Order(StringComparer.Ordinal))
+        foreach (var key in english.Keys.Order(StringComparer.Ordinal))
         {
             if (!translated.ContainsKey(key))
             {
@@ -170,10 +214,26 @@ public sealed partial class ResourceParityTests
             }
         }
 
+        // A language missing from the table is reported by EveryLanguageIsAShippedOne; here it gets English's categories.
+        var categories = _languageCategories.GetValueOrDefault(language, _languageCategories[ResourceLanguages.English]);
         foreach (var (key, value) in translated.OrderBy(pair => pair.Key, StringComparer.Ordinal))
         {
-            var counterpart = english.ContainsKey(key) ? key : IsOptionalPlural(key, english.ContainsKey) ? Stem(key) + "_other" : null;
-            if (counterpart is null)
+            string counterpart;
+            if (english.ContainsKey(key))
+            {
+                counterpart = key;
+            }
+            else if (PluralCategory(key, english.ContainsKey) is { } category)
+            {
+                if (!categories.Contains(category, StringComparer.Ordinal))
+                {
+                    problems.Add($"{name}: {key}: the plural category {category}, which {language} never uses (it has {string.Join(", ", categories)}).");
+                    continue;
+                }
+
+                counterpart = Stem(key) + "_other";
+            }
+            else
             {
                 problems.Add($"{name} has {key}, which the English file does not have.");
                 continue;
@@ -186,6 +246,12 @@ public sealed partial class ResourceParityTests
             }
 
             var expected = Placeholders(english[counterpart]);
+            if (expected.Count > 0 && ParseError(value) is { } error)
+            {
+                problems.Add($"{name}: {key} is not a valid format string ({error}).");
+                continue;
+            }
+
             var found = Placeholders(value);
             if (!expected.SetEquals(found))
             {
@@ -196,13 +262,31 @@ public sealed partial class ResourceParityTests
         return problems;
     }
 
-    // X_one, X_many... when English has X_other: a language may have that category or not.
-    private static bool IsOptionalPlural(string key, Func<string, bool> englishHas)
+    // The category of X_zero|one|two|few|many when English has X_other, else null.
+    private static string? PluralCategory(string key, Func<string, bool> englishHas)
     {
         var underscore = key.LastIndexOf('_');
-        return underscore > 0
-            && _pluralCategories.Contains(key[(underscore + 1)..], StringComparer.Ordinal)
-            && englishHas(key[..underscore] + "_other");
+        if (underscore <= 0 || !englishHas(key[..underscore] + "_other"))
+        {
+            return null;
+        }
+
+        var category = key[(underscore + 1)..];
+        return _pluralCategories.Contains(category, StringComparer.Ordinal) ? category : null;
+    }
+
+    // What string.Format would throw on: a lone brace, an unclosed placeholder.
+    private static string? ParseError(string text)
+    {
+        try
+        {
+            _ = System.Text.CompositeFormat.Parse(text);
+            return null;
+        }
+        catch (FormatException exception)
+        {
+            return exception.Message;
+        }
     }
 
     private static string Stem(string key) => key[..key.LastIndexOf('_')];
