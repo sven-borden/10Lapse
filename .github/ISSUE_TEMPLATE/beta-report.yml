@@ -1,0 +1,44 @@
+name: Beta report
+description: Something went wrong, or felt wrong, in the 10Lapse 3.0 private beta.
+title: "Beta: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing 10Lapse 3.0. This page is public: do not attach your photos, 10Lapse never needs them.
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: What you did, step by step, and what you saw. The exact words of any message help.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: photos
+    attributes:
+      label: Your photos
+      description: Where they come from and how many. For example "900 JPEGs from a Canon R6", "300 iPhone HEIC, HEIF extension installed", "a mix of JPEG and PNG, 6000 x 4000".
+    validations:
+      required: true
+  - type: input
+    id: pc
+    attributes:
+      label: Windows version and PC
+      description: Windows Settings, System, About. For example "Windows 11 24H2, Ryzen 7 5800X, 32 GB, RTX 3060" or "Surface Pro 11 (ARM)".
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: In 10Lapse open Settings, choose Copy diagnostics, then paste here. It lists the app version, your Windows version, the video encoders and the last log lines, and may include folder and file names. No photos.
+      render: text
+    validations:
+      required: true
