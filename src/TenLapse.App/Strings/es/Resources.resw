@@ -16,6 +16,6 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AppDescription" xml:space="preserve">
-    <value>Convierte una carpeta de fotos en un vídeo timelapse.</value>
+    <value>Convierte una carpeta de fotos en un video timelapse.</value>
   </data>
 </root>

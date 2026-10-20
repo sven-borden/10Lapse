@@ -2,9 +2,11 @@
 <!--
   Spanish (es) translation of ExportText.resx (#117). The English file's comments are the brief for each key.
   One neutral Spanish for Spain and Latin America. Informal address ("tú"), as Windows 11 writes Spanish. Windows'
-  Spanish terms (archivo, carpeta, Configuración, equipo); "vídeo" as Windows and the Store write it in es-ES. UI labels
-  named inside a sentence stand in quotation marks (“…”). Spanish needs no _many form here: with digits a million takes
-  no "de" ("1.000.000 fotos"), so every sentence is the same as _other.
+  Spanish terms (archivo, carpeta, Configuración, equipo). "video" without the accent: the one es file also serves
+  Mexico, the US and Latin America, and the RAE accepts "video" in Spain too; Store names keep their exact spelling
+  ("Extensión de vídeo AV1"). UI labels named inside a sentence stand in quotation marks (“…”). An exact million takes
+  "de" ("1.000.000 de fotos", RAE DPD "cardinales"), so a counted sentence that changes has a _many form; a family
+  without one falls back to _other.
 -->
 <root>
   <resheader name="resmimetype">
@@ -20,7 +22,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ExportVideo" xml:space="preserve">
-    <value>Exportar vídeo</value>
+    <value>Exportar video</value>
   </data>
   <data name="ExportingButton" xml:space="preserve">
     <value>Exportando…</value>
@@ -107,7 +109,7 @@
     <value>Reproducir</value>
   </data>
   <data name="PlayName" xml:space="preserve">
-    <value>Reproducir el vídeo</value>
+    <value>Reproducir el video</value>
   </data>
   <data name="ShowInFolder" xml:space="preserve">
     <value>Abrir carpeta</value>
@@ -122,7 +124,7 @@
     <value>Exportación cancelada. Aún no se pudo eliminar el archivo sin terminar, así que 10Lapse lo eliminará la próxima vez que se inicie.</value>
   </data>
   <data name="EditsWait" xml:space="preserve">
-    <value>El proyecto no se puede cambiar mientras se exporta el vídeo. Espera a que termine o cancela la exportación.</value>
+    <value>El proyecto no se puede cambiar mientras se exporta el video. Espera a que termine o cancela la exportación.</value>
   </data>
   <data name="ImportStillRunning" xml:space="preserve">
     <value>Todavía se están agregando fotos. Exporta cuando estén todas.</value>
@@ -131,13 +133,13 @@
     <value>La exportación no se inició porque el proyecto o su salida cambiaron mientras el cuadro de diálogo Guardar estaba abierto. Vuelve a elegir “{0}”.</value>
   </data>
   <data name="PremiereCantPlayFormat" xml:space="preserve">
-    <value>El vídeo se guardó, pero 10Lapse no puede reproducirlo aquí. Elige “{0}” y prueba el vídeo en otra aplicación.</value>
+    <value>El video se guardó, pero 10Lapse no puede reproducirlo aquí. Elige “{0}” y prueba el video en otra aplicación.</value>
   </data>
   <data name="CloseTitle" xml:space="preserve">
     <value>¿Detener la exportación y cerrar?</value>
   </data>
   <data name="CloseMessage" xml:space="preserve">
-    <value>El vídeo aún no está terminado. 10Lapse detiene la exportación y elimina el archivo sin terminar.</value>
+    <value>El video aún no está terminado. 10Lapse detiene la exportación y elimina el archivo sin terminar.</value>
   </data>
   <data name="CloseConfirm" xml:space="preserve">
     <value>Detener y cerrar</value>
@@ -146,7 +148,7 @@
     <value>Seguir exportando</value>
   </data>
   <data name="FileTypeName" xml:space="preserve">
-    <value>Vídeo MP4</value>
+    <value>Video MP4</value>
   </data>
   <data name="StartedFormat" xml:space="preserve">
     <value>Exportando {0}.</value>
