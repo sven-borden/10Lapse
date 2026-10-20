@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Italian (it) translation of RatingText.resx (#118). The English file's comments are the brief for each key.
+  Serves Italy and Switzerland; informal address ("tu"), as Windows 11 writes Italian. Italian has _one (exactly 1),
+  _many (exact millions: "1.000.000 di foto") and _other. UI labels named inside a sentence stand in “…”.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CardTitle" xml:space="preserve">
+    <value>Feedback</value>
+  </data>
+  <data name="CardCaptionFormat" xml:space="preserve">
+    <value>“{0}” apre la pagina dell'app in Microsoft Store. “{1}” apre GitHub nel browser. 10Lapse da solo non invia nulla.</value>
+  </data>
+  <data name="RateButton" xml:space="preserve">
+    <value>Valuta 10Lapse</value>
+  </data>
+  <data name="FeedbackButton" xml:space="preserve">
+    <value>Invia feedback</value>
+  </data>
+  <data name="RateTip" xml:space="preserve">
+    <value>Apre Microsoft Store</value>
+  </data>
+  <data name="FeedbackTip" xml:space="preserve">
+    <value>Apre GitHub nel browser</value>
+  </data>
+  <data name="RateFailed" xml:space="preserve">
+    <value>Impossibile aprire Microsoft Store. Apri Microsoft Store e cerca 10Lapse per lasciare una valutazione.</value>
+  </data>
+  <data name="FeedbackFailed" xml:space="preserve">
+    <value>Impossibile aprire il browser. Vai a github.com/sven-borden/10Lapse/issues per inviare il tuo feedback.</value>
+  </data>
+</root>

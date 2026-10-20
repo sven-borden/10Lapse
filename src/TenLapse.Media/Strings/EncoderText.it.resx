@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Italian (it) translation of EncoderText.resx (#118). The English file's comments are the brief for each key.
+  Serves Italy and Switzerland; informal address ("tu"), as Windows 11 writes Italian. Italian has _one (exactly 1),
+  _many (exact millions: "1.000.000 di foto") and _other. UI labels named inside a sentence stand in “…”.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HardwareUpTo" xml:space="preserve">
+    <value>L'hardware grafico di questo PC esporta fino a {0}.</value>
+  </data>
+  <data name="HardwareUpToThenSoftware" xml:space="preserve">
+    <value>L'hardware grafico di questo PC esporta fino a {0}; le risoluzioni superiori usano il codificatore software, più lento.</value>
+  </data>
+  <data name="SoftwareOnly" xml:space="preserve">
+    <value>L'hardware grafico di questo PC non può codificare {0}; il codificatore software, più lento, esporta fino a {1}.</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>Questo PC non può esportare video {0} con queste proporzioni e questa frequenza fotogrammi.</value>
+  </data>
+  <data name="NoPlayback" xml:space="preserve">
+    <value>Questo PC non può riprodurre video {0}, quindi non li esporta.</value>
+  </data>
+</root>
