@@ -64,6 +64,19 @@ public static class Plural
         };
     }
 
+    /// <summary>
+    /// The categories <paramref name="culture"/>'s language uses, <see cref="PluralCategory.Other"/> last: one and other
+    /// for English, German and every language without its own rule here; one, many and other for French, Spanish,
+    /// Italian and Portuguese. A translation's plural keys are among these (the parity tests check it).
+    /// </summary>
+    public static IReadOnlyList<PluralCategory> Categories(CultureInfo culture)
+    {
+        ArgumentNullException.ThrowIfNull(culture);
+        return culture.TwoLetterISOLanguageName is "fr" or "es" or "it" or "pt"
+            ? [PluralCategory.One, PluralCategory.Many, PluralCategory.Other]
+            : [PluralCategory.One, PluralCategory.Other];
+    }
+
     /// <summary>The key suffix of a category in the resource files: <c>_one</c>, <c>_many</c>, <c>_other</c>.</summary>
     public static string Suffix(PluralCategory category) => category switch
     {

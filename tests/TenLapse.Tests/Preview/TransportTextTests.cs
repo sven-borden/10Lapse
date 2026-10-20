@@ -7,7 +7,6 @@ using TenLapse.Tests.Presentation;
 
 namespace TenLapse.Tests.Preview;
 
-[UseCulture("en-US")]
 public sealed class TransportTextTests
 {
     [Theory]

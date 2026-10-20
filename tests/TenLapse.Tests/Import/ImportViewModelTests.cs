@@ -8,7 +8,6 @@ using TenLapse.Tests.Fixtures;
 namespace TenLapse.Tests.Import;
 
 /// <summary>The import end to end, from the view model to the project, on a stand-in UI thread.</summary>
-[UseCulture("en-US")]
 public sealed class ImportViewModelTests
 {
     [Fact]

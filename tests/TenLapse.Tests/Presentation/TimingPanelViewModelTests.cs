@@ -8,7 +8,6 @@ using TenLapse.Tests.Projects;
 namespace TenLapse.Tests.Presentation;
 
 /// <summary>The Timing panel (#17): modes, presets, custom values, bounds, the readout, and that every change goes through the project.</summary>
-[UseCulture("en-US")]
 public sealed class TimingPanelViewModelTests
 {
     private static readonly CultureInfo _en = CultureInfo.GetCultureInfo("en-US");

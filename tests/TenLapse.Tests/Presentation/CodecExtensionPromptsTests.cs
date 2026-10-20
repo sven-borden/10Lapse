@@ -7,7 +7,6 @@ using TenLapse.Presentation.Services;
 namespace TenLapse.Tests.Presentation;
 
 /// <summary>#14: the InfoBars that send the user to the Microsoft Store for the HEIF, HEVC and Raw extensions.</summary>
-[UseCulture("en-US")]
 public sealed class CodecExtensionPromptsTests
 {
     private static readonly PhotoCodecExtension _heif = KnownPhotoFormats.HeifExtension;

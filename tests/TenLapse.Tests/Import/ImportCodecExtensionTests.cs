@@ -6,7 +6,6 @@ using TenLapse.Presentation.Services;
 namespace TenLapse.Tests.Import;
 
 /// <summary>#14 through the import: photos Windows cannot decode for want of an extension, and what the user is told.</summary>
-[UseCulture("en-US")]
 public sealed class ImportCodecExtensionTests
 {
     private static ScriptedImportSource Source(int heic, int broken, params PhotoCodecExtension[] needed)

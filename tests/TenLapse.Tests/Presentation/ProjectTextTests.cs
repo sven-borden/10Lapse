@@ -4,7 +4,6 @@ using TenLapse.Presentation;
 
 namespace TenLapse.Tests.Presentation;
 
-[UseCulture("en-US")]
 public sealed class ProjectTextTests
 {
     // The input is frames per second (Per second), seconds (Length) or seconds per photo (Per photo).

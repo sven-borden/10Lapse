@@ -7,8 +7,10 @@ namespace TenLapse.Core.Text;
 
 /// <summary>
 /// One resource file of user-visible text (#39): a <c>.resx</c> in a project's <c>Strings</c> folder, embedded in its
-/// assembly and read in the user's UI language, English when there is no translation (English is the neutral language,
-/// and the only one in 3.0). Each text class (<c>ProjectText</c>, <c>ExportText</c>, <see cref="Timing.TimingWords"/>, ...)
+/// assembly and read in the UI language, English when there is no translation for it. English is the neutral language;
+/// 3.0 ships English, French, German, Spanish, Italian and Brazilian Portuguese (<see cref="ResourceLanguages.Shipped"/>),
+/// and the app sets the UI culture to one of them at start-up (#113), before any text is read.
+/// Each text class (<c>ProjectText</c>, <c>ExportText</c>, <see cref="Timing.TimingWords"/>, ...)
 /// holds one and reads every sentence through it, named after the property that asks:
 /// <code>public static string AddPhotos => _strings.Get();</code>
 /// so call sites and tests read the same properties as before.

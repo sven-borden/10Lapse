@@ -75,6 +75,27 @@ public sealed class PluralTests
         Assert.Equal(Other, Plural.Category(language, 2));
     }
 
+    [Theory]
+    [InlineData("en-US", "_one _other")]
+    [InlineData("de", "_one _other")]
+    [InlineData("fr", "_one _many _other")]
+    [InlineData("es", "_one _many _other")]
+    [InlineData("it", "_one _many _other")]
+    [InlineData("pt-BR", "_one _many _other")]
+    [InlineData("ja-JP", "_one _other")]
+    public void EachLanguageListsTheCategoriesItsRuleGives(string culture, string suffixes)
+    {
+        var language = CultureInfo.GetCultureInfo(culture);
+        var categories = Plural.Categories(language);
+        Assert.Equal(suffixes, string.Join(' ', categories.Select(Plural.Suffix)));
+
+        // Every number lands in one of them.
+        foreach (var number in new[] { 0m, 1m, 1.5m, 2m, 1_000_000m, 1_000_001m, 1.0m })
+        {
+            Assert.Contains(Plural.Category(language, number), categories);
+        }
+    }
+
     [Fact]
     public void TheSignIsIgnoredAndTheSuffixesNameTheKeys()
     {

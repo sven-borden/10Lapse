@@ -7,7 +7,6 @@ using TenLapse.Tests.Projects;
 
 namespace TenLapse.Tests.Presentation;
 
-[UseCulture("en-US")]
 public sealed class FilmstripViewModelTests
 {
     private long _now;

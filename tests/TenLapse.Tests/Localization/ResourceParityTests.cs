@@ -25,17 +25,12 @@ public sealed partial class ResourceParityTests
 {
     private static readonly string[] _pluralCategories = ["zero", "one", "two", "few", "many"];
 
-    // The CLDR cardinal categories of each shipped language (other included). Switch this to #114's Plural rules once
-    // that merges, so the test and the runtime share one table.
-    private static readonly Dictionary<string, string[]> _languageCategories = new(StringComparer.Ordinal)
-    {
-        [ResourceLanguages.English] = ["one", "other"],
-        ["de"] = ["one", "other"],
-        ["fr"] = ["one", "many", "other"],
-        ["es"] = ["one", "many", "other"],
-        ["it"] = ["one", "many", "other"],
-        ["pt-BR"] = ["one", "many", "other"],
-    };
+    // The CLDR cardinal categories of each shipped language (other included), from the runtime's own rules (#114), so the
+    // test and the app share one table.
+    private static readonly Dictionary<string, string[]> _languageCategories = ResourceLanguages.Shipped.ToDictionary(
+        language => language,
+        language => Plural.Categories(System.Globalization.CultureInfo.GetCultureInfo(language)).Select(category => Plural.Suffix(category)[1..]).ToArray(),
+        StringComparer.Ordinal);
 
     [Fact]
     public void EveryTranslatedResxHasTheEnglishKeysAndPlaceholders()
