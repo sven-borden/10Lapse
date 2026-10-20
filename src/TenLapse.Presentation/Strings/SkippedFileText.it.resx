@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Italian (it) translation of SkippedFileText.resx (#118). The English file's comments are the brief for each key.
+  Serves Italy and Switzerland; informal address ("tu"), as Windows 11 writes Italian. Italian has _one (exactly 1),
+  _many (exact millions: "1.000.000 di foto") and _other. UI labels named inside a sentence stand in “…”.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Skipped_one" xml:space="preserve">
+    <value>{0} foto non è leggibile ed è stata ignorata.</value>
+  </data>
+  <data name="Skipped_other" xml:space="preserve">
+    <value>{0} foto non sono leggibili e sono state ignorate.</value>
+  </data>
+  <data name="Skipped_many" xml:space="preserve">
+    <value>{0} di foto non sono leggibili e sono state ignorate.</value>
+  </data>
+  <data name="UnsupportedFormat" xml:space="preserve">
+    <value>Non è un formato foto leggibile da Windows</value>
+  </data>
+  <data name="DecodeFailed" xml:space="preserve">
+    <value>File danneggiato</value>
+  </data>
+  <data name="AccessDenied" xml:space="preserve">
+    <value>Accesso negato</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>Spostato, eliminato o su un'unità scollegata</value>
+  </data>
+  <data name="Other" xml:space="preserve">
+    <value>Non leggibile</value>
+  </data>
+  <data name="EmptyFile" xml:space="preserve">
+    <value>File vuoto (0 byte)</value>
+  </data>
+  <data name="Truncated" xml:space="preserve">
+    <value>File danneggiato: incompleto</value>
+  </data>
+  <data name="NeedsExtension" xml:space="preserve">
+    <value>Serve un'estensione di Microsoft Store</value>
+  </data>
+  <data name="FileInUse" xml:space="preserve">
+    <value>In uso in un'altra app</value>
+  </data>
+  <data name="ImageTooLarge" xml:space="preserve">
+    <value>Troppo grande per essere aperto</value>
+  </data>
+  <data name="CloudFileOffline" xml:space="preserve">
+    <value>Nel cloud e non disponibile offline</value>
+  </data>
+  <data name="CloudOnly" xml:space="preserve">
+    <value>Solo in OneDrive, non su questo PC</value>
+  </data>
+</root>

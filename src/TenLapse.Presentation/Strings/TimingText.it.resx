@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Italian (it) translation of TimingText.resx (#118). The English file's comments are the brief for each key.
+  Serves Italy and Switzerland; informal address ("tu"), as Windows 11 writes Italian. Italian has _one (exactly 1),
+  _many (exact millions: "1.000.000 di foto") and _other. UI labels named inside a sentence stand in “…”.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Velocità</value>
+  </data>
+  <data name="ModesName" xml:space="preserve">
+    <value>Modalità velocità</value>
+  </data>
+  <data name="ModePerSecond" xml:space="preserve">
+    <value>Al secondo</value>
+  </data>
+  <data name="ModeLength" xml:space="preserve">
+    <value>Durata</value>
+  </data>
+  <data name="ModePerPhoto" xml:space="preserve">
+    <value>Per foto</value>
+  </data>
+  <data name="PresetsFramesPerSecond" xml:space="preserve">
+    <value>Fotogrammi al secondo</value>
+  </data>
+  <data name="PresetsLength" xml:space="preserve">
+    <value>Durata del video</value>
+  </data>
+  <data name="PresetsSecondsPerPhoto" xml:space="preserve">
+    <value>Secondi per foto</value>
+  </data>
+  <data name="CustomFramesPerSecond" xml:space="preserve">
+    <value>Frequenza personalizzata</value>
+  </data>
+  <data name="CustomLength" xml:space="preserve">
+    <value>Durata personalizzata in secondi</value>
+  </data>
+  <data name="CustomSecondsPerPhoto" xml:space="preserve">
+    <value>Secondi per foto personalizzati</value>
+  </data>
+  <data name="UnitSecondsPerPhoto" xml:space="preserve">
+    <value>s per foto</value>
+  </data>
+  <data name="NotANumberFramesPerSecond" xml:space="preserve">
+    <value>Digita una frequenza da {0} a {1} fps, ad esempio 24 o {2}.</value>
+  </data>
+  <data name="NotANumberLength" xml:space="preserve">
+    <value>Digita una durata in secondi, ad esempio 30, oppure in minuti e secondi, ad esempio 1:30. Può andare da {0} a {1}.</value>
+  </data>
+  <data name="NotANumberSecondsPerPhoto" xml:space="preserve">
+    <value>Digita per quanti secondi resta ogni foto, da {0} a {1}.</value>
+  </data>
+  <data name="ClampedFramesPerSecond" xml:space="preserve">
+    <value>La frequenza va da {2} a {3} fps, quindi {0} ora è {1}.</value>
+  </data>
+  <data name="ClampedLength" xml:space="preserve">
+    <value>Un video può durare da {2} a {3}, quindi {0} ora è {1}.</value>
+  </data>
+  <data name="ClampedSecondsPerPhoto" xml:space="preserve">
+    <value>Una foto può restare da {2} a {3}, quindi {0} ora è {1}.</value>
+  </data>
+  <data name="NtscRate" xml:space="preserve">
+    <value>Viene usata la frequenza NTSC {0} ({1}/{2}).</value>
+  </data>
+  <data name="ThousandsSeparator" xml:space="preserve">
+    <value>Digita 1000 senza separatore, oppure {0} per uno e mezzo.</value>
+  </data>
+  <data name="Rounded" xml:space="preserve">
+    <value>Arrotondato a {0}.</value>
+  </data>
+  <data name="LengthTooShort" xml:space="preserve">
+    <value>Le tue foto non si possono riprodurre in {0}: la velocità massima è {1}, quindi il video dura {2}.</value>
+  </data>
+  <data name="LengthTooLong" xml:space="preserve">
+    <value>Le tue foto non bastano per {0}: la velocità minima è {1}, quindi il video dura {2}.</value>
+  </data>
+</root>

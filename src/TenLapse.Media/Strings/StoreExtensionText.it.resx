@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Italian (it) Store names of the extensions (#118): the exact titles of the Microsoft Store catalog for
+  market IT, language it-IT (checked 2026-10-20; market CH, it-CH gives the same). Do not translate them.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HeifImageExtensions" xml:space="preserve">
+    <value>Estensioni immagini HEIF</value>
+  </data>
+  <data name="HevcVideoExtensions" xml:space="preserve">
+    <value>Estensioni video HEVC</value>
+  </data>
+  <data name="Av1VideoExtension" xml:space="preserve">
+    <value>Estensione video AV1</value>
+  </data>
+  <data name="WebpImageExtensions" xml:space="preserve">
+    <value>Estensioni immagini WebP</value>
+  </data>
+  <data name="JpegXlImageExtension" xml:space="preserve">
+    <value>Estensione immagine JPEG XL</value>
+  </data>
+  <data name="RawImageExtension" xml:space="preserve">
+    <value>Estensione immagini Raw</value>
+  </data>
+</root>

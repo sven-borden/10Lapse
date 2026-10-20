@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Italian (it) translation of KeyText.resx (#118). The English file's comments are the brief for each key.
+  Serves Italy and Switzerland; informal address ("tu"), as Windows 11 writes Italian. Italian has _one (exactly 1),
+  _many (exact millions: "1.000.000 di foto") and _other. UI labels named inside a sentence stand in “…”.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ShortcutTipFormat" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="ChooseFolderShortcut" xml:space="preserve">
+    <value>Ctrl+O</value>
+  </data>
+  <data name="ChooseFolderKeys" xml:space="preserve">
+    <value>Control+O</value>
+  </data>
+  <data name="ChoosePhotosShortcut" xml:space="preserve">
+    <value>Ctrl+Maiusc+O</value>
+  </data>
+  <data name="ChoosePhotosKeys" xml:space="preserve">
+    <value>Control+Maiusc+O</value>
+  </data>
+  <data name="NewProjectShortcut" xml:space="preserve">
+    <value>Ctrl+N</value>
+  </data>
+  <data name="NewProjectKeys" xml:space="preserve">
+    <value>Control+N</value>
+  </data>
+  <data name="ExportShortcut" xml:space="preserve">
+    <value>Ctrl+E</value>
+  </data>
+  <data name="PlayKeys" xml:space="preserve">
+    <value>Barra spaziatrice</value>
+  </data>
+  <data name="BackKeys" xml:space="preserve">
+    <value>Esc</value>
+  </data>
+</root>

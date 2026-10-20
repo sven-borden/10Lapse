@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Italian (it) translation of OutputText.resx (#118). The English file's comments are the brief for each key.
+  Serves Italy and Switzerland; informal address ("tu"), as Windows 11 writes Italian. Italian has _one (exactly 1),
+  _many (exact millions: "1.000.000 di foto") and _other. UI labels named inside a sentence stand in “…”.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Output</value>
+  </data>
+  <data name="ResolutionLabel" xml:space="preserve">
+    <value>Risoluzione</value>
+  </data>
+  <data name="FormatLabel" xml:space="preserve">
+    <value>Formato</value>
+  </data>
+  <data name="QualityLabel" xml:space="preserve">
+    <value>Qualità</value>
+  </data>
+  <data name="Checking" xml:space="preserve">
+    <value>Verifica di cosa può codificare questo PC…</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Le opzioni di output sono pronte.</value>
+  </data>
+  <data name="ConservativeNote" xml:space="preserve">
+    <value>10Lapse non è riuscito a verificare i codificatori video di questo PC, quindi offre H.264 fino a 1080p.</value>
+  </data>
+  <data name="FormatReplaced" xml:space="preserve">
+    <value>Questo PC non può esportare in {0}, quindi è selezionato {1}.</value>
+  </data>
+  <data name="ResolutionReplaced" xml:space="preserve">
+    <value>Questo PC non può esportare in {0} con queste impostazioni, quindi è selezionata {1}.</value>
+  </data>
+  <data name="ResolutionReplacedByShape" xml:space="preserve">
+    <value>{0} non è disponibile con queste proporzioni su questo PC, quindi è selezionata {1}. La scelta {0} torna con proporzioni che la consentono.</value>
+  </data>
+  <data name="KeepSelected" xml:space="preserve">
+    <value>Usa queste impostazioni</value>
+  </data>
+  <data name="EstimateAbout" xml:space="preserve">
+    <value>Circa {0}</value>
+  </data>
+  <data name="Megabytes" xml:space="preserve">
+    <value>{0} MB</value>
+  </data>
+  <data name="Gigabytes" xml:space="preserve">
+    <value>{0} GB</value>
+  </data>
+  <data name="UnderOneMegabyte" xml:space="preserve">
+    <value>Meno di 1 MB</value>
+  </data>
+  <data name="ResolutionOptionFormat" xml:space="preserve">
+    <value>{0} · {1} × {2}</value>
+  </data>
+  <data name="FormatOptionFormat" xml:space="preserve">
+    <value>MP4 · {0}</value>
+  </data>
+  <data name="QualityStandard" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="QualityHigh" xml:space="preserve">
+    <value>Alta</value>
+  </data>
+  <data name="QualityMaximum" xml:space="preserve">
+    <value>Massima</value>
+  </data>
+</root>
