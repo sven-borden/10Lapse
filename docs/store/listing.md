@@ -45,7 +45,7 @@ Private by design
 Made for Windows 11
 10Lapse 3.0 needs Windows 11 on an x64 or ARM64 PC; on Windows 10, the Store offers the older 10Lapse 2.1.1 instead. Light, dark and high contrast themes follow Windows, and so do animations. Everything works from the keyboard, and screen readers announce every control and the export's progress.
 
-Optional extensions from the Microsoft Store add more photo formats: HEIC photos need HEIF Image Extensions (free) and HEVC Video Extensions (paid), and camera RAW files need Raw Image Extension (free). 10Lapse names the one that is missing and links to its Store page.
+Optional extensions from the Microsoft Store add more photo formats: HEIC photos need HEIF Image Extension (free) and HEVC Video Extensions (paid), and camera RAW files need Raw Image Extension (free). 10Lapse names the one that is missing and links to its Store page.
 ```
 
 ## Short description
@@ -66,7 +66,7 @@ does; it does not claim a crash rate.
 10Lapse 3.0 is rebuilt from the ground up for Windows 11.
 
 - Rewritten from scratch, so the code behind the 2.1.1 crashes is gone. When something goes wrong, 10Lapse says what happened and what to do next.
-- Imports HEIC and .jpeg photos. HEIC needs HEIF Image Extensions (free) and HEVC Video Extensions (paid) from the Microsoft Store; 10Lapse tells you which one is missing.
+- Imports HEIC and .jpeg photos. HEIC needs HEIF Image Extension (free) and HEVC Video Extensions (paid) from the Microsoft Store; 10Lapse tells you which one is missing.
 - Export up to 4K, in H.264, or HEVC where the PC supports it, with progress, the time left and a Cancel button that stops the export within a second.
 - Keeps working when you switch away or minimize: the export goes on, with progress on the taskbar and a notification when the video is ready.
 - A new Per photo speed for slideshows, beside frames per second and video length.
@@ -132,7 +132,7 @@ Minimum hardware:
 
 ```text
 Windows 11 on an x64 or ARM64 PC
-Optional, for HEIC photos: HEIF Image Extensions (free) and HEVC Video Extensions (paid) from the Microsoft Store
+Optional, for HEIC photos: HEIF Image Extension (free) and HEVC Video Extensions (paid) from the Microsoft Store
 Optional, for camera RAW photos: Raw Image Extension (free) from the Microsoft Store
 Optional, for HEVC video: HEVC Video Extensions (paid) and a graphics card that encodes HEVC
 ```
@@ -146,7 +146,7 @@ A graphics card with a hardware video encoder, for faster export
 
 What each extension adds, for Sven's answers to reviews (#44), not for a field:
 
-- HEIF Image Extensions (free) and HEVC Video Extensions (paid): HEIC and HEIF photos from phones.
+- HEIF Image Extension (free) and HEVC Video Extensions (paid): HEIC and HEIF photos from phones.
   Without them, those photos are skipped and an InfoBar names the missing extension with a button to its Store page.
 - Raw Image Extension (free): RAW files from most cameras (CR2, CR3, NEF, ARW, RAF, ORF, RW2 and more). DNG opens
   without it. A RAW with a JPEG twin of the same name imports once, as the JPEG.

@@ -146,15 +146,15 @@ public sealed class ProjectTextTests
     }
 
     [Theory]
-    [InlineData(1, 1, "This photo needs HEIF Image Extensions (free) from Microsoft.")]
-    [InlineData(12, 1, "These 12 photos need HEIF Image Extensions (free) from Microsoft.")]
-    [InlineData(1, 2, "This photo needs 2 extensions from Microsoft. Start with HEIF Image Extensions (free).")]
-    [InlineData(8, 2, "These 8 photos need 2 extensions from Microsoft. Start with HEIF Image Extensions (free).")]
+    [InlineData(1, 1, "This photo needs HEIF Image Extension (free) from Microsoft.")]
+    [InlineData(12, 1, "These 12 photos need HEIF Image Extension (free) from Microsoft.")]
+    [InlineData(1, 2, "This photo needs 2 extensions from Microsoft. Start with HEIF Image Extension (free).")]
+    [InlineData(8, 2, "These 8 photos need 2 extensions from Microsoft. Start with HEIF Image Extension (free).")]
     public void TheExtensionSentencesAreWholeAndCountTheExtensions(int photos, int extensions, string expected)
     {
         PhotoCodecExtension[] needed =
         [
-            new("HEIF Image Extensions", "9PMMSR1CGPWG"),
+            new("HEIF Image Extension", "9PMMSR1CGPWG"),
             new("HEVC Video Extensions", "9NMZLZ57R3T7", HasFee: true, IsCodec: true),
         ];
 

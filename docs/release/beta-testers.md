@@ -19,7 +19,7 @@ Still on 2.1.1 after a few hours? Tell Sven which Windows version you run.
 Use your own photos. Notice anything odd, slow or confusing.
 
 - **A folder of your photos.** Pick it or drop it onto the window. Does the order look right? Is the preview smooth?
-- **iPhone photos (HEIC).** First without the free *HEIF Image Extensions* from the Microsoft Store, then with it. Without it, 10Lapse should say what to install.
+- **iPhone photos (HEIC).** First without the free *HEIF Image Extension* from the Microsoft Store, then with it. Without it, 10Lapse should say what to install.
 - **A big set.** A few thousand photos, or large ones (24 megapixels and up).
 - **Export** at a few settings: another resolution, frame rate or codec (H.264, HEVC). Play the video.
 - **Minimize 10Lapse during an export** and wait. When it ends, a Windows notification should say so, and clicking it should bring 10Lapse back.

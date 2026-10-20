@@ -117,16 +117,39 @@ public sealed partial class TextResourcesTests
     [Fact]
     public void APluralFamilyFallsBackToItsOtherForm()
     {
+        // A test-only file (Strings/PluralFallback.resx) with Counted_one and Counted_other and no _many, so the proof
+        // reads no shipped translation: whichever forms a real language's file gains cannot break it.
+        var resources = new TextResources("TenLapse.Tests.Presentation.Strings.PluralFallback", typeof(TextResourcesTests).Assembly);
+        var counted = resources.Plural("Counted");
         var before = CultureInfo.CurrentUICulture;
         try
         {
-            // French has a "many" form for exact millions; the English file has none, so the other form is used.
+            // French, Spanish, Italian and Portuguese have a "many" category (exact millions); the file has no such form.
+            foreach (var language in new[] { "fr-FR", "es-ES", "it-IT", "pt-BR" })
+            {
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(language);
+                Assert.Equal(PluralCategory.Many, Plural.Category(CultureInfo.CurrentUICulture, 1_000_000m));
+                Assert.Equal("{0} items", counted.For(1_000_000m));
+                Assert.Equal("{0} items", counted.For(2m));
+            }
+
+            // A form the file has is still chosen: French puts 0 in "one".
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr-FR");
-            Assert.Equal(ProjectText.ImportDone.For(2), ProjectText.ImportDone.For(1_000_000));
+            Assert.Equal("{0} item", counted.For(0m));
+            Assert.Equal("{0} item", counted.For(1m));
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = before;
+        }
+    }
 
-            // French puts 0 in "one".
-            Assert.Equal(ProjectText.ImportDone.For(1), ProjectText.ImportDone.For(0));
-
+    [Fact]
+    public void EnglishPluralFamiliesChooseOneAndOther()
+    {
+        var before = CultureInfo.CurrentUICulture;
+        try
+        {
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
             Assert.Equal("{0} photo in the project.", ProjectText.ImportDone.For(1));
             Assert.Equal("{0} photos in the project.", ProjectText.ImportDone.For(0));
