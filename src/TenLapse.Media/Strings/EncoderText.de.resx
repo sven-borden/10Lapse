@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  German (de) translation of EncoderText.resx (#116). The English file's comments are the brief for each key.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HardwareUpTo" xml:space="preserve">
+    <value>Die Grafikhardware dieses PCs exportiert bis {0}.</value>
+  </data>
+  <data name="HardwareUpToThenSoftware" xml:space="preserve">
+    <value>Die Grafikhardware dieses PCs exportiert bis {0}; höhere Auflösungen nutzen den langsameren Software-Encoder.</value>
+  </data>
+  <data name="SoftwareOnly" xml:space="preserve">
+    <value>Die Grafikhardware dieses PCs kann {0} nicht codieren; der langsamere Software-Encoder exportiert bis {1}.</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>Dieser PC kann mit diesem Bildformat und dieser Bildrate kein {0}-Video exportieren.</value>
+  </data>
+  <data name="NoPlayback" xml:space="preserve">
+    <value>Dieser PC kann keine {0}-Videos wiedergeben und exportiert sie deshalb nicht.</value>
+  </data>
+</root>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  German (de) key names (#116), as Windows names the keys on a German keyboard: Strg, Umschalt, Leertaste, Esc.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ShortcutTipFormat" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="ChooseFolderShortcut" xml:space="preserve">
+    <value>Strg+O</value>
+  </data>
+  <data name="ChooseFolderKeys" xml:space="preserve">
+    <value>Strg+O</value>
+  </data>
+  <data name="ChoosePhotosShortcut" xml:space="preserve">
+    <value>Strg+Umschalt+O</value>
+  </data>
+  <data name="ChoosePhotosKeys" xml:space="preserve">
+    <value>Strg+Umschalt+O</value>
+  </data>
+  <data name="NewProjectShortcut" xml:space="preserve">
+    <value>Strg+N</value>
+  </data>
+  <data name="NewProjectKeys" xml:space="preserve">
+    <value>Strg+N</value>
+  </data>
+  <data name="ExportShortcut" xml:space="preserve">
+    <value>Strg+E</value>
+  </data>
+  <data name="PlayKeys" xml:space="preserve">
+    <value>Leertaste</value>
+  </data>
+  <data name="BackKeys" xml:space="preserve">
+    <value>Esc</value>
+  </data>
+</root>
