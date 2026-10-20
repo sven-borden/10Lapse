@@ -110,7 +110,7 @@
     <value>Reproducir el vídeo</value>
   </data>
   <data name="ShowInFolder" xml:space="preserve">
-    <value>Mostrar en carpeta</value>
+    <value>Abrir carpeta</value>
   </data>
   <data name="BackToEditing" xml:space="preserve">
     <value>Volver a la edición</value>
@@ -131,7 +131,7 @@
     <value>La exportación no se inició porque el proyecto o su salida cambiaron mientras el cuadro de diálogo Guardar estaba abierto. Vuelve a elegir “{0}”.</value>
   </data>
   <data name="PremiereCantPlayFormat" xml:space="preserve">
-    <value>El vídeo se guardó, pero 10Lapse no puede reproducirlo aquí. Elige “{0}” y ábrelo en otra aplicación para comprobarlo.</value>
+    <value>El vídeo se guardó, pero 10Lapse no puede reproducirlo aquí. Elige “{0}” y prueba el vídeo en otra aplicación.</value>
   </data>
   <data name="CloseTitle" xml:space="preserve">
     <value>¿Detener la exportación y cerrar?</value>
