@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  French (fr) translation of TimingText.resx (#115). The comments of the English file are the brief for each key.
+  Typography as Windows writes it in French: a narrow no-break space (U+202F) before ; : ? ! and %, and inside
+  « », a no-break space (U+00A0) between a number and its unit. Form of address: vous.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Cadence</value>
+  </data>
+  <data name="ModesName" xml:space="preserve">
+    <value>Mode de cadence</value>
+  </data>
+  <data name="ModePerSecond" xml:space="preserve">
+    <value>Par seconde</value>
+  </data>
+  <data name="ModeLength" xml:space="preserve">
+    <value>Durée</value>
+  </data>
+  <data name="ModePerPhoto" xml:space="preserve">
+    <value>Par photo</value>
+  </data>
+  <data name="PresetsFramesPerSecond" xml:space="preserve">
+    <value>Images par seconde</value>
+  </data>
+  <data name="PresetsLength" xml:space="preserve">
+    <value>Durée de la vidéo</value>
+  </data>
+  <data name="PresetsSecondsPerPhoto" xml:space="preserve">
+    <value>Secondes par photo</value>
+  </data>
+  <data name="CustomFramesPerSecond" xml:space="preserve">
+    <value>Autre cadence, en images par seconde</value>
+  </data>
+  <data name="CustomLength" xml:space="preserve">
+    <value>Autre durée, en secondes</value>
+  </data>
+  <data name="CustomSecondsPerPhoto" xml:space="preserve">
+    <value>Autre durée par photo, en secondes</value>
+  </data>
+  <data name="UnitSecondsPerPhoto" xml:space="preserve">
+    <value>s par photo</value>
+  </data>
+  <data name="NotANumberFramesPerSecond" xml:space="preserve">
+    <value>Entrez une cadence de {0} à {1} i/s, par exemple 24 ou {2}.</value>
+  </data>
+  <data name="NotANumberLength" xml:space="preserve">
+    <value>Entrez une durée en secondes, par exemple 30, ou en minutes et secondes, par exemple 1:30. Elle peut aller de {0} à {1}.</value>
+  </data>
+  <data name="NotANumberSecondsPerPhoto" xml:space="preserve">
+    <value>Entrez la durée d’affichage de chaque photo en secondes, de {0} à {1}.</value>
+  </data>
+  <data name="ClampedFramesPerSecond" xml:space="preserve">
+    <value>La cadence va de {2} à {3} i/s : {0} devient donc {1}.</value>
+  </data>
+  <data name="ClampedLength" xml:space="preserve">
+    <value>Une vidéo peut durer de {2} à {3} : {0} devient donc {1}.</value>
+  </data>
+  <data name="ClampedSecondsPerPhoto" xml:space="preserve">
+    <value>Une photo peut rester affichée de {2} à {3} : {0} devient donc {1}.</value>
+  </data>
+  <data name="NtscRate" xml:space="preserve">
+    <value>Cadence NTSC exacte utilisée : {0} ({1}/{2}).</value>
+  </data>
+  <data name="ThousandsSeparator" xml:space="preserve">
+    <value>Entrez 1000 sans séparateur, ou {0} pour un et demi.</value>
+  </data>
+  <data name="Rounded" xml:space="preserve">
+    <value>Arrondi à {0}.</value>
+  </data>
+  <data name="LengthTooShort" xml:space="preserve">
+    <value>Vos photos ne peuvent pas tenir en {0} : la vitesse la plus rapide est {1}, la vidéo dure donc {2}.</value>
+  </data>
+  <data name="LengthTooLong" xml:space="preserve">
+    <value>Vos photos ne peuvent pas remplir {0} : la vitesse la plus lente est {1}, la vidéo dure donc {2}.</value>
+  </data>
+</root>
