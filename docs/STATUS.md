@@ -135,6 +135,9 @@ Nothing blocks the build loop. Everything below waits until release is near
 - 2026-10-20 (Sven, #42): the Store screenshots use the generated sample
   photos (`scripts/store-screenshots.ps1`, "more polished"), not a real shoot.
   The leftover `%LOCALAPPDATA%\10Lapse` from Debug runs (994 MB) was deleted.
+- 2026-10-20 (Sven): videos under `docs/` are stored in Git LFS (`.gitattributes`). GitHub Free includes 10 GB of
+  LFS storage and 10 GB of downloads a month, counted against the owner's account. The first is the 30 s showreel in
+  `docs/store/showreel/`, which is not the #43 trailer.
 - 2026-10-20 (Sven, #38): the selected segment pill keeps its designed look in
   light and dark (1.14:1 / 1.49:1 against the track; the bold label and the
   UIA selection state carry it), a known WCAG 1.4.11 gap for #41. High
