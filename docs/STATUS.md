@@ -1,10 +1,10 @@
 # 10Lapse 3.0 status
 
-Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
+Updated 2026-10-20. Roadmap: the pinned #59 and the milestones. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. 2026-10-20: #106 (#38 accessibility) merged. **3.0 is code-complete.** Release prep (Sven's pick): #107 test matrix and #108 flight prep merged (`docs/test-matrix.md`, `docs/release/`). #111 (#110 Debug journal path) and #109 (#42 listing drafts) merged. **Release prep done; nothing in flight.** Next steps are Sven's: Partner Center (flight per `docs/release/flight.md`, listing per `docs/store/listing.md`), then the test pass (`docs/test-matrix.md`). Each PR says Refs; the issues close once Sven's part is done.
+2026-10-20: **3.0 is code-complete and release prep is done; nothing in flight.** Sven merged #112 (showreel, refs #43). The issue review left 20 open issues, each with a current body and a Done when (Decisions). Next steps are Sven's, in order: #7, the flight #40 (`docs/release/flight.md`) with the test pass #41 (`docs/test-matrix.md`) and the #90 watch, then the listing #42 (`docs/store/listing.md`), #43 and the rollout #44. Each release PR says Refs; the issues close once Sven's part is done.
 
 ## Waves
 
@@ -12,29 +12,22 @@ Each wave runs at most two issues at once, only when they touch disjoint
 areas. A wave starts when everything it depends on is merged. Model: **O** is
 Opus 5.5, **S** is Sonnet 5.5.
 
-Waves 0 to 16 are done; every issue in them is under Merged below. #90
-(start-up crash) stays open after its hardening in PR #91.
-
-| Wave | Issue | Model | Area | Status |
-|---|---|---|---|---|
-| 17-20 | #39, #101, #104, #38, #41, #40, #110 | | | merged (#40, #41 issues open) |
-| 20 | #42 Listing drafts and screenshots | O | `docs/store/`, screenshot script | merged #109 (issue open) |
-
-After wave 18, 3.0 is code-complete. Milestones 4 (private beta) and 5
-(relaunch) are mostly owner work; milestone 6 (3.1 creative tools) gets its
-own waves once 3.0 ships.
+Waves 0 to 20 are done; every issue in them is under Merged below (#40, #41
+and #42 stay open for Sven's part). Milestones 4 (private beta) and 5
+(relaunch) are owner work. Milestone 6 (3.1) gets its own waves once 3.0
+ships: #45, #46, #47 and #48 all draw in `FrameRenderer`, so they run one at
+a time.
 
 ## Owner items (Sven)
 
 Nothing blocks the build loop. Everything below waits until release is near
 (Sven, 2026-10-19).
 
-- Before the first 3.0 submission, one Partner Center visit: the #7
-  description line, and the privacy URL pointed at `PRIVACY.md` on GitHub.
-- #42: sort title "Ten Lapse" is Sven's call.
-- #30 Sample sequence: deferred. #29 ships without the *Try a sample* button;
-  add it once a set exists.
-- Release: #40 flight, #42 listing, #43 trailer, #44 rollout, #58 pricing.
+- #7, before the flight: the 2.1.1 description line and the privacy URL.
+- Release: #40 flight, #41 test pass, #42 listing (the sort title "Ten Lapse"
+  is his call), #43 trailer, #44 rollout. Later: #58 pricing.
+- #30 sample sequence (3.1): Sven picks the photos; *Try a sample* comes back
+  with them.
 
 ## Decisions
 
@@ -130,14 +123,17 @@ Nothing blocks the build loop. Everything below waits until release is near
   cancel; a failed ask is log-only (the one exception to never silent, since the
   user did not ask). Reset to defaults keeps the count. New settings fields need
   no schema bump. *Send feedback* opens GitHub issues, *Rate 10Lapse* the Store.
-- 2026-10-19 (#2): same listing confirmed from the acquisitions and usage
-  numbers Sven posted on #2 (#2 closed).
 - 2026-10-20 (Sven, #42): the Store screenshots use the generated sample
   photos (`scripts/store-screenshots.ps1`, "more polished"), not a real shoot.
-  The leftover `%LOCALAPPDATA%\10Lapse` from Debug runs (994 MB) was deleted.
 - 2026-10-20 (Sven): videos under `docs/` are stored in Git LFS (`.gitattributes`). GitHub Free includes 10 GB of
   LFS storage and 10 GB of downloads a month, counted against the owner's account. The first is the 30 s showreel in
   `docs/store/showreel/`, which is not the #43 trailer.
+- 2026-10-20 (issue review, Sven's ask): #55 merged into #45 (one exposure
+  pass); #53 (screen and webcam capture: another user, and a `webcam`
+  capability) and #57 (FFmpeg: beyond `PRODUCT.md`'s "up to 4K") closed as
+  not planned. #7 carries the privacy URL and moved to milestone 4 with #90,
+  which closes with a clean beta; #30 moved to 3.1 (P2). Milestones 0 to 3
+  closed; the pinned #59 lists the open work by milestone.
 - 2026-10-20 (Sven, #38): the selected segment pill keeps its designed look in
   light and dark (1.14:1 / 1.49:1 against the track; the bold label and the
   UIA selection state carry it), a known WCAG 1.4.11 gap for #41. High
@@ -177,15 +173,14 @@ Nothing blocks the build loop. Everything below waits until release is near
   lets the window close). A Mica failure is log-only (flat fallback). The
   encoder probe starts after the first frame. `StartupTrace` logs start-up
   phases; `scripts/launch-test.ps1` counts launch crashes. Not reproduced in
-  980 launches; #90 stays open until seen or the beta is clean.
+  980 launches; #90 closes with a clean beta.
 - 2026-10-19 (#37): the 16, 20, 24 and 32 px icons are full-bleed pixel-grid
   variants, not the canvas's padded tile, so they stay crisp. The splash is dark
   Mica `#1F1E1D` in both themes. The bundle keeps every scale in the main
   package (`AppxBundleAutoResourcePackageQualifiers` without Scale).
 - 2026-10-19 (Sven): icon direction A Five frames (#37). Design spec approved
   (#11 closed): `DESIGN.md`, the canvas, `Main.dc.html` and the motion spec are
-  the spec. License stays all rights reserved; no `LICENSE` file. #29 ships
-  without *Try a sample*; #30 stays open for later.
+  the spec. License stays all rights reserved; no `LICENSE` file.
 
 ## Merged
 
@@ -292,3 +287,5 @@ Details are in each PR's "What the next issues should know".
   line; HEVC Video Extensions marked paid; Windows 11 stated), and
   `scripts/store-screenshots.ps1` (8 shots to `dist/store-screenshots/`;
   upload 02-06 and 01). Debug `--sample-plain`.
+- PR #112 (refs #43): the 30 s showreel in `docs/store/showreel/` (video in
+  Git LFS), made by its `source/` (page, render, score); not the trailer.

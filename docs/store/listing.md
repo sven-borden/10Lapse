@@ -207,5 +207,5 @@ rights (README.md); the 2.x listing's earlier years can go in front if Sven want
 - Additional license terms: empty (the Store's standard license applies).
 - Trailers and Store logos: #43 (trailer) and #37 (icon) own them.
 - Outside the listing, on the Properties page: the privacy policy URL is
-  `https://github.com/sven-borden/10Lapse/blob/master/PRIVACY.md` (the owner item in `docs/STATUS.md`), and support
+  `https://github.com/sven-borden/10Lapse/blob/master/PRIVACY.md` (#7), and support
   is `https://github.com/sven-borden/10Lapse/issues`, the page *Send feedback* opens.
