@@ -83,7 +83,7 @@
   </data>
   <data name="SpeedPhotos_one" xml:space="preserve">
     <value>{0} photo per second</value>
-    <comment>The speed row's value: how many photos are written each second. {0} the number with one decimal under 10 ("4.3") or none from 10 ("12"). English uses this form only for exactly "1"; your language's rule decides (French and Portuguese also use it for "1.5").</comment>
+    <comment>The speed row's value: how many photos are written each second. {0} the number with one decimal under 10 ("4.3") or none from 10 ("12"). English never shows this form: under 10 the number always has a decimal, and "1.0" takes the _other form ("1.0 photos per second"). Keep it anyway, translated. Your language's rule decides: French and Brazilian Portuguese use it for every number under 2 ("0.5", "1.5"), Spanish for "1.0"; German and Italian never show it either.</comment>
   </data>
   <data name="SpeedPhotos_other" xml:space="preserve">
     <value>{0} photos per second</value>
