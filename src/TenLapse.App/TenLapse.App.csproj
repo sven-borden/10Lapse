@@ -35,8 +35,14 @@
     <WindowsPackageType>MSIX</WindowsPackageType>
     <SelfContained>true</SelfContained>
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
-    <!-- Split the bundle by language and DX feature level only: every scale stays in the main package (no per-scale resource packages). -->
-    <AppxBundleAutoResourcePackageQualifiers>Language|DXFeatureLevel</AppxBundleAutoResourcePackageQualifiers>
+    <!--
+      Split the bundle by DX feature level only: every scale and every language stays in the main package (#113). With
+      Language here the packaging tools route fr\TenLapse.Presentation.resources.dll and the fr strings into a
+      language resource package, where .NET does not look for satellites, and the single-project build left that
+      package out of the bundle altogether: the upload had no French at all. The languages are small text files.
+      scripts/pack.ps1 checks that each language's satellites and resources are in each architecture's package.
+    -->
+    <AppxBundleAutoResourcePackageQualifiers>DXFeatureLevel</AppxBundleAutoResourcePackageQualifiers>
     <!--
       Packing (GenerateAppxPackageOnBuild) warns "Path to mspdbcmf.exe could not be
       found" on a machine without Visual Studio, and the packaging tools give that

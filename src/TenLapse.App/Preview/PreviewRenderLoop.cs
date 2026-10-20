@@ -55,6 +55,9 @@ internal sealed class PreviewRenderLoop : IDisposable
     private const int MinLookahead = 6;
     private const int MaxLookahead = 30;
 
+    // Three lines of the placeholder's 12 px caption, in DIPs.
+    private const double PlaceholderCaptionHeight = 48;
+
     // A vertical blank that returns at once again and again means there is none to wait for (a display that is off):
     // after this many in a row the loop sleeps a moment instead of spinning. One quick return is normal (a blank had
     // just passed), so a single one never sleeps and no blank is skipped on a fast display.
@@ -682,19 +685,24 @@ internal sealed class PreviewRenderLoop : IDisposable
             HorizontalAlignment = CanvasHorizontalAlignment.Center,
             VerticalAlignment = CanvasVerticalAlignment.Bottom,
         };
+        // In the app's language (#113), which picks the line breaks and the font fallback. A longer language wraps the
+        // caption over up to three lines (a long file name breaks where it must); beyond that it is trimmed and clipped.
         using var caption = new CanvasTextFormat
         {
             FontFamily = "Segoe UI Variable Text",
             FontSize = 12,
+            LocaleName = AppLanguage.Tag,
             HorizontalAlignment = CanvasHorizontalAlignment.Center,
             VerticalAlignment = CanvasVerticalAlignment.Top,
-            WordWrapping = CanvasWordWrapping.NoWrap,
+            WordWrapping = CanvasWordWrapping.EmergencyBreak,
             TrimmingGranularity = CanvasTextTrimmingGranularity.Character,
+            Options = CanvasDrawTextOptions.Clip,
         };
         var middle = gate.Y + (gate.Height / 2);
         session.DrawText("", new Rect(gate.X, gate.Y, gate.Width, middle - gate.Y - 4), look.Text, glyph);
         var text = ProjectText.PreviewPlaceholder(frame.FileName);
-        session.DrawText(text, new Rect(gate.X + 16, middle + 4, Math.Max(1, gate.Width - 32), 20), look.Text, caption);
+        var captionHeight = Math.Clamp(gate.Y + gate.Height - middle - 8, 1, PlaceholderCaptionHeight);
+        session.DrawText(text, new Rect(gate.X + 16, middle + 4, Math.Max(1, gate.Width - 32), captionHeight), look.Text, caption);
     }
 
     private void RecoverFromDeviceLoss(CanvasSwapChain chain)

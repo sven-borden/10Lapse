@@ -469,6 +469,42 @@ Run at 100, 150 and 200 %.
   and Settings > Apps, at each scale. The splash is dark Mica in both themes
   (accepted: light-theme users see a dark splash for a moment).
 
+### 5.17 Languages (#113, #114, #115 to #119)
+
+3.0 speaks English (en-US), French, German, Spanish, Italian and Brazilian
+Portuguese. The app takes its language once, at start, from Windows: the app's
+own language where Windows offers one (Settings > Apps > Installed apps >
+10Lapse > Advanced options), else the first Windows display language it ships.
+Do, for each row: make that language the app's language, start 10Lapse, and
+walk import, Timing, Frame, Output, export, the finished state and Settings.
+
+- [ ] **5.17.1 French** (#115). Expect: every word of 10Lapse in French (the
+  installed package found its French files: one English sentence means a
+  file is missing), and WinUI's own words too (a text box's right-click menu:
+  Couper, Copier, Coller); *Copy diagnostics* says `Language fr`. Nothing
+  clipped at the narrowest window. Windows' own UI follows the Windows
+  display language, not the app's: the folder picker, Explorer for *Show in
+  folder*, the caption buttons' tooltips and a message box's buttons. An
+  English word there is not a missing translation.
+- [ ] **5.17.2 German** (#116). As 5.17.1, in German (the longest language:
+  watch the segment buttons, the export rows and the Settings buttons).
+- [ ] **5.17.3 Spanish** (#117). As 5.17.1, in Spanish.
+- [ ] **5.17.4 Italian** (#118). As 5.17.1, in Italian.
+- [ ] **5.17.5 Brazilian Portuguese** (#119). As 5.17.1, in Portuguese
+  (Brazil). Also with Portuguese (Portugal) as the language: 10Lapse speaks
+  Brazilian Portuguese.
+- [ ] **5.17.6 Regions and other languages** (#113). Do: French (Switzerland),
+  German (Austria), Spanish (Mexico), English (United Kingdom), then Japanese.
+  Expect: French, German, Spanish, English, and English for Japanese (no
+  mixture: 10Lapse's words and WinUI's in one language).
+- [ ] **5.17.7 Language and regional format apart** (#113, #114). Do: English
+  as the language with German (Switzerland) regional formats, then French
+  with English (United States) formats. Expect: the words follow the language,
+  numbers, sizes and times the regional format.
+- [ ] **5.17.8 A change needs a restart** (#113). Do: change the language
+  while 10Lapse runs. Expect: nothing changes until 10Lapse starts again, then
+  everything is in the new language.
+
 ## 6. Per-machine measurements
 
 - [ ] **6.1 Bench on each machine** (#34, PR #89). Run: all, with the repo and

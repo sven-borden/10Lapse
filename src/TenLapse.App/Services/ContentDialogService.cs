@@ -92,7 +92,7 @@ public sealed class ContentDialogService(Func<XamlRoot?> xamlRoot) : IDialogServ
             Content = message,
         };
 
-        // A dialog built in code does not pick up the Fluent style or the window's theme by itself.
+        // A dialog built in code does not pick up the Fluent style, the window's theme or its language (#113) by itself.
         if (Application.Current.Resources.TryGetValue("DefaultContentDialogStyle", out var style) && style is Style dialogStyle)
         {
             dialog.Style = dialogStyle;
@@ -101,6 +101,7 @@ public sealed class ContentDialogService(Func<XamlRoot?> xamlRoot) : IDialogServ
         if (root.Content is FrameworkElement content)
         {
             dialog.RequestedTheme = content.ActualTheme;
+            dialog.Language = content.Language;
         }
 
         return dialog;

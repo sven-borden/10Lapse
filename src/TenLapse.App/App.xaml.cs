@@ -47,6 +47,16 @@ public partial class App : Application
 
     public App()
     {
+        // First of all, before anything reads text (#113): the app's language, as the .NET UI culture of every thread, so
+        // the resource files speak the language WinUI and Windows chose for the app. Labels read once and kept
+        // (ShellLayout, the Frame and Timing panels) follow it, so a language change needs a restart.
+#if DEBUG
+        // Debug --lang=<tag> wins (WinUI's own strings follow it below, once the log and the hooks exist).
+        var language = AppLanguage.Apply(Debugging.DebugLaunch.Language);
+#else
+        var language = AppLanguage.Apply(null);
+#endif
+
         // Logs synchronously before a dying process goes (a crash on a background thread, a fatal UI exception).
         AppDomain.CurrentDomain.UnhandledException += OnProcessUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
@@ -61,6 +71,19 @@ public partial class App : Application
 #endif
 
         _log.Info($"10Lapse {AppDiagnostics.AppVersion()} starting ({(AppEnvironment.HasPackageIdentity ? "packaged" : "unpackaged")}); log in {_log.Folder}.");
+        _log.Info(language);
+#if DEBUG
+        // --lang also sets WinUI's own strings (MRT), for this process only. Before InitializeComponent, which loads the
+        // first WinUI resources. A setter that throws leaves WinUI in the display language: logged, not fatal.
+        try
+        {
+            Debugging.DebugLaunch.ApplyLanguage(AppLanguage.Culture);
+        }
+        catch (Exception exception)
+        {
+            _log.Warning($"--lang could not set WinUI's language to {AppLanguage.Tag}; its own strings stay in the display language.", exception);
+        }
+#endif
         ExportCleanupLog.Start(_log, _folders.UnfinishedExportsFile);
 
         // App.xaml (the token dictionaries, the styles) that fails to load would escape the constructor with no

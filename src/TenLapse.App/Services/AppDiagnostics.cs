@@ -22,7 +22,7 @@ internal sealed class AppDiagnostics : IDiagnosticsContributor
         report.Add("Architecture", $"{RuntimeInformation.ProcessArchitecture} process on {RuntimeInformation.OSArchitecture} Windows");
         report.Add(".NET", RuntimeInformation.FrameworkDescription);
         report.Add("Windows App Runtime", Try(() => Microsoft.Windows.ApplicationModel.WindowsAppRuntime.RuntimeInfo.AsString));
-        report.Add("Language", CultureInfo.CurrentUICulture.Name);
+        report.Add("Language", $"{AppLanguage.Tag} (regional format {CultureInfo.CurrentCulture.Name})");
     }
 
     /// <summary>The package version when packaged; otherwise the assembly's informational version (with the commit).</summary>

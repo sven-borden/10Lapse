@@ -157,7 +157,8 @@ What each extension adds, for Sven's answers to reviews (#44), not for a field:
 
 Desktop: PNG, 1366 x 768 or larger in landscape or portrait, up to 3840 x 2160, under 50 MB each, up to 10. Captions
 200 characters each. Keep key content in the top two thirds (the Store may lay text over the bottom third).
-`scripts/store-screenshots.ps1` makes them into `dist/store-screenshots/` (git-ignored).
+`scripts/store-screenshots.ps1` makes them into `dist/store-screenshots/<language>/` (git-ignored); `-Language fr`
+(default `en-US`) makes the set for another listing language (#113).
 
 The uploaded set is the one `pwsh -File scripts/store-screenshots.ps1` makes from the generated sample photos
 (`--sample-plain` sunsets at 4500 x 3000, a camera's size, so the export shots show real speeds; about 2 GB of
