@@ -257,7 +257,7 @@
     <comment>The title of the Settings card that copies technical details for a bug report.</comment>
   </data>
   <data name="DiagnosticsCardCaption" xml:space="preserve">
-    <value>Copies the app and Windows versions, your graphics card, the video encoders and the last 200 log lines, to paste into a bug report. The log lines can name files and folders 10Lapse worked with, never the photos themselves. Nothing is sent from your PC.</value>
+    <value>Copies the app and Windows versions, your graphics card, the video encoders and the last 200 log lines, to paste into a bug report. The log lines can name the files and folders 10Lapse worked with, but never contain the photos themselves. Nothing is sent from your PC.</value>
     <comment>The text under the Diagnostics card's title. It describes the Copy diagnostics button next to it.</comment>
   </data>
   <data name="SettingsDefaultsSection" xml:space="preserve">
