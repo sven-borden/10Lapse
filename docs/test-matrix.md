@@ -453,11 +453,14 @@ Run at 100, 150 and 200 %.
   `LocalState\Logs`; it may include file and folder names (the privacy policy
   says so).
 
-### 5.15 Privacy (#6)
+### 5.15 Privacy (CLAUDE.md "Product invariants", `PRIVACY.md`)
 
-- [ ] **5.15.1 No network** (#6, #62). Do: block 10Lapse in the firewall, or
-  watch its connections during a full session. Expect: none. The manifest
-  declares `runFullTrust` and nothing else.
+- [ ] **5.15.1 No network** (CLAUDE.md "Product invariants", `PRIVACY.md`).
+  Do: block 10Lapse in the firewall, or watch its connections, for a full
+  session: import, edit, export, Settings, *Send feedback* and *Rate 10Lapse*.
+  Expect: no connection from 10Lapse. *Send feedback* and *Rate 10Lapse* open
+  the browser and the Store, which connect on their own, not 10Lapse. The
+  manifest declares `runFullTrust` and nothing else.
 
 ### 5.16 Icon and tiles (#37, PR #95)
 
@@ -475,10 +478,9 @@ Run at 100, 150 and 200 %.
   measured for the first time.
 - [ ] **6.2 Memory on the 8 GB or iGPU PC** (#34, PR #89). Do: `bench.ps1
   -Quick`, then `-Full` (5,000 photos of 24 MP, 56 GB free) on the tight PC.
-  Expect: private bytes under 1 GB (the default profile on such a PC is the
-  tight one, 4 frames ahead on 3 threads; 932 to 939 MB on the dev PC, 8 %
-  under the target). A tight-memory peak over 1 GB is a release question. The
-  RAM and iGPU detection was never run on a real tight PC.
+  Expect: private bytes under 1 GB (932 to 939 MB on the dev PC with the tight
+  profile). A peak over 1 GB is a release question. The RAM and iGPU detection
+  was never run on a real tight PC.
 - [ ] **6.3 Golden tests on another GPU vendor** (#32, PR #81). Run: Intel,
   AMD, Qualcomm. Do: `dotnet test tests/TenLapse.Tests --filter
   "FullyQualifiedName~GoldenTimingTests|FullyQualifiedName~GoldenGeometryTests"` and compare the per-case lines
@@ -565,20 +567,16 @@ Not bugs unless they change. Keep these out of the failure list.
 - **8.3 Declared rate below 1 fps** (#32, PR #81). H.264 declares the real
   rate (1/2); HEVC declares the nominal 1/1 (the frame times are exact in both).
 - **8.4 The segment pill's contrast** (#38, STATUS 2026-10-20). See 7.4.
-- **8.5 No symbols for the Store build** (#3, #62). The Release package build
-  warns that `mspdbcmf.exe` is missing, so the symbols package is skipped.
-  Crash reports from the Store (Partner Center Health) therefore have no
-  symbols. Watch Health for crashes during the flight anyway.
-- **8.6 Dark splash in the light theme** (#37, PR #95). The manifest splash
+- **8.5 Dark splash in the light theme** (#37, PR #95). The manifest splash
   cannot follow the theme.
-- **8.7 NVIDIA handle leak** (#22, PR #74). The NVIDIA encoder leaks about 34
+- **8.6 NVIDIA handle leak** (#22, PR #74). The NVIDIA encoder leaks about 34
   handles per export; not ours.
-- **8.8 Canvas deviations kept** (#24, #36). Detail rows are 14 px (canvas
+- **8.7 Canvas deviations kept** (#24, #36). Detail rows are 14 px (canvas
   13 px), *Back to editing* has no underline, the premiere plays once, the
   disabled Export button is neutral rather than dimmed amber; the narrow
   export and finished screens use two columns and hide the tabs.
-- **8.9 No *Try a sample* button** (#29, #30). Deferred until a sample set
+- **8.8 No *Try a sample* button** (#29, #30). Deferred until a sample set
   exists.
-- **8.10 English only** (#2, #39). Translations come later.
-- **8.11 No thumbnail-to-preview flight** (#35). A thumbnail click is an instant
+- **8.9 English only** (#2, #39). Translations come later.
+- **8.10 No thumbnail-to-preview flight** (#35). A thumbnail click is an instant
   seek by design.
