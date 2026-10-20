@@ -271,44 +271,49 @@ uncropped (Fit) or filling (Fill) and not stretched.
 
 ### 5.8 Export (#8, #22, #24, #34)
 
-- [ ] **5.8.1 Every format and resolution** (#22, #23). Run: all. Do: export a
-  60-photo project at each offered format (H.264, HEVC) and each offered
-  resolution and quality. Expect: it finishes; the file plays in
-  the default player with the right size; the Finished summary ("24.7 s . 4K .
-  H.264 . 173 MB") matches the file. Tick each machine with the largest size it
-  offered.
-- [ ] **5.8.2 Frame rates** (#10, #81). Do: export at 24, 29.97 and 60 fps, and
+Rows 5.8.1 to 5.8.4 are one row per machine, ticked on that machine. Do: export
+a 60-photo project at each offered format (H.264, HEVC) and each offered
+resolution and quality. Expect: it finishes; the file plays in the default
+player at the right size; the Finished summary ("24.7 s . 4K . H.264 .
+173 MB") matches the file. Write down the largest size the machine offered.
+
+- [ ] **5.8.1 Every format and resolution, NVIDIA PC** (#22, #23).
+- [ ] **5.8.2 Every format and resolution, Intel PC** (#22, #23).
+- [ ] **5.8.3 Every format and resolution, AMD PC** (#22, #23).
+- [ ] **5.8.4 Every format and resolution, ARM64 PC** (#22, #23).
+- [ ] **5.8.5 Frame rates** (#10, #81). Do: export at 24, 29.97 and 60 fps, and
   one rate below 1 fps (one photo per 2 s). Expect: the right length. Explorer's
   *Length* can read one unit short (see 8.1).
-- [ ] **5.8.3 Save dialog** (#24). Expect: it suggests `<project name>.mp4` in
+- [ ] **5.8.6 Save dialog** (#24). Expect: it suggests `<project name>.mp4` in
   the Videos folder, then in the last folder used; a name already in use saves
   `Name (2).mp4` and never overwrites. Cancel in the dialog changes nothing.
   The real dialog was never seen (an empty file the picker creates must not
   stay behind on cancel).
-- [ ] **5.8.4 Progress** (#24, #92). Expect: the export panel with file name,
+- [ ] **5.8.7 Progress** (#24, #92). Expect: the export panel with file name,
   large percent, time left, the film gate, "Rendering frame 0313" over the
   preview, the filmstrip dimming what is still to come, taskbar progress
   (indeterminate while preparing). Never seen in the taskbar.
-- [ ] **5.8.5 Minimize during an export** (#25, PR #92). Do: minimize at once.
-  Expect: it keeps running at full speed (the dev PC: 128 vs 117 fps minimized),
-  the PC does not sleep. The display may turn off: the full "10 minutes with the
-  display off" check was never done (the dev PC supports S3, not Modern
-  Standby). Do it on a laptop with Modern Standby too.
-- [ ] **5.8.6 Cancel** (#22, #24). Do: Cancel export during an export of several
+- [ ] **5.8.8 Minimize during an export** (#25, PR #92). Do: minimize at once.
+  Expect: it keeps running at full speed (the dev PC: 128 vs 117 fps minimized)
+  and the PC does not sleep. Also run it with the display off for 10 minutes,
+  on a laptop with Modern Standby (never done).
+- [ ] **5.8.9 Cancel** (#22, #24). Do: Cancel export during an export of several
   GB. Expect: back to the inspector at once (under 1 s), then "Export cancelled.
   The unfinished file was removed.", no `.mp4` or hidden `.partial` left.
-- [ ] **5.8.7 Close during an export** (#24, #25). Do: close the window.
+- [ ] **5.8.10 Close during an export** (#24, #25). Do: close the window.
   Expect: "Stop the export and close?" *Keep exporting* continues and holds the
   PC awake; *Stop and close* ends the app within about 2 s and leaves no
   partial file.
-- [ ] **5.8.8 Edits blocked during an export** (#24). Expect: no reorder,
+- [ ] **5.8.11 Edits blocked during an export** (#24). Expect: no reorder,
   removal, import, New project or Reset to defaults while it runs.
-- [ ] **5.8.9 A failure** (#22, #26). Do: a full disk or a read-only target
+- [ ] **5.8.12 A failure** (#22, #26). Do: a full disk or a read-only target
   folder. Expect: an InfoBar that says what happened and what to do, with
   *Copy diagnostics*; the previous file at that name is untouched.
-- [ ] **5.8.10 Sleep or sign-out during an export**. Not covered by any PR:
-  note what happens; an unfinished file is deleted at the next start (#22).
-- [ ] **5.8.11 Memory** (#34, #89). See 6.2.
+- [ ] **5.8.13 Sleep or sign-out during an export** (#22, #25). Do: start a
+  long export, put the PC to sleep (or sign out) and resume. Expect: the export
+  continues or fails with an InfoBar; no half-written `.mp4`; the next start
+  removes any `.partial`. Note what happens.
+- [ ] **5.8.14 Memory** (#34, #89). See 6.2.
 
 ### 5.9 Finished and premiere (#24)
 
@@ -348,7 +353,7 @@ uncropped (Fit) or filling (Fill) and not stretched.
   `9NBN2XH6S4D8`; a launch failure gives one InfoBar that says what to do.
 - [ ] **5.10.6 Notifications** (#24, PR #88). Run: a packaged build. Do: start
   an export, switch to another app or minimize. Expect: when it finishes, a
-  toast "<name>.mp4 is ready"; when it fails (a full disk as in 5.8.9, while
+  toast "<name>.mp4 is ready"; when it fails (a full disk as in 5.8.12, while
   minimized), a toast "<name>.mp4 couldn't be exported. Open 10Lapse to see
   why."; none on cancel; none while the window is active; no folder or photo
   names. Click the toast and note what happens (never tried).
