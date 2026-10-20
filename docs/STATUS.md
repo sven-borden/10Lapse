@@ -4,7 +4,7 @@ Updated 2026-10-20. Roadmap: the pinned #59 and the milestones. Working agreemen
 
 ## Now
 
-2026-10-20: **Translations before the flight (Sven): wave 24**, #119 pt-BR (PR #128) in review. Merged: #115 fr (PR #123), #116 de (PR #122), #117 es (PR #126), #118 it (PR #127), #124 (PR #125). Wave 21 merged (#113 PR #120, #114 PR #121). Then #117 to #119. Once #119 merges, the orchestrator runs `scripts/pack.ps1` for the flight; a `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
+2026-10-20: **Translations done; the 3.0.0.0 flight package is built.** 3.0 ships in en-US, fr, de, es, it and pt-BR (#113 to #119, #124 merged). `scripts/pack.ps1` on master 87fbdb9 passed: `dist/store/TenLapse.App_3.0.0.0_x64_arm64_bundle.msixupload` (125.8 MB, six languages, 15 satellites). Nothing in flight. Next steps are Sven's: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`, incl. 5.17 Languages) and the #90 watch, then #42 (one listing per `docs/store/listing*.md`), #43, #44. A `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Release PRs say Refs; those issues close once Sven's part is done.
 
 ## Waves
 
@@ -34,7 +34,9 @@ Nothing blocks the build loop. Everything below waits until release is near
 - Release: #40 flight, #41 test pass, #42 listing (the sort title "Ten Lapse"
   is his call), #43 trailer, #44 rollout. Later: #58 pricing.
 - Translations: a Partner Center listing per language from
-  `docs/store/listing.<lang>.md` (#115-#119); a native read where he can.
+  `docs/store/listing.<lang>.md` (#115-#119); a native read where he can;
+  whether Portugal gets a pt-PT listing reusing the pt-BR text (else it may
+  show English).
 - #30 sample sequence (3.1): Sven picks the photos; *Try a sample* comes back
   with them.
 
@@ -313,6 +315,9 @@ Details are in each PR's "What the next issues should know".
 - #117 PR #126: Spanish (`es`, tú, "equipo" for PC; "video" without the
   accent for Latin America, MX Store names where ES and MX differ; `_many`
   with "de"; Ctrl+Z "devolver al proyecto"), `listing.es.md`.
+- #119 PR #128: Brazilian Portuguese (`pt-BR`, você, "o 10Lapse",
+  "remover" never "descartar" for photos, Ctrl+Z "devolve ao projeto"),
+  `listing.pt-BR.md`.
 - #118 PR #127: Italian (`it`, tu, "Impossibile …" errors, fotogramma vs
   Inquadratura, Ctrl+Z "rimettere nel progetto"), `listing.it.md`.
 - #116 PR #122: German (`de`, Sie, „…“, Strg/Entf), `listing.de.md`; Store
