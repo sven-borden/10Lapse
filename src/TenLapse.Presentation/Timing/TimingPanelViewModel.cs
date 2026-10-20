@@ -204,6 +204,24 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
     };
 
     /// <summary>
+    /// Takes an entry still in the box before a shortcut acts (#38): Ctrl+E or Ctrl+N run without moving the focus, so the
+    /// box has not committed on LostFocus yet, and the export would use the old value (a click on Export would have
+    /// moved the focus, and committed, first). True when there was an entry; text equal to the stored value is none, and
+    /// raises nothing.
+    /// </summary>
+    /// <param name="text">The box's text.</param>
+    public bool CommitPending(string? text)
+    {
+        if (string.Equals(text?.Trim(), _valueText, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        CommitValue(text);
+        return true;
+    }
+
+    /// <summary>
     /// Takes what the user typed in the box (when it loses focus or Enter is pressed). A valid number is stored, held to
     /// the range and rounded to what the box keeps, with <see cref="Message"/> saying so; anything else is refused with a
     /// sentence. Either way <see cref="ValueText"/> is raised again, so the box shows the stored value. Text that equals

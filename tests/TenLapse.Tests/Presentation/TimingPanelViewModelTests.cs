@@ -108,6 +108,25 @@ public sealed class TimingPanelViewModelTests
     }
 
     [Fact]
+    public void AnEntryStillInTheBoxIsTakenBeforeAShortcutActs()
+    {
+        // #38: Ctrl+E runs without moving the focus, so the box's LostFocus has not committed "24" yet.
+        var shell = Shell();
+        var panel = Panel(shell);
+        var changes = 0;
+        panel.PropertyChanged += (_, _) => changes++;
+
+        Assert.False(panel.CommitPending("30"));
+        Assert.False(panel.CommitPending(" 30 "));
+        Assert.Equal(0, changes);
+
+        Assert.True(panel.CommitPending("24"));
+        Assert.Equal(new Fraction(24, 1), shell.CurrentProject.Model.Timing.FramesPerSecond);
+        Assert.Equal("24", panel.ValueText);
+        Assert.False(panel.CommitPending("24"));
+    }
+
+    [Fact]
     public void TypingAPresetsValueSelectsThePreset()
     {
         var panel = Panel(Shell());

@@ -628,6 +628,9 @@ public sealed partial class ShellView : UserControl
             return false;
         }
 
+        // As a click on the button would: an entry typed in the Timing box is taken first (the export uses it, a new
+        // project does not inherit it).
+        TimingSection.CommitPendingEntry();
         System.Windows.Input.ICommand command = shortcut switch
         {
             ShellShortcut.ChooseFolder => Import.ChooseFolderCommand,

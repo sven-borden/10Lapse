@@ -146,6 +146,12 @@ public sealed partial class TimingPanel : UserControl
 
     private void OnValueLostFocus(object sender, RoutedEventArgs e) => ViewModel?.CommitValue(ValueBox.Text);
 
+    /// <summary>
+    /// Takes an entry still in the value box (#38), before a shortcut acts: a keyboard accelerator does not move the focus,
+    /// so LostFocus has not committed it yet. A click on the shortcut's button would have.
+    /// </summary>
+    internal void CommitPendingEntry() => ViewModel?.CommitPending(ValueBox.Text);
+
     private void OnValueGotFocus(object sender, RoutedEventArgs e) => ValueBox.SelectAll();
 
     // Narrator does not reliably hear a text that changes under it, so what a change came to is raised as a notification:
