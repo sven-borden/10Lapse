@@ -14,7 +14,8 @@ namespace TenLapse.Shell;
 /// <summary>
 /// Swaps what the inspector column shows (#24; DESIGN.md, Export panel; motion spec, Gate): the outgoing part leaves in
 /// 167 ms to -12 px (Exit), then the incoming one enters in 400 ms from +16 px (Enter). With animations off both are
-/// short fades (90 ms out, 150 ms in). Nothing blocks input meanwhile; a newer swap overtakes an older one.
+/// short fades (90 ms out, 150 ms in). The incoming part takes the keyboard focus at once but no pointer input until it
+/// enters (#38); a newer swap overtakes an older one.
 /// </summary>
 internal sealed class PanelSwap
 {
@@ -69,7 +70,10 @@ internal sealed class PanelSwap
 
         // The incoming part joins the layout now, unseen, so it can take the focus before the outgoing one collapses:
         // a focused control that collapses would drop the focus to the first control of the window.
+        // Not hit-testable until it enters: it lies over the outgoing part, so a click just after Export would land on the
+        // unseen Cancel export.
         Settle(next, Visibility.Visible);
+        next.IsHitTestVisible = false;
         ElementCompositionPreview.GetElementVisual(next).Opacity = 0f;
         _dispatcher.TryEnqueueGuarded(
             _log,
@@ -129,6 +133,7 @@ internal sealed class PanelSwap
     private static void Enter(UIElement next, Action? arrived)
     {
         var step = MotionTokens.Plan(MotionCatalogue.PanelIn);
+        next.IsHitTestVisible = true;
         var visual = ElementCompositionPreview.GetElementVisual(next);
         visual.Opacity = step.Animates ? 0f : 1f;
         visual.Properties.InsertVector3("Translation", new Vector3(step.Moves ? MotionSpec.PanelInTravel : 0f, 0, 0));
@@ -166,6 +171,7 @@ internal sealed class PanelSwap
         visual.StopAnimation("Translation");
         visual.Opacity = 1f;
         visual.Properties.InsertVector3("Translation", Vector3.Zero);
+        part.IsHitTestVisible = true;
         part.Visibility = visibility;
     }
 }
