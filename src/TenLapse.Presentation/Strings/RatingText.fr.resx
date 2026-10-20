@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  French (fr) translation of RatingText.resx (#115). The comments of the English file are the brief for each key.
+  Typography as Windows writes it in French: a narrow no-break space (U+202F) before ; : ? ! and %, and inside
+  « », a no-break space (U+00A0) between a number and its unit. Form of address: vous.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CardTitle" xml:space="preserve">
+    <value>Commentaires</value>
+  </data>
+  <data name="CardCaptionFormat" xml:space="preserve">
+    <value>« {0} » ouvre la page de 10Lapse dans le Microsoft Store. « {1} » ouvre GitHub dans votre navigateur. 10Lapse n’envoie rien de son côté.</value>
+  </data>
+  <data name="RateButton" xml:space="preserve">
+    <value>Noter 10Lapse</value>
+  </data>
+  <data name="FeedbackButton" xml:space="preserve">
+    <value>Donner votre avis</value>
+  </data>
+  <data name="RateTip" xml:space="preserve">
+    <value>Ouvre le Microsoft Store</value>
+  </data>
+  <data name="FeedbackTip" xml:space="preserve">
+    <value>Ouvre GitHub dans votre navigateur</value>
+  </data>
+  <data name="RateFailed" xml:space="preserve">
+    <value>Le Microsoft Store ne s’est pas ouvert. Ouvrez-le vous-même et recherchez 10Lapse pour le noter.</value>
+  </data>
+  <data name="FeedbackFailed" xml:space="preserve">
+    <value>Votre navigateur ne s’est pas ouvert. Rendez-vous sur github.com/sven-borden/10Lapse/issues pour donner votre avis.</value>
+  </data>
+</root>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  French (fr) translation of StoreExtensionText.resx (#115). The comments of the English file are the brief for each key.
+  Typography as Windows writes it in French: a narrow no-break space (U+202F) before ; : ? ! and %, and inside
+  « », a no-break space (U+00A0) between a number and its unit. Form of address: vous.
+  The values are the Microsoft Store's own French titles for the product IDs of the English file (the fr-FR
+  catalog, which France, Belgium and Switzerland get), checked 2026-10-20; they are not translations.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HeifImageExtensions" xml:space="preserve">
+    <value>Extension d’image HEIF</value>
+  </data>
+  <data name="HevcVideoExtensions" xml:space="preserve">
+    <value>Extensions vidéo HEVC</value>
+  </data>
+  <data name="Av1VideoExtension" xml:space="preserve">
+    <value>Extension vidéo AV1</value>
+  </data>
+  <data name="WebpImageExtensions" xml:space="preserve">
+    <value>Extension d’image WebP</value>
+  </data>
+  <data name="JpegXlImageExtension" xml:space="preserve">
+    <value>Extension d’image JPEG XL</value>
+  </data>
+  <data name="RawImageExtension" xml:space="preserve">
+    <value>Extension d'image Raw</value>
+  </data>
+</root>

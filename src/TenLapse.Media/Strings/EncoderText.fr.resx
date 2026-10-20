@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  French (fr) translation of EncoderText.resx (#115). The comments of the English file are the brief for each key.
+  Typography as Windows writes it in French: a narrow no-break space (U+202F) before ; : ? ! and %, and inside
+  « », a no-break space (U+00A0) between a number and its unit. Form of address: vous.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HardwareUpTo" xml:space="preserve">
+    <value>Le matériel graphique de ce PC exporte jusqu’en {0}.</value>
+  </data>
+  <data name="HardwareUpToThenSoftware" xml:space="preserve">
+    <value>Le matériel graphique de ce PC exporte jusqu’en {0} ; au-delà, l’encodeur logiciel prend le relais, plus lentement.</value>
+  </data>
+  <data name="SoftwareOnly" xml:space="preserve">
+    <value>Le matériel graphique de ce PC ne peut pas encoder en {0} ; l’encodeur logiciel, plus lent, exporte jusqu’en {1}.</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>Ce PC ne peut pas exporter de vidéo {0} avec ces proportions et cette cadence.</value>
+  </data>
+  <data name="NoPlayback" xml:space="preserve">
+    <value>Ce PC ne peut pas lire les vidéos {0}, il ne les exporte donc pas.</value>
+  </data>
+</root>

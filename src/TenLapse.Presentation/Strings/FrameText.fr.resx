@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  French (fr) translation of FrameText.resx (#115). The comments of the English file are the brief for each key.
+  Typography as Windows writes it in French: a narrow no-break space (U+202F) before ; : ? ! and %, and inside
+  « », a no-break space (U+00A0) between a number and its unit. Form of address: vous.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Cadre</value>
+  </data>
+  <data name="ShapeName" xml:space="preserve">
+    <value>Proportions</value>
+  </data>
+  <data name="FitName" xml:space="preserve">
+    <value>Ajustement</value>
+  </data>
+  <data name="ShapeMatch" xml:space="preserve">
+    <value>Photos</value>
+  </data>
+  <data name="ShapeMatchName" xml:space="preserve">
+    <value>Comme les photos</value>
+  </data>
+  <data name="FitOption" xml:space="preserve">
+    <value>Ajuster</value>
+  </data>
+  <data name="FillOption" xml:space="preserve">
+    <value>Remplir</value>
+  </data>
+  <data name="FitHint" xml:space="preserve">
+    <value>« {0} » montre toute la photo, avec des bandes là où les proportions diffèrent.</value>
+  </data>
+  <data name="FillHint" xml:space="preserve">
+    <value>« {0} » rogne les bords pour que le cadre n’ait pas de bandes.</value>
+  </data>
+  <data name="MatchingPhotos" xml:space="preserve">
+    <value>Comme vos photos : {0} × {1}.</value>
+  </data>
+  <data name="MatchingNoPhotos" xml:space="preserve">
+    <value>Comme vos photos. Tant que leur taille n’est pas connue, le cadre est en 16:9.</value>
+  </data>
+  <data name="NoSize" xml:space="preserve">
+    <value>Des photos aussi larges ou aussi hautes sont trop grandes pour être exportées sur ce PC. Choisissez des proportions fixes, comme 16:9.</value>
+  </data>
+  <data name="PortraitHint" xml:space="preserve">
+    <value>La plupart de vos photos sont en portrait : le 9:16 leur convient mieux.</value>
+  </data>
+  <data name="PortraitApply" xml:space="preserve">
+    <value>Passer en 9:16</value>
+  </data>
+  <data name="PortraitDismiss" xml:space="preserve">
+    <value>Ignorer</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>{0} : {1}, {2}.</value>
+  </data>
+</root>
