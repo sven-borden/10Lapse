@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Spanish (es) translation of OutputText.resx (#117). The English file's comments are the brief for each key.
+  One neutral Spanish for Spain and Latin America. Informal address ("tú"), as Windows 11 writes Spanish. Windows'
+  Spanish terms (archivo, carpeta, Configuración, equipo). "video" without the accent: the one es file also serves
+  Mexico, the US and Latin America, and the RAE accepts "video" in Spain too; Store names keep their exact spelling
+  ("Extensión de vídeo AV1"). UI labels named inside a sentence stand in quotation marks (“…”). An exact million takes
+  "de" ("1.000.000 de fotos", RAE DPD "cardinales"), so a counted sentence that changes has a _many form; a family
+  without one falls back to _other.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Salida</value>
+  </data>
+  <data name="ResolutionLabel" xml:space="preserve">
+    <value>Resolución</value>
+  </data>
+  <data name="FormatLabel" xml:space="preserve">
+    <value>Formato de archivo</value>
+  </data>
+  <data name="QualityLabel" xml:space="preserve">
+    <value>Calidad</value>
+  </data>
+  <data name="Checking" xml:space="preserve">
+    <value>Comprobando qué puede codificar este equipo…</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Las opciones de salida están listas.</value>
+  </data>
+  <data name="ConservativeNote" xml:space="preserve">
+    <value>10Lapse no pudo comprobar los codificadores de video de este equipo, así que ofrece H.264 hasta 1080p.</value>
+  </data>
+  <data name="FormatReplaced" xml:space="preserve">
+    <value>{0} no se puede exportar en este equipo, así que se seleccionó {1}.</value>
+  </data>
+  <data name="ResolutionReplaced" xml:space="preserve">
+    <value>{0} no se puede exportar en este equipo con esta configuración, así que se seleccionó {1}.</value>
+  </data>
+  <data name="ResolutionReplacedByShape" xml:space="preserve">
+    <value>{0} no está disponible con esta proporción en este equipo, así que se seleccionó {1}. {0} vuelve a seleccionarse si eliges una proporción que lo admita.</value>
+  </data>
+  <data name="KeepSelected" xml:space="preserve">
+    <value>Usar esta configuración</value>
+  </data>
+  <data name="EstimateAbout" xml:space="preserve">
+    <value>Aprox. {0}</value>
+  </data>
+  <data name="Megabytes" xml:space="preserve">
+    <value>{0} MB</value>
+  </data>
+  <data name="Gigabytes" xml:space="preserve">
+    <value>{0} GB</value>
+  </data>
+  <data name="UnderOneMegabyte" xml:space="preserve">
+    <value>Menos de 1 MB</value>
+  </data>
+  <data name="ResolutionOptionFormat" xml:space="preserve">
+    <value>{0} · {1} × {2}</value>
+  </data>
+  <data name="FormatOptionFormat" xml:space="preserve">
+    <value>MP4 · {0}</value>
+  </data>
+  <data name="QualityStandard" xml:space="preserve">
+    <value>Estándar</value>
+  </data>
+  <data name="QualityHigh" xml:space="preserve">
+    <value>Alta</value>
+  </data>
+  <data name="QualityMaximum" xml:space="preserve">
+    <value>Máxima</value>
+  </data>
+</root>

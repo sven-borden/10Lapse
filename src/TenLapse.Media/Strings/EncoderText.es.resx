@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Spanish (es) translation of EncoderText.resx (#117). The English file's comments are the brief for each key.
+  One neutral Spanish for Spain and Latin America. Informal address ("tú"), as Windows 11 writes Spanish. Windows'
+  Spanish terms (archivo, carpeta, Configuración, equipo). "video" without the accent: the one es file also serves
+  Mexico, the US and Latin America, and the RAE accepts "video" in Spain too; Store names keep their exact spelling
+  ("Extensión de vídeo AV1"). UI labels named inside a sentence stand in quotation marks (“…”). An exact million takes
+  "de" ("1.000.000 de fotos", RAE DPD "cardinales"), so a counted sentence that changes has a _many form; a family
+  without one falls back to _other.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HardwareUpTo" xml:space="preserve">
+    <value>El hardware gráfico de este equipo exporta hasta {0}.</value>
+  </data>
+  <data name="HardwareUpToThenSoftware" xml:space="preserve">
+    <value>El hardware gráfico de este equipo exporta hasta {0}; los tamaños mayores usan el codificador de software, más lento.</value>
+  </data>
+  <data name="SoftwareOnly" xml:space="preserve">
+    <value>El hardware gráfico de este equipo no puede codificar {0}; el codificador de software, más lento, exporta hasta {1}.</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>Este equipo no puede exportar video {0} con esta proporción y esta velocidad de fotogramas.</value>
+  </data>
+  <data name="NoPlayback" xml:space="preserve">
+    <value>Este equipo no puede reproducir video {0}, así que no lo exporta.</value>
+  </data>
+</root>

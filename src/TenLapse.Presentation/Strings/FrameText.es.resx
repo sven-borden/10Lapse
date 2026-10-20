@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Spanish (es) translation of FrameText.resx (#117). The English file's comments are the brief for each key.
+  One neutral Spanish for Spain and Latin America. Informal address ("tú"), as Windows 11 writes Spanish. Windows'
+  Spanish terms (archivo, carpeta, Configuración, equipo). "video" without the accent: the one es file also serves
+  Mexico, the US and Latin America, and the RAE accepts "video" in Spain too; Store names keep their exact spelling
+  ("Extensión de vídeo AV1"). UI labels named inside a sentence stand in quotation marks (“…”). An exact million takes
+  "de" ("1.000.000 de fotos", RAE DPD "cardinales"), so a counted sentence that changes has a _many form; a family
+  without one falls back to _other.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Encuadre</value>
+  </data>
+  <data name="ShapeName" xml:space="preserve">
+    <value>Proporción</value>
+  </data>
+  <data name="FitName" xml:space="preserve">
+    <value>Ajuste</value>
+  </data>
+  <data name="ShapeMatch" xml:space="preserve">
+    <value>Fotos</value>
+  </data>
+  <data name="ShapeMatchName" xml:space="preserve">
+    <value>Como las fotos</value>
+  </data>
+  <data name="FitOption" xml:space="preserve">
+    <value>Ajustar</value>
+  </data>
+  <data name="FillOption" xml:space="preserve">
+    <value>Rellenar</value>
+  </data>
+  <data name="FitHint" xml:space="preserve">
+    <value>“{0}” muestra la foto entera, con franjas donde las proporciones no coinciden.</value>
+  </data>
+  <data name="FillHint" xml:space="preserve">
+    <value>“{0}” recorta los bordes para que el encuadre no tenga franjas.</value>
+  </data>
+  <data name="MatchingPhotos" xml:space="preserve">
+    <value>Como tus fotos: {0} × {1}.</value>
+  </data>
+  <data name="MatchingNoPhotos" xml:space="preserve">
+    <value>Como tus fotos. Mientras no se conozca su tamaño, la proporción es 16:9.</value>
+  </data>
+  <data name="NoSize" xml:space="preserve">
+    <value>Unas fotos tan anchas o tan altas son demasiado grandes para exportarlas en este equipo. Elige una proporción fija, como 16:9.</value>
+  </data>
+  <data name="PortraitHint" xml:space="preserve">
+    <value>La mayoría de tus fotos son verticales, así que 9:16 les queda mejor.</value>
+  </data>
+  <data name="PortraitApply" xml:space="preserve">
+    <value>Usar 9:16</value>
+  </data>
+  <data name="PortraitDismiss" xml:space="preserve">
+    <value>Descartar</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>{0}: {1}, {2}.</value>
+  </data>
+</root>
