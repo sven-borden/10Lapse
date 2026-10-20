@@ -307,18 +307,24 @@ uncropped (Fit) or filling (Fill) and not stretched.
   mouse back button leave it; *Copy diagnostics* copies a report with the
   profile path and user name redacted.
 - [ ] **5.10.4 Rating ask** (#31, PR #93). Run: a flight build (the real call
-  needs package identity and the Store). Do: two successful exports. Expect: 4 s
-  after the second finished state, the Store's rating dialog appears once, only
-  while the window is active; not after a failed or cancelled export; a restart
-  does not ask again. The Store may stay quiet (it rate-limits): the app counts
-  it as asked.
+  needs package identity and the Store), on a machine that has not exported
+  with this version (fresh install, or delete `LocalState\settings.json`). Do:
+  two successful exports. Expect: 4 s after the second finished state, the
+  Store's rating dialog appears once, only while the window is active; not
+  after a failed or cancelled export; a restart does not ask again. The Store
+  may stay quiet (it rate-limits): the app counts it as asked. The export count
+  and the asked version persist across restarts and Reset to defaults, so a
+  tester who exported before never sees the ask. A later flight with a new
+  package version asks once more.
 - [ ] **5.10.5 Feedback card** (#31). Expect: *Send feedback* opens the GitHub
   new-issue page, *Rate 10Lapse* opens the Store review page for
   `9NBN2XH6S4D8`; a launch failure gives one InfoBar that says what to do.
 - [ ] **5.10.6 Notifications** (#24, PR #88). Run: a packaged build. Do: start
-  an export, switch to another app or minimize. Expect: when it ends a toast
-  that names the file only (no folder, no photo names); no toast while the
-  window is active. Click the toast and note what happens (never tried).
+  an export, switch to another app or minimize. Expect: when it finishes, a
+  toast "<name>.mp4 is ready"; when it fails (a full disk as in 5.8.9, while
+  minimized), a toast "<name>.mp4 couldn't be exported. Open 10Lapse to see
+  why."; none on cancel; none while the window is active; no folder or photo
+  names. Click the toast and note what happens (never tried).
 
 ### 5.11 Motion and reduced motion (#35, PR #100)
 
