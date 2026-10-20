@@ -18,7 +18,7 @@ own labels in “…” where the text names one. As in English, the text says o
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,947.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,967.
 
 ```text
 Convierte una carpeta de fotos en un video timelapse fluido, hasta 4K.
@@ -40,11 +40,11 @@ Edición y exportación
 - Cuando el video está listo, puedes reproducirlo ahí mismo o abrir su carpeta.
 - Si algo falla, 10Lapse te dice qué pasó y qué hacer a continuación.
 
-Privado por diseño
+Privacidad desde el diseño
 10Lapse funciona sin conexión. No hay cuenta, ni análisis, ni acceso a la red: tus fotos y videos nunca salen de tu equipo.
 
 Hecho para Windows 11
-10Lapse 3.0 necesita Windows 11 en un equipo x64 o ARM64; en Windows 10, Microsoft Store ofrece en su lugar la versión anterior, 10Lapse 2.1.1. Los temas claro, oscuro y de contraste siguen a Windows, igual que las animaciones. Todo funciona con el teclado, y los lectores de pantalla anuncian cada control y el progreso de la exportación.
+10Lapse 3.0 necesita Windows 11 en un equipo x64 o ARM64; en Windows 10, Microsoft Store ofrece en su lugar la versión anterior, 10Lapse 2.1.1. Los temas claro, oscuro y de contraste siguen la configuración de Windows, igual que las animaciones. Todo funciona con el teclado, y los lectores de pantalla anuncian cada control y el progreso de la exportación.
 
 Las extensiones opcionales de Microsoft Store agregan más formatos de foto. Las fotos HEIC necesitan dos: Extensión de imágenes HEIF (gratis) y Extensiones de video HEVC (de pago). Los archivos RAW de cámara necesitan una: Extensión de imagen RAW (gratis). 10Lapse indica cuál falta y enlaza a su página de Microsoft Store.
 ```
@@ -60,16 +60,16 @@ Crea un video timelapse con los cientos de fotos de una sesión con trípode: fi
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,481 / 1,500. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
+Limit 1,500 characters. This draft: 1,483 / 1,500. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
 does; it does not claim a crash rate.
 
 ```text
-10Lapse 3.0 está rehecho desde cero para Windows 11.
+10Lapse 3.0 se ha rehecho desde cero para Windows 11.
 
 - Reescrito por completo: el código de los cierres inesperados de la 2.1.1 ya no existe. Si algo falla, 10Lapse te dice qué pasó y qué hacer a continuación.
 - Importa fotos HEIC y .jpeg. HEIC necesita dos extensiones de Microsoft Store, Extensión de imágenes HEIF (gratis) y Extensiones de video HEVC (de pago); 10Lapse te dice cuál falta.
 - Exporta hasta 4K, en H.264, o en HEVC si el equipo lo admite, con el progreso, el tiempo restante y un botón “Cancelar exportación” que la detiene en menos de un segundo.
-- Sigue trabajando si cambias de ventana o la minimizas: la exportación continúa, con el progreso en la barra de tareas y una notificación cuando el video está listo.
+- Sigue funcionando si cambias de ventana o la minimizas: la exportación continúa, con el progreso en la barra de tareas y una notificación cuando el video está listo.
 - Una nueva velocidad “Por foto” para presentaciones, junto a fotogramas por segundo y duración del video.
 - Vista previa en tiempo real y tira de fotogramas: recorre, avanza, quita o reordena fotos, y deshaz los cambios.
 - Proporciones para televisores, teléfonos y redes sociales: 16:9, 9:16, 1:1, 4:5, 4:3 o la de tus fotos.
@@ -111,11 +111,11 @@ Recuerda la velocidad, el encuadre y la salida que usaste por última vez
 
 At most 7 terms (Store Policies: no more than seven unique terms or phrases, relevant to the app, no other product's
 name). **Verify** in the form: it has allowed 30 characters per term and 21 words across all terms. These 7 are
-9 to 21 characters, 15 words in all. "timelapse" and "time lapse" stay: Spanish speakers search the English word too, and "cámara rápida" is the
-Spanish name of the technique. "fotos a video" is spelled as the rest of the listing, and as most people type it.
+9 to 21 characters, 16 words in all. "timelapse" and "time lapse" stay: Spanish speakers search the English word too, and "cámara rápida" is the
+Spanish name of the technique; "secuencia de imágenes" is what a photographer calls the folder. "fotos a video" is spelled as the rest of the listing, and as most people type it.
 
 ```text
-crear timelapse
+secuencia de imágenes
 timelapse
 time lapse
 fotos a video
@@ -164,7 +164,7 @@ Upload six, in this order; captions are 59 to 122 characters.
 | File | Size | Caption |
 |---|---|---|
 | `02-editing.png` | 1920 x 1080 | `Mira cómo se reproduce toda la secuencia, con el número de fotos, la velocidad y la duración del video siempre a la vista.` |
-| `03-vertical.png` | 1920 x 1080 | `Encuádralo en 9:16 para historias y reels en el teléfono, o en 16:9, 1:1, 4:5 o 4:3.` |
+| `03-vertical.png` | 1920 x 1080 | `Encuadra el video en 9:16 para historias y reels en el teléfono, o en 16:9, 1:1, 4:5 o 4:3.` |
 | `04-exporting.png` | 1920 x 1080 | `Exporta un MP4 de hasta 4K y mira cada fotograma mientras se genera, con el tiempo restante.` |
 | `05-finished.png` | 1920 x 1080 | `Reproduce el video terminado al instante o abre su carpeta.` |
 | `06-per-photo.png` | 1920 x 1080 | `Crea una presentación con segundos por foto, o fija los fotogramas por segundo o la duración del video.` |
