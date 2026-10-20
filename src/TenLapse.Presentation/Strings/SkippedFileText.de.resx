@@ -32,7 +32,7 @@
     <value>Keine Berechtigung zum Öffnen</value>
   </data>
   <data name="FileNotFound" xml:space="preserve">
-    <value>Fehlt: verschoben, gelöscht oder getrennt</value>
+    <value>Nicht mehr vorhanden: verschoben, gelöscht oder Laufwerk getrennt</value>
   </data>
   <data name="Other" xml:space="preserve">
     <value>Nicht lesbar</value>

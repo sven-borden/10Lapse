@@ -92,7 +92,7 @@
     <value>{0} · {1} · {2} · {3}</value>
   </data>
   <data name="ExportedInLabel" xml:space="preserve">
-    <value>Exportiert in</value>
+    <value>Exportdauer</value>
   </data>
   <data name="SavedToLabel" xml:space="preserve">
     <value>Gespeichert in</value>
@@ -113,10 +113,10 @@
     <value>Zurück zur Bearbeitung</value>
   </data>
   <data name="Cancelled" xml:space="preserve">
-    <value>Export abgebrochen. Die unfertige Datei wurde entfernt.</value>
+    <value>Export abgebrochen. Die unfertige Datei wurde gelöscht.</value>
   </data>
   <data name="CancelledFileLeft" xml:space="preserve">
-    <value>Export abgebrochen. Die unfertige Datei konnte noch nicht entfernt werden; 10Lapse entfernt sie beim nächsten Start.</value>
+    <value>Export abgebrochen. Die unfertige Datei konnte noch nicht gelöscht werden; 10Lapse löscht sie beim nächsten Start.</value>
   </data>
   <data name="EditsWait" xml:space="preserve">
     <value>Das Projekt kann während des Exports nicht geändert werden. Warten Sie, bis er fertig ist, oder brechen Sie den Export ab.</value>
@@ -125,16 +125,16 @@
     <value>Es werden noch Fotos hinzugefügt. Exportieren Sie, sobald alle da sind.</value>
   </data>
   <data name="ChangedDuringDialogFormat" xml:space="preserve">
-    <value>Der Export wurde nicht gestartet, weil sich das Projekt oder seine Ausgabe geändert hat, während das Dialogfeld „Speichern unter“ geöffnet war. Wählen Sie erneut „{0}“.</value>
+    <value>Der Export wurde nicht gestartet, weil sich das Projekt oder seine Ausgabe geändert hat, während das Dialogfeld „Speichern unter“ geöffnet war. Wählen Sie erneut „{0}“ aus.</value>
   </data>
   <data name="PremiereCantPlayFormat" xml:space="preserve">
-    <value>Das Video wurde gespeichert, aber 10Lapse kann es hier nicht wiedergeben. Prüfen Sie es über „{0}“ in einer anderen App.</value>
+    <value>Das Video wurde gespeichert, aber 10Lapse kann es hier nicht wiedergeben. Wählen Sie „{0}“ aus, und öffnen Sie es zum Prüfen in einer anderen App.</value>
   </data>
   <data name="CloseTitle" xml:space="preserve">
     <value>Export beenden und schließen?</value>
   </data>
   <data name="CloseMessage" xml:space="preserve">
-    <value>Das Video ist noch nicht fertig. 10Lapse beendet den Export und entfernt die unfertige Datei.</value>
+    <value>Das Video ist noch nicht fertig. 10Lapse beendet den Export und löscht die unfertige Datei.</value>
   </data>
   <data name="CloseConfirm" xml:space="preserve">
     <value>Beenden und schließen</value>

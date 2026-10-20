@@ -50,7 +50,7 @@
     <value>Wie Ihre Fotos. Bis ihre Größe bekannt ist, gilt 16:9.</value>
   </data>
   <data name="NoSize" xml:space="preserve">
-    <value>Fotos dieser Breite oder Höhe sind zu groß, um sie auf diesem PC zu exportieren. Wählen Sie ein festes Format wie 16:9.</value>
+    <value>Fotos dieser Breite oder Höhe sind zu groß, um sie auf diesem PC zu exportieren. Wählen Sie ein festes Bildformat wie 16:9 aus.</value>
   </data>
   <data name="PortraitHint" xml:space="preserve">
     <value>Die meisten Ihrer Fotos sind im Hochformat, deshalb passt 9:16 besser.</value>

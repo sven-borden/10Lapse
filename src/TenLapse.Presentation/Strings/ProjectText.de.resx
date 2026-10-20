@@ -192,7 +192,7 @@
     <value>Diagnose</value>
   </data>
   <data name="DiagnosticsCardCaption" xml:space="preserve">
-    <value>Kopiert die App- und Windows-Version, Ihre Grafikkarte, die Videoencoder und die letzten 200 Protokollzeilen, um sie in einen Fehlerbericht einzufügen. Die Protokollzeilen können Dateien und Ordner nennen, mit denen 10Lapse gearbeitet hat, aber nie die Fotos selbst. Von Ihrem PC wird nichts gesendet.</value>
+    <value>Kopiert die App- und Windows-Version, Ihre Grafikkarte, die Videoencoder und die letzten 200 Protokollzeilen, um sie in einen Fehlerbericht einzufügen. Die Protokollzeilen können Namen von Dateien und Ordnern enthalten, mit denen 10Lapse gearbeitet hat, aber nie die Fotos selbst. Von Ihrem PC wird nichts gesendet.</value>
   </data>
   <data name="SettingsDefaultsSection" xml:space="preserve">
     <value>Standardwerte</value>
@@ -201,7 +201,7 @@
     <value>Auf Standardwerte zurücksetzen</value>
   </data>
   <data name="ResetCardCaption" xml:space="preserve">
-    <value>10Lapse beginnt jedes Projekt mit Ihrem zuletzt verwendeten Tempo, Bildformat und Ihrer letzten Ausgabe. Hiermit erhalten sie wieder die Werte einer Neuinstallation, auch im geöffneten Projekt, und 10Lapse vergisst die Ordner, in denen sich die Auswahldialoge öffnen. Ihre Fotos bleiben unverändert.</value>
+    <value>10Lapse beginnt jedes Projekt mit Ihrem zuletzt verwendeten Tempo, Bildformat und Ihrer letzten Ausgabe. Dies setzt sie auf die Werte einer Neuinstallation zurück, auch im geöffneten Projekt, und 10Lapse vergisst die Ordner, in denen sich die Auswahldialoge öffnen. Ihre Fotos bleiben unverändert.</value>
   </data>
   <data name="ResetButton" xml:space="preserve">
     <value>Zurücksetzen</value>

@@ -41,13 +41,13 @@
     <value>Sekunden pro Foto</value>
   </data>
   <data name="CustomFramesPerSecond" xml:space="preserve">
-    <value>Eigene Bilder pro Sekunde</value>
+    <value>Eigene Bildrate</value>
   </data>
   <data name="CustomLength" xml:space="preserve">
     <value>Eigene Dauer in Sekunden</value>
   </data>
   <data name="CustomSecondsPerPhoto" xml:space="preserve">
-    <value>Eigene Sekunden pro Foto</value>
+    <value>Eigene Zeit pro Foto</value>
   </data>
   <data name="UnitSecondsPerPhoto" xml:space="preserve">
     <value>s pro Foto</value>
