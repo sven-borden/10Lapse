@@ -52,7 +52,7 @@ The Debug app runs unpackaged, so these were never seen for real. Ask a tester, 
 
 | Check | What to look for |
 | --- | --- |
-| Rating dialog (#31) | After the second successful export, about 4 seconds after "finished", the Store's own rating dialog appears, once per package version. Never after a failed or cancelled export. Settings, Feedback card: *Rate 10Lapse* opens the Store review page, *Send feedback* opens GitHub in the browser. |
+| Rating dialog (#31) | After the second successful export, about 4 seconds after "finished", the Store's own rating dialog should appear, if the Store shows it for a flight build; the app asks only with the window in front and idle (`App.xaml.cs:221`), at most once per package version. Never after a failed or cancelled export. Settings, Feedback card: *Rate 10Lapse* opens the Store review page, *Send feedback* opens GitHub in the browser. |
 | Export notification (#24) | Start an export, minimize the window or switch to another app, wait for the end: a Windows notification names the file. Clicking it brings 10Lapse back. A failed export says the file "couldn't be exported". |
 | Settings and log locations | `%LOCALAPPDATA%\Packages\62394glaglasven.10Lapse_<id>\LocalState`: `settings.json`, `encoder-capabilities.json` and a `Logs` folder (rolling `.log` files). Settings survive a restart; uninstalling removes them. |
 | Proxy cache | `...\LocalCache\Proxies` fills while a big project is open (the preview's smaller copies). Windows may clear LocalCache; the preview must then rebuild it quietly. |
