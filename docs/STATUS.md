@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. 2026-10-20: #106 (#38 accessibility) merged. **3.0 is code-complete.** Next is release work (see Owner items); the manual accessibility checks are on #41.
+2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. 2026-10-20: #106 (#38 accessibility) merged. **3.0 is code-complete.** In flight (Sven's pick, release prep): #40 flight package and guides, with #41 test matrix document beside it; then #42 listing drafts. Each PR says Refs; the issues close once Sven's part is done.
 
 ## Waves
 
@@ -21,6 +21,9 @@ Waves 0 to 16 are done; every issue in them is under Merged below. #90
 | 17 | #104 Flaky allocation count (bug) | S | `tests/` Ordering | merged #105 |
 | 17 | #101 Flaky timing lower bound (bug) | S | `tests/` timing asserts | merged #102 |
 | 18 | #38 Accessibility pass | O | every view, `tools/` Axe.Windows scan | merged #106 |
+| 19 | #40 Flight prep (package check, guides) | S | `scripts/pack.ps1`, `docs/release/` | in progress |
+| 19 | #41 Test matrix document | S | `docs/test-matrix.md` | in progress |
+| 20 | #42 Listing drafts and screenshots | O | `docs/store/`, screenshot script | |
 
 After wave 18, 3.0 is code-complete. Milestones 4 (private beta) and 5
 (relaunch) are mostly owner work; milestone 6 (3.1 creative tools) gets its
