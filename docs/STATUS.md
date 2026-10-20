@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. In flight: #38 accessibility (the last 3.0 code issue), with #104 allocation flake beside it (`tests/` Ordering).
+2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. In flight: PR #106 (#38 accessibility, the last 3.0 code issue) review.
 
 ## Waves
 
@@ -18,9 +18,9 @@ Waves 0 to 16 are done; every issue in them is under Merged below. #90
 | Wave | Issue | Model | Area | Status |
 |---|---|---|---|---|
 | 17 | #39 Strings to resource files | O | every view (Opus: resw/resx split) | merged #103 |
-| 17 | #104 Flaky allocation count (bug) | S | `tests/` Ordering | in progress |
+| 17 | #104 Flaky allocation count (bug) | S | `tests/` Ordering | merged #105 |
 | 17 | #101 Flaky timing lower bound (bug) | S | `tests/` timing asserts | merged #102 |
-| 18 | #38 Accessibility pass | O | every view, `tools/` Axe.Windows scan | in progress |
+| 18 | #38 Accessibility pass | O | every view, `tools/` Axe.Windows scan | PR #106, review |
 
 After wave 18, 3.0 is code-complete. Milestones 4 (private beta) and 5
 (relaunch) are mostly owner work; milestone 6 (3.1 creative tools) gets its
@@ -264,3 +264,7 @@ Details are in each PR's "What the next issues should know".
 - #39 PR #103: strings in `.resx` and `TextResources`, `StringRuleTests`,
   `--pseudo-loc` and `scripts/pseudo-check.ps1`; Frame segments end in an
   ellipsis if too long, the export time-left line wraps to two lines.
+- #104 PR #105: a thread's allocation count sometimes jumps about 8 KB across
+  one read while other test classes run (cause unknown; not GC, pools or
+  tiering). `AllocatedByRead` takes the least of a few warm reads; a flatness
+  test (1,000 vs 65,535 IFD entries, +256 bytes) keeps the #84 guarantee.

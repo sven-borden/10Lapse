@@ -39,6 +39,23 @@ public static class CaptureTimeCostTests
     }
 
     [Fact]
+    public static void WhatAReadAllocatesDoesNotGrowWithTheEntryCount()
+    {
+        // The property behind the bound (#84, #104): an IFD that claims more entries costs more reads, never more memory.
+        // Compared with each other, so it holds whatever the machine does around the measurement.
+        var thousand = CaptureTimeReaderTests.AllocatedByRead(ExifFiles.TiffWithRepeatedTimes(1_000, "2026:05:01 18:30:07"), out var reading);
+        Assert.NotNull(reading);
+
+        foreach (var entries in new[] { 8_000, 65_535 })
+        {
+            var allocated = CaptureTimeReaderTests.AllocatedByRead(ExifFiles.TiffWithRepeatedTimes(entries, "2026:05:01 18:30:07"), out reading);
+
+            Assert.NotNull(reading);
+            Assert.True(allocated <= thousand + 256, $"{entries:N0} entries allocated {allocated:N0} bytes, 1,000 entries {thousand:N0}");
+        }
+    }
+
+    [Fact]
     public static void ManyExifSegmentsCostNoMoreThanFour()
     {
         // 16 and 64 segments of 65 KB: the first four are each read in one go and parsed in memory, the rest never.
@@ -50,7 +67,10 @@ public static class CaptureTimeCostTests
         Assert.Equal(sixteen.BytesRead, sixtyFour.BytesRead);
         Assert.InRange(sixteen.Reads, 1, 16);
         Assert.InRange(sixteen.BytesRead, 4 * 64_000, 4 * 66_000);
-        Assert.InRange(CaptureTimeReaderTests.AllocatedByRead(JpegOfFullSegments(64), out _), 0, 4096);
+        var allocatedBy16 = CaptureTimeReaderTests.AllocatedByRead(JpegOfFullSegments(16), out _);
+        var allocatedBy64 = CaptureTimeReaderTests.AllocatedByRead(JpegOfFullSegments(64), out _);
+        Assert.InRange(allocatedBy64, 0, 4096);
+        Assert.True(allocatedBy64 <= allocatedBy16 + 256, $"64 segments allocated {allocatedBy64:N0} bytes, 16 segments {allocatedBy16:N0}");
     }
 
     [Fact]
