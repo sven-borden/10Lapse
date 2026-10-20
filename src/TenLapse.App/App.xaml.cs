@@ -18,9 +18,26 @@ namespace TenLapse;
 /// </summary>
 public partial class App : Application
 {
+    // Every file and folder the app writes or deletes in. Debug can move each one (--log-folder=PATH, --settings-folder=PATH,
+    // --encoder-cache=FILE, --cache-folder=PATH) and the journal of unfinished exports follows the log folder, so a test
+    // run leaves the user's own folder alone (#90, #110). Without the switches, and always in Release, these are
+    // AppEnvironment's defaults. Declared before _log: static fields initialise in order.
+    private static readonly AppFolders _folders = AppFolders.Resolve(
+        AppEnvironment.LogFolder(),
+        AppEnvironment.ProxyCacheFolder(),
+#if DEBUG
+        new AppFolderOverrides(
+            Debugging.DebugLaunch.LogFolder,
+            Debugging.DebugLaunch.SettingsFolder,
+            Debugging.DebugLaunch.EncoderCacheFile,
+            Debugging.DebugLaunch.CacheFolder));
+#else
+        null);
+#endif
+
     // The first thing that exists, so a failure anywhere after it (InitializeComponent included) reaches the log.
     // Opening it never throws: an unwritable folder makes it keep its lines in memory.
-    private static readonly RollingFileLog _log = new(LogFolder());
+    private static readonly RollingFileLog _log = new(_folders.LogFolder);
 
     // The start-up phases in the log (#90), timed from the process start: the last line of a log that stops at
     // start-up names the phase.
@@ -44,7 +61,7 @@ public partial class App : Application
 #endif
 
         _log.Info($"10Lapse {AppDiagnostics.AppVersion()} starting ({(AppEnvironment.HasPackageIdentity ? "packaged" : "unpackaged")}); log in {_log.Folder}.");
-        ExportCleanupLog.Start(_log);
+        ExportCleanupLog.Start(_log, _folders.UnfinishedExportsFile);
 
         // App.xaml (the token dictionaries, the styles) that fails to load would escape the constructor with no
         // message and maybe no log: as in OnLaunched, log it, say so in a plain message box and close. The process
@@ -116,13 +133,13 @@ public partial class App : Application
 
         // The encoder probe (#9) runs in the background once the window's first frame is on screen (#90); the Output
         // panel (#23) takes its answer when it comes and nothing waits for it.
-        var encoders = new EncoderStartup(EncoderCacheFile(), _startup);
+        var encoders = new EncoderStartup(_folders.EncoderCacheFile, _startup);
 
         // Copy diagnostics. The encoder section reads this session's probe result, else the cache #9's probe writes,
         // and never probes itself.
         var diagnostics = new DiagnosticsCopier(
             new DiagnosticsCollector(
-                [new AppDiagnostics(), new GraphicsDiagnostics(), new EncoderDiagnostics(EncoderCacheFile(), () => encoders.Loaded)],
+                [new AppDiagnostics(), new GraphicsDiagnostics(), new EncoderDiagnostics(_folders.EncoderCacheFile, () => encoders.Loaded)],
                 _log,
                 redaction: DiagnosticsRedaction.ForCurrentUser(AppEnvironment.ShortProfileFolder())),
             new ClipboardService(),
@@ -136,7 +153,7 @@ public partial class App : Application
         _errors = errors;
         // The remembered settings (#21): a small file read now, on this thread, before the window; a new project starts
         // from them, the pickers open in the last folder, and the file is written a moment after each change.
-        var remembered = new RememberedSettings(new JsonFileSettingsStore(SettingsFile()), errors, _log);
+        var remembered = new RememberedSettings(new JsonFileSettingsStore(_folders.SettingsFile), errors, _log);
         _startup.Phase("building the view models");
         var shell = new ShellViewModel(dialogs, errors, remembered.CreateProject);
         var settings = new SettingsViewModel(errors, diagnostics, remembered, infoBars, new LauncherService());
@@ -178,7 +195,7 @@ public partial class App : Application
 
         // The preview (#19): the proxy cache in LocalCache (beside the log unpackaged), the frame images, the player.
         _startup.Phase("creating the preview session");
-        var preview = new Preview.PreviewSession(shell, errors, infoBars, _log, PreviewCacheFolder());
+        var preview = new Preview.PreviewSession(shell, errors, infoBars, _log, _folders.ProxyCacheFolder);
 
         // The export (#24): Media's exporter behind Presentation's interface, the Save dialog in the folder of the last
         // export (#21), Show in folder, and the window's taskbar progress and notification. The notifications register
@@ -246,55 +263,6 @@ public partial class App : Application
         }
 #endif
         return window;
-    }
-
-    // Debug can point the log elsewhere (--log-folder=PATH), so a launch test leaves the user's log folder alone (#90).
-    private static string LogFolder()
-    {
-#if DEBUG
-        if (Debugging.DebugLaunch.LogFolder is { } folder)
-        {
-            return folder;
-        }
-#endif
-        return AppEnvironment.LogFolder();
-    }
-
-    // Debug can point the remembered settings elsewhere (--settings-folder=PATH), so a test run leaves the user's alone.
-    private static string SettingsFile()
-    {
-#if DEBUG
-        if (Debugging.DebugLaunch.SettingsFolder is { } folder)
-        {
-            return Path.Combine(folder, "settings.json");
-        }
-#endif
-        return AppEnvironment.SettingsFile();
-    }
-
-    // Debug can point the encoder probe's cache elsewhere (--encoder-cache=FILE), so a launch test can make every launch
-    // probe cold, as the first launch of a new build does, without touching the user's cache (#90).
-    private static string EncoderCacheFile()
-    {
-#if DEBUG
-        if (Debugging.DebugLaunch.EncoderCacheFile is { } file)
-        {
-            return file;
-        }
-#endif
-        return AppEnvironment.EncoderCacheFile();
-    }
-
-    // Debug can point the proxy cache elsewhere (--cache-folder=PATH), so a test run leaves the user's cache alone.
-    private static string PreviewCacheFolder()
-    {
-#if DEBUG
-        if (Debugging.DebugLaunch.CacheFolder is { } folder)
-        {
-            return folder;
-        }
-#endif
-        return AppEnvironment.ProxyCacheFolder();
     }
 
     // An exception that reached the UI thread unhandled: an event handler, a binding, a continuation. Unless it

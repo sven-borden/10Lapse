@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using TenLapse.Core.Settings;
 using Windows.Storage;
 
 namespace TenLapse.Services;
@@ -39,25 +38,6 @@ internal static class AppEnvironment
         var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         return Path.Combine(string.IsNullOrEmpty(local) ? Path.GetTempPath() : local, "10Lapse", "Logs");
     }
-
-    /// <summary>
-    /// The encoder capabilities cache (#9's <c>EncoderProbe.LoadOrProbeAsync</c> path): <c>encoder-capabilities.json</c>
-    /// in the package's LocalState, or in %LOCALAPPDATA%\10Lapse unpackaged. Never throws.
-    /// </summary>
-    public static string EncoderCacheFile() => Path.Combine(Path.GetDirectoryName(LogFolder())!, "encoder-capabilities.json");
-
-    /// <summary>
-    /// The remembered settings (#21): <c>settings.json</c> in the package's LocalState, or in %LOCALAPPDATA%\10Lapse
-    /// unpackaged, beside the log. A plain file rather than <c>ApplicationData.LocalSettings</c>, so one format and one
-    /// code path serve both and the tests cover them. Never throws.
-    /// </summary>
-    public static string SettingsFile() => SettingsLocation.BesideLogFolder(LogFolder(), "settings.json");
-
-    /// <summary>
-    /// The journal of unfinished export files (#22's <c>PartialFileJournal</c>): <c>unfinished-exports.txt</c> in the
-    /// package's LocalState, or in %LOCALAPPDATA%\10Lapse unpackaged. Never throws.
-    /// </summary>
-    public static string UnfinishedExportsFile() => Path.Combine(Path.GetDirectoryName(LogFolder())!, "unfinished-exports.txt");
 
     /// <summary>
     /// The preview's proxy cache (#19): <c>Proxies</c> in the package's LocalCache (which Windows may clear, and which
