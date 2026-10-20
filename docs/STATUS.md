@@ -4,7 +4,7 @@ Updated 2026-10-20. Roadmap: the pinned #59 and the milestones. Working agreemen
 
 ## Now
 
-2026-10-20: **Translations done; the 3.0.0.0 flight package is built.** 3.0 ships in en-US, fr, de, es, it and pt-BR (#113 to #119, #124 merged). `scripts/pack.ps1` on master 87fbdb9 passed: `dist/store/TenLapse.App_3.0.0.0_x64_arm64_bundle.msixupload` (125.8 MB, six languages, 15 satellites). Nothing in flight. Next steps are Sven's: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`, incl. 5.17 Languages) and the #90 watch, then #42 (one listing per `docs/store/listing*.md`), #43, #44. A `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Release PRs say Refs; those issues close once Sven's part is done.
+2026-10-20: **Translations done; the 3.0.0.0 flight package is built.** 3.0 ships in en-US, fr, de, es, it and pt-BR (#113 to #119, #124 merged). `scripts/pack.ps1` on master 87fbdb9 passed: `dist/store/TenLapse.App_3.0.0.0_x64_arm64_bundle.msixupload` (125.8 MB, six languages, 15 satellites). The Store screenshots for all six languages are in `docs/store/screenshots/` (Git LFS, #129 PR #130). Nothing in flight. Next steps are Sven's: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`, incl. 5.17 Languages) and the #90 watch, then #42 (one listing per `docs/store/listing*.md`), #43, #44. A `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Release PRs say Refs; those issues close once Sven's part is done.
 
 ## Waves
 
@@ -293,7 +293,7 @@ Details are in each PR's "What the next issues should know".
 - #42 PR #109 (refs only): `docs/store/listing.md` (en-US description, What's
   new, 19 features, 7 search terms, requirements, captions, the #7 interim
   line; HEVC Video Extensions marked paid; Windows 11 stated), and
-  `scripts/store-screenshots.ps1` (8 shots to `dist/store-screenshots/`;
+  `scripts/store-screenshots.ps1` (8 shots, now to `docs/store/screenshots/<lang>/`;
   upload 02-06 and 01). Debug `--sample-plain`.
 - PR #112 (refs #43): the 30 s showreel in `docs/store/showreel/` (video in
   Git LFS), made by its `source/` (page, render, score); not the trailer.
@@ -309,6 +309,9 @@ Details are in each PR's "What the next issues should know".
   enforces); Store names in `Media/Strings/StoreExtensionText.resx`, never
   bound to an article or pronoun; `WrapRow`/`WrapLayout`; Debug
   `--motion-drop=`. `a11y-check.ps1` finds the build-26300 folder picker.
+- #129 PR #130: 48 Store screenshots in Git LFS (`docs/store/screenshots/<lang>/`);
+  `store-screenshots.ps1` builds Debug first, passes `--lang` and Debug
+  `--region` (number format), retries a shot up to 3 times; README for 3.0.
 - Languages: #116 de PR #122, #115 fr PR #123, #117 es PR #126, #118 it
   PR #127, #119 pt-BR PR #128; #124 PR #125 English Store names (keys
   unchanged). Glossaries, form of address and Store-name tables are in each
