@@ -64,4 +64,5 @@ The Debug app runs unpackaged, so these were never seen for real. Ask a tester, 
 - Reports are GitHub issues, made with the *Beta report* form or the *Send feedback* button in Settings, with the *Copy diagnostics* text pasted in (`docs/release/beta-testers.md` explains it). Link or label them with `#40`.
 - During the flight only **fixes** are made. No new features; those wait for 3.1.
 - Every fix that reaches testers is a new flight submission with a higher version (`pack.ps1 -Version`), uploaded to the same flight (Package flights, the flight, Create new submission). Testers get it as an update.
+- The public release (#44) uses the same or a higher version than the last flight; verify this in Partner Center before you submit it, and do not lower the version.
 - Close #40 when the beta ran clean: no open beta-report issue that blocks a release, #90 not seen, and the checks in section 5 done. Then #44 (rollout) is next.
