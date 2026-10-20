@@ -482,7 +482,10 @@ walk import, Timing, Frame, Output, export, the finished state and Settings.
   installed package found its French files: one English sentence means a
   file is missing), and WinUI's own words too (a text box's right-click menu:
   Couper, Copier, Coller); *Copy diagnostics* says `Language fr`. Nothing
-  clipped at the narrowest window.
+  clipped at the narrowest window. Windows' own UI follows the Windows
+  display language, not the app's: the folder picker, Explorer for *Show in
+  folder*, the caption buttons' tooltips and a message box's buttons. An
+  English word there is not a missing translation.
 - [ ] **5.17.2 German** (#116). As 5.17.1, in German (the longest language:
   watch the segment buttons, the export rows and the Settings buttons).
 - [ ] **5.17.3 Spanish** (#117). As 5.17.1, in Spanish.
