@@ -59,13 +59,13 @@
     <value>As configurações deste projeto serão descartadas.</value>
   </data>
   <data name="NewProjectMessage_one" xml:space="preserve">
-    <value>A foto e as configurações deste projeto serão descartadas. O arquivo da foto continua no seu PC.</value>
+    <value>A foto e as configurações serão removidas deste projeto. O arquivo da foto continua no seu PC.</value>
   </data>
   <data name="NewProjectMessage_many" xml:space="preserve">
-    <value>Este projeto tem {0} de fotos. Elas e as configurações serão descartadas do projeto; os arquivos das fotos continuam no seu PC.</value>
+    <value>Este projeto tem {0} de fotos. Elas e as configurações serão removidas do projeto; os arquivos das fotos continuam no seu PC.</value>
   </data>
   <data name="NewProjectMessage_other" xml:space="preserve">
-    <value>As {0} fotos e as configurações deste projeto serão descartadas. Os arquivos das fotos continuam no seu PC.</value>
+    <value>As {0} fotos e as configurações serão removidas deste projeto. Os arquivos das fotos continuam no seu PC.</value>
   </data>
   <data name="NewProjectConfirm" xml:space="preserve">
     <value>Iniciar novo projeto</value>
@@ -86,25 +86,25 @@
     <value>Fechar</value>
   </data>
   <data name="ErrorUnexpected" xml:space="preserve">
-    <value>Algo inesperado interrompeu essa ação. Tente novamente e, se isso continuar acontecendo, copie o diagnóstico em um relatório de bug.</value>
+    <value>Algo inesperado interrompeu essa ação. Tente novamente e, se isso continuar acontecendo, copie o diagnóstico e cole-o em um relatório de bug.</value>
   </data>
   <data name="ErrorUnhandled" xml:space="preserve">
     <value>O 10Lapse encontrou um problema inesperado e continuou funcionando. Se algo parecer errado, reinicie o 10Lapse.</value>
   </data>
   <data name="ErrorFileNotFoundNamed" xml:space="preserve">
-    <value>Não foi possível encontrar {0}. O arquivo pode ter sido movido, renomeado ou excluído; verifique se ele ainda existe e tente novamente.</value>
+    <value>Não foi possível encontrar {0}. O arquivo pode ter sido movido, renomeado ou excluído. Verifique se ele ainda existe. Depois, tente novamente.</value>
   </data>
   <data name="ErrorFileNotFound" xml:space="preserve">
-    <value>Não foi possível encontrar um arquivo. Ele pode ter sido movido, renomeado ou excluído; verifique se ele ainda existe e tente novamente.</value>
+    <value>Não foi possível encontrar um arquivo. Ele pode ter sido movido, renomeado ou excluído. Verifique se ele ainda existe. Depois, tente novamente.</value>
   </data>
   <data name="ErrorFolderNotFound" xml:space="preserve">
-    <value>Não foi possível encontrar uma pasta. Verifique se ela ainda existe e se a unidade dela está conectada e tente novamente.</value>
+    <value>Não foi possível encontrar uma pasta. Verifique se ela ainda existe e se a unidade dela está conectada. Depois, tente novamente.</value>
   </data>
   <data name="ErrorPathTooLong" xml:space="preserve">
     <value>O caminho de um arquivo é longo demais para o Windows. Mova o arquivo para uma pasta com um caminho mais curto e tente novamente.</value>
   </data>
   <data name="ErrorAccessDenied" xml:space="preserve">
-    <value>O Windows não permitiu que o 10Lapse abrisse um arquivo ou uma pasta. Verifique se você tem acesso a esse local ou escolha outro e tente novamente.</value>
+    <value>O Windows não permitiu que o 10Lapse abrisse um arquivo ou uma pasta. Verifique se você tem acesso a esse local ou escolha outro. Depois, tente novamente.</value>
   </data>
   <data name="ErrorFileInUse" xml:space="preserve">
     <value>Um arquivo está aberto em outro aplicativo. Feche-o nesse aplicativo e tente novamente.</value>
@@ -116,7 +116,7 @@
     <value>O PC ficou sem memória. Feche alguns outros aplicativos e tente novamente.</value>
   </data>
   <data name="ErrorDriveDisconnected" xml:space="preserve">
-    <value>A unidade ou a pasta de rede foi desconectada. Conecte-a novamente e tente de novo.</value>
+    <value>A unidade ou a pasta de rede foi desconectada. Reconecte-a e tente novamente.</value>
   </data>
   <data name="ErrorCannotRead" xml:space="preserve">
     <value>Não é possível ler um arquivo: a unidade ou o cartão de memória em que ele está pode estar danificado. Copie as fotos para outra unidade e tente novamente.</value>
@@ -206,7 +206,7 @@
     <value>Padrões</value>
   </data>
   <data name="ResetCardTitle" xml:space="preserve">
-    <value>Restaurar os padrões</value>
+    <value>Restaurar padrões</value>
   </data>
   <data name="ResetCardCaption" xml:space="preserve">
     <value>O 10Lapse começa cada projeto com a última velocidade, proporção e saída que você usou. Isto as restaura para os valores de uma instalação nova, inclusive no projeto aberto, e esquece as pastas em que os seletores abrem. Suas fotos não são alteradas.</value>
@@ -326,13 +326,13 @@
     <value>Adicionar estas fotos a este projeto?</value>
   </data>
   <data name="DropMessage_one" xml:space="preserve">
-    <value>Este projeto tem {0} foto. Adicione as novas fotos a ele ou inicie um novo projeto só com as novas. Um novo projeto descarta a foto e as configurações deste; o arquivo continua no seu PC.</value>
+    <value>Este projeto tem {0} foto. Adicione as novas fotos a ele ou inicie um novo projeto só com as novas. Ao iniciar um novo projeto, a foto e as configurações deste são removidas; o arquivo continua no seu PC.</value>
   </data>
   <data name="DropMessage_many" xml:space="preserve">
-    <value>Este projeto tem {0} de fotos. Adicione as novas fotos a ele ou inicie um novo projeto só com as novas. Um novo projeto descarta as fotos e as configurações deste; os arquivos continuam no seu PC.</value>
+    <value>Este projeto tem {0} de fotos. Adicione as novas fotos a ele ou inicie um novo projeto só com as novas. Ao iniciar um novo projeto, as fotos e as configurações deste são removidas; os arquivos continuam no seu PC.</value>
   </data>
   <data name="DropMessage_other" xml:space="preserve">
-    <value>Este projeto tem {0} fotos. Adicione as novas fotos a ele ou inicie um novo projeto só com as novas. Um novo projeto descarta as fotos e as configurações deste; os arquivos continuam no seu PC.</value>
+    <value>Este projeto tem {0} fotos. Adicione as novas fotos a ele ou inicie um novo projeto só com as novas. Ao iniciar um novo projeto, as fotos e as configurações deste são removidas; os arquivos continuam no seu PC.</value>
   </data>
   <data name="DropAddToProject" xml:space="preserve">
     <value>Adicionar ao projeto</value>
@@ -359,10 +359,10 @@
     <value>A adição de fotos foi interrompida. {0} fotos foram adicionadas.</value>
   </data>
   <data name="ImportFolderFailedNamed" xml:space="preserve">
-    <value>Não foi possível abrir a pasta {0}. Verifique se a unidade ou o cartão de memória dela está conectado e se você consegue abri-la no Explorador de Arquivos e adicione-a novamente.</value>
+    <value>Não foi possível abrir a pasta {0}. Verifique se a unidade ou o cartão de memória dela está conectado e se você consegue abri-la no Explorador de Arquivos. Depois, adicione-a novamente.</value>
   </data>
   <data name="ImportFoldersNotOpened_other" xml:space="preserve">
-    <value>Não foi possível abrir {0} pastas. Verifique se as unidades ou os cartões de memória delas estão conectados e se você consegue abri-las no Explorador de Arquivos e adicione-as novamente.</value>
+    <value>Não foi possível abrir {0} pastas. Verifique se as unidades ou os cartões de memória delas estão conectados e se você consegue abri-las no Explorador de Arquivos. Depois, adicione-as novamente.</value>
   </data>
   <data name="CloudDownloadTitle" xml:space="preserve">
     <value>Baixar do OneDrive?</value>

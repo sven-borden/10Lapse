@@ -29,6 +29,6 @@
     <value>Este PC não consegue exportar vídeo {0} com esta proporção e taxa de quadros.</value>
   </data>
   <data name="NoPlayback" xml:space="preserve">
-    <value>Este PC não consegue reproduzir vídeo {0}, por isso não exporta nesse formato.</value>
+    <value>Este PC não consegue reproduzir vídeo {0}, por isso o 10Lapse não exporta nesse formato.</value>
   </data>
 </root>
