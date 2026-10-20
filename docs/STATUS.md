@@ -309,20 +309,12 @@ Details are in each PR's "What the next issues should know".
   enforces); Store names in `Media/Strings/StoreExtensionText.resx`, never
   bound to an article or pronoun; `WrapRow`/`WrapLayout`; Debug
   `--motion-drop=`. `a11y-check.ps1` finds the build-26300 folder picker.
-- #115 PR #123: French (`fr`, vous, U+202F typography, "i/s"; free/paid as
-  invariant "(sans frais)"/"(achat requis)"; Ctrl+Z "remet", never
-  "rétablir", which is Redo), `listing.fr.md`.
-- #117 PR #126: Spanish (`es`, tú, "equipo" for PC; "video" without the
-  accent for Latin America, MX Store names where ES and MX differ; `_many`
-  with "de"; Ctrl+Z "devolver al proyecto"), `listing.es.md`.
-- #119 PR #128: Brazilian Portuguese (`pt-BR`, você, "o 10Lapse",
-  "remover" never "descartar" for photos, Ctrl+Z "devolve ao projeto"),
-  `listing.pt-BR.md`.
-- #118 PR #127: Italian (`it`, tu, "Impossibile …" errors, fotogramma vs
-  Inquadratura, Ctrl+Z "rimettere nel progetto"), `listing.it.md`.
-- #116 PR #122: German (`de`, Sie, „…“, Strg/Entf), `listing.de.md`; Store
-  names from the Store catalog service (market DE). Translator glossaries
-  live in each language PR's body.
-- #124 PR #125: English Store names follow the catalog (HEIF Image Extension,
-  WebP Image Extension; keys unchanged); the plural-fallback test reads a
-  test-only resx. Store names: `displaycatalog.mp.microsoft.com` ProductTitle.
+- Languages: #116 de PR #122, #115 fr PR #123, #117 es PR #126, #118 it
+  PR #127, #119 pt-BR PR #128; #124 PR #125 English Store names (keys
+  unchanged). Glossaries, form of address and Store-name tables are in each
+  PR body. Rules every language follows: Ctrl+Z puts back (fr remet, es
+  devolver, it rimettere, pt-BR devolve), never the Redo or Restore verb;
+  "remove" is out of the project, "delete" only files on disk; free/paid
+  labels never agree with a Store name; `_many` where millions take de/di;
+  Store names from `displaycatalog.mp.microsoft.com` (ProductTitle); es uses
+  "video" and the MX names for a single neutral file.
