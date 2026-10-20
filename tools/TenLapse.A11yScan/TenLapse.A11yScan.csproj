@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Accessibility scan for #38: runs the Axe.Windows rules (the engine behind Accessibility Insights for Windows) on the
+    running Debug app's window, found by its process id, and writes the results. Driven by scripts/a11y-check.ps1 (see
+    its comment). Not shipped.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(TenLapseWindowsTargetFramework)</TargetFramework>
+    <Platforms>x64</Platforms>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>TenLapse.A11yScan</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Axe.Windows" />
+  </ItemGroup>
+</Project>

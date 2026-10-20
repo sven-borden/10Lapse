@@ -14,7 +14,8 @@ namespace TenLapse.Shell;
 /// <summary>
 /// Swaps what the inspector column shows (#24; DESIGN.md, Export panel; motion spec, Gate): the outgoing part leaves in
 /// 167 ms to -12 px (Exit), then the incoming one enters in 400 ms from +16 px (Enter). With animations off both are
-/// short fades (90 ms out, 150 ms in). Nothing blocks input meanwhile; a newer swap overtakes an older one.
+/// short fades (90 ms out, 150 ms in). The incoming part takes the keyboard focus at once but no pointer input until it
+/// enters (#38); a newer swap overtakes an older one.
 /// </summary>
 internal sealed class PanelSwap
 {
@@ -43,11 +44,16 @@ internal sealed class PanelSwap
     /// <summary>The part shown, or arriving.</summary>
     public UIElement Shown => _shown;
 
-    /// <summary>Swaps to <paramref name="next"/>; <paramref name="arrived"/> runs once it is on screen (to move focus).</summary>
-    public void Show(UIElement next, Action? arrived)
+    /// <summary>
+    /// Swaps to <paramref name="next"/>. <paramref name="focus"/> moves the keyboard focus into it at once (on the next
+    /// tick, once the bindings that enable its controls have run), not after the animation (#38: no animation delays
+    /// focus); <paramref name="arrived"/> runs as it starts to enter (its own arrival animation).
+    /// </summary>
+    public void Show(UIElement next, Action? focus, Action? arrived = null)
     {
         if (next == _shown)
         {
+            focus?.Invoke();
             arrived?.Invoke();
             return;
         }
@@ -62,10 +68,35 @@ internal sealed class PanelSwap
             Settle(part, Visibility.Collapsed);
         }
 
-        Settle(next, Visibility.Collapsed);
+        // The incoming part joins the layout now, unseen, so it can take the focus before the outgoing one collapses:
+        // a focused control that collapses would drop the focus to the first control of the window.
+        // Not hit-testable until it enters: it lies over the outgoing part, so a click just after Export would land on the
+        // unseen Cancel export.
+        Settle(next, Visibility.Visible);
+        next.IsHitTestVisible = false;
+        ElementCompositionPreview.GetElementVisual(next).Opacity = 0f;
+        _dispatcher.TryEnqueueGuarded(
+            _log,
+            () =>
+            {
+                if (generation != _generation)
+                {
+                    return;
+                }
+
+                // Laid out first: a part that was collapsed has no templates yet, and a control without one takes no focus.
+                next.UpdateLayout();
+                focus?.Invoke();
+                SwapOut(leaving, next, generation, arrived);
+            },
+            ExportText.PanelFailed);
+    }
+
+    private void SwapOut(UIElement leaving, UIElement next, int generation, Action? arrived)
+    {
         if (leaving.Visibility != Visibility.Visible)
         {
-            Enter(next, generation, arrived);
+            Enter(next, arrived);
             return;
         }
 
@@ -76,7 +107,7 @@ internal sealed class PanelSwap
         if (!step.Animates)
         {
             Settle(leaving, Visibility.Collapsed);
-            Enter(next, generation, arrived);
+            Enter(next, arrived);
             return;
         }
 
@@ -94,37 +125,24 @@ internal sealed class PanelSwap
                 }
 
                 Settle(leaving, Visibility.Collapsed);
-                Enter(next, generation, arrived);
+                Enter(next, arrived);
             },
             ExportText.PanelFailed);
     }
 
-    private void Enter(UIElement next, int generation, Action? arrived)
+    private static void Enter(UIElement next, Action? arrived)
     {
         var step = MotionTokens.Plan(MotionCatalogue.PanelIn);
+        next.IsHitTestVisible = true;
         var visual = ElementCompositionPreview.GetElementVisual(next);
         visual.Opacity = step.Animates ? 0f : 1f;
         visual.Properties.InsertVector3("Translation", new Vector3(step.Moves ? MotionSpec.PanelInTravel : 0f, 0, 0));
-        next.Visibility = Visibility.Visible;
         if (step.Animates)
         {
             Animate(visual, 1f, 0f, step);
         }
 
-        // Focus once the part has a layout (it was collapsed until now).
-        if (arrived is not null)
-        {
-            _dispatcher.TryEnqueueGuarded(
-                _log,
-                () =>
-                {
-                    if (generation == _generation)
-                    {
-                        arrived();
-                    }
-                },
-                ExportText.PanelFailed);
-        }
+        arrived?.Invoke();
     }
 
     // The opacity to its end, and with a move the translation along X too, on the step's timing.
@@ -153,6 +171,7 @@ internal sealed class PanelSwap
         visual.StopAnimation("Translation");
         visual.Opacity = 1f;
         visual.Properties.InsertVector3("Translation", Vector3.Zero);
+        part.IsHitTestVisible = true;
         part.Visibility = visibility;
     }
 }

@@ -33,6 +33,18 @@ public static class ProjectText
     /// <summary>The accessible name of the narrow layout's tab row (<see cref="ShellLayout.TabsName"/>).</summary>
     public static string InspectorTabsName => _strings.Get();
 
+    /// <summary>The accessible name of the first-launch screen's main region, for a screen reader's landmark list.</summary>
+    public static string StartRegionName => _strings.Get();
+
+    /// <summary>The accessible name of the editing screen's main region (the preview, the transport and the filmstrip).</summary>
+    public static string StageRegionName => _strings.Get();
+
+    /// <summary>The accessible name of the inspector's region (Timing, Frame, Output) while editing.</summary>
+    public static string InspectorRegionName => _strings.Get();
+
+    /// <summary>What a screen reader calls a region that is no standard landmark (the filmstrip, the export panel): the ARIA word "region" in the language.</summary>
+    public static string RegionLandmarkType => _strings.Get();
+
     /// <summary>The readout for one photo. {0} the length ("0.5 s"), {1} the rate ("30 fps").</summary>
     public static string TimingReadoutOne => _strings.Get();
 
@@ -326,8 +338,11 @@ public static class ProjectText
     /// <summary>Error context: the tinted Mica backdrop failed; the window shows the flat Mica color instead (#90).</summary>
     public static string BackdropFailed => "Showing the Mica backdrop failed; the window shows its flat Mica color instead.";
 
-    /// <summary>Error context (log only): moving focus after opening or leaving Settings failed.</summary>
-    public static string SettingsFocusFailed => "Moving focus after opening or leaving Settings failed.";
+    /// <summary>Error context (log only): moving focus after a screen change (Settings, the first photos, New project) failed (#38).</summary>
+    public static string ScreenFocusFailed => "Moving focus after a screen change failed.";
+
+    /// <summary>Error context (log only): raising a screen reader notification failed (#38); nothing else depends on it.</summary>
+    public static string AnnouncementFailed => "Raising a screen reader notification failed.";
 
     /// <summary>Error context (log only): switching between the docked and the narrow inspector layout, or sizing the narrow panel, failed (#36).</summary>
     public static string LayoutSwitchFailed => "Switching the inspector between the side and the narrow layout failed.";
@@ -567,6 +582,12 @@ public static class ProjectText
     /// <summary>The accessible name of the progress's Cancel button.</summary>
     public static string ImportCancelName => _strings.Get();
 
+    /// <summary>Narrator once an import's progress goes and the project holds one photo.</summary>
+    public static string ImportDoneOne => _strings.Get();
+
+    /// <summary>Narrator once an import's progress goes. {0} the photos in the project now ("742").</summary>
+    public static string ImportDoneMany => _strings.Get();
+
     /// <summary>The drag caption when the count is not known (folders, or items still being looked at).</summary>
     public static string DragCaptionAny => _strings.Get();
 
@@ -698,6 +719,10 @@ public static class ProjectText
         ArgumentOutOfRangeException.ThrowIfLessThan(total, read);
         return total == 1 ? ImportAddingOne : Format(ImportAddingMany, Count(read), Count(total));
     }
+
+    /// <summary>Narrator once the import's progress goes: the project's frames now ("742 photos in the project.").</summary>
+    public static string ImportDoneAnnouncement(int frames) =>
+        frames == 1 ? ImportDoneOne : Format(ImportDoneMany, Count(frames));
 
     /// <summary>The InfoBar after Cancel, with the photos the import kept.</summary>
     public static string ImportStopped(int kept)

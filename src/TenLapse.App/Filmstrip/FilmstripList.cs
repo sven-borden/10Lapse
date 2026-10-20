@@ -7,8 +7,8 @@ namespace TenLapse.Filmstrip;
 
 /// <summary>
 /// The filmstrip's list host (#20): the scroller, the repeater and the drag layer. To UI Automation it is the list itself,
-/// named "Filmstrip": its children are the thumbnails on screen in playback order, its Selection pattern holds the
-/// selected ones among them, and its Scroll pattern is the scroller's. Narrator hears removals and undos through it.
+/// named "Filmstrip": its children are the realized thumbnails in playback order (<see cref="FilmstripView.RealizedThumbs"/>),
+/// its Selection pattern holds the selected ones among them, and its Scroll pattern is the scroller's. Narrator hears removals and undos through it.
 /// </summary>
 public sealed partial class FilmstripList : Grid
 {

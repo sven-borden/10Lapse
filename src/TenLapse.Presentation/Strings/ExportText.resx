@@ -30,6 +30,10 @@
     <value>Exporting</value>
     <comment>The caption over the file name while the export runs.</comment>
   </data>
+  <data name="RunningNameFormat" xml:space="preserve">
+    <value>Exporting {0}</value>
+    <comment>A screen reader's name for the running export's title, where the focus lands as the export starts: {0} the file name.</comment>
+  </data>
   <data name="PercentFormat" xml:space="preserve">
     <value>{0}%</value>
     <comment>The large percent: {0} the whole percent.</comment>
@@ -138,10 +142,6 @@
     <value>Back to editing</value>
     <comment>Back to the inspector.</comment>
   </data>
-  <data name="DoneName" xml:space="preserve">
-    <value>Done</value>
-    <comment>The name of the check for a screen reader.</comment>
-  </data>
   <data name="Cancelled" xml:space="preserve">
     <value>Export cancelled. The unfinished file was removed.</value>
     <comment>The InfoBar once a cancelled export's unfinished file is gone.</comment>
@@ -197,6 +197,10 @@
   <data name="FailedAnnouncement" xml:space="preserve">
     <value>The export stopped.</value>
     <comment>Narrator, when the export fails (the InfoBar says why).</comment>
+  </data>
+  <data name="FinishingAnnouncement" xml:space="preserve">
+    <value>Finishing the file.</value>
+    <comment>Narrator, once every frame is written and the file is being completed.</comment>
   </data>
   <data name="FailedNotificationFormat" xml:space="preserve">
     <value>{0} couldn't be exported. Open 10Lapse to see why.</value>

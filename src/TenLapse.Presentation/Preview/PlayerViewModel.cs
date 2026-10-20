@@ -97,7 +97,7 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
 
     /// <summary>True while playing.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(PlayPauseName))]
+    [NotifyPropertyChangedFor(nameof(PlayPauseName), nameof(PlayPauseTip))]
     public partial bool IsPlaying { get; private set; }
 
     /// <summary>"0312 / 0742".</summary>
@@ -124,6 +124,9 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
 
     /// <summary>The play button's name: "Play" or "Pause".</summary>
     public string PlayPauseName => IsPlaying ? ProjectText.PreviewPause : ProjectText.PreviewPlay;
+
+    /// <summary>The play button's tooltip, with its key: "Play (Space)" or "Pause (Space)" (#38).</summary>
+    public string PlayPauseTip => Keyboard.KeyText.Tip(PlayPauseName, Keyboard.KeyText.PlayShortcut);
 
     /// <summary>The play button.</summary>
     public IRelayCommand PlayPauseCommand { get; }

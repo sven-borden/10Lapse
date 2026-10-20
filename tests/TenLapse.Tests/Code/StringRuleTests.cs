@@ -29,7 +29,7 @@ public sealed partial class StringRuleTests
         "PrimaryButtonText", "SecondaryButtonText", "CloseButtonText", "KeyboardAcceleratorTextOverride",
         "ToolTipService.ToolTip", "AutomationProperties.Name", "AutomationProperties.HelpText", "AutomationProperties.FullDescription",
         "AutomationProperties.AcceleratorKey", "AutomationProperties.AccessKey", "AutomationProperties.LocalizedControlType",
-        "AutomationProperties.ItemStatus", "AutomationProperties.ItemType",
+        "AutomationProperties.ItemStatus", "AutomationProperties.ItemType", "AutomationProperties.LocalizedLandmarkType",
     };
 
     // The value types whose text in XAML is never words (a number, a color, a length).

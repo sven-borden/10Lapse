@@ -10,6 +10,7 @@
   x:Class="TenLapse.Preview.TransportBar"
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:keyboard="using:TenLapse.Presentation.Keyboard"
   xmlns:local="using:TenLapse.Preview">
   <UserControl.Resources>
     <ResourceDictionary>
@@ -56,10 +57,11 @@
       Height="{StaticResource PlayButtonSize}"
       Padding="0"
       VerticalAlignment="Center"
+      AutomationProperties.AcceleratorKey="{x:Bind keyboard:KeyText.PlayKeys}"
       AutomationProperties.Name="{x:Bind Player.PlayPauseName, Mode=OneWay, FallbackValue=''}"
       Command="{x:Bind Player.PlayPauseCommand, Mode=OneWay}"
       CornerRadius="{StaticResource RadiusRound}"
-      ToolTipService.ToolTip="{x:Bind Player.PlayPauseName, Mode=OneWay, FallbackValue=''}">
+      ToolTipService.ToolTip="{x:Bind Player.PlayPauseTip, Mode=OneWay, FallbackValue=''}">
       <Viewbox Width="14" Height="14">
         <Grid Width="16" Height="16">
           <PathIcon

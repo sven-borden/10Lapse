@@ -166,17 +166,14 @@ internal sealed class InfoBarPresenter
 
     // Says the new InfoBar to screen readers. IsOpen going true raises the InfoBar's own notification; this one
     // carries the message with the processing its severity asks for, under the same activity, so it replaces it.
-    private void Announce(InfoBarRequest request)
-    {
-        var peer = FrameworkElementAutomationPeer.FromElement(_bar) ?? FrameworkElementAutomationPeer.CreatePeerForElement(_bar);
-        peer?.RaiseNotificationEvent(
-            AutomationNotificationKind.Other,
+    private void Announce(InfoBarRequest request) =>
+        Announcer.Announce(
+            _bar,
+            request.Message,
             request.Severity is Severity.Caution or Severity.Critical
                 ? AutomationNotificationProcessing.ImportantMostRecent
                 : AutomationNotificationProcessing.MostRecent,
-            request.Message,
             "InfoBarOpenedActivityId");
-    }
 
     // Brings the screen in line with the queue: one step at a time, each animation finishing before the next, and no
     // entrance while a screen, arrival, panel or theme transition runs (motion spec, InfoBar: never appears during a

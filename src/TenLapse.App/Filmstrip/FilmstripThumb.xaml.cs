@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Filmstrip;
@@ -42,6 +43,8 @@ public sealed partial class FilmstripThumb : UserControl
 
     /// <summary>The item shown; null while the element waits for reuse.</summary>
     internal FilmstripItem? Item { get; private set; }
+
+    private int _lastNumber = -1;
 
     /// <summary>The strip, for the automation patterns.</summary>
     internal FilmstripView? Strip { get; set; }
@@ -200,8 +203,29 @@ public sealed partial class FilmstripThumb : UserControl
 
         protected override string GetClassNameCore() => nameof(FilmstripThumb);
 
-        protected override int GetPositionInSetCore() => owner.Item?.Number ?? -1;
+        // The last number it showed while the repeater takes it back: a scan that listed it a moment before still gets a
+        // place in the set, not -1 (#38).
+        protected override int GetPositionInSetCore()
+        {
+            if (owner.Item is { } item)
+            {
+                owner._lastNumber = item.Number;
+            }
+
+            return owner._lastNumber;
+        }
 
         protected override int GetSizeOfSetCore() => owner.Strip?.ItemCount ?? -1;
+
+        // Off screen (scrolled out) or under a dialog (UI Automation then reads the strip as off screen) it has no point to
+        // click, as the Accessibility Insights rule asks (#38); the base would report its place behind the dialog.
+        protected override Windows.Foundation.Point GetClickablePointCore() =>
+            IsOffscreen() || UnderDialog()
+                ? new Windows.Foundation.Point(double.NaN, double.NaN)
+                : base.GetClickablePointCore();
+
+        private bool UnderDialog() =>
+            owner.XamlRoot is { } root
+            && VisualTreeHelper.GetOpenPopupsForXamlRoot(root).Any(popup => popup.Child is ContentDialog);
     }
 }

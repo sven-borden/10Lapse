@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The user-visible text of Keyboard/KeyText.cs (#38, #39), read through TextResources.
+  English is the neutral language. A translation is a copy of this file named KeyText.<culture>.resx (for example
+  KeyText.de.resx) with the values translated; keep the {0} placeholders and their numbers. The letters of the shortcuts
+  are fixed in code: translate only the names Windows gives the modifier keys and the space bar in the language.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ShortcutTipFormat" xml:space="preserve">
+    <value>{0} ({1})</value>
+    <comment>A tooltip with the shortcut: {0} the control's name ("New project"), {1} its shortcut ("Ctrl+N").</comment>
+  </data>
+  <data name="ChooseFolderShortcut" xml:space="preserve">
+    <value>Ctrl+O</value>
+    <comment>Choose folder's shortcut in a tooltip and beside the Add photos menu item. The letter is fixed in code; translate only "Ctrl", as Windows names that key in the language.</comment>
+  </data>
+  <data name="ChooseFolderKeys" xml:space="preserve">
+    <value>Control+O</value>
+    <comment>Choose folder's shortcut as a screen reader names it (its accelerator key). Translate only "Control".</comment>
+  </data>
+  <data name="ChoosePhotosShortcut" xml:space="preserve">
+    <value>Ctrl+Shift+O</value>
+    <comment>Choose photos' shortcut in a tooltip and beside the Add photos menu item. Translate only "Ctrl" and "Shift".</comment>
+  </data>
+  <data name="ChoosePhotosKeys" xml:space="preserve">
+    <value>Control+Shift+O</value>
+    <comment>Choose photos' shortcut as a screen reader names it (its accelerator key). Translate only "Control" and "Shift".</comment>
+  </data>
+  <data name="NewProjectShortcut" xml:space="preserve">
+    <value>Ctrl+N</value>
+    <comment>New project's shortcut in its tooltip. Translate only "Ctrl".</comment>
+  </data>
+  <data name="NewProjectKeys" xml:space="preserve">
+    <value>Control+N</value>
+    <comment>New project's shortcut as a screen reader names it (its accelerator key). Translate only "Control".</comment>
+  </data>
+  <data name="ExportShortcut" xml:space="preserve">
+    <value>Ctrl+E</value>
+    <comment>Export video's shortcut in its tooltip. Translate only "Ctrl".</comment>
+  </data>
+  <data name="PlayShortcut" xml:space="preserve">
+    <value>Space</value>
+    <comment>The play button's key in its tooltip: the name Windows gives the space bar in the language.</comment>
+  </data>
+  <data name="PlayKeys" xml:space="preserve">
+    <value>Space</value>
+    <comment>The play button's key as a screen reader names it (its accelerator key).</comment>
+  </data>
+  <data name="BackKeys" xml:space="preserve">
+    <value>Escape</value>
+    <comment>Settings' Back button's key as a screen reader names it (its accelerator key; Alt+Left and the mouse's back button work too).</comment>
+  </data>
+</root>

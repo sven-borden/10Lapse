@@ -32,6 +32,12 @@ public static class ExportText
     /// <summary>The caption over the file name while the export runs.</summary>
     public static string Exporting => _strings.Get();
 
+    /// <summary>The running title's name for a screen reader, where focus lands as the export starts: {0} the file name.</summary>
+    public static string RunningNameFormat => _strings.Get();
+
+    /// <summary>"Exporting Harbor sunset.mp4", the running title's name for a screen reader.</summary>
+    public static string RunningName(string? fileName) => string.Format(CultureInfo.CurrentCulture, RunningNameFormat, fileName ?? string.Empty);
+
     /// <summary>The large percent: {0} the whole percent.</summary>
     public static string PercentFormat => _strings.Get();
 
@@ -115,9 +121,6 @@ public static class ExportText
     /// <summary>Back to the inspector.</summary>
     public static string BackToEditing => _strings.Get();
 
-    /// <summary>The name of the check for a screen reader.</summary>
-    public static string DoneName => _strings.Get();
-
     // ---- InfoBars and questions ----
 
     /// <summary>The InfoBar once a cancelled export's unfinished file is gone.</summary>
@@ -163,6 +166,9 @@ public static class ExportText
 
     /// <summary>Narrator, when the export fails (the InfoBar says why).</summary>
     public static string FailedAnnouncement => _strings.Get();
+
+    /// <summary>Narrator, once every frame is written and the file is being completed.</summary>
+    public static string FinishingAnnouncement => _strings.Get();
 
     /// <summary>The notification when an export in the background failed: {0} the file name.</summary>
     public static string FailedNotificationFormat => _strings.Get();

@@ -65,16 +65,18 @@ public sealed partial class ExportPanel : UserControl
         Gate.Detach();
     }
 
-    /// <summary>The running part is on screen: focus goes to the progress bar, where Narrator reads the progress.</summary>
-    internal void FocusRunning() => Progress.Focus(FocusState.Programmatic);
+    /// <summary>The running part is on screen: focus goes to its title, "Exporting Harbor sunset.mp4", which Enter cannot act on.</summary>
+    internal bool FocusRunning() => RunningStop.Focus(FocusState.Programmatic);
+
+    /// <summary>The finished part is coming: focus goes to Play the video.</summary>
+    internal bool FocusFinished() => PlayButton.Focus(FocusState.Programmatic);
 
     /// <summary>
-    /// The finished part is on screen: focus goes to Play, the check draws in (500 ms Enter after 200 ms; at once with
-    /// animations off) and the title rises 6 px.
+    /// The finished part enters: the check draws in (500 ms Enter after 200 ms; at once with animations off) and the title
+    /// rises 6 px.
     /// </summary>
     internal void ArriveFinished()
     {
-        PlayButton.Focus(FocusState.Programmatic);
         _arrival?.Stop();
         _arrival = null;
         FinishedHeading.Opacity = 1;
@@ -154,9 +156,6 @@ public sealed partial class ExportPanel : UserControl
     }
 
     // Narrator hears the start, every ten percent at most, and the end (the view model decides when).
-    private void OnAnnounced(object? sender, string message)
-    {
-        var peer = FrameworkElementAutomationPeer.FromElement(this) ?? FrameworkElementAutomationPeer.CreatePeerForElement(this);
-        peer?.RaiseNotificationEvent(AutomationNotificationKind.Other, AutomationNotificationProcessing.MostRecent, message, "Export");
-    }
+    private void OnAnnounced(object? sender, string message) =>
+        Announcer.Announce(this, message, AutomationNotificationProcessing.MostRecent, "Export");
 }

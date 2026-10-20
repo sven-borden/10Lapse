@@ -72,9 +72,6 @@ public sealed partial class OutputPanel : UserControl
         ResolutionList.Focus(FocusState.Programmatic);
     }
 
-    private void Announce(string message, string activityId)
-    {
-        var peer = FrameworkElementAutomationPeer.FromElement(this) ?? FrameworkElementAutomationPeer.CreatePeerForElement(this);
-        peer?.RaiseNotificationEvent(AutomationNotificationKind.Other, AutomationNotificationProcessing.ImportantAll, message, activityId);
-    }
+    private void Announce(string message, string activityId) =>
+        Announcer.Announce(this, message, AutomationNotificationProcessing.ImportantAll, activityId);
 }

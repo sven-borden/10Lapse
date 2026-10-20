@@ -58,6 +58,8 @@
       <Color x:Key="SubtleFillPressedColor">#0A1C1B19</Color>
       <Color x:Key="InkColor">#1C1B19</Color>
       <Color x:Key="InkSecondaryColor">#5D5A55</Color>
+      <!-- The selected segment's label on its pill: Ink here; in high contrast the pill is Highlight, so its label is HighlightText. -->
+      <StaticResource x:Key="SegmentPillInkColor" ResourceKey="InkColor" />
       <!-- Status (InfoBars and the finished state, always with an icon) -->
       <Color x:Key="SuccessColor">#0F7B0F</Color>
       <Color x:Key="SuccessFillColor">#DFF6DD</Color>
@@ -91,6 +93,7 @@
       <SolidColorBrush x:Key="DividerBrush" Color="{ThemeResource DividerColor}" />
       <SolidColorBrush x:Key="SegmentTrackBrush" Color="{ThemeResource SegmentTrackColor}" />
       <SolidColorBrush x:Key="SegmentPillBrush" Color="{ThemeResource SegmentPillColor}" />
+      <SolidColorBrush x:Key="SegmentPillInkBrush" Color="{ThemeResource SegmentPillInkColor}" />
       <SolidColorBrush x:Key="TrackBrush" Color="{ThemeResource TrackColor}" />
       <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="{ThemeResource DropZoneStrokeColor}" />
       <SolidColorBrush x:Key="DropZoneTintBrush" Color="{ThemeResource DropZoneTintColor}" />
@@ -141,6 +144,8 @@
       <Color x:Key="SubtleFillPressedColor">#0AF4F2EE</Color>
       <Color x:Key="InkColor">#F4F2EE</Color>
       <Color x:Key="InkSecondaryColor">#C3BFB8</Color>
+      <!-- The selected segment's label on its pill: Ink here; in high contrast the pill is Highlight, so its label is HighlightText. -->
+      <StaticResource x:Key="SegmentPillInkColor" ResourceKey="InkColor" />
       <!-- Status (InfoBars and the finished state, always with an icon) -->
       <Color x:Key="SuccessColor">#6CCB5F</Color>
       <Color x:Key="SuccessFillColor">#26381F</Color>
@@ -174,6 +179,7 @@
       <SolidColorBrush x:Key="DividerBrush" Color="{ThemeResource DividerColor}" />
       <SolidColorBrush x:Key="SegmentTrackBrush" Color="{ThemeResource SegmentTrackColor}" />
       <SolidColorBrush x:Key="SegmentPillBrush" Color="{ThemeResource SegmentPillColor}" />
+      <SolidColorBrush x:Key="SegmentPillInkBrush" Color="{ThemeResource SegmentPillInkColor}" />
       <SolidColorBrush x:Key="TrackBrush" Color="{ThemeResource TrackColor}" />
       <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="{ThemeResource DropZoneStrokeColor}" />
       <SolidColorBrush x:Key="DropZoneTintBrush" Color="{ThemeResource DropZoneTintColor}" />
@@ -216,7 +222,8 @@
       <StaticResource x:Key="ControlStrokeColor" ResourceKey="SystemColorButtonTextColor" />
       <StaticResource x:Key="DividerColor" ResourceKey="SystemColorButtonTextColor" />
       <StaticResource x:Key="SegmentTrackColor" ResourceKey="SystemColorButtonFaceColor" />
-      <StaticResource x:Key="SegmentPillColor" ResourceKey="SystemColorWindowColor" />
+      <!-- Highlight, not Window: Window and ButtonFace (the track) are the same color in Windows' contrast themes. -->
+      <StaticResource x:Key="SegmentPillColor" ResourceKey="SystemColorHighlightColor" />
       <StaticResource x:Key="TrackColor" ResourceKey="SystemColorButtonFaceColor" />
       <StaticResource x:Key="DropZoneStrokeColor" ResourceKey="SystemColorButtonTextColor" />
       <!-- No wash in high contrast, as GoldenHourAmberTint: the outline turns Highlight instead. -->
@@ -225,7 +232,9 @@
       <Color x:Key="SubtleFillHoverColor">#00000000</Color>
       <Color x:Key="SubtleFillPressedColor">#00000000</Color>
       <StaticResource x:Key="InkColor" ResourceKey="SystemColorWindowTextColor" />
-      <StaticResource x:Key="InkSecondaryColor" ResourceKey="SystemColorGrayTextColor" />
+      <!-- WindowText, not GrayText: Windows uses GrayText for disabled text, and these captions are enabled. -->
+      <StaticResource x:Key="InkSecondaryColor" ResourceKey="SystemColorWindowTextColor" />
+      <StaticResource x:Key="SegmentPillInkColor" ResourceKey="SystemColorHighlightTextColor" />
       <!-- Status (InfoBars and the finished state, always with an icon) -->
       <StaticResource x:Key="SuccessColor" ResourceKey="SystemColorWindowTextColor" />
       <StaticResource x:Key="SuccessFillColor" ResourceKey="SystemColorWindowColor" />
@@ -259,6 +268,7 @@
       <SolidColorBrush x:Key="DividerBrush" Color="{ThemeResource DividerColor}" />
       <SolidColorBrush x:Key="SegmentTrackBrush" Color="{ThemeResource SegmentTrackColor}" />
       <SolidColorBrush x:Key="SegmentPillBrush" Color="{ThemeResource SegmentPillColor}" />
+      <SolidColorBrush x:Key="SegmentPillInkBrush" Color="{ThemeResource SegmentPillInkColor}" />
       <SolidColorBrush x:Key="TrackBrush" Color="{ThemeResource TrackColor}" />
       <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="{ThemeResource DropZoneStrokeColor}" />
       <SolidColorBrush x:Key="DropZoneTintBrush" Color="{ThemeResource DropZoneTintColor}" />

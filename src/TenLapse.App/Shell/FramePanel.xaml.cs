@@ -51,9 +51,6 @@ public sealed partial class FramePanel : UserControl
     private void MoveFocusAway() => ShapeControl.FocusSelected();
 
     // Narrator does not reliably hear a text that changes under it, so what a change came to is raised as a notification.
-    private void OnAnnounced(object? sender, string message)
-    {
-        var peer = FrameworkElementAutomationPeer.FromElement(this) ?? FrameworkElementAutomationPeer.CreatePeerForElement(this);
-        peer?.RaiseNotificationEvent(AutomationNotificationKind.Other, AutomationNotificationProcessing.ImportantMostRecent, message, "FrameChanged");
-    }
+    private void OnAnnounced(object? sender, string message) =>
+        Announcer.Announce(this, message, AutomationNotificationProcessing.ImportantMostRecent, "FrameChanged");
 }

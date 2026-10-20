@@ -3,7 +3,7 @@
   The segmented control of DESIGN.md (Components, Segmented control), after docs/design/canvas/components/Controls.dc.html:
   a 32 px Segment Track with a Control Stroke border, 5 px corners and 2 px inside, equal segments, and a neutral Card
   pill with the Pill shadow behind the selected one. The selected segment is Body strong in Ink, the others Ink
-  Secondary. The pill is never amber: it marks a setting, not an action. The pill slides 250 ms (Move easing), or
+  Secondary. In high contrast the pill is Highlight and its label HighlightText (Segment Pill Ink). The pill is never amber: it marks a setting, not an action. The pill slides 250 ms (Move easing), or
   jumps when Windows animations are off.
 
   Each segment is a RadioButton with its own template, so a screen reader gets radio buttons with selection (the
@@ -60,7 +60,7 @@
                   <VisualState x:Name="Indeterminate" />
                   <VisualState x:Name="Checked">
                     <VisualState.Setters>
-                      <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource InkBrush}" />
+                      <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource SegmentPillInkBrush}" />
                       <Setter Target="ContentPresenter.FontWeight" Value="SemiBold" />
                     </VisualState.Setters>
                   </VisualState>

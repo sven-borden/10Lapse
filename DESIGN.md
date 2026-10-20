@@ -296,7 +296,7 @@ Stock WinUI 3 controls with these tokens. The filmstrip, scrubber, preview gate 
 
 ### Segmented control
 - **Track:** Segment Track fill, Control Stroke border, 5 px corners, 2 px inset, 32 px tall.
-- **Selected:** a neutral Card pill with the Pill shadow and Body strong text. Never amber: it marks a setting, not an action.
+- **Selected:** a neutral Card pill with the Pill shadow and Body strong text. Never amber: it marks a setting, not an action. The pill is 1.14:1 (light) and 1.49:1 (dark) against the track, below WCAG 1.4.11's 3:1; Sven kept it as designed (2026-10-20), because the bold label and the radio selection state carry it. In high contrast the pill is Highlight and its label HighlightText (`SegmentPillInk`, Ink in light and dark), since Window and ButtonFace are one color in Windows' contrast themes.
 - **Motion:** the pill slides between options (250 ms Move). Arrow keys move the selection.
 - **Used for:** speed mode (Per second, Length, Per photo), speed value (24, 25, 30, 50, 60), shape (3:2, 16:9, 9:16, 1:1), Fit or Fill, and the narrow-window panel tabs.
 
@@ -311,6 +311,8 @@ Stock WinUI 3 controls with these tokens. The filmstrip, scrubber, preview gate 
 ### Navigation
 - **Title bar:** 40 px on Mica: app icon, "10Lapse" in Caption, project name in Ink Secondary, system caption buttons.
 - **Command bar:** 48 px on Mica: subtle buttons left, Settings icon and the accent Export button right. Settings opens a full page with a Back button, not a dialog.
+- **Keyboard (#38):** Ctrl+O Choose folder, Ctrl+Shift+O Choose photos, Ctrl+N New project, Ctrl+E Export video, Space play or pause, the arrows step frames, Delete removes, Ctrl+Z undoes, Escape leaves Settings and dialogs. A shortcut works where its control is on screen and does nothing elsewhere; each control names its keys (tooltip, accelerator key). Tab follows the visual order: the command bar, an InfoBar's buttons, the stage (Play, scrubber, filmstrip, thumbnail size), then the inspector (or its tab row and section when narrow). Focus moves with the work: Back on Settings and the Settings button after it, Play when the first photos land, Choose folder after New project, the export's title (a heading named "Exporting" and the file) as an export starts, Play the video when it is ready, Export video after a cancel, the frame on screen after a removal. No animation moves or delays it.
+- **Screen readers (#38):** landmarks for the start screen and the stage (main), the filmstrip (region), the inspector (form, "Video settings"; "Export video" while the export panel shows) and Settings (main); headings for the project name, the panels and Settings sections. The export is heard at its start, every ten percent at most and never twice within five seconds, "Finishing the file." and its end; an import at its start, every five seconds at most and its photo count; every InfoBar as it enters.
 
 ### Preview gate (signature)
 The photo sits in a gate with 6 px corners on the Layer. Changing shape animates the gate's clip-path inset (400 ms Move) so the crop closes around the new shape; Fit or Fill scales the photo inside it. On arrival the first frame develops: blur 14 px to 0, scale 1.03 to 1, opacity in, over 700 ms Enter.

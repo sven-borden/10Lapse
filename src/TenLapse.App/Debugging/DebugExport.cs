@@ -29,7 +29,9 @@ internal static class DebugExport
     /// </summary>
     public static void AutoStart(ExportViewModel export, ShellViewModel shell, IErrorSink log, Func<bool> importing)
     {
-        if (Target is not { Length: > 0 })
+        // --export-wait: the path answers the Save dialog, but the export starts only when asked (Ctrl+E through Debug
+        // --shortcut-after, #38).
+        if (Target is not { Length: > 0 } || _args.Contains("--export-wait", StringComparer.OrdinalIgnoreCase))
         {
             return;
         }

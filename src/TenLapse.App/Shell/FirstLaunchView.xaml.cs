@@ -97,6 +97,12 @@ public sealed partial class FirstLaunchView : UserControl
     public bool FocusPrimaryAction() => ChooseFolderButton.Focus(FocusState.Pointer);
 
     /// <summary>
+    /// Puts focus on Choose folder after New project (#38), with the ring as Windows shows it for the last input (the
+    /// keyboard's Ctrl+N or Enter shows it; a click does not).
+    /// </summary>
+    public bool FocusChooseFolder() => ChooseFolderButton.Focus(FocusState.Programmatic);
+
+    /// <summary>
     /// Takes the colors again for a theme change the elements may not see, and shows or hides Daybreak as high
     /// contrast goes on or off.
     /// </summary>
