@@ -49,15 +49,15 @@ Optionale Erweiterungen aus dem Microsoft Store fügen weitere Fotoformate hinzu
 ## Short description
 
 Limit 1,000 characters; Microsoft recommends under 270, because some views cut it there. It shows above the
-description, so it says the same thing in other words. This draft: 238.
+description, so it says the same thing in other words. This draft: 236.
 
 ```text
-Machen Sie aus den Hunderten Fotos einer Stativaufnahme ein Zeitraffervideo: Tempo und Bildformat festlegen, Vorschau ansehen und als MP4 bis 4K exportieren. 10Lapse funktioniert offline, ohne Konto, und Ihre Fotos verlassen nie Ihren PC.
+Machen Sie aus Hunderten Fotos einer Serie vom Stativ ein Zeitraffervideo: Tempo und Bildformat festlegen, Vorschau ansehen und als MP4 bis 4K exportieren. 10Lapse funktioniert offline, ohne Konto, und Ihre Fotos verlassen nie Ihren PC.
 ```
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,472. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
+Limit 1,500 characters. This draft: 1,489. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
 does; it does not claim a crash rate.
 
 ```text
@@ -65,7 +65,7 @@ does; it does not claim a crash rate.
 
 - Komplett neu geschrieben: Der Code hinter den Abstürzen von 2.1.1 ist weg. Wenn etwas schiefgeht, sagt 10Lapse, was passiert ist und was Sie als Nächstes tun können.
 - Importiert HEIC- und .jpeg-Fotos. HEIC benötigt die HEIF-Bilderweiterung (kostenlos) und die HEVC-Videoerweiterungen (kostenpflichtig) aus dem Microsoft Store; 10Lapse sagt Ihnen, was fehlt.
-- Export bis 4K, mit H.264 oder HEVC, wo der PC es unterstützt, mit Fortschritt, Restzeit und „Export abbrechen“, das den Export innerhalb einer Sekunde stoppt.
+- Export bis 4K, mit H.264 oder HEVC, wo der PC es unterstützt, mit Fortschritt, Restzeit und der Schaltfläche „Export abbrechen“, die den Export innerhalb einer Sekunde stoppt.
 - Arbeitet weiter, wenn Sie die App wechseln oder minimieren: Der Export läuft weiter, mit Fortschritt in der Taskleiste und einer Benachrichtigung, wenn das Video fertig ist.
 - Neues Tempo „Pro Foto“ für Diashows, neben Bildern pro Sekunde und Videodauer.
 - Live-Vorschau und Filmstreifen: durchspulen, Bild für Bild vorgehen, Fotos entfernen oder neu anordnen und rückgängig machen.
@@ -108,7 +108,7 @@ Merkt sich Ihr letztes Tempo, Bildformat und Ihre letzte Ausgabe
 
 At most 7 terms (Store Policies: no more than seven unique terms or phrases, relevant to the app, no other product's
 name). **Verify** in the form: it has allowed 30 characters per term and 21 words across all terms. These 7 are 7 to
-20 characters, 14 words in all. "timelapse" stays: German users search the English word too.
+20 characters, 13 words in all. "timelapse" stays: German users search the English word too.
 
 ```text
 zeitraffer erstellen
@@ -117,7 +117,7 @@ timelapse
 fotos zu video
 stop motion
 diashow
-bildsequenz zu video
+zeitraffer app
 ```
 
 ## Additional system requirements
@@ -157,8 +157,8 @@ Upload six, in this order; captions are 71 to 109 characters.
 | File | Size | Caption |
 |---|---|---|
 | `02-editing.png` | 1920 x 1080 | `Sehen Sie die ganze Sequenz ablaufen, mit Fotoanzahl, Tempo und Videodauer immer im Blick.` |
-| `03-vertical.png` | 1920 x 1080 | `Wählen Sie 9:16 für Storys und Reels auf dem Smartphone, oder 16:9, 1:1, 4:5 oder 4:3.` |
-| `04-exporting.png` | 1920 x 1080 | `Exportieren Sie ein MP4-Video bis 4K, und sehen Sie jedem Bild beim Rendern zu, mit der Restzeit.` |
+| `03-vertical.png` | 1920 x 1080 | `Wählen Sie 9:16 für Storys und Reels auf dem Smartphone oder 16:9, 1:1, 4:5 oder 4:3.` |
+| `04-exporting.png` | 1920 x 1080 | `Exportieren Sie ein MP4-Video bis 4K, und verfolgen Sie Bild für Bild und die Restzeit.` |
 | `05-finished.png` | 1920 x 1080 | `Spielen Sie das fertige Video sofort ab, oder öffnen Sie seinen Ordner.` |
 | `06-per-photo.png` | 1920 x 1080 | `Erstellen Sie eine Diashow mit Sekunden pro Foto, oder legen Sie Bilder pro Sekunde oder die Videodauer fest.` |
 | `01-first-launch.png` | 1920 x 1080 | `Ziehen Sie einen Fotoordner hierher, um zu beginnen. Ihre Fotos verlassen nie Ihren PC.` |
