@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. 2026-10-20: #106 (#38 accessibility) merged. **3.0 is code-complete.** Release prep (Sven's pick): #107 test matrix and #108 flight prep merged (`docs/test-matrix.md`, `docs/release/`). In flight: PR #109 (#42 listing drafts) review. Each PR says Refs; the issues close once Sven's part is done.
+2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. 2026-10-20: #106 (#38 accessibility) merged. **3.0 is code-complete.** Release prep (Sven's pick): #107 test matrix and #108 flight prep merged (`docs/test-matrix.md`, `docs/release/`). In flight: PR #109 (#42 listing drafts) fix round, with #110 (Debug journal path) beside it. Each PR says Refs; the issues close once Sven's part is done.
 
 ## Waves
 
@@ -23,7 +23,8 @@ Waves 0 to 16 are done; every issue in them is under Merged below. #90
 | 18 | #38 Accessibility pass | O | every view, `tools/` Axe.Windows scan | merged #106 |
 | 19 | #40 Flight prep (package check, guides) | S | `scripts/pack.ps1`, `docs/release/` | merged #108 (issue open) |
 | 19 | #41 Test matrix document | S | `docs/test-matrix.md` | merged #107 (issue open) |
-| 20 | #42 Listing drafts and screenshots | O | `docs/store/`, screenshot script | PR #109, review |
+| 20 | #42 Listing drafts and screenshots | O | `docs/store/`, screenshot script | PR #109, fix round |
+| 20 | #110 Debug journal path (bug) | S | `AppEnvironment`, `App.xaml.cs` | in progress |
 
 After wave 18, 3.0 is code-complete. Milestones 4 (private beta) and 5
 (relaunch) are mostly owner work; milestone 6 (3.1 creative tools) gets its
@@ -36,6 +37,9 @@ Nothing blocks the build loop. Everything below waits until release is near
 
 - Before the first 3.0 submission, one Partner Center visit: the #7
   description line, and the privacy URL pointed at `PRIVACY.md` on GitHub.
+- #42 screenshots: a real photo set (a tripod shoot) for
+  `scripts/store-screenshots.ps1 -PhotoFolder`; the generated sunsets only
+  check the layout. Sort title "Ten Lapse" is Sven's call.
 - #30 Sample sequence: deferred. #29 ships without the *Try a sample* button;
   add it once a set exists.
 - Release: #40 flight, #42 listing, #43 trailer, #44 rollout, #58 pricing.
