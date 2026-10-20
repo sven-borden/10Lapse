@@ -386,19 +386,28 @@ it; this was never flipped while the app ran.
   screen (first launch, Editing, Settings, Exporting, Finished, the dialogs,
   every InfoBar kind). Expect: tokens only, text readable, amber only on Export,
   progress and selection.
-- [ ] **5.12.2 Real high contrast** (#27, #64, #38). Do: each Windows contrast
-  theme (Aquatic, Desert, Dusk, Night sky), on each screen. Expect: every
-  surface and text uses the system colours; nothing invisible; the selected
-  segment is Highlight; disabled controls are GrayText; the toggle switch's
-  off state, hover and press, the Daybreak (hidden in high contrast, #75) and
-  the Mica band (reset to the system) look right. The Rendering frame pill's
-  dot and the letterbox stay fixed colours on purpose, because they sit on the
-  photo. The segment pill is Window on ButtonFace with no outline (#17): check
-  it reads.
-- [ ] **5.12.3 Switch into and out of high contrast while running** (#28). The
+
+Rows 5.12.2 to 5.12.5 are one per Windows contrast theme. Do: switch to the
+theme and go through every screen (first launch, Editing, Settings, Exporting,
+Finished, the dialogs). Expect: every surface and text uses the system colours,
+nothing is invisible, the selected segment is Highlight, disabled controls are
+GrayText.
+
+- [ ] **5.12.2 Aquatic** (#27, #64, #38).
+- [ ] **5.12.3 Desert** (#27, #64, #38).
+- [ ] **5.12.4 Dusk** (#27, #64, #38).
+- [ ] **5.12.5 Night sky** (#27, #64, #38).
+- [ ] **5.12.6 Controls and bands in high contrast** (#27, #64). Expect: the
+  toggle switch's off state, hover and press look right; the Mica band is reset
+  to the system colour; the Daybreak is hidden (#75).
+- [ ] **5.12.7 Fixed colours in high contrast** (#17, #64). Expect: the
+  Rendering frame pill's dot and the letterbox stay fixed colours on purpose
+  (they sit on the photo); the segment pill is Window on ButtonFace with no
+  outline, and still reads.
+- [ ] **5.12.8 Switch into and out of high contrast while running** (#28). The
   app listens to `UISettings.ColorValuesChanged`. Expect: it follows without a
   restart.
-- [ ] **5.12.4 Transparency effects off, or battery saver** (#28, #67). Expect:
+- [ ] **5.12.9 Transparency effects off, or battery saver** (#28, #67). Expect:
   the flat fallback instead of Mica, no error.
 
 ### 5.13 Scaling and layout (#28, #36, #94)
@@ -526,7 +535,7 @@ theme.
   positions, and scan mode reads on past the edge of the viewport.
 - [ ] **7.7 Real high contrast** (#38, #64). Expect: every token is a system
   colour; the selected segment is Highlight. Nothing has been seen on screen.
-  See 5.12.2.
+  See 5.12.2 to 5.12.7.
 - [ ] **7.8 Narrow tabs with the keyboard** (#38, #94). Expect: arrow keys on the
   Timing/Frame/Output tab row keep the focus on the row while selection moves
   (UIA Select does not move focus). Also check Tab in both layouts.
