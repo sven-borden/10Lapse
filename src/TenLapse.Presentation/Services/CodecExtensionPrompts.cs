@@ -6,7 +6,7 @@ namespace TenLapse.Presentation.Services;
 /// Explains how to get HEIC and RAW support (#14): after an import, the photos skipped because Windows has no decoder
 /// for them become one InfoBar for each missing extension, never one per photo, with a button that opens its Store
 /// page. A HEIC photo can need two: the HEIF decoder, then the HEVC codec inside it. One InfoBar then names both, its
-/// button opens the first, and pressing it raises the next ("Next, get the HEVC Video Extensions").
+/// button opens the first, and pressing it raises the next ("Next, get HEVC Video Extensions (paid)").
 /// </summary>
 public sealed class CodecExtensionPrompts
 {

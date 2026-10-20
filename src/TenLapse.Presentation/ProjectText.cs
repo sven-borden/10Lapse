@@ -730,7 +730,7 @@ public static class ProjectText
     /// <summary>A free extension as the sentences name it, "{0} (free)": {0} its Store name ("HEIF Image Extensions").</summary>
     public static string CodecFree => _strings.Get();
 
-    /// <summary>An extension the Store sells, "{0} (small fee)": {0} its Store name ("HEVC Video Extensions").</summary>
+    /// <summary>An extension the Store sells, "{0} (paid)": {0} its Store name ("HEVC Video Extensions").</summary>
     public static string CodecFee => _strings.Get();
 
     /// <summary>Photos need one extension. {0} the photo count, {1} the extension as <see cref="CodecFree"/> or <see cref="CodecFee"/>.</summary>

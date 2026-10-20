@@ -21,11 +21,11 @@
   </resheader>
   <data name="HeifImageExtensions" xml:space="preserve">
     <value>HEIF Image Extensions</value>
-    <comment>The exact name the Microsoft Store shows in your language for product 9PMMSR1CGPWG, the free HEIF decoder. Shown inside sentences such as "These 12 photos need the {1} from Microsoft."</comment>
+    <comment>The exact name the Microsoft Store shows in your language for product 9PMMSR1CGPWG, the free HEIF decoder. Shown inside sentences such as "These 12 photos need {1} from Microsoft." without an article, since a name may be singular or plural.</comment>
   </data>
   <data name="HevcVideoExtensions" xml:space="preserve">
     <value>HEVC Video Extensions</value>
-    <comment>The exact name the Microsoft Store shows in your language for product 9NMZLZ57R3T7, the HEVC codec the Store sells for a small fee.</comment>
+    <comment>The exact name the Microsoft Store shows in your language for product 9NMZLZ57R3T7, the paid HEVC codec.</comment>
   </data>
   <data name="Av1VideoExtension" xml:space="preserve">
     <value>AV1 Video Extension</value>

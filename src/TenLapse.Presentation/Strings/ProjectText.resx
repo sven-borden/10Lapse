@@ -2,8 +2,9 @@
 <!--
   The user-visible text of ProjectText.cs (#39, #114), read through TextResources.
   English is the neutral language. A translation is a copy of this file named ProjectText.<culture>.resx (for example
-  ProjectText.de.resx) with the values translated. Keep every {0} placeholder (you may move it, and leave out one a
-  comment says may be left out); each entry is whole, never a piece of another sentence. Numbers in placeholders arrive
+  ProjectText.de.resx) with the values translated. Keep every placeholder the English entry has (you may move it), and
+  add none it leaves out: a few English _one forms leave {0} out because the count is always 1 there, and their comment
+  says to leave it out too. Each entry is whole, never a piece of another sentence. Numbers in placeholders arrive
   already written in the user's regional format ("1,240" or "1.240").
   Plurals: a key ending in _one, _many or _other is one form of a counted sentence; the code picks the form by the CLDR
   plural category of the count in your language. _other is always needed. Add _many where your language has it (fr, es,
@@ -73,7 +74,7 @@
   </data>
   <data name="NewProjectMessage_one" xml:space="preserve">
     <value>This project's photo and settings will be cleared. The photo file stays on your PC.</value>
-    <comment>The New project dialog's message for a project with photos. {0} the number of photos ("742"); this _one form is only used for exactly one photo, so it may leave {0} out.</comment>
+    <comment>The New project dialog's message for a project with photos. {0} the number of photos: English leaves {0} out because the count is always 1 here (a project without photos has its own message); leave it out too.</comment>
   </data>
   <data name="NewProjectMessage_other" xml:space="preserve">
     <value>This project's {0} photos and settings will be cleared. The photo files stay on your PC.</value>
@@ -361,7 +362,7 @@
   </data>
   <data name="ImportAdding_one" xml:space="preserve">
     <value>Adding {1} photo…</value>
-    <comment>The import progress in the command bar while the photos are read, when there is exactly one. {0} the photos read so far (0 or 1; may be left out), {1} all of them ("1"). Keep it to about 30 characters.</comment>
+    <comment>The import progress in the command bar while the photos are read, when there is one. {0} the photos read so far: English leaves {0} out because with one photo it says nothing the progress bar does not; leave it out too. {1} all of them ("1"; also "0" in languages whose _one form covers 0, as French and Brazilian Portuguese). Keep it to about 30 characters.</comment>
   </data>
   <data name="ImportAdding_other" xml:space="preserve">
     <value>Adding {0} of {1} photos…</value>
@@ -461,51 +462,51 @@
   </data>
   <data name="CloudDownloadSkip_one" xml:space="preserve">
     <value>Skip it</value>
-    <comment>The OneDrive dialog's default button: leave the photo in OneDrive and list it as skipped. {0} the number of photos (always 1 here; may be left out). Keep it to about 16 characters.</comment>
+    <comment>The OneDrive dialog's default button: leave the photo in OneDrive and list it as skipped. {0} the number of photos: English leaves {0} out because the count is always 1 here; leave it out too. Keep it to about 16 characters.</comment>
   </data>
   <data name="CloudDownloadSkip_other" xml:space="preserve">
     <value>Skip them</value>
-    <comment>The same for several photos. {0} the number of photos (may be left out). Keep it to about 16 characters.</comment>
+    <comment>The same for several photos. {0} the number of photos: English leaves {0} out of this button (the message above says it); leave it out too. Keep it to about 16 characters.</comment>
   </data>
   <data name="CodecGetFromStore" xml:space="preserve">
     <value>Get it from the Store</value>
-    <comment>The button of a message bar about a missing photo extension. It opens the extension's page in the Microsoft Store app; 10Lapse downloads nothing. Keep it to about 24 characters.</comment>
+    <comment>The button of a message bar about a missing photo extension. It opens the extension's page in the Microsoft Store app; 10Lapse downloads nothing. "it" is the extension the message names; a wording without a pronoun is fine ("Open in the Store"). Keep it to about 24 characters.</comment>
   </data>
   <data name="CodecFree" xml:space="preserve">
     <value>{0} (free)</value>
-    <comment>A free extension as the codec sentences name it. {0} its Store name ("HEIF Image Extensions", from StoreExtensionText).</comment>
+    <comment>A free extension as the codec sentences name it, in the style of the Store listing ("HEIF Image Extensions (free)"). {0} its Store name, from StoreExtensionText. The name may be singular or plural; write the price as a label that does not agree with it, as the Store writes a price.</comment>
   </data>
   <data name="CodecFee" xml:space="preserve">
-    <value>{0} (small fee)</value>
-    <comment>An extension the Store sells for a small fee, as the codec sentences name it. {0} its Store name ("HEVC Video Extensions").</comment>
+    <value>{0} (paid)</value>
+    <comment>An extension the Store sells, as the codec sentences name it, in the style of the Store listing ("HEVC Video Extensions (paid)"). {0} its Store name, from StoreExtensionText. The name may be singular or plural; write the price as a label that does not agree with it, as the Store writes a price.</comment>
   </data>
   <data name="CodecNeedsOne_one" xml:space="preserve">
-    <value>This photo needs the {1} from Microsoft.</value>
-    <comment>A message bar after an import: photos need one extension from the Microsoft Store. {0} the number of photos (always 1 in this form; may be left out), {1} the extension as CodecFree or CodecFee ("HEIF Image Extensions (free)").</comment>
+    <value>This photo needs {1} from Microsoft.</value>
+    <comment>A message bar after an import: photos need one extension from the Microsoft Store. {0} the number of photos: English leaves {0} out because the count is always 1 here; leave it out too. {1} the extension as CodecFree or CodecFee ("HEIF Image Extensions (free)"). The name may be singular or plural; write the sentence so no article or pronoun has to agree with it.</comment>
   </data>
   <data name="CodecNeedsOne_other" xml:space="preserve">
-    <value>These {0} photos need the {1} from Microsoft.</value>
-    <comment>The same for several photos. {0} the number of photos ("12"), {1} the extension as CodecFree or CodecFee.</comment>
+    <value>These {0} photos need {1} from Microsoft.</value>
+    <comment>The same for several photos. {0} the number of photos ("12"), {1} the extension as CodecFree or CodecFee. The name may be singular or plural; write the sentence so no article or pronoun has to agree with it.</comment>
   </data>
   <data name="CodecNeedsSeveral_one" xml:space="preserve">
-    <value>This photo needs {1} extensions from Microsoft. Start with the {2}.</value>
-    <comment>A message bar after an import: photos need several extensions, installed one after the other with its button. {0} the number of photos (always 1 in this form; may be left out), {1} the number of extensions ("2"), {2} the first one as CodecFree or CodecFee.</comment>
+    <value>This photo needs {1} extensions from Microsoft. Start with {2}.</value>
+    <comment>A message bar after an import: photos need several extensions, installed one after the other with its button. {0} the number of photos: English leaves {0} out because the count is always 1 here; leave it out too. {1} the number of extensions (2 or more, "2"), {2} the first one as CodecFree or CodecFee. The name may be singular or plural; write the sentence so no article or pronoun has to agree with it.</comment>
   </data>
   <data name="CodecNeedsSeveral_other" xml:space="preserve">
-    <value>These {0} photos need {1} extensions from Microsoft. Start with the {2}.</value>
-    <comment>The same for several photos. {0} the number of photos ("8"), {1} the number of extensions ("2"), {2} the first one as CodecFree or CodecFee.</comment>
+    <value>These {0} photos need {1} extensions from Microsoft. Start with {2}.</value>
+    <comment>The same for several photos. {0} the number of photos ("8"), {1} the number of extensions (2 or more, "2"), {2} the first one as CodecFree or CodecFee. The name may be singular or plural; write the sentence so no article or pronoun has to agree with it.</comment>
   </data>
   <data name="CodecNextFormat" xml:space="preserve">
-    <value>Next, get the {0}.</value>
-    <comment>The message bar after the user opened one extension's Store page, when more than one is still to come. {0} the next extension as CodecFree or CodecFee.</comment>
+    <value>Next, get {0}.</value>
+    <comment>The message bar after the user opened one extension's Store page, when more than one is still to come. {0} the next extension as CodecFree or CodecFee. The name may be singular or plural; write the sentence so no article or pronoun has to agree with it.</comment>
   </data>
   <data name="CodecLastFormat" xml:space="preserve">
-    <value>Last, get the {0}. Once it's installed, restart 10Lapse and add the photos again.</value>
-    <comment>The message bar after the user opened one extension's Store page, when one is left. {0} the last extension as CodecFree or CodecFee.</comment>
+    <value>Finally, get {0}. When the install finishes, restart 10Lapse and add the photos again.</value>
+    <comment>The message bar after the user opened one extension's Store page, when one is left. {0} the last extension as CodecFree or CodecFee. The name may be singular or plural; write the sentence so no article or pronoun has to agree with it.</comment>
   </data>
   <data name="CodecStoreFallbackFormat" xml:space="preserve">
-    <value>Couldn't open the Microsoft Store. Search the Store for {0}, install it, then restart 10Lapse and add the photos again.</value>
-    <comment>A message bar when Windows could not open the Store page. {0} the extension's Store name to search for ("HEVC Video Extensions").</comment>
+    <value>Couldn't open the Microsoft Store. Search the Store for {0} and install the extension, then restart 10Lapse and add the photos again.</value>
+    <comment>A message bar when Windows could not open the Store page. {0} the extension's Store name to search for ("HEVC Video Extensions"), exactly as the Store writes it. The name may be singular or plural; write the sentence so no article or pronoun has to agree with it.</comment>
   </data>
   <data name="FirstLaunchTitle" xml:space="preserve">
     <value>Drop a folder of photos to make a timelapse</value>

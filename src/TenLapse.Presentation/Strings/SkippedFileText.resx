@@ -57,8 +57,8 @@
     <comment>Why a file was skipped: the file is cut short (an interrupted copy). A fragment, no final period.</comment>
   </data>
   <data name="NeedsExtension" xml:space="preserve">
-    <value>Needs a free extension from the Microsoft Store</value>
-    <comment>Why a file was skipped: Windows needs a free Store extension to read its format; another message bar names it and opens the Store. A fragment, no final period.</comment>
+    <value>Needs an extension from the Microsoft Store</value>
+    <comment>Why a file was skipped: Windows needs an extension from the Microsoft Store to read its format. It may be free or paid; another message bar names it, says which, and opens the Store. A fragment, no final period.</comment>
   </data>
   <data name="FileInUse" xml:space="preserve">
     <value>In use by another app</value>

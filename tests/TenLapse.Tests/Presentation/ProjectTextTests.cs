@@ -146,10 +146,10 @@ public sealed class ProjectTextTests
     }
 
     [Theory]
-    [InlineData(1, 1, "This photo needs the HEIF Image Extensions (free) from Microsoft.")]
-    [InlineData(12, 1, "These 12 photos need the HEIF Image Extensions (free) from Microsoft.")]
-    [InlineData(1, 2, "This photo needs 2 extensions from Microsoft. Start with the HEIF Image Extensions (free).")]
-    [InlineData(8, 2, "These 8 photos need 2 extensions from Microsoft. Start with the HEIF Image Extensions (free).")]
+    [InlineData(1, 1, "This photo needs HEIF Image Extensions (free) from Microsoft.")]
+    [InlineData(12, 1, "These 12 photos need HEIF Image Extensions (free) from Microsoft.")]
+    [InlineData(1, 2, "This photo needs 2 extensions from Microsoft. Start with HEIF Image Extensions (free).")]
+    [InlineData(8, 2, "These 8 photos need 2 extensions from Microsoft. Start with HEIF Image Extensions (free).")]
     public void TheExtensionSentencesAreWholeAndCountTheExtensions(int photos, int extensions, string expected)
     {
         PhotoCodecExtension[] needed =
@@ -159,8 +159,8 @@ public sealed class ProjectTextTests
         ];
 
         Assert.Equal(expected, ProjectText.CodecNeeded(photos, needed[..extensions]));
-        Assert.Equal("Last, get the HEVC Video Extensions (small fee). Once it's installed, restart 10Lapse and add the photos again.", ProjectText.CodecNext(needed[1], isLast: true));
-        Assert.Equal("Next, get the HEVC Video Extensions (small fee).", ProjectText.CodecNext(needed[1], isLast: false));
+        Assert.Equal("Finally, get HEVC Video Extensions (paid). When the install finishes, restart 10Lapse and add the photos again.", ProjectText.CodecNext(needed[1], isLast: true));
+        Assert.Equal("Next, get HEVC Video Extensions (paid).", ProjectText.CodecNext(needed[1], isLast: false));
     }
 
     [Fact]
