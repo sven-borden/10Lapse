@@ -30,9 +30,13 @@ a time.
 Nothing blocks the build loop.
 
 - After certification: #44 rollout (gradual or not, answer the existing
-  reviews, the `v3.0.0` tag). Check that the 2.1.1 packages stayed in the
-  submission (Windows 10 devices keep 2.1.1 only if they did) and what the
-  mandatory-update and gradual-rollout boxes say.
+  reviews, the `v3.0.0` tag). **Open: the 2.1.1 packages were removed from
+  submission 4**, so Windows 10 has no package: existing 2.1.1 installs stay
+  but get no update, new Windows 10 customers cannot get the app, and the
+  listing text (all six languages) still says the Store offers 2.1.1 there.
+  Decide: put a Windows 10 package back (a rebuilt 2.1.1 would need a version
+  above the published one) or accept Windows 11 only and fix the listing text.
+  Also check what the mandatory-update and gradual-rollout boxes say.
 - A native read of the fr, de, es, it and pt-BR texts where he can; whether
   Portugal gets a pt-PT listing reusing the pt-BR text (else it may show
   English); a real-timelapse trailer later (#43's original brief).
@@ -49,7 +53,8 @@ Nothing blocks the build loop.
   package, which the Store installs with the app; it is not self-contained.
   Debug builds run unpackaged for local checks.
 - 2026-10-19 (Sven, #2): Windows 11 only (minimum 10.0.22000.0, #96), x64 and
-  ARM64, no x86; Windows 10 devices keep 2.1.1.
+  ARM64, no x86; Windows 10 devices were to keep 2.1.1, but the 2.1.1
+  packages were removed from submission 4 (2026-10-21, see Owner items).
 - 2026-10-20 (Sven, reverses "English only in 3.0" from #2): 3.0 ships in
   en-US, fr, de, es, it and pt-BR, built before the flight. Neutral cultures
   serve every region; pt-BR is regional (pt-PT maps to it). The 2026-10-20

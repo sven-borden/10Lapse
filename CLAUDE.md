@@ -15,8 +15,9 @@ conventions live next to the code; do not duplicate them here.
   Windows App SDK 2.x and .NET 10, shipped as an update to the existing
   listing with the same package identity. It was submitted to the Store on
   2026-10-21, straight to the public listing (no beta flight); the Store keeps
-  offering 2.1.1 until certification and the rollout (#44) are done, and
-  Windows 10 devices stay on 2.1.1. The legacy UWP 2.1.1 code lives at the tag
+  offering 2.1.1 until certification and the rollout (#44) are done. The 2.1.1
+  packages were removed from that submission: Windows 10 PCs that have 2.1.1
+  keep it, new Windows 10 customers get nothing (open, see `docs/STATUS.md`). The legacy UWP 2.1.1 code lives at the tag
   `v2.1.1-legacy`. The next work is 3.1 (milestone 6) and whatever the
   rollout and the first reviews bring up.
 - Sven steers by short messages. Decide with sensible defaults, record the
