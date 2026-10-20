@@ -19,7 +19,7 @@ As in English, the text says only what 3.0 does.
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,902.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,835.
 
 ```text
 Transforme uma pasta de fotos em um vídeo timelapse suave, em até 4K.
@@ -45,7 +45,7 @@ Privacidade em primeiro lugar
 O 10Lapse funciona offline. Não há conta, nem coleta de dados de uso, nem acesso à rede: suas fotos e vídeos nunca saem do seu PC.
 
 Feito para o Windows 11
-O 10Lapse 3.0 requer o Windows 11 em um PC x64 ou ARM64; no Windows 10, a Store oferece a versão anterior, o 10Lapse 2.1.1. Os temas claro, escuro e de alto contraste seguem o Windows, assim como as animações. Tudo funciona pelo teclado, e os leitores de tela anunciam cada controle e o progresso da exportação.
+O 10Lapse 3.0 requer o Windows 11 em um PC x64 ou ARM64. Os temas claro, escuro e de alto contraste seguem o Windows, assim como as animações. Tudo funciona pelo teclado, e os leitores de tela anunciam cada controle e o progresso da exportação.
 
 Extensões opcionais da Microsoft Store adicionam mais formatos de foto: fotos HEIC precisam de "Extensão da Imagem HEIF" (grátis) e "Extensões de Vídeo HEVC" (compra necessária), e arquivos RAW de câmera precisam de "Extensão de Imagem Raw" (grátis). O 10Lapse indica qual extensão está faltando e abre a página dela na Store.
 ```
@@ -60,7 +60,7 @@ Crie um vídeo timelapse com as centenas de fotos de uma sessão no tripé: defi
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,389. Like the English one, it does not claim a crash rate.
+Limit 1,500 characters. This draft: 1,342. Like the English one, it does not claim a crash rate.
 
 ```text
 O 10Lapse 3.0 foi refeito do zero para o Windows 11.
@@ -76,7 +76,7 @@ O 10Lapse 3.0 foi refeito do zero para o Windows 11.
 - Temas claro e escuro, atalhos de teclado, suporte a leitores de tela e alto contraste.
 - Privado: sem conta e, agora, sem nenhum acesso à rede; suas fotos nunca saem do seu PC.
 
-A versão 3.0 requer o Windows 11 em um PC x64 ou ARM64. No Windows 10, a Store mantém o 10Lapse 2.1.1.
+A versão 3.0 requer o Windows 11 em um PC x64 ou ARM64.
 ```
 
 ## Product features

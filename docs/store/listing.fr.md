@@ -18,7 +18,7 @@ As in English, the text says only what 3.0 does.
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 3,055.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,976.
 
 ```text
 Transformez un dossier de photos en vidéo timelapse fluide, jusqu’en 4K.
@@ -44,7 +44,7 @@ Vos photos restent chez vous
 10Lapse fonctionne hors connexion. Pas de compte, pas de statistiques d’utilisation, aucun accès réseau : vos photos et vos vidéos ne quittent jamais votre PC.
 
 Conçu pour Windows 11
-10Lapse 3.0 nécessite Windows 11 sur un PC x64 ou ARM64 ; sous Windows 10, le Store propose à la place l’ancienne version 10Lapse 2.1.1. Les thèmes clair, sombre et à contraste élevé suivent Windows, tout comme les animations. Tout se fait au clavier, et les lecteurs d’écran annoncent chaque contrôle et la progression de l’exportation.
+10Lapse 3.0 nécessite Windows 11 sur un PC x64 ou ARM64 . Les thèmes clair, sombre et à contraste élevé suivent Windows, tout comme les animations. Tout se fait au clavier, et les lecteurs d’écran annoncent chaque contrôle et la progression de l’exportation.
 
 Des extensions facultatives du Microsoft Store ajoutent d’autres formats de photo : les photos HEIC nécessitent « Extension d’image HEIF » (sans frais) et « Extensions vidéo HEVC » (achat requis), et les fichiers RAW des appareils photo « Extension d'image Raw » (sans frais). 10Lapse indique l’extension qui manque et ouvre sa page dans le Store.
 ```
@@ -59,7 +59,7 @@ Créez une vidéo timelapse à partir des centaines de photos d’une prise de v
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,493. Like the English one, it does not claim a crash rate.
+Limit 1,500 characters. This draft: 1,443. Like the English one, it does not claim a crash rate.
 
 ```text
 10Lapse 3.0 a été entièrement reconstruit pour Windows 11.
@@ -75,7 +75,7 @@ Limit 1,500 characters. This draft: 1,493. Like the English one, it does not cla
 - Thèmes clair et sombre, contraste élevé, raccourcis clavier, lecteurs d’écran pris en charge.
 - Confidentialité : pas de compte, et désormais aucun accès réseau ; vos photos ne quittent jamais votre PC.
 
-La 3.0 nécessite Windows 11 sur un PC x64 ou ARM64. Sous Windows 10, le Store conserve 10Lapse 2.1.1.
+La 3.0 nécessite Windows 11 sur un PC x64 ou ARM64.
 ```
 
 ## Product features

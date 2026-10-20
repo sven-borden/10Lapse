@@ -18,7 +18,7 @@ own labels in “…” where the text names one. As in English, the text says o
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,967.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,881.
 
 ```text
 Convierte una carpeta de fotos en un video timelapse fluido, hasta 4K.
@@ -44,7 +44,7 @@ Privacidad desde el diseño
 10Lapse funciona sin conexión. No hay cuenta, ni análisis, ni acceso a la red: tus fotos y videos nunca salen de tu equipo.
 
 Hecho para Windows 11
-10Lapse 3.0 necesita Windows 11 en un equipo x64 o ARM64; en Windows 10, Microsoft Store ofrece en su lugar la versión anterior, 10Lapse 2.1.1. Los temas claro, oscuro y de contraste siguen la configuración de Windows, igual que las animaciones. Todo funciona con el teclado, y los lectores de pantalla anuncian cada control y el progreso de la exportación.
+10Lapse 3.0 necesita Windows 11 en un equipo x64 o ARM64. Los temas claro, oscuro y de contraste siguen la configuración de Windows, igual que las animaciones. Todo funciona con el teclado, y los lectores de pantalla anuncian cada control y el progreso de la exportación.
 
 Las extensiones opcionales de Microsoft Store agregan más formatos de foto. Las fotos HEIC necesitan dos: Extensión de imágenes HEIF (gratis) y Extensiones de video HEVC (de pago). Los archivos RAW de cámara necesitan una: Extensión de imagen RAW (gratis). 10Lapse indica cuál falta y enlaza a su página de Microsoft Store.
 ```
@@ -60,7 +60,7 @@ Crea un video timelapse con los cientos de fotos de una sesión con trípode: fi
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,483 / 1,500. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
+Limit 1,500 characters. This draft: 1,428 / 1,500. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
 does; it does not claim a crash rate.
 
 ```text
@@ -77,7 +77,7 @@ does; it does not claim a crash rate.
 - Temas claro y oscuro, métodos abreviados de teclado, compatibilidad con lectores de pantalla y temas de contraste.
 - Privado: sin cuenta y ahora sin ningún acceso a la red; tus fotos nunca salen de tu equipo.
 
-3.0 necesita Windows 11 en un equipo x64 o ARM64. En Windows 10, Microsoft Store mantiene 10Lapse 2.1.1.
+3.0 necesita Windows 11 en un equipo x64 o ARM64.
 ```
 
 ## Product features

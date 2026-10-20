@@ -4,15 +4,17 @@
 
 [Get 10Lapse from the Microsoft Store](https://apps.microsoft.com/detail/9NBN2XH6S4D8)
 
+![A whole evening as one frame, from blue sky to night](docs/store/showreel/thumbnail.png)
+
+*From daylight to night in one frame.*
+
 ![10Lapse with a sunset sequence imported: the preview, the filmstrip, and the speed and output panels](docs/store/screenshots/en-US/02-editing.png)
 
 ![The same photos framed 9:16 for a phone, in the light theme](docs/store/screenshots/en-US/03-vertical.png)
 
-Watch the 30-second [showreel](docs/store/showreel/) (an MP4 in Git LFS).
-
 ## Status
 
-Version 3.0, a rewrite on WinUI 3 and .NET 10, is code-complete. It is in a private beta flight before the relaunch. Until then the Store release stays 2.1.1, the old UWP app; its code lives at the tag `v2.1.1-legacy`.
+Version 3.0, a rewrite on WinUI 3 and .NET 10, is code-complete and was submitted to the Microsoft Store on 2026-10-21, straight to the public listing (no beta flight), with the listing, the screenshots and the trailer in six languages. The Store keeps offering 2.1.1, the old UWP app, until 3.0 has passed certification and rolled out. 3.0 needs Windows 11 and Windows 10 is not supported: a PC that already has 2.1.1 keeps it, but a new Windows 10 customer cannot get the app from the Store. The old code lives at the tag `v2.1.1-legacy`.
 
 10Lapse 3.0 speaks English, French, German, Spanish, Italian and Brazilian Portuguese, and follows the language Windows gives the app. The Store screenshots of every language are in [`docs/store/screenshots/`](docs/store/screenshots/).
 

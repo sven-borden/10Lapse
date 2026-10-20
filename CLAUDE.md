@@ -13,8 +13,13 @@ conventions live next to the code; do not duplicate them here.
 - Owner: Sven. 10Lapse turns a folder of photos into a timelapse video. It is
   on the Microsoft Store (product `9NBN2XH6S4D8`). 3.0 is a rewrite on WinUI 3,
   Windows App SDK 2.x and .NET 10, shipped as an update to the existing
-  listing with the same package identity. The legacy UWP 2.1.1 code lives at
-  the tag `v2.1.1-legacy`.
+  listing with the same package identity. It was submitted to the Store on
+  2026-10-21, straight to the public listing (no beta flight); the Store keeps
+  offering 2.1.1 until certification and the rollout (#44) are done. Windows 10 is
+  not supported (Sven, 2026-10-21): the 2.1.1 packages left the submission, so
+  PCs that have 2.1.1 keep it and new Windows 10 customers cannot get the app. The legacy UWP 2.1.1 code lives at the tag
+  `v2.1.1-legacy`. The next work is 3.1 (milestone 6) and whatever the
+  rollout and the first reviews bring up.
 - Sven steers by short messages. Decide with sensible defaults, record the
   reasoning in the PR and in `docs/STATUS.md`, and ask only for choices he
   alone can make: Partner Center, signing, money, the icon direction, the

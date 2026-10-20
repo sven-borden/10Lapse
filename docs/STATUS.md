@@ -1,10 +1,10 @@
 # 10Lapse 3.0 status
 
-Updated 2026-10-20. Roadmap: the pinned #59 and the milestones. Working agreement: `CLAUDE.md`.
+Updated 2026-10-21. Roadmap: the pinned #59 and the milestones. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-20: **Translations done; the 3.0.0.0 flight package is built.** 3.0 ships in en-US, fr, de, es, it and pt-BR (#113 to #119, #124 merged). `scripts/pack.ps1` on master 87fbdb9 passed: `dist/store/TenLapse.App_3.0.0.0_x64_arm64_bundle.msixupload` (125.8 MB, six languages, 15 satellites). The Store screenshots for all six languages are in `docs/store/screenshots/` (Git LFS, #129 PR #130). Nothing in flight. Next steps are Sven's: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`, incl. 5.17 Languages) and the #90 watch, then #42 (one listing per `docs/store/listing*.md`), #43, #44. A `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Release PRs say Refs; those issues close once Sven's part is done.
+2026-10-21: **3.0 is submitted to the Store.** Sven sent submission 4 for certification straight to the public listing, with no beta flight and no separate test pass (#40 and #41 closed as not planned). It holds the 3.0.0.0 bundle (`TenLapse.App_3.0.0.0_x64_arm64_bundle.msixupload`, 125.8 MB, six languages, `runFullTrust` justified with the `docs/release/flight.md` text), six listings (en-US, fr, de, es, it, pt-BR) each with its description, What's new, 19 features, 7 search terms and six captioned screenshots, and the 30 s showreel as the trailer with `thumbnail.png` (#42 and #43 closed). Next: the certification result, then #44 (gradual rollout, answer the existing reviews, the `v3.0.0` tag with Sven's OK), the #90 watch, #58 pricing later, and the 3.1 waves once 3.0 is live. `docs/test-matrix.md` is now a checklist for the live build.
 
 ## Waves
 
@@ -12,9 +12,9 @@ Each wave runs at most two issues at once, only when they touch disjoint
 areas. A wave starts when everything it depends on is merged. Model: **O** is
 Opus 5.5, **S** is Sonnet 5.5.
 
-Waves 0 to 20 are done; every issue in them is under Merged below (#40, #41
-and #42 stay open for Sven's part). Milestones 4 (private beta) and 5
-(relaunch) are owner work, except the translations in milestone 4:
+Waves 0 to 24 are done; every issue in them is under Merged below. Milestones
+4 (private beta) and 5 (relaunch) were owner work, now submitted except #44
+and #90 (the translations were in milestone 4):
 
 - Wave 21: #113 plumbing (O) and #114 translatable English (O), disjoint
   files (each issue lists what the other owns).
@@ -27,18 +27,19 @@ a time.
 
 ## Owner items (Sven)
 
-Nothing blocks the build loop. Everything below waits until release is near
-(Sven, 2026-10-19).
+Nothing blocks the build loop.
 
-- #7, before the flight: the 2.1.1 description line and the privacy URL.
-- Release: #40 flight, #41 test pass, #42 listing (the sort title "Ten Lapse"
-  is his call), #43 trailer, #44 rollout. Later: #58 pricing.
-- Translations: a Partner Center listing per language from
-  `docs/store/listing.<lang>.md` (#115-#119); a native read where he can;
-  whether Portugal gets a pt-PT listing reusing the pt-BR text (else it may
-  show English).
-- #30 sample sequence (3.1): Sven picks the photos; *Try a sample* comes back
-  with them.
+- After certification: #44 rollout (gradual or not, answer the existing
+  reviews, the `v3.0.0` tag). The submitted listing text (all six
+  languages) still has the sentence that Windows 10 keeps 2.1.1; the
+  `listing*.md` files no longer do. Fix it in the first listing update, with
+  no resubmission just for that. Also check what the mandatory-update and
+  gradual-rollout boxes say.
+- A native read of the fr, de, es, it and pt-BR texts where he can; whether
+  Portugal gets a pt-PT listing reusing the pt-BR text (else it may show
+  English); a real-timelapse trailer later (#43's original brief).
+- Later: #58 pricing. #30 sample sequence (3.1): Sven picks the photos;
+  *Try a sample* comes back with them.
 
 ## Decisions
 
@@ -50,7 +51,8 @@ Nothing blocks the build loop. Everything below waits until release is near
   package, which the Store installs with the app; it is not self-contained.
   Debug builds run unpackaged for local checks.
 - 2026-10-19 (Sven, #2): Windows 11 only (minimum 10.0.22000.0, #96), x64 and
-  ARM64, no x86; Windows 10 devices keep 2.1.1.
+  ARM64, no x86. The plan was that Windows 10 devices keep 2.1.1; see the
+  2026-10-21 entry below.
 - 2026-10-20 (Sven, reverses "English only in 3.0" from #2): 3.0 ships in
   en-US, fr, de, es, it and pt-BR, built before the flight. Neutral cultures
   serve every region; pt-BR is regional (pt-PT maps to it). The 2026-10-20
@@ -96,7 +98,7 @@ Nothing blocks the build loop. Everything below waits until release is near
   override keys. A bespoke indicator (scrubber, playhead) must add its file to
   `_bespokeIndicatorFiles` in `tests/TenLapse.Tests/Design/AmberRuleTests.cs`.
 - 2026-10-18 (#27): High contrast was never seen on screen here; it is covered
-  by key parity, resolution and tests. #41 (test matrix) checks it for real.
+  by key parity, resolution and tests. The test matrix checks it for real.
 - 2026-10-18 (#8, PR #65 review): encoding uses `IMFSinkWriter` through CsWin32
   on a D3D11 device created per export, not `MediaTranscoder` (drops frames on
   D3D surfaces, 8 GB on CPU buffers). Four pipeline requirements for #22 are
@@ -145,11 +147,21 @@ Nothing blocks the build loop. Everything below waits until release is near
   cancel; a failed ask is log-only (the one exception to never silent, since the
   user did not ask). Reset to defaults keeps the count. New settings fields need
   no schema bump. *Send feedback* opens GitHub issues, *Rate 10Lapse* the Store.
+- 2026-10-21 (Sven): 3.0 goes to the public listing as one submission, with
+  no beta flight and no separate test pass; #40 and #41 closed as not planned,
+  #42 and #43 completed. The showreel is the trailer (a real-timelapse trailer
+  can follow in a listing update); its thumbnail and six captions are in
+  `docs/store/showreel/`. `flight.md` stays as the recipe for a later flight.
+- 2026-10-21 (Sven): Windows 10 is not supported. The 2.1.1 packages were
+  removed from submission 4, so a Windows 10 PC that has 2.1.1 keeps it with no
+  updates and a new Windows 10 customer cannot get the app. Accepted
+  (Windows 10 support ended 2025-10-14). This replaces "Windows 10 devices
+  keep 2.1.1" (#2, 2026-10-19).
 - 2026-10-20 (Sven, #42): the Store screenshots use the generated sample
   photos (`scripts/store-screenshots.ps1`, "more polished"), not a real shoot.
 - 2026-10-20 (Sven): videos under `docs/` are stored in Git LFS (`.gitattributes`). GitHub Free includes 10 GB of
   LFS storage and 10 GB of downloads a month, counted against the owner's account. The first is the 30 s showreel in
-  `docs/store/showreel/`, which is not the #43 trailer.
+  `docs/store/showreel/`.
 - 2026-10-20 (issue review, Sven's ask): #55 merged into #45 (one exposure
   pass); #53 (screen and webcam capture: another user, and a `webcam`
   capability) and #57 (FFmpeg: beyond `PRODUCT.md`'s "up to 4K") closed as
@@ -280,23 +292,21 @@ Details are in each PR's "What the next issues should know".
   InkSecondary to WindowText. `tools/TenLapse.A11yScan` (Axe.Windows) via
   `scripts/a11y-check.ps1`: 0 failures on 13 screens. Debug `--focus-walk`,
   `--shortcut-after`. Manual checks are on #41.
-- #41 PR #107 (refs only): `docs/test-matrix.md`, 119 rows from every merged
-  PR's unchecked items, Windows 11 only; Sven and the testers tick it off.
-- #40 PR #108 (refs only): `scripts/pack.ps1` checks every package (identity,
-  version, Windows 11 minimum, only `runFullTrust`, App Runtime 2,
-  `ms-resource:` description, no Debug code) and bumps with `-Version x.y.z.0`
-  (writes the manifest before building). `docs/release/flight.md` (Sven's
-  Partner Center steps), `docs/release/beta-testers.md`, beta report form.
+- #41 PR #107 (refs only; not run before release): `docs/test-matrix.md`, 119
+  rows from every merged PR's unchecked items, Windows 11 only.
+- #40 PR #108 (refs only; flight not run): `scripts/pack.ps1` checks every
+  package (identity, version, Windows 11 minimum, only `runFullTrust`, App
+  Runtime 2, `ms-resource:` description, no Debug code), bumps with `-Version
+  x.y.z.0`. `docs/release/flight.md`, `beta-testers.md`, beta report form.
 - #110 PR #111: `Core/Settings/AppFolders.Resolve` computes every app path
   once (defaults plus the Debug folder switches); the export journal sits
   beside the log folder in use. Release and packaged paths are unchanged.
-- #42 PR #109 (refs only): `docs/store/listing.md` (en-US description, What's
-  new, 19 features, 7 search terms, requirements, captions, the #7 interim
-  line; HEVC Video Extensions marked paid; Windows 11 stated), and
-  `scripts/store-screenshots.ps1` (8 shots, now to `docs/store/screenshots/<lang>/`;
-  upload 02-06 and 01). Debug `--sample-plain`.
-- PR #112 (refs #43): the 30 s showreel in `docs/store/showreel/` (video in
-  Git LFS), made by its `source/` (page, render, score); not the trailer.
+- #42 PR #109: `docs/store/listing.md` (en-US fields, limits, captions) and
+  `scripts/store-screenshots.ps1` (8 shots per language; upload 02-06 and 01).
+  Debug `--sample-plain`.
+- PR #112 (#43): the 30 s showreel in `docs/store/showreel/` (Git LFS), made by
+  its `source/`; the Store trailer, with `thumbnail.png` and
+  `thumbnail-captions.md` (PR for the post-submission docs).
 - #113 PR #120: Debug `--lang=<tag>` (process only, never persisted);
   `TestCulture` pins en-US; `ResourceParityTests` (keys, placeholders, parse,
   plural categories per language, resx ↔ resw); scripts pass `--lang=en-US`;

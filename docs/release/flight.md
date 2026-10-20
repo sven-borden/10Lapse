@@ -1,5 +1,9 @@
 # Private beta: the package flight (#40)
 
+> **Not run (2026-10-21).** Sven submitted 3.0 straight to the public listing, so #40 and #41 were closed as not
+> planned. This page stays as the recipe if a later release wants a flight (a new version, a risky change). Its
+> `runFullTrust` text in step 5 was the one used on the public submission.
+
 For Sven. Everything here is in the order you do it. The code side is done: `scripts/pack.ps1` builds the upload and checks it, and the testers have `docs/release/beta-testers.md` and the issue form `.github/ISSUE_TEMPLATE/beta-report.yml`.
 
 A package flight is a private build of the existing 10Lapse product that only the people in a flight group receive. Everyone else keeps getting what the listing offers (2.1.1). Nothing about the public listing changes, and a flight needs no store listing text, screenshots or pricing.

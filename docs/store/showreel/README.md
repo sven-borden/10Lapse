@@ -26,7 +26,16 @@ day-to-night ramp, drawn by the page; there are no real photos. The window is re
 motion uses `DESIGN.md`'s tokens (develop, cascade, segment pill, reframe, panel swap, film gate, check); the camera
 around it, the type and the sound belong to the showreel.
 
-It is not the Store trailer of #43, which asks for a real timelapse made in 10Lapse.
+It is the Store trailer of the 3.0 listing (#43, Sven's choice, 2026-10-21). #43 had asked for a real timelapse made in
+10Lapse; that can come with a later listing update. The Store wants the trailer re-encoded to its MP4 profile on
+upload, so this file stays the source.
+
+## Trailer thumbnail
+
+`thumbnail.png` is the 27.7 s frame above as a 1920 x 1080 PNG, the size the Store asks for. Its captions (255
+characters at most) in the six listing languages are in [`thumbnail-captions.md`](thumbnail-captions.md).
+
+[![The evening as a time slice](thumbnail.png)](10Lapse-showreel.mp4)
 
 ## Make it again
 

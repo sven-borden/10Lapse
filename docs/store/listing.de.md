@@ -15,7 +15,7 @@ the app's own labels in „…“ where the text names one. As in English, the t
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 3,110.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 3,035.
 
 ```text
 Machen Sie aus einem Ordner voller Fotos ein flüssiges Zeitraffervideo, bis 4K.
@@ -41,7 +41,7 @@ Datenschutz von Grund auf
 10Lapse funktioniert offline. Es gibt kein Konto, keine Analysedaten und keinen Netzwerkzugriff: Ihre Fotos und Videos verlassen nie Ihren PC.
 
 Für Windows 11 gemacht
-10Lapse 3.0 benötigt Windows 11 auf einem x64- oder ARM64-PC; unter Windows 10 bietet der Store stattdessen das ältere 10Lapse 2.1.1 an. Helles und dunkles Design sowie Kontrastdesigns folgen Windows, ebenso die Animationen. Alles lässt sich mit der Tastatur bedienen, und Screenreader sagen jedes Steuerelement und den Fortschritt des Exports an.
+10Lapse 3.0 benötigt Windows 11 auf einem x64- oder ARM64-PC. Helles und dunkles Design sowie Kontrastdesigns folgen Windows, ebenso die Animationen. Alles lässt sich mit der Tastatur bedienen, und Screenreader sagen jedes Steuerelement und den Fortschritt des Exports an.
 
 Optionale Erweiterungen aus dem Microsoft Store fügen weitere Fotoformate hinzu: HEIC-Fotos benötigen die HEIF-Bilderweiterung (kostenlos) und die HEVC-Videoerweiterungen (kostenpflichtig), RAW-Dateien von Kameras die Raw-Bilderweiterung (kostenlos). 10Lapse nennt die fehlende Erweiterung und verlinkt auf ihre Store-Seite.
 ```
@@ -57,7 +57,7 @@ Machen Sie aus Hunderten Fotos einer Serie vom Stativ ein Zeitraffervideo: Tempo
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,489. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
+Limit 1,500 characters. This draft: 1,440. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
 does; it does not claim a crash rate.
 
 ```text
@@ -74,7 +74,7 @@ does; it does not claim a crash rate.
 - Helles und dunkles Design, Tastenkombinationen, Screenreader-Unterstützung und Kontrastdesigns.
 - Privat: kein Konto und jetzt gar kein Netzwerkzugriff; Ihre Fotos verlassen nie Ihren PC.
 
-3.0 benötigt Windows 11 auf einem x64- oder ARM64-PC. Unter Windows 10 behält der Store 10Lapse 2.1.1.
+3.0 benötigt Windows 11 auf einem x64- oder ARM64-PC.
 ```
 
 ## Product features

@@ -1,5 +1,9 @@
 # 10Lapse 3.0 test matrix
 
+> **Not run before release (2026-10-21).** 3.0 went to the public listing without a beta flight (#41 closed as not
+> planned). The rows below still say what to check: use them on the live build, and open an issue for any row that
+> fails. Rows that name "the flight" mean the Store install.
+
 The pass before the 3.0 release (issue #41). Sven and the beta testers work
 through it on real machines; none of it could be done on the dev PC, where
 synthetic input is not allowed, the scale never changes, and there is no
