@@ -30,7 +30,7 @@
     <value>Qualità</value>
   </data>
   <data name="Checking" xml:space="preserve">
-    <value>Verifica di cosa può codificare questo PC…</value>
+    <value>Verifica dei codificatori video di questo PC…</value>
   </data>
   <data name="Ready" xml:space="preserve">
     <value>Le opzioni di output sono pronte.</value>
@@ -45,7 +45,7 @@
     <value>Questo PC non può esportare in {0} con queste impostazioni, quindi è selezionata {1}.</value>
   </data>
   <data name="ResolutionReplacedByShape" xml:space="preserve">
-    <value>{0} non è disponibile con queste proporzioni su questo PC, quindi è selezionata {1}. La scelta {0} torna con proporzioni che la consentono.</value>
+    <value>{0} non è disponibile con queste proporzioni su questo PC, quindi è selezionata {1}. Se scegli proporzioni che lo consentono, torna {0}.</value>
   </data>
   <data name="KeepSelected" xml:space="preserve">
     <value>Usa queste impostazioni</value>

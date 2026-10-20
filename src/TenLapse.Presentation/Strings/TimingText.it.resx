@@ -81,7 +81,7 @@
     <value>Arrotondato a {0}.</value>
   </data>
   <data name="LengthTooShort" xml:space="preserve">
-    <value>Le tue foto non si possono riprodurre in {0}: la velocità massima è {1}, quindi il video dura {2}.</value>
+    <value>Le tue foto non possono durare solo {0}: la velocità massima è {1}, quindi il video dura {2}.</value>
   </data>
   <data name="LengthTooLong" xml:space="preserve">
     <value>Le tue foto non bastano per {0}: la velocità minima è {1}, quindi il video dura {2}.</value>

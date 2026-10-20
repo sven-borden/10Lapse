@@ -51,7 +51,7 @@
     <value>Serve un'estensione di Microsoft Store</value>
   </data>
   <data name="FileInUse" xml:space="preserve">
-    <value>In uso in un'altra app</value>
+    <value>Aperto in un'altra app</value>
   </data>
   <data name="ImageTooLarge" xml:space="preserve">
     <value>Troppo grande per essere aperto</value>

@@ -108,7 +108,7 @@
     <value>Il disco è pieno. Libera spazio o scegli un'altra unità, poi riprova.</value>
   </data>
   <data name="ErrorOutOfMemory" xml:space="preserve">
-    <value>Il PC ha esaurito la memoria. Chiudi alcune altre app, poi riprova.</value>
+    <value>Il PC ha esaurito la memoria. Chiudi altre app, poi riprova.</value>
   </data>
   <data name="ErrorDriveDisconnected" xml:space="preserve">
     <value>L'unità o la cartella di rete è stata scollegata. Ricollegala, poi riprova.</value>
@@ -153,7 +153,7 @@
     <value>Il driver grafico si è reimpostato durante l'esportazione. Esporta di nuovo e, se continua a succedere, aggiorna il driver grafico.</value>
   </data>
   <data name="ExportFailedOutOfMemory" xml:space="preserve">
-    <value>Memoria insufficiente per esportare. Chiudi alcune altre app o scegli una risoluzione più bassa, poi esporta di nuovo.</value>
+    <value>Memoria insufficiente per esportare. Chiudi altre app o scegli una risoluzione più bassa, poi esporta di nuovo.</value>
   </data>
   <data name="ExportFailedPhotoUnreadable" xml:space="preserve">
     <value>Impossibile leggere una foto del progetto. Rimuovila o ripara il file, poi esporta di nuovo.</value>
@@ -315,13 +315,13 @@
     <value>Vuoi aggiungere queste foto a questo progetto?</value>
   </data>
   <data name="DropMessage_one" xml:space="preserve">
-    <value>Questo progetto ha {0} foto. Aggiungi le nuove foto a questo progetto o inizia un nuovo progetto solo con le nuove foto. Il nuovo progetto sostituisce quello attuale, con la sua foto e le sue impostazioni; il file resta sul PC.</value>
+    <value>Questo progetto ha {0} foto. Aggiungi le nuove foto a questo progetto o inizia un nuovo progetto solo con quelle. Un nuovo progetto rimuove la foto e le impostazioni di quello attuale; il file resta sul PC.</value>
   </data>
   <data name="DropMessage_other" xml:space="preserve">
-    <value>Questo progetto ha {0} foto. Aggiungi le nuove foto a questo progetto o inizia un nuovo progetto solo con le nuove foto. Il nuovo progetto sostituisce quello attuale, con le sue foto e impostazioni; i file restano sul PC.</value>
+    <value>Questo progetto ha {0} foto. Aggiungi le nuove foto a questo progetto o inizia un nuovo progetto solo con quelle. Un nuovo progetto rimuove le foto e le impostazioni di quello attuale; i file restano sul PC.</value>
   </data>
   <data name="DropMessage_many" xml:space="preserve">
-    <value>Questo progetto ha {0} di foto. Aggiungi le nuove foto a questo progetto o inizia un nuovo progetto solo con le nuove foto. Il nuovo progetto sostituisce quello attuale, con le sue foto e impostazioni; i file restano sul PC.</value>
+    <value>Questo progetto ha {0} di foto. Aggiungi le nuove foto a questo progetto o inizia un nuovo progetto solo con quelle. Un nuovo progetto rimuove le foto e le impostazioni di quello attuale; i file restano sul PC.</value>
   </data>
   <data name="DropAddToProject" xml:space="preserve">
     <value>Aggiungi al progetto</value>
@@ -345,7 +345,7 @@
     <value>Aggiunta delle foto interrotta. Sono state aggiunte {0} foto.</value>
   </data>
   <data name="ImportStoppedAdded_many" xml:space="preserve">
-    <value>Aggiunta delle foto interrotta. Sono stati aggiunti {0} di foto.</value>
+    <value>Aggiunta delle foto interrotta. Sono state aggiunte {0} di foto.</value>
   </data>
   <data name="ImportFolderFailedNamed" xml:space="preserve">
     <value>Impossibile aprire la cartella {0}. Verifica che la sua unità o scheda di memoria sia collegata e che tu possa aprirla in Esplora file, poi aggiungila di nuovo.</value>
@@ -357,7 +357,7 @@
     <value>Impossibile aprire {0} di cartelle. Verifica che le loro unità o schede di memoria siano collegate e che tu possa aprirle in Esplora file, poi aggiungile di nuovo.</value>
   </data>
   <data name="CloudDownloadTitle" xml:space="preserve">
-    <value>Vuoi scaricare da OneDrive?</value>
+    <value>Vuoi scaricare le foto da OneDrive?</value>
   </data>
   <data name="CloudDownloadQuestion_one" xml:space="preserve">
     <value>{0} foto è solo in OneDrive. Vuoi scaricarla ora? Circa {1}.</value>
@@ -420,7 +420,7 @@
     <value>Rilascia per iniziare il tuo timelapse</value>
   </data>
   <data name="FirstLaunchExplanationFormat" xml:space="preserve">
-    <value>{0} riproduce le tue foto come un video. Scatta una foto ogni pochi secondi: {1} foto diventano un video di {3} secondi a {2} fotogrammi al secondo.</value>
+    <value>{0} riproduce le tue foto come un video. Scatta una foto a intervalli di pochi secondi: {1} foto diventano un video di {3} secondi a {2} fotogrammi al secondo.</value>
   </data>
   <data name="FirstLaunchPrivacy" xml:space="preserve">
     <value>Le tue foto non lasciano mai questo PC.</value>
