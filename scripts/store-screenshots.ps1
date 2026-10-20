@@ -27,11 +27,18 @@
 
     The Store takes desktop screenshots from 1366 x 768 (768 x 1366 portrait) up to 3840 x 2160, PNG. -Size 3840x2160
     needs a monitor whose largest window holds that client area (the script skips a shot it cannot size and says so).
-    Build Debug x64 first (dotnet build TenLapse.slnx -c Debug -p:Platform=x64). Output goes to dist/store-screenshots
-    (git-ignored). The test data under %LOCALAPPDATA%\Temp\claude\<Branch> is deleted at the end unless -KeepTestData.
+    Build Debug x64 first (dotnet build TenLapse.slnx -c Debug -p:Platform=x64). Output goes to
+    dist/store-screenshots/<Language> (git-ignored). The test data under %LOCALAPPDATA%\Temp\claude\<Branch> is deleted
+    at the end unless -KeepTestData.
+
+    -Language (default en-US) is the app's language for the set (Debug --lang, #113): a shipped one (en-US, fr, de, es,
+    it, pt-BR) or any tag that maps to one. The script finds controls by AutomationId, so it works in every language.
 
 .EXAMPLE
     pwsh -File scripts/store-screenshots.ps1
+
+.EXAMPLE
+    pwsh -File scripts/store-screenshots.ps1 -Language fr
 
 .EXAMPLE
     pwsh -File scripts/store-screenshots.ps1 -PhotoFolder 'D:\Shoots\Harbor sunset' -SlideshowFolder 'D:\Shoots\Trip'
@@ -48,6 +55,8 @@ param(
     [ValidateRange(60, 5000)]
     [int]$Frames = 480,
     [string[]]$Only = @(),
+    [ValidatePattern('^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$')]
+    [string]$Language = 'en-US',
     [switch]$KeepTestData
 )
 
@@ -57,7 +66,7 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $exe = Join-Path $root 'src/TenLapse.App/bin/x64/Debug/net10.0-windows10.0.26100.0/win-x64/TenLapse.App.exe'
 if (-not (Test-Path $exe)) { throw "Build Debug x64 first: $exe" }
-if (-not $OutDir) { $OutDir = Join-Path $root 'dist/store-screenshots' }
+if (-not $OutDir) { $OutDir = Join-Path $root "dist/store-screenshots/$Language" }
 if ($PhotoFolder) { $PhotoFolder = (Resolve-Path $PhotoFolder).Path }
 if ($SlideshowFolder) { $SlideshowFolder = (Resolve-Path $SlideshowFolder).Path }
 
@@ -157,6 +166,7 @@ $run = 0
 function Common([string]$theme) {
     $script:run++
     @(
+        "--lang=$Language",
         "--theme=$theme",
         "--settings-folder=$(Join-Path $base "settings-$script:run")",
         "--cache-folder=$(Join-Path $base 'cache')",

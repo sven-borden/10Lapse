@@ -70,6 +70,8 @@ $Tree = [System.Windows.Automation.TreeScope]
 
 function Common([string]$name) {
     @(
+        # The checks find controls by their English UIA names, so the app speaks English whatever Windows says (#113).
+        '--lang=en-US',
         '--focus-walk',
         "--settings-folder=$(Join-Path $base "a11y-settings-$name")",
         "--cache-folder=$(Join-Path $base "a11y-cache-$name")",

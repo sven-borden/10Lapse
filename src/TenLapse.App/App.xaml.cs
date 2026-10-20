@@ -47,6 +47,17 @@ public partial class App : Application
 
     public App()
     {
+        // First of all, before anything reads text (#113): the app's language, as the .NET UI culture of every thread, so
+        // the resource files speak the language WinUI and Windows chose for the app. Labels read once and kept
+        // (ShellLayout, the Frame and Timing panels) follow it, so a language change needs a restart.
+#if DEBUG
+        // Debug --lang=<tag> wins, and sets WinUI's own strings to it for this process only.
+        var language = AppLanguage.Apply(Debugging.DebugLaunch.Language);
+        Debugging.DebugLaunch.ApplyLanguage(AppLanguage.Culture);
+#else
+        var language = AppLanguage.Apply(null);
+#endif
+
         // Logs synchronously before a dying process goes (a crash on a background thread, a fatal UI exception).
         AppDomain.CurrentDomain.UnhandledException += OnProcessUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
@@ -61,6 +72,7 @@ public partial class App : Application
 #endif
 
         _log.Info($"10Lapse {AppDiagnostics.AppVersion()} starting ({(AppEnvironment.HasPackageIdentity ? "packaged" : "unpackaged")}); log in {_log.Folder}.");
+        _log.Info(language);
         ExportCleanupLog.Start(_log, _folders.UnfinishedExportsFile);
 
         // App.xaml (the token dictionaries, the styles) that fails to load would escape the constructor with no

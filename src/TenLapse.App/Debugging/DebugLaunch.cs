@@ -12,7 +12,7 @@ namespace TenLapse.Debugging;
 /// those Output settings in the project (to see the Output panel replace what this PC cannot do, with
 /// <c>--max-resolution</c> and the other switches in DebugOutputCapabilities.cs). <c>--theme=light|dark</c> is the
 /// gallery's switch (it sets the main window's theme too). <c>--frame=</c> is in DebugFrame.cs. <c>--crash=command|task|ui|unhandled</c>
-/// is in DebugCrash.cs.
+/// is in DebugCrash.cs. <c>--lang=&lt;tag&gt;</c> sets the app's language for the run (#113).
 /// </summary>
 internal static partial class DebugLaunch
 {
@@ -29,6 +29,30 @@ internal static partial class DebugLaunch
     /// plain). <see cref="App"/> turns it on before anything reads text.
     /// </summary>
     public static bool PseudoLocalize => _args.Contains("--pseudo-loc", StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The app's language for this run (<c>--lang=fr</c>, any BCP-47 tag, #113), or null for the one Windows gives. It is
+    /// mapped to a shipped language like Windows' own (<c>--lang=fr-CH</c> speaks <c>fr</c>, <c>--lang=ja</c> English), so
+    /// checks and screenshots run per language. The scripts that find controls by their English names pass
+    /// <c>--lang=en-US</c>.
+    /// </summary>
+    public static string? Language => Value("--lang=");
+
+    /// <summary>
+    /// With <c>--lang</c>, WinUI's own strings (MRT Core) follow the chosen language too, through the Windows App SDK's
+    /// <c>ApplicationLanguages.PrimaryLanguageOverride</c>. Unpackaged, that override lives in this process only and
+    /// nothing is written to Windows or the registry; packaged it would be remembered for the package, so it is not set
+    /// there (Debug never runs packaged). Call it before <c>InitializeComponent</c>.
+    /// </summary>
+    public static void ApplyLanguage(System.Globalization.CultureInfo culture)
+    {
+        if (Language is null || Services.AppEnvironment.HasPackageIdentity)
+        {
+            return;
+        }
+
+        Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = culture.Name;
+    }
 
     /// <summary>The first-launch drop zone acts as with Windows animations off (<c>--reduce-motion</c>).</summary>
     public static bool ReduceMotion => _args.Contains("--reduce-motion", StringComparer.OrdinalIgnoreCase);
