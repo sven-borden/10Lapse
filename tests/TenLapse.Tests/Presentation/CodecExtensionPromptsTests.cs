@@ -30,7 +30,7 @@ public sealed class CodecExtensionPromptsTests
         var requests = Prompts().Create(skipped);
 
         var request = Assert.Single(requests);
-        Assert.Equal("These 300 photos need HEIF Image Extensions (free) from Microsoft.", request.Message);
+        Assert.Equal("These 300 photos need HEIF Image Extension (free) from Microsoft.", request.Message);
         Assert.Equal(InfoBarSeverity.Caution, request.Severity);
         Assert.Equal("Get it from the Store", request.ActionLabel);
         Assert.NotNull(request.Action);
@@ -46,8 +46,8 @@ public sealed class CodecExtensionPromptsTests
         var thousands = Prompts().Create(Enumerable.Range(1, 1204).Select(i => Heic(i, _heif)));
         var one = Prompts().Create([Heic(1, _heif)]);
 
-        Assert.Equal("These 1,204 photos need HEIF Image Extensions (free) from Microsoft.", Assert.Single(thousands).Message);
-        Assert.Equal("This photo needs HEIF Image Extensions (free) from Microsoft.", Assert.Single(one).Message);
+        Assert.Equal("These 1,204 photos need HEIF Image Extension (free) from Microsoft.", Assert.Single(thousands).Message);
+        Assert.Equal("This photo needs HEIF Image Extension (free) from Microsoft.", Assert.Single(one).Message);
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public sealed class CodecExtensionPromptsTests
         _codecs.Missing.Clear();
         var later = Prompts().Plan([hasHevc, heifMissing]);
         Assert.Equal([hasHevc], later.NotCovered);
-        Assert.Equal("This photo needs HEIF Image Extensions (free) from Microsoft.", Assert.Single(later.Requests).Message);
+        Assert.Equal("This photo needs HEIF Image Extension (free) from Microsoft.", Assert.Single(later.Requests).Message);
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public sealed class CodecExtensionPromptsTests
         // The HEIF decoder is missing; HEVC is on this PC (not in Missing), so the second extension is not needed.
         var request = Assert.Single(Prompts().Create(Enumerable.Range(1, 12).Select(i => Heic(i, _heif, _hevc))));
 
-        Assert.Equal("These 12 photos need HEIF Image Extensions (free) from Microsoft.", request.Message);
+        Assert.Equal("These 12 photos need HEIF Image Extension (free) from Microsoft.", request.Message);
         Assert.Equal([_hevc], _codecs.Asked.Distinct());
     }
 
@@ -124,7 +124,7 @@ public sealed class CodecExtensionPromptsTests
         var request = Assert.Single(Prompts().Create(Enumerable.Range(1, 12).Select(i => Heic(i, _heif, _hevc))));
 
         Assert.Equal(
-            "These 12 photos need 2 extensions from Microsoft. Start with HEIF Image Extensions (free).",
+            "These 12 photos need 2 extensions from Microsoft. Start with HEIF Image Extension (free).",
             request.Message);
         Assert.Equal("Get it from the Store", request.ActionLabel);
     }
@@ -147,7 +147,7 @@ public sealed class CodecExtensionPromptsTests
         var requests = Prompts().Create(skipped);
 
         Assert.Equal(
-            ["These 2 photos need HEIF Image Extensions (free) from Microsoft.", "These 2 photos need Raw Image Extension (free) from Microsoft."],
+            ["These 2 photos need HEIF Image Extension (free) from Microsoft.", "These 2 photos need Raw Image Extension (free) from Microsoft."],
             requests.Select(request => request.Message));
     }
 
@@ -230,7 +230,7 @@ public sealed class CodecExtensionPromptsTests
         Assert.Equal(ProjectText.CodecStoreOpenFailed, logged.Context);
         var bar = Assert.Single(_infoBars.Shown);
         Assert.Equal(InfoBarSeverity.Caution, bar.Severity);
-        Assert.Contains("Search the Store for HEIF Image Extensions", bar.Message, StringComparison.Ordinal);
+        Assert.Contains("Search the Store for HEIF Image Extension", bar.Message, StringComparison.Ordinal);
         Assert.Contains("restart 10Lapse", bar.Message, StringComparison.Ordinal);
     }
 
@@ -265,9 +265,9 @@ public sealed class CodecExtensionPromptsTests
         var five = queue.Show(Assert.Single(Prompts().Create(Enumerable.Range(1, 5).Select(i => Heic(i, _heif)))));
         Assert.NotSame(three, five);
         Assert.Equal(1, queue.WaitingCount);
-        Assert.Equal("These 3 photos need HEIF Image Extensions (free) from Microsoft.", queue.Current!.Request.Message);
+        Assert.Equal("These 3 photos need HEIF Image Extension (free) from Microsoft.", queue.Current!.Request.Message);
         queue.Dismiss(three);
-        Assert.Equal("These 5 photos need HEIF Image Extensions (free) from Microsoft.", queue.Current!.Request.Message);
+        Assert.Equal("These 5 photos need HEIF Image Extension (free) from Microsoft.", queue.Current!.Request.Message);
     }
 
     [Fact]

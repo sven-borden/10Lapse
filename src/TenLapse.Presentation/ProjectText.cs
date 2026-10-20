@@ -727,7 +727,7 @@ public static class ProjectText
     /// <summary>The button of an extension InfoBar. It opens the Store app; nothing is downloaded by 10Lapse.</summary>
     public static string CodecGetFromStore => _strings.Get();
 
-    /// <summary>A free extension as the sentences name it, "{0} (free)": {0} its Store name ("HEIF Image Extensions").</summary>
+    /// <summary>A free extension as the sentences name it, "{0} (free)": {0} its Store name ("HEIF Image Extension").</summary>
     public static string CodecFree => _strings.Get();
 
     /// <summary>An extension the Store sells, "{0} (paid)": {0} its Store name ("HEVC Video Extensions").</summary>

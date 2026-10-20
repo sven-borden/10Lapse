@@ -77,15 +77,15 @@ table is covered by at least one.
 
 ## 3. Extensions
 
-HEVC Video, HEIF Image and Raw Image Extensions, present and absent. The
+The HEVC Video, HEIF Image and Raw Image extensions, present and absent. The
 InfoBar is one per missing extension, never one per photo, with the photo count
 and a *Get it from the Store* button that opens the Store app (no browser, no
 network from 10Lapse) (#14, PR #79). Run: all, with and without. Uninstall an
 extension in Settings > Apps, add the photos again, restart 10Lapse after each
 install or uninstall (the wording tells the user to restart).
 
-- [ ] **3.1 HEIF Image Extensions missing, iPhone HEIC folder** (#14).
-  Expect: "These N photos need HEIF Image Extensions (free) from Microsoft."
+- [ ] **3.1 HEIF Image Extension missing, iPhone HEIC folder** (#14).
+  Expect: "These N photos need HEIF Image Extension (free) from Microsoft."
   The button opens the Store page for the extension.
 - [ ] **3.2 Raw Image Extension missing, RAW folder** (#14). Expect: "These N
   photos need Raw Image Extension (free) from Microsoft." DNG and other RAW
@@ -95,7 +95,7 @@ install or uninstall (the wording tells the user to restart).
   prompted (no false paid upsell); those files stay in the generic "couldn't
   be read" list.
 - [ ] **3.4 HEIF and HEVC both missing** (#14). Expect: one InfoBar, "These N
-  photos need 2 extensions from Microsoft. Start with HEIF Image Extensions
+  photos need 2 extensions from Microsoft. Start with HEIF Image Extension
   (free)."; its button opens the first, then a follow-up InfoBar at the front of
   the queue: "Finally, get HEVC Video Extensions (paid). When the install
   finishes, restart 10Lapse and add the photos again."

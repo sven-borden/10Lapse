@@ -20,7 +20,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="HeifImageExtensions" xml:space="preserve">
-    <value>HEIF Image Extensions</value>
+    <value>HEIF Image Extension</value>
     <comment>The exact name the Microsoft Store shows in your language for product 9PMMSR1CGPWG, the free HEIF decoder. Shown inside sentences such as "These 12 photos need {1} from Microsoft." without an article, since a name may be singular or plural.</comment>
   </data>
   <data name="HevcVideoExtensions" xml:space="preserve">
@@ -32,8 +32,8 @@
     <comment>The exact name the Microsoft Store shows in your language for product 9MVZQVXJBQ9V, the free AV1 codec.</comment>
   </data>
   <data name="WebpImageExtensions" xml:space="preserve">
-    <value>Webp Image Extensions</value>
-    <comment>The exact name the Microsoft Store shows in your language for product 9PG2DK419DRG, the free WebP decoder (the Store writes "Webp").</comment>
+    <value>WebP Image Extension</value>
+    <comment>The exact name the Microsoft Store shows in your language for product 9PG2DK419DRG, the free WebP decoder.</comment>
   </data>
   <data name="JpegXlImageExtension" xml:space="preserve">
     <value>JPEG XL Image Extension</value>

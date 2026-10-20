@@ -474,7 +474,7 @@
   </data>
   <data name="CodecFree" xml:space="preserve">
     <value>{0} (free)</value>
-    <comment>A free extension as the codec sentences name it, in the style of the Store listing ("HEIF Image Extensions (free)"). {0} its Store name, from StoreExtensionText. The name may be singular or plural; write the price as a label that does not agree with it, as the Store writes a price.</comment>
+    <comment>A free extension as the codec sentences name it, in the style of the Store listing ("HEIF Image Extension (free)"). {0} its Store name, from StoreExtensionText. The name may be singular or plural; write the price as a label that does not agree with it, as the Store writes a price.</comment>
   </data>
   <data name="CodecFee" xml:space="preserve">
     <value>{0} (paid)</value>
@@ -482,7 +482,7 @@
   </data>
   <data name="CodecNeedsOne_one" xml:space="preserve">
     <value>This photo needs {1} from Microsoft.</value>
-    <comment>A message bar after an import: photos need one extension from the Microsoft Store. {0} the number of photos: English leaves {0} out because the count is always 1 here; leave it out too. {1} the extension as CodecFree or CodecFee ("HEIF Image Extensions (free)"). The name may be singular or plural; write the sentence so no article or pronoun has to agree with it.</comment>
+    <comment>A message bar after an import: photos need one extension from the Microsoft Store. {0} the number of photos: English leaves {0} out because the count is always 1 here; leave it out too. {1} the extension as CodecFree or CodecFee ("HEIF Image Extension (free)"). The name may be singular or plural; write the sentence so no article or pronoun has to agree with it.</comment>
   </data>
   <data name="CodecNeedsOne_other" xml:space="preserve">
     <value>These {0} photos need {1} from Microsoft.</value>

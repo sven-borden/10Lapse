@@ -64,7 +64,7 @@ public sealed class PhotoDecoderTests : IDisposable
     [Fact]
     public async Task WebPDecodesWhenItsDecoderIsInstalled()
     {
-        Assert.SkipWhen(PhotoCodecs.DecoderFor(".webp") is null, "No WebP decoder on this PC (the Webp Image Extensions are missing).");
+        Assert.SkipWhen(PhotoCodecs.DecoderFor(".webp") is null, "No WebP decoder on this PC (the WebP Image Extension are missing).");
         // A 1x1 lossless WebP; WIC has no WebP encoder to write one.
         var path = _files.PathOf("pixel.webp");
         await File.WriteAllBytesAsync(path, Convert.FromBase64String("UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA=="), Token);
@@ -79,7 +79,7 @@ public sealed class PhotoDecoderTests : IDisposable
     [Fact]
     public async Task HeicDecodesWhenWindowsCanWriteAndReadIt()
     {
-        Assert.SkipWhen(PhotoCodecs.DecoderFor(".heic") is null, "No HEIF decoder on this PC (the HEIF Image Extensions are missing).");
+        Assert.SkipWhen(PhotoCodecs.DecoderFor(".heic") is null, "No HEIF decoder on this PC (the HEIF Image Extension are missing).");
         var canEncode = BitmapEncoder.GetEncoderInformationEnumerator().Any(e => e.CodecId == BitmapEncoder.HeifEncoderId);
         Assert.SkipUnless(canEncode, "No HEIF encoder on this PC to write a test HEIC (it needs the HEIF and HEVC extensions).");
         string path;
@@ -516,10 +516,10 @@ public sealed class PhotoDecoderTests : IDisposable
     public static TheoryData<string, string, uint, bool, string, string?> MissingComponents => new()
     {
         // No decoder claims the extension: the extension that adds the decoder.
-        { "IMG_4402.HEIC", "Open", 0x88982F50, false, "", "HEIF Image Extensions" },
-        { "IMG_4402.avif", "Open", 0x88982F50, false, "", "HEIF Image Extensions" },
+        { "IMG_4402.HEIC", "Open", 0x88982F50, false, "", "HEIF Image Extension" },
+        { "IMG_4402.avif", "Open", 0x88982F50, false, "", "HEIF Image Extension" },
         { "DSC_0001.NEF", "Open", 0x88982F50, false, "", "Raw Image Extension" },
-        { "photo.webp", "Open", 0x88982F50, false, "", "Webp Image Extensions" },
+        { "photo.webp", "Open", 0x88982F50, false, "", "WebP Image Extension" },
         { "photo.jxl", "Open", 0x88982F50, false, "", "JPEG XL Image Extension" },
         // The HEIF decoder is there (a fresh Windows 11) but cannot decode the image inside: the codec.
         { "IMG_4402.HEIC", "Open", 0x88982F81, true, "heic", "HEVC Video Extensions" },
@@ -575,8 +575,8 @@ public sealed class PhotoDecoderTests : IDisposable
         string[] expectedNames = (name.ToLowerInvariant(), expected) switch
         {
             (_, null) => [],
-            (var n, "HEIF Image Extensions") when n.EndsWith(".heic", StringComparison.Ordinal) => ["HEIF Image Extensions", "HEVC Video Extensions"],
-            (var n, "HEIF Image Extensions") when n.EndsWith(".avif", StringComparison.Ordinal) => ["HEIF Image Extensions", "AV1 Video Extension"],
+            (var n, "HEIF Image Extension") when n.EndsWith(".heic", StringComparison.Ordinal) => ["HEIF Image Extension", "HEVC Video Extensions"],
+            (var n, "HEIF Image Extension") when n.EndsWith(".avif", StringComparison.Ordinal) => ["HEIF Image Extension", "AV1 Video Extension"],
             (_, var only) => [only],
         };
         Assert.Equal(expectedNames, names);

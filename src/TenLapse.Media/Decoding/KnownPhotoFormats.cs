@@ -30,7 +30,7 @@ public static class KnownPhotoFormats
     // The names are the Store's own, in the user's language (StoreExtensionText, #114), read once with this table: the UI
     // language is set before the first import. The product IDs are the same everywhere.
 
-    /// <summary>HEIF Image Extensions: the HEIF decoder, which reads HEIC, HEIF and AVIF files (the container).</summary>
+    /// <summary>HEIF Image Extension: the HEIF decoder, which reads HEIC, HEIF and AVIF files (the container).</summary>
     public static readonly PhotoCodecExtension HeifExtension = new(StoreExtensionText.HeifImageExtensions, "9PMMSR1CGPWG");
 
     /// <summary>HEVC Video Extensions: the codec of HEIC photos (the iPhone default). A fresh Windows 11 has the HEIF decoder but not this.</summary>
@@ -39,7 +39,7 @@ public static class KnownPhotoFormats
     /// <summary>AV1 Video Extension: the codec of AVIF photos.</summary>
     public static readonly PhotoCodecExtension Av1Extension = new(StoreExtensionText.Av1VideoExtension, "9MVZQVXJBQ9V", IsCodec: true);
 
-    /// <summary>Webp Image Extensions.</summary>
+    /// <summary>WebP Image Extension.</summary>
     public static readonly PhotoCodecExtension WebpExtension = new(StoreExtensionText.WebpImageExtensions, "9PG2DK419DRG");
 
     /// <summary>JPEG XL Image Extension.</summary>
