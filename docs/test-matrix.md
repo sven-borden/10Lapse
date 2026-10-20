@@ -9,7 +9,12 @@ or PR each row comes from.
 How to use it: copy a section into issue #41, tick a row when the result is as
 expected, and open an issue for any row that is not (name the machine, the
 Windows build and the row). **Run** says where a row runs: *all* on every
-machine in the pass, *once* on one machine, or the machine named.
+machine in the pass, *once* on one machine, or the machine named. A row with
+no Run runs once, on the main machine (the NVIDIA PC).
+
+The rows write `->`, `...` and `.` where the screen shows an arrow, an ellipsis
+and a middle dot (for example "742 photos -> 24.7 s"); match the meaning, not
+the character.
 
 Sections: 1 Machines, 2 Install paths, 3 Extensions, 4 Photo sets,
 5 Features, 6 Per-machine measurements, 7 Accessibility, 8 Known and accepted.
@@ -23,13 +28,14 @@ table is covered by at least one.
 | Machine | Why | Rows to run |
 |---|---|---|
 | Windows 11 24H2 or 25H2, x64, NVIDIA | the dev PC's vendor (RTX 4060 Ti: hardware H.264 and HEVC) | all |
-| Windows 11 x64, Intel graphics | Intel encoder and converter, often an iGPU | all, plus 6.2 |
+| Windows 11 x64, Intel graphics | Intel encoder and converter, often an iGPU | all, plus 6.2 (an iGPU counts as tight) |
 | Windows 11 x64, AMD graphics | AMD encoder | all |
 | Windows 11 ARM64 (Snapdragon, Qualcomm encoder) | 3.0 builds for ARM64 but never ran on it (#65, #74, #100) | all, plus 6.1 |
 | A PC with 8 GB of RAM or less, or an iGPU | the 1 GB export memory target (#34, #89) | 6.2, 5.8 |
 | One PC at 100, 150 and 200 % scaling | scaling was never seen on screen (#67, #94) | 5.13 |
 | Light, dark and high contrast themes | high contrast was never seen on screen (#27, #64) | 5.12, 5.13, 7 |
 | Animation effects on and off | (#35, #100) | 5.11 |
+| Windows 11 21H2 (build 22000) | the minimum build, never run (#2) | 2.1 and 5.14.1, once |
 | A Windows 10 22H2 PC with 10Lapse 2.1.1 | 3.0 does not install there | 2.4 |
 
 - [ ] **1.1 Machines covered.** Write the machines used into issue #41: Windows
@@ -41,17 +47,33 @@ table is covered by at least one.
   from the Store flight on a PC that never had 10Lapse. Expect: it installs
   and starts, the first-launch screen shows (5.1), the icon and tile are the
   Five frames icon (5.16). The Store installs the Windows App Runtime 2
-  framework package with it (STATUS, 2026-10-18); no extra install step.
+  framework package with it (STATUS, 2026-10-18); no extra install step. The
+  flight is the install path for testers (Developer Mode is off on the dev
+  PC and a tester's PC usually has it off too; see 2.5).
 - [ ] **2.2 Update in place from 2.1.1** (#2, #62). Run: once, on a PC with
-  2.1.1 from the Store. Do: update to 3.0 from the flight. Expect: same listing
-  and package identity, so it arrives as an update, not a second app. 3.0 does
-  not read 2.1.1's settings: it starts at its defaults (30 fps, 16:9 Fill,
-  1080p, H.264 High, capture-time order, #16).
+  2.1.1 from the Store. Do: update to 3.0 from the flight with 2.1.1 open (the
+  Store asks to close it, or updates once it is closed). Expect: same listing
+  and package identity, so it arrives as an update, not a second app; the first
+  launch of 3.0 shows 5.1.1.
 - [ ] **2.3 Uninstall** (#60). Do: uninstall 3.0. Expect: it goes cleanly; the
   privacy policy says settings are removed with the app.
 - [ ] **2.4 Windows 10 keeps 2.1.1** (#96, #97). Run: a Windows 10 PC with
   2.1.1. Expect: the Store does not offer 3.0 and 2.1.1 keeps working. This is
   the only Windows 10 check.
+- [ ] **2.5 Install from the package outside the flight** (optional, #62).
+  Run: only a PC where Sven or a tester has turned Developer Mode on
+  (sideloading an MSIX needs it, and the dev PC has it off). Do: install the
+  package that `scripts/pack.ps1` builds (#40). Expect: it installs and starts
+  like 2.1. If nobody has such a PC, skip it and say so in #41: the flight is
+  the only install path.
+- [ ] **2.6 Settings after the update from 2.1.1** (#2, #16, #21). Run: once, on
+  the PC from 2.2. Expect: 3.0 does not read 2.1.1's settings and starts at its
+  defaults (30 fps, 16:9 Fill, 1080p, H.264 High, capture-time order); change
+  one setting, restart: it is remembered.
+- [ ] **2.7 Settings after uninstall and reinstall** (#21, #60). Run: once. Do:
+  change settings, uninstall 3.0 (2.3), install it again. Expect: it starts at
+  the defaults of 2.6, with no memory of the last folders; 5.10.4's export
+  count starts again from zero.
 
 ## 3. Extensions
 
@@ -512,9 +534,8 @@ theme.
   summary line.
 - [ ] **7.11 Reorder with the keyboard** (#20, #38, PR #82). Focus a thumbnail
   (or select several) and press Alt+Left and Alt+Right. Expect: the selected
-  frames move one place earlier or later,
-  the order becomes manual (5.2.2). Alt+arrows with another control focused
-  do nothing to the strip.
+  frames move one place earlier or later, the order becomes manual (5.2.2).
+  Alt+arrows with another control focused do nothing to the strip.
 
 ## 8. Known and accepted
 
