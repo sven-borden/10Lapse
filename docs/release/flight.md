@@ -12,7 +12,7 @@ pwsh -File scripts/pack.ps1
 
 It prints the path of `dist/store/TenLapse.App_<version>_x64_arm64_bundle.msixupload` (about 124 MB, unsigned on purpose, the Store signs it). It fails with exit 1 and lists what is wrong if anything in the packages is wrong (identity, version, device family, capabilities, runtime dependency, resources, Debug-only code). Silence about checks means they passed.
 
-- The first flight is `3.0.0.0`, which is already in the manifest. Every later upload needs a higher version and a last digit of 0: `pwsh -File scripts/pack.ps1 -Version 3.0.1.0` writes it into `src/TenLapse.App/Package.appxmanifest` (and refuses anything that is not higher, or does not end in `.0`), then builds. Commit the manifest change with the fix it ships.
+- The first flight is `3.0.0.0`, which is already in the manifest. Every later upload needs a higher version and a last digit of 0: `pwsh -File scripts/pack.ps1 -Version 3.0.1.0` writes it into `src/TenLapse.App/Package.appxmanifest` (and refuses anything that is not higher, or does not end in `.0`), then builds. Commit the manifest change with the fix it ships. The manifest is written before the build starts, so a failed pack leaves it bumped: either revert it with git (`git checkout src/TenLapse.App/Package.appxmanifest`), or fix the problem and run `pwsh -File scripts/pack.ps1` without `-Version` (the manifest already holds the new one; running with the same `-Version` again is refused as "not above").
 - Nothing in `dist/` is ever committed.
 
 ## 2. Partner Center
