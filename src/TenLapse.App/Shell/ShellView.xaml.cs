@@ -76,6 +76,7 @@ public sealed partial class ShellView : UserControl
         ViewModel = viewModel;
         Import = import;
         _errors = errors;
+        Announcer.Errors = errors;
         _presenter = presenter;
 
         // Before InitializeComponent, so this handler runs before x:Bind's: the screen change's animations are in place
@@ -404,7 +405,7 @@ public sealed partial class ShellView : UserControl
                 UpdateLayout();
                 MoveFocus(FocusTargets.AfterScreenChange(from, screen, focusLost: before is null || !IsOnScreen(before)));
             },
-            ProjectText.SettingsFocusFailed);
+            ProjectText.ScreenFocusFailed);
     }
 
     // The import's progress to Narrator (#38): its first text, then the newest at most every 5 s (LiveProgress), and the

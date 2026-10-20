@@ -232,7 +232,8 @@
       <Color x:Key="SubtleFillHoverColor">#00000000</Color>
       <Color x:Key="SubtleFillPressedColor">#00000000</Color>
       <StaticResource x:Key="InkColor" ResourceKey="SystemColorWindowTextColor" />
-      <StaticResource x:Key="InkSecondaryColor" ResourceKey="SystemColorGrayTextColor" />
+      <!-- WindowText, not GrayText: Windows uses GrayText for disabled text, and these captions are enabled. -->
+      <StaticResource x:Key="InkSecondaryColor" ResourceKey="SystemColorWindowTextColor" />
       <StaticResource x:Key="SegmentPillInkColor" ResourceKey="SystemColorHighlightTextColor" />
       <!-- Status (InfoBars and the finished state, always with an icon) -->
       <StaticResource x:Key="SuccessColor" ResourceKey="SystemColorWindowTextColor" />

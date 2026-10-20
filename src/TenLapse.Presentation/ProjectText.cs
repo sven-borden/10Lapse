@@ -338,8 +338,11 @@ public static class ProjectText
     /// <summary>Error context: the tinted Mica backdrop failed; the window shows the flat Mica color instead (#90).</summary>
     public static string BackdropFailed => "Showing the Mica backdrop failed; the window shows its flat Mica color instead.";
 
-    /// <summary>Error context (log only): moving focus after opening or leaving Settings failed.</summary>
-    public static string SettingsFocusFailed => "Moving focus after opening or leaving Settings failed.";
+    /// <summary>Error context (log only): moving focus after a screen change (Settings, the first photos, New project) failed (#38).</summary>
+    public static string ScreenFocusFailed => "Moving focus after a screen change failed.";
+
+    /// <summary>Error context (log only): raising a screen reader notification failed (#38); nothing else depends on it.</summary>
+    public static string AnnouncementFailed => "Raising a screen reader notification failed.";
 
     /// <summary>Error context (log only): switching between the docked and the narrow inspector layout, or sizing the narrow panel, failed (#36).</summary>
     public static string LayoutSwitchFailed => "Switching the inspector between the side and the narrow layout failed.";
