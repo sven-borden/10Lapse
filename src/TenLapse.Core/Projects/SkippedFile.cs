@@ -50,7 +50,7 @@ public enum SkipReason
 }
 
 /// <summary>A free (or cheap) Windows extension from the Microsoft Store that adds a WIC decoder or a codec one needs (#14 offers it).</summary>
-/// <param name="Name">The Store name, as the user will find it ("HEIF Image Extensions").</param>
+/// <param name="Name">The Store name, as the user will find it ("HEIF Image Extension").</param>
 /// <param name="StoreProductId">The Store product ID for <c>ms-windows-store://pdp/?ProductId=…</c>.</param>
 /// <param name="HasFee">True when the Store sells it (the HEVC Video Extensions); the InfoBar then does not call it free.</param>
 /// <param name="IsCodec">True for a codec a decoder needs inside a file (HEVC, AV1), false for the extension that adds a decoder. A "missing" verdict on a codec is checked against the PC before the InfoBar speaks.</param>

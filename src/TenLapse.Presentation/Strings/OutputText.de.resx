@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  German (de) translation of OutputText.resx (#116). The English file's comments are the brief for each key.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Ausgabe</value>
+  </data>
+  <data name="ResolutionLabel" xml:space="preserve">
+    <value>Auflösung</value>
+  </data>
+  <data name="FormatLabel" xml:space="preserve">
+    <value>Dateiformat</value>
+  </data>
+  <data name="QualityLabel" xml:space="preserve">
+    <value>Qualität</value>
+  </data>
+  <data name="Checking" xml:space="preserve">
+    <value>Die Videoencoder dieses PCs werden geprüft…</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Die Ausgabeoptionen sind bereit.</value>
+  </data>
+  <data name="ConservativeNote" xml:space="preserve">
+    <value>10Lapse konnte die Videoencoder dieses PCs nicht prüfen und bietet deshalb H.264 bis 1080p an.</value>
+  </data>
+  <data name="FormatReplaced" xml:space="preserve">
+    <value>{0} kann auf diesem PC nicht exportiert werden, deshalb ist {1} ausgewählt.</value>
+  </data>
+  <data name="ResolutionReplaced" xml:space="preserve">
+    <value>{0} kann auf diesem PC mit diesen Einstellungen nicht exportiert werden, deshalb ist {1} ausgewählt.</value>
+  </data>
+  <data name="ResolutionReplacedByShape" xml:space="preserve">
+    <value>{0} ist mit diesem Bildformat auf diesem PC nicht verfügbar, deshalb ist {1} ausgewählt. Sobald Sie ein Bildformat wählen, das {0} zulässt, gilt wieder {0}.</value>
+  </data>
+  <data name="KeepSelected" xml:space="preserve">
+    <value>Auswahl übernehmen</value>
+  </data>
+  <data name="EstimateAbout" xml:space="preserve">
+    <value>Ca. {0}</value>
+  </data>
+  <data name="Megabytes" xml:space="preserve">
+    <value>{0} MB</value>
+  </data>
+  <data name="Gigabytes" xml:space="preserve">
+    <value>{0} GB</value>
+  </data>
+  <data name="UnderOneMegabyte" xml:space="preserve">
+    <value>Unter 1 MB</value>
+  </data>
+  <data name="ResolutionOptionFormat" xml:space="preserve">
+    <value>{0} · {1} × {2}</value>
+  </data>
+  <data name="FormatOptionFormat" xml:space="preserve">
+    <value>MP4 · {0}</value>
+  </data>
+  <data name="QualityStandard" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="QualityHigh" xml:space="preserve">
+    <value>Hoch</value>
+  </data>
+  <data name="QualityMaximum" xml:space="preserve">
+    <value>Maximal</value>
+  </data>
+</root>

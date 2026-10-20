@@ -4,7 +4,7 @@ Updated 2026-10-20. Roadmap: the pinned #59 and the milestones. Working agreemen
 
 ## Now
 
-2026-10-20: **Translations before the flight (Sven): wave 22 in flight**, #115 fr and #116 de (Opus). Wave 21 merged (#113 PR #120, #114 PR #121); the English key set is final. Then #117 to #119. Once #119 merges, the orchestrator runs `scripts/pack.ps1` for the flight; a `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
+2026-10-20: **Translations before the flight (Sven): wave 22**, #116 de merged (PR #122), #124 merged (PR #125); #115 fr (PR #123) in its fix round, #117 es building. Wave 21 merged (#113 PR #120, #114 PR #121). Then #117 to #119. Once #119 merges, the orchestrator runs `scripts/pack.ps1` for the flight; a `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
 
 ## Waves
 
@@ -228,27 +228,18 @@ Details are in each PR's "What the next issues should know".
 - #14 PR #79 missing-extension InfoBars with Store links (restart after
   installing; `--missing-codec=`).
 - #19 PR #77 preview: render thread, `PlaybackClock`, `ProxyCache` (1280 px,
-  2 GB, 30-day sweep, `LocalCache\Proxies` or `%LOCALAPPDATA%\10Lapse\Proxies`),
-  `FrameImageCache` 192 MB. Debug `--sample-frames` writes real photos: pass
+  2 GB, 30 days), `FrameImageCache` 192 MB; Debug `--sample-frames` with
   `--sample-folder` under your branch folder and `--sample-clean`.
-- #32 PR #81 golden render tests (exact frame times through `RecordingEncoder`,
-  preview vs export geometry within 1 px; MP4 header durations one unit short at
-  24, 29.97, 60 fps, accepted). `MediaSkips.CannotRunHere`.
-- #20 PR #82 filmstrip (thumbnails proxy first, `FrameHistory` undo of removals
-  and reorders, Delete and Ctrl+Z only with the strip or nothing focused, Space
-  always plays; `--filmstrip-bench`).
-- #21 PR #83 `settings.json` (versioned, never throws, 256 KB cap, atomic),
-  *Reset to defaults*; `--settings-folder=`.
-- #84 PR #85 bounded capture-time readers replace MetadataExtractor. #86 PR #87
-  no process-wide memory deltas in tests.
-- #34 PR #89 `scripts/bench.ps1`, `docs/benchmarks.md`; `--import-bench=`.
-- #24 PR #88 export panel, film gate, premiere of the real MP4, Export button
-  disabled at 0.6 outside Editing, `ShellViewModel.Edits` blocks edits during an
-  export, close asks and waits up to 2 s, taskbar progress, notifications only
-  packaged or with Debug `--notifications`, `Started`/`Ended` hooks; `--export-to=`.
-- #25 PR #92: `IKeepAwake` power request (system required, not display) held
-  by `ExportViewModel` from `Begin` to `End`; minimized exports run at full
-  speed and the hidden preview is not seeked.
+- #32 PR #81 golden render tests (exact frame times, preview vs export within
+  1 px; MP4 header durations one unit short at 24, 29.97, 60 fps, accepted).
+- #20 PR #82 filmstrip (`FrameHistory` undo; Delete and Ctrl+Z only with the
+  strip or nothing focused; Space always plays). #21 PR #83 `settings.json`
+  (versioned, never throws, atomic); `--settings-folder=`.
+- #84 PR #85 capture-time readers. #86 PR #87. #34 PR #89 `scripts/bench.ps1`.
+- #24 PR #88 export panel, film gate, premiere; edits blocked during export;
+  close asks and waits up to 2 s; taskbar progress; notifications packaged or
+  Debug `--notifications`; `--export-to=`. #25 PR #92 `IKeepAwake` during
+  export (system, not display).
 - #31 PR #93: `RatingPrompt`, `StoreRatingService` (no-op unpackaged), Settings
   *Feedback* card; Debug `--fake-rating`. Verify the real dialog in #40.
 - #36 PR #94: below 1,000 DIPs the inspector is a 260 px panel under the stage
@@ -316,3 +307,9 @@ Details are in each PR's "What the next issues should know".
   enforces); Store names in `Media/Strings/StoreExtensionText.resx`, never
   bound to an article or pronoun; `WrapRow`/`WrapLayout`; Debug
   `--motion-drop=`. `a11y-check.ps1` finds the build-26300 folder picker.
+- #116 PR #122: German (`de`, Sie, „…“, Strg/Entf), `listing.de.md`; Store
+  names from the Store catalog service (market DE). Translator glossaries
+  live in each language PR's body.
+- #124 PR #125: English Store names follow the catalog (HEIF Image Extension,
+  WebP Image Extension; keys unchanged); the plural-fallback test reads a
+  test-only resx. Store names: `displaycatalog.mp.microsoft.com` ProductTitle.

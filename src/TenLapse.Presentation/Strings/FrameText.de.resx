@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  German (de) translation of FrameText.resx (#116). The English file's comments are the brief for each key.
+  "Bildformat" is the video's shape (this panel); "Bild" alone is one picture of the video (filmstrip, export).
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Bildformat</value>
+  </data>
+  <data name="ShapeName" xml:space="preserve">
+    <value>Seitenverhältnis</value>
+  </data>
+  <data name="FitName" xml:space="preserve">
+    <value>Anpassung</value>
+  </data>
+  <data name="ShapeMatch" xml:space="preserve">
+    <value>Fotos</value>
+  </data>
+  <data name="ShapeMatchName" xml:space="preserve">
+    <value>Wie die Fotos</value>
+  </data>
+  <data name="FitOption" xml:space="preserve">
+    <value>Anpassen</value>
+  </data>
+  <data name="FillOption" xml:space="preserve">
+    <value>Ausfüllen</value>
+  </data>
+  <data name="FitHint" xml:space="preserve">
+    <value>„{0}“ zeigt das ganze Foto, mit Balken, wo die Formate abweichen.</value>
+  </data>
+  <data name="FillHint" xml:space="preserve">
+    <value>„{0}“ schneidet die Ränder ab, damit das Bild keine Balken hat.</value>
+  </data>
+  <data name="MatchingPhotos" xml:space="preserve">
+    <value>Wie Ihre Fotos: {0} × {1}.</value>
+  </data>
+  <data name="MatchingNoPhotos" xml:space="preserve">
+    <value>Wie Ihre Fotos. Bis ihre Größe bekannt ist, gilt 16:9.</value>
+  </data>
+  <data name="NoSize" xml:space="preserve">
+    <value>Fotos dieser Breite oder Höhe sind zu groß, um sie auf diesem PC zu exportieren. Wählen Sie ein festes Bildformat wie 16:9 aus.</value>
+  </data>
+  <data name="PortraitHint" xml:space="preserve">
+    <value>Die meisten Ihrer Fotos sind im Hochformat, deshalb passt 9:16 besser.</value>
+  </data>
+  <data name="PortraitApply" xml:space="preserve">
+    <value>9:16 verwenden</value>
+  </data>
+  <data name="PortraitDismiss" xml:space="preserve">
+    <value>Ausblenden</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>{0}: {1}, {2}.</value>
+  </data>
+</root>
