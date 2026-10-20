@@ -42,7 +42,7 @@
     <value>Non leggibile</value>
   </data>
   <data name="EmptyFile" xml:space="preserve">
-    <value>File vuoto (0 byte)</value>
+    <value>File vuoto (0 byte)</value>
   </data>
   <data name="Truncated" xml:space="preserve">
     <value>File danneggiato: incompleto</value>

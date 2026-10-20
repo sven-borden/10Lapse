@@ -42,7 +42,7 @@
     <value>“{0}” mostra la foto intera, con bande dove le proporzioni sono diverse.</value>
   </data>
   <data name="FillHint" xml:space="preserve">
-    <value>“{0}” ritaglia i bordi per non lasciare bande nel video.</value>
+    <value>“{0}” ritaglia i bordi per non lasciare bande.</value>
   </data>
   <data name="MatchingPhotos" xml:space="preserve">
     <value>Come le tue foto: {0} × {1}.</value>

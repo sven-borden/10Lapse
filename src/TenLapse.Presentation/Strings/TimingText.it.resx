@@ -54,7 +54,7 @@
     <value>s per foto</value>
   </data>
   <data name="NotANumberFramesPerSecond" xml:space="preserve">
-    <value>Digita una frequenza da {0} a {1} fps, ad esempio 24 o {2}.</value>
+    <value>Digita una frequenza da {0} a {1} fps, ad esempio 24 o {2}.</value>
   </data>
   <data name="NotANumberLength" xml:space="preserve">
     <value>Digita una durata in secondi, ad esempio 30, oppure in minuti e secondi, ad esempio 1:30. Può andare da {0} a {1}.</value>
@@ -63,7 +63,7 @@
     <value>Digita per quanti secondi resta ogni foto, da {0} a {1}.</value>
   </data>
   <data name="ClampedFramesPerSecond" xml:space="preserve">
-    <value>La frequenza va da {2} a {3} fps, quindi {0} ora è {1}.</value>
+    <value>La frequenza va da {2} a {3} fps, quindi {0} ora è {1}.</value>
   </data>
   <data name="ClampedLength" xml:space="preserve">
     <value>Un video può durare da {2} a {3}, quindi {0} ora è {1}.</value>

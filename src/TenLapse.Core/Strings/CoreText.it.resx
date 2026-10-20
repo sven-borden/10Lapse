@@ -24,19 +24,19 @@
     <value>fps</value>
   </data>
   <data name="SecondsFormat" xml:space="preserve">
-    <value>{0} s</value>
+    <value>{0} s</value>
   </data>
   <data name="MinutesSecondsFormat" xml:space="preserve">
-    <value>{0} min {1} s</value>
+    <value>{0} min {1} s</value>
   </data>
   <data name="HoursMinutesFormat" xml:space="preserve">
-    <value>{0} h {1} min</value>
+    <value>{0} h {1} min</value>
   </data>
   <data name="FramesPerSecondFormat" xml:space="preserve">
-    <value>{0} fps</value>
+    <value>{0} fps</value>
   </data>
   <data name="SecondsPerPhotoFormat" xml:space="preserve">
-    <value>{0} s per foto</value>
+    <value>{0} s per foto</value>
   </data>
   <data name="DefaultName" xml:space="preserve">
     <value>Timelapse</value>
