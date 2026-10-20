@@ -4,7 +4,7 @@ Updated 2026-10-19. Roadmap issue: #59. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. 2026-10-20: #106 (#38 accessibility) merged. **3.0 is code-complete.** Release prep (Sven's pick): #107 test matrix merged (`docs/test-matrix.md`). In flight: PR #108 (#40 flight prep) fix round, and #42 listing drafts. Each PR says Refs; the issues close once Sven's part is done.
+2026-10-19: #100 (#35 motion) and #102 (#101 timing bounds) merged. #103 (#39 strings) merged. #105 (#104 allocation flake) merged. 2026-10-20: #106 (#38 accessibility) merged. **3.0 is code-complete.** Release prep (Sven's pick): #107 test matrix and #108 flight prep merged (`docs/test-matrix.md`, `docs/release/`). In flight: PR #109 (#42 listing drafts) review. Each PR says Refs; the issues close once Sven's part is done.
 
 ## Waves
 
@@ -21,9 +21,9 @@ Waves 0 to 16 are done; every issue in them is under Merged below. #90
 | 17 | #104 Flaky allocation count (bug) | S | `tests/` Ordering | merged #105 |
 | 17 | #101 Flaky timing lower bound (bug) | S | `tests/` timing asserts | merged #102 |
 | 18 | #38 Accessibility pass | O | every view, `tools/` Axe.Windows scan | merged #106 |
-| 19 | #40 Flight prep (package check, guides) | S | `scripts/pack.ps1`, `docs/release/` | PR #108, fix round |
+| 19 | #40 Flight prep (package check, guides) | S | `scripts/pack.ps1`, `docs/release/` | merged #108 (issue open) |
 | 19 | #41 Test matrix document | S | `docs/test-matrix.md` | merged #107 (issue open) |
-| 20 | #42 Listing drafts and screenshots | O | `docs/store/`, screenshot script | in progress |
+| 20 | #42 Listing drafts and screenshots | O | `docs/store/`, screenshot script | PR #109, review |
 
 After wave 18, 3.0 is code-complete. Milestones 4 (private beta) and 5
 (relaunch) are mostly owner work; milestone 6 (3.1 creative tools) gets its
@@ -277,3 +277,8 @@ Details are in each PR's "What the next issues should know".
   `--shortcut-after`. Manual checks are on #41.
 - #41 PR #107 (refs only): `docs/test-matrix.md`, 119 rows from every merged
   PR's unchecked items, Windows 11 only; Sven and the testers tick it off.
+- #40 PR #108 (refs only): `scripts/pack.ps1` checks every package (identity,
+  version, Windows 11 minimum, only `runFullTrust`, App Runtime 2,
+  `ms-resource:` description, no Debug code) and bumps with `-Version x.y.z.0`
+  (writes the manifest before building). `docs/release/flight.md` (Sven's
+  Partner Center steps), `docs/release/beta-testers.md`, beta report form.
