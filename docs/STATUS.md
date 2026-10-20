@@ -4,7 +4,7 @@ Updated 2026-10-20. Roadmap: the pinned #59 and the milestones. Working agreemen
 
 ## Now
 
-2026-10-20: **Translations before the flight (Sven): wave 23 in flight**, #117 es and #118 it (Opus). Merged: #115 fr (PR #123), #116 de (PR #122), #124 (PR #125). Wave 21 merged (#113 PR #120, #114 PR #121). Then #117 to #119. Once #119 merges, the orchestrator runs `scripts/pack.ps1` for the flight; a `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
+2026-10-20: **Translations before the flight (Sven): waves 23-24**, #118 it (PR #127) and #119 pt-BR (PR #128) in review and fix. Merged: #115 fr (PR #123), #116 de (PR #122), #117 es (PR #126), #124 (PR #125). Wave 21 merged (#113 PR #120, #114 PR #121). Then #117 to #119. Once #119 merges, the orchestrator runs `scripts/pack.ps1` for the flight; a `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
 
 ## Waves
 
@@ -310,6 +310,9 @@ Details are in each PR's "What the next issues should know".
 - #115 PR #123: French (`fr`, vous, U+202F typography, "i/s"; free/paid as
   invariant "(sans frais)"/"(achat requis)"; Ctrl+Z "remet", never
   "rétablir", which is Redo), `listing.fr.md`.
+- #117 PR #126: Spanish (`es`, tú, "equipo" for PC; "video" without the
+  accent for Latin America, MX Store names where ES and MX differ; `_many`
+  with "de"; Ctrl+Z "devolver al proyecto"), `listing.es.md`.
 - #116 PR #122: German (`de`, Sie, „…“, Strg/Entf), `listing.de.md`; Store
   names from the Store catalog service (market DE). Translator glossaries
   live in each language PR's body.
