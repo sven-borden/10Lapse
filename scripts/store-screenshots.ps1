@@ -18,12 +18,12 @@
         07-settings         the Settings page, light
         08-narrow           a narrow window (portrait, -NarrowSize) framed 4:5, the Frame tab under the preview, light
 
-    The screenshots to upload come from a real shoot: -PhotoFolder imports that folder (Debug --motion-import, through
+    The photos are generated sunsets (Debug --sample-frames with --sample-plain) at 4500 x 3000, a camera's size, so
+    the export shots show real speeds; these are the uploaded set (Sven's choice, 2026-10-20). They take about 2 GB
+    under the test folder, deleted at the end. -PhotoFolder imports a real set instead (Debug --motion-import, through
     the same view model as Choose folder) for every shot with photos, and -SlideshowFolder (about 24 photos) feeds the
     Per photo shot. Without -SlideshowFolder that shot always uses 24 generated photos, since a whole shoot at 3 s a
-    photo would not read as a slideshow. Without -PhotoFolder the photos are generated sunsets (Debug --sample-frames
-    with --sample-plain) at 4500 x 3000, a camera's size, so the export shots show realistic speeds; they check the
-    layout and are not for upload. They take about 2 GB under the test folder, deleted at the end.
+    photo would not read as a slideshow.
 
     The Store takes desktop screenshots from 1366 x 768 (768 x 1366 portrait) up to 3840 x 2160, PNG. -Size 3840x2160
     needs a monitor whose largest window holds that client area (the script skips a shot it cannot size and says so).

@@ -159,11 +159,11 @@ Desktop: PNG, 1366 x 768 or larger in landscape or portrait, up to 3840 x 2160, 
 200 characters each. Keep key content in the top two thirds (the Store may lay text over the bottom third).
 `scripts/store-screenshots.ps1` makes them into `dist/store-screenshots/` (git-ignored).
 
-The uploaded set comes from a real shoot: Sven chooses the photos (as in #30) and runs
-`pwsh -File scripts/store-screenshots.ps1 -PhotoFolder <a tripod shoot> -SlideshowFolder <about 24 photos>`.
-`-SlideshowFolder` feeds the Per photo shot (06); without it, that shot uses 24 generated photos. Without
-`-PhotoFolder` the script uses generated sunsets at 4500 x 3000 (about 2 GB of temporary data, deleted at the end):
-they only check the layout and give the export shots realistic speeds; do not upload them.
+The uploaded set is the one `pwsh -File scripts/store-screenshots.ps1` makes from the generated sample photos
+(`--sample-plain` sunsets at 4500 x 3000, a camera's size, so the export shots show real speeds; about 2 GB of
+temporary data, deleted at the end). Sven chose them over a real shoot (2026-10-20) as the more polished set.
+`-PhotoFolder <a tripod shoot>` still imports a real set instead, and `-SlideshowFolder <about 24 photos>` feeds the
+Per photo shot (06); without it, that shot always uses 24 generated photos.
 
 Upload six, in this order; captions are 55 to 91 characters.
 
