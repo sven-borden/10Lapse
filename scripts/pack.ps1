@@ -25,7 +25,10 @@
     exits 1, listing each problem, when the x64 or ARM64 package (or the bundle) has the
     wrong identity or version, a target other than Windows.Desktop 10.0.22000.0,
     any capability but runFullTrust, no Windows App Runtime 2 dependency, a
-    resources.pri without the AppDescription string, or Debug-only code (the
+    resources.pri without the AppDescription string of every language, a
+    language list other than the src/TenLapse.App/Strings/<lang> folders, a
+    missing <lang>/<Assembly>.resources.dll for an X.<lang>.resx (every
+    language stays in the main package, #113), or Debug-only code (the
     Debugging and Gallery types, or any of their launch switches, in the
     TenLapse assemblies).
 
@@ -195,7 +198,31 @@ function Test-ExactLiteral([string]$text, [string]$literal) {
     return $text.Contains($prefix + $utf16, [System.StringComparison]::Ordinal)
 }
 
-function Get-ArchPackageProblem([System.IO.Compression.ZipArchive]$package, [string]$arch, [string[]]$debugLiterals, [string]$descriptionText) {
+# The languages the sources hold (#113): each src/TenLapse.App/Strings/<lang>/Resources.resw, with its AppDescription text,
+# and each <lang>/<Assembly>.resources.dll the X.<lang>.resx files under src/<Assembly>/Strings must produce.
+function Get-AppDescription([string]$reswPath) {
+    $node = ([xml](Get-Content $reswPath -Raw)).SelectSingleNode("//data[@name='AppDescription']/value")
+    if (-not $node -or -not $node.InnerText.Trim()) { Stop-Pack "$reswPath has no AppDescription string" }
+    return $node.InnerText.Trim()
+}
+
+function Get-SourceLanguage {
+    $descriptions = [ordered]@{}
+    foreach ($folder in Get-ChildItem (Join-Path $root 'src\TenLapse.App\Strings') -Directory | Sort-Object Name) {
+        $resw = Join-Path $folder.FullName 'Resources.resw'
+        if (Test-Path $resw) { $descriptions[$folder.Name] = Get-AppDescription $resw }
+    }
+    $satellites = foreach ($resx in Get-ChildItem (Join-Path $root 'src') -Filter '*.resx' -File -Recurse) {
+        if ($resx.FullName -match '[\\/](obj|bin)[\\/]' -or $resx.Directory.Name -ne 'Strings') { continue }
+        $parts = $resx.BaseName.Split('.')
+        if ($parts.Count -lt 2) { continue }
+        # The assembly is the project folder's name (src/TenLapse.Presentation/Strings/ProjectText.fr.resx).
+        '{0}/{1}.resources.dll' -f $parts[-1], $resx.Directory.Parent.Name
+    }
+    return @{ Descriptions = $descriptions; Satellites = @($satellites | Sort-Object -Unique) }
+}
+
+function Get-ArchPackageProblem([System.IO.Compression.ZipArchive]$package, [string]$arch, [string[]]$debugLiterals, [System.Collections.IDictionary]$descriptions, [string[]]$satellites) {
     $problems = [System.Collections.Generic.List[string]]::new()
     $manifestEntry = $package.GetEntry('AppxManifest.xml')
     if (-not $manifestEntry) { return @("the $arch package has no AppxManifest.xml") }
@@ -229,16 +256,32 @@ function Get-ArchPackageProblem([System.IO.Compression.ZipArchive]$package, [str
         $problems.Add("the $arch package Description is '$description', expected ms-resource:AppDescription")
     }
 
-    # resources.pri: the AppDescription resource exists and carries the text of Strings/en-US/Resources.resw.
+    # Every language in the main package (#113): the manifest declares exactly the Strings/<lang> folders, and each
+    # language's satellite assemblies sit beside the exe, where .NET looks (a language resource package would hide them).
+    $declared = @($built.SelectNodes('//m:Resources/m:Resource[@Language]', $ns) | ForEach-Object { $_.GetAttribute('Language').ToUpperInvariant() } | Sort-Object -Unique)
+    $expectedLanguages = @($descriptions.Keys | ForEach-Object { $_.ToUpperInvariant() } | Sort-Object -Unique)
+    if (($declared -join ',') -ne ($expectedLanguages -join ',')) {
+        $problems.Add("the $arch package declares the languages '$($declared -join ', ')'; the Strings folders are '$($expectedLanguages -join ', ')'")
+    }
+    foreach ($satellite in $satellites) {
+        if (-not $package.GetEntry($satellite)) {
+            $problems.Add("the $arch package has no $satellite, so that language would show in English")
+        }
+    }
+
+    # resources.pri: the AppDescription resource exists and carries the text of every Strings/<lang>/Resources.resw.
     $pri = $package.GetEntry('resources.pri')
     if (-not $pri) {
         $problems.Add("the $arch package has no resources.pri, so ms-resource:AppDescription cannot resolve")
     }
     else {
+        # Searched as bytes (the PRI and each needle as Latin-1, one char per byte): MRT stores a string as UTF-8 or as
+        # UTF-16LE, and a translated description (é, ’, œ, a narrow no-break space) only matches in its real encoding.
         $priText = $latin1.GetString((Read-ZipBytes $pri))
-        foreach ($needle in 'AppDescription', $descriptionText) {
-            $wide = ($needle.ToCharArray() | ForEach-Object { "$_" }) -join "`0"
-            if (-not $priText.Contains($needle, [System.StringComparison]::Ordinal) -and -not $priText.Contains($wide, [System.StringComparison]::Ordinal)) {
+        foreach ($needle in @('AppDescription') + @($descriptions.Values)) {
+            $utf8 = $latin1.GetString([System.Text.Encoding]::UTF8.GetBytes($needle))
+            $utf16 = $latin1.GetString([System.Text.Encoding]::Unicode.GetBytes($needle))
+            if (-not $priText.Contains($utf8, [System.StringComparison]::Ordinal) -and -not $priText.Contains($utf16, [System.StringComparison]::Ordinal)) {
                 $problems.Add("the $arch resources.pri does not hold '$needle'")
             }
         }
@@ -269,9 +312,8 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $bundle = Get-ChildItem $outDir -Filter '*.msixbundle' -File -Recurse | Select-Object -First 1
 $debugLiterals = Get-DebugLiteral
 if ($debugLiterals.Count -eq 0) { Stop-Pack 'found no Debug launch switches in the sources, so the Debug-only code check cannot work; has the Debugging folder moved?' }
-$resourcesPath = Join-Path $root 'src\TenLapse.App\Strings\en-US\Resources.resw'
-$descriptionNode = ([xml](Get-Content $resourcesPath -Raw)).SelectSingleNode("//data[@name='AppDescription']/value")
-if (-not $descriptionNode -or -not $descriptionNode.InnerText) { Stop-Pack "$resourcesPath has no AppDescription string" }
+$sourceLanguages = Get-SourceLanguage
+if (-not $sourceLanguages.Descriptions.Contains('en-US')) { Stop-Pack 'src\TenLapse.App\Strings\en-US\Resources.resw is missing' }
 $packageProblems = [System.Collections.Generic.List[string]]::new()
 $zip = [System.IO.Compression.ZipFile]::OpenRead($bundle.FullName)
 try {
@@ -288,7 +330,7 @@ try {
         if (-not $partName) { continue }
         $partStream = [System.IO.MemoryStream]::new((Read-ZipBytes $zip.GetEntry($partName)))
         $package = [System.IO.Compression.ZipArchive]::new($partStream, [System.IO.Compression.ZipArchiveMode]::Read)
-        try { foreach ($problem in (Get-ArchPackageProblem $package $arch $debugLiterals $descriptionNode.InnerText.Trim())) { $packageProblems.Add($problem) } }
+        try { foreach ($problem in (Get-ArchPackageProblem $package $arch $debugLiterals $sourceLanguages.Descriptions $sourceLanguages.Satellites)) { $packageProblems.Add($problem) } }
         finally { $package.Dispose() }
     }
 }

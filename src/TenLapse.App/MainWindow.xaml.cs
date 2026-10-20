@@ -88,6 +88,8 @@ public sealed partial class MainWindow : Window
 
         _startup.Phase("building the shell");
         _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter, preview, exportServices(_exportFeedback));
+        // The language of the text (#113), for WinUI's own strings, line breaks and font fallback; the tree inherits it.
+        _shell.Language = AppLanguage.Tag;
         Content = _shell;
         _closeGate = new WindowCloseGate(() => _shell.Export.MayCloseNow, _shell.Export.PrepareToCloseAsync, _shell.Export.CancelForClose, Close, presenter);
         _startup.Phase("setting the title bar and the backdrop");

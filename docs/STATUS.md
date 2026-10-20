@@ -4,7 +4,7 @@ Updated 2026-10-20. Roadmap: the pinned #59 and the milestones. Working agreemen
 
 ## Now
 
-2026-10-20: **Translations before the flight (Sven): wave 21 in flight**, #113 and #114 (Opus) in parallel. Then the five languages, #115 to #119. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
+2026-10-20: **Translations before the flight (Sven): wave 21**, #113 merged (PR #120), #114 (Opus) in flight. Then the five languages, #115 to #119. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
 
 ## Waves
 
@@ -55,6 +55,12 @@ Nothing blocks the build loop. Everything below waits until release is near
   audit put the work in #113 (runtime, packaging, tests) and #114 (plurals,
   format strings, culture-aware numbers, layout). Translations use Opus: the
   text is the product in those markets and no native reviewer is on hand.
+- 2026-10-20 (#113, PR #120): the bundle splits by `DXFeatureLevel` only;
+  every language stays in the main package (split by `Language`, the fr
+  resource package never reached the bundle). `pack.ps1` checks the manifest
+  languages, the satellites and the PRI description (UTF-8 and UTF-16 bytes).
+  The UI culture comes from `AppLanguage.Apply`, first in `App()`, through
+  `ResourceLanguages.Match`; `CurrentCulture` stays the user's.
 - 2026-10-18 (Sven): the orchestrator merges each PR itself after the review,
   the fix round and a green gate on the PR branch.
 - 2026-10-18 (#3): solution `TenLapse.slnx`. Windows projects target
@@ -258,9 +264,8 @@ Details are in each PR's "What the next issues should know".
 - #96 PR #97: minimum OS 10.0.22000.0 (`TenLapseWindowsMinVersion`, manifest,
   README). The Mica fallback stays; the stale "Windows 10" comment in
   `Shell/ShellView.xaml` is left for #35.
-- #98 PR #99: cache tests wait for state, disposals and events, which the
-  caches record under `_gate` and then free and raise after it; positive state
-  is waited for, negative checks keep a short quiet window.
+- #98 PR #99: cache tests wait for state, disposals and events (recorded
+  under `_gate`, raised after it).
 - #35 PR #100: motion system (26 transitions, `ScreenMotion`, `ThemeCrossfade`,
   arrival develop and cascade, retime and reframe, InfoBar hold);
   `scripts/motion-check.ps1`; Debug `--motion-log`, `--motion-import=`,
@@ -303,3 +308,8 @@ Details are in each PR's "What the next issues should know".
   upload 02-06 and 01). Debug `--sample-plain`.
 - PR #112 (refs #43): the 30 s showreel in `docs/store/showreel/` (video in
   Git LFS), made by its `source/` (page, render, score); not the trailer.
+- #113 PR #120: Debug `--lang=<tag>` (process only, never persisted);
+  `TestCulture` pins en-US; `ResourceParityTests` (keys, placeholders, parse,
+  plural categories per language, resx ↔ resw); scripts pass `--lang=en-US`;
+  `store-screenshots.ps1 -Language`; test matrix 5.17. A translation adds
+  files only (`ResourceLanguages.Shipped` lists all six).
