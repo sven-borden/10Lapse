@@ -4,15 +4,13 @@
 
 [Get 10Lapse from the Microsoft Store](https://apps.microsoft.com/detail/9NBN2XH6S4D8)
 
-[![A whole evening as one frame, from blue sky to night: the 10Lapse showreel](docs/store/showreel/thumbnail.png)](docs/store/showreel/10Lapse-showreel.mp4)
+![A whole evening as one frame, from blue sky to night](docs/store/showreel/thumbnail.png)
 
-*From daylight to night in one frame. Click for the 30-second showreel, the trailer of the Store listing (an MP4 in Git LFS).*
+*From daylight to night in one frame.*
 
 ![10Lapse with a sunset sequence imported: the preview, the filmstrip, and the speed and output panels](docs/store/screenshots/en-US/02-editing.png)
 
 ![The same photos framed 9:16 for a phone, in the light theme](docs/store/screenshots/en-US/03-vertical.png)
-
-How the showreel is made: [`docs/store/showreel/`](docs/store/showreel/).
 
 ## Status
 
