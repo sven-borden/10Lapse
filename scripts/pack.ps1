@@ -84,11 +84,13 @@ if ($Version) {
     if ($problem) { Stop-Pack "-Version $problem" }
     $bytes = [System.IO.File]::ReadAllBytes($manifestPath)
     $hasBom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
-    $newText = $manifestText.Remove($versionMatch.Groups[2].Index, $versionMatch.Groups[2].Length).Insert($versionMatch.Groups[2].Index, $Version)
+    # Write the parsed form, so 3.00.1.0 or 00003.0.1.0 reach the manifest as 3.0.1.0 (the Store may reject leading zeros).
+    $normalized = ([version]$Version).ToString()
+    $newText = $manifestText.Remove($versionMatch.Groups[2].Index, $versionMatch.Groups[2].Length).Insert($versionMatch.Groups[2].Index, $normalized)
     [System.IO.File]::WriteAllText($manifestPath, $newText, [System.Text.UTF8Encoding]::new($hasBom))
-    Write-Host "pack: version $currentVersion -> $Version in $manifestPath"
+    Write-Host "pack: version $currentVersion -> $normalized in $manifestPath"
     $manifestText = $newText
-    $currentVersion = [version]$Version
+    $currentVersion = [version]$normalized
 }
 if ($BumpOnly) {
     if (-not $Version) { Stop-Pack '-BumpOnly needs -Version' }

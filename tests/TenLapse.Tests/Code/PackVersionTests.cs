@@ -36,6 +36,17 @@ public sealed partial class PackVersionTests : IDisposable
         Assert.Equal(_original.Replace("Version=\"" + IdentityVersion(_original) + "\"", "Version=\"99.0.1.0\"", StringComparison.Ordinal), written);
     }
 
+    [Theory]
+    [InlineData("3.00.1.0")]
+    [InlineData("00003.0.1.0")]
+    public async Task LeadingZerosAreWrittenWithoutThem(string version)
+    {
+        var (exit, _) = await BumpAsync(version);
+
+        Assert.Equal(0, exit);
+        Assert.Equal("3.0.1.0", IdentityVersion(File.ReadAllText(_manifest)));
+    }
+
     [Fact]
     public void TheManifestVersionEndsInZeroAndIsAboveTheLegacyStoreVersion()
     {
