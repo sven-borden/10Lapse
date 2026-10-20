@@ -64,7 +64,7 @@ public sealed class PhotoDecoderTests : IDisposable
     [Fact]
     public async Task WebPDecodesWhenItsDecoderIsInstalled()
     {
-        Assert.SkipWhen(PhotoCodecs.DecoderFor(".webp") is null, "No WebP decoder on this PC (the WebP Image Extension are missing).");
+        Assert.SkipWhen(PhotoCodecs.DecoderFor(".webp") is null, "No WebP decoder on this PC (the WebP Image Extension is missing).");
         // A 1x1 lossless WebP; WIC has no WebP encoder to write one.
         var path = _files.PathOf("pixel.webp");
         await File.WriteAllBytesAsync(path, Convert.FromBase64String("UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA=="), Token);
@@ -79,7 +79,7 @@ public sealed class PhotoDecoderTests : IDisposable
     [Fact]
     public async Task HeicDecodesWhenWindowsCanWriteAndReadIt()
     {
-        Assert.SkipWhen(PhotoCodecs.DecoderFor(".heic") is null, "No HEIF decoder on this PC (the HEIF Image Extension are missing).");
+        Assert.SkipWhen(PhotoCodecs.DecoderFor(".heic") is null, "No HEIF decoder on this PC (the HEIF Image Extension is missing).");
         var canEncode = BitmapEncoder.GetEncoderInformationEnumerator().Any(e => e.CodecId == BitmapEncoder.HeifEncoderId);
         Assert.SkipUnless(canEncode, "No HEIF encoder on this PC to write a test HEIC (it needs the HEIF and HEVC extensions).");
         string path;
