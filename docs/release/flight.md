@@ -36,7 +36,7 @@ Menus move around in Partner Center; the names below are what to look for.
 - They must be signed in to the Microsoft Store with the invited account.
 - Once the flight is published the Store offers it as a normal update of 10Lapse (Library, Get updates). A tester who never installed 10Lapse opens the Store page of 10Lapse and installs it; the Store gives them the flight build because they are in the group. Allow a few hours after publishing for it to appear.
 - The Windows App Runtime 2 comes with the install; they need nothing else. The listing page still says 2.1.1 for the public, which is expected.
-- Send them `docs/release/beta-testers.md` (paste the text into an email; they do not need the repository).
+- Send them `docs/release/beta-testers.md` (paste the text into an email; they do not need the repository). Add your email line when you paste the guide: it tells testers without a GitHub account to send their report to Sven by email, and the repository holds no address.
 
 ## 4. Windows 10
 
