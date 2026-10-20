@@ -246,7 +246,7 @@ public sealed class FramePanelViewModel : ObservableObject, IDisposable
         var settings = _project.FrameSettings;
         if (settings != before)
         {
-            Announced?.Invoke(this, FrameText.Format(CultureInfo.CurrentCulture, FrameText.Announcement, FrameText.ShapeFullName(settings.Aspect), _fitLabels[Array.IndexOf(_fits, settings.Fit)]));
+            Announced?.Invoke(this, FrameText.Announce(settings.Aspect, settings.Fit));
         }
     }
 
@@ -258,7 +258,7 @@ public sealed class FramePanelViewModel : ObservableObject, IDisposable
 
                 SetProperty(ref _shapeIndex, Array.IndexOf(_aspects, settings.Aspect), nameof(SelectedShapeIndex));
                 SetProperty(ref _fitIndex, Array.IndexOf(_fits, settings.Fit), nameof(SelectedFitIndex));
-                SetProperty(ref _description, settings.Fit == FitMode.Fill ? FrameText.FillHint : FrameText.FitHint, nameof(Description));
+                SetProperty(ref _description, FrameText.Hint(settings.Fit), nameof(Description));
 
                 var matchLine = settings.Aspect == FrameAspect.MatchPhotos ? MatchLineFor(_project.Snapshot) : string.Empty;
                 if (SetProperty(ref _matchLine, matchLine, nameof(MatchLine)))

@@ -49,12 +49,12 @@
     <comment>The second part of the Fit or Fill switch: fill the frame and cut the photo's edges. Keep it to about 12 characters.</comment>
   </data>
   <data name="FitHint" xml:space="preserve">
-    <value>Fit shows the whole photo with bars where shapes differ.</value>
-    <comment>The line under the switches when Fit is chosen. Start with the same word as FitOption.</comment>
+    <value>{0} shows the whole photo with bars where shapes differ.</value>
+    <comment>The line under the switches when Fit is chosen. {0} the option's label, FitOption ("Fit"), so the line always matches the switch.</comment>
   </data>
   <data name="FillHint" xml:space="preserve">
-    <value>Fill crops the edges so the frame has no bars.</value>
-    <comment>The line under the switches when Fill is chosen. Start with the same word as FillOption.</comment>
+    <value>{0} crops the edges so the frame has no bars.</value>
+    <comment>The line under the switches when Fill is chosen. {0} the option's label, FillOption ("Fill"), so the line always matches the switch.</comment>
   </data>
   <data name="MatchingPhotos" xml:space="preserve">
     <value>Matching your photos: {0} × {1}.</value>
@@ -81,7 +81,7 @@
     <comment>The suggestion's button that hides it for this project. Keep it to about 14 characters.</comment>
   </data>
   <data name="Announcement" xml:space="preserve">
-    <value>Frame: {0}, {1}.</value>
-    <comment>Read by a screen reader after a change in the Frame panel. {0} the shape's name ("16:9", "Match photos"), {1} FitOption or FillOption.</comment>
+    <value>{0}: {1}, {2}.</value>
+    <comment>Read by a screen reader after a change in the Frame panel ("Frame: 16:9, Fit."). {0} the panel's heading, Heading ("Frame"), {1} the shape's name ("16:9", "Match photos"), {2} FitOption or FillOption. Adjust the punctuation to your language's rules.</comment>
   </data>
 </root>

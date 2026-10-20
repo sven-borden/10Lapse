@@ -35,7 +35,7 @@ public sealed class FramePanelViewModelTests
         Assert.Equal(["Fit", "Fill"], panel.FitLabels);
         Assert.Equal(1, panel.SelectedShapeIndex);
         Assert.Equal(1, panel.SelectedFitIndex);
-        Assert.Equal(FrameText.FillHint, panel.Description);
+        Assert.Equal(FrameText.Hint(FitMode.Fill), panel.Description);
         Assert.False(panel.HasMatchLine);
         Assert.False(panel.HasPortraitHint);
     }
@@ -102,7 +102,7 @@ public sealed class FramePanelViewModelTests
 
         Assert.Equal(4, panel.SelectedShapeIndex);
         Assert.Equal(0, panel.SelectedFitIndex);
-        Assert.Equal(FrameText.FitHint, panel.Description);
+        Assert.Equal(FrameText.Hint(FitMode.Fit), panel.Description);
     }
 
     [Theory]
