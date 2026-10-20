@@ -126,7 +126,7 @@
     <value>Des photos sont encore en cours d’ajout. Exportez quand elles seront toutes là.</value>
   </data>
   <data name="ChangedDuringDialogFormat" xml:space="preserve">
-    <value>L’exportation n’a pas démarré, car le projet ou sa sortie a changé pendant que la boîte de dialogue Enregistrer était ouverte. Choisissez de nouveau « {0} ».</value>
+    <value>L’exportation n’a pas démarré, car le projet ou ses paramètres de sortie ont changé pendant que la boîte de dialogue Enregistrer était ouverte. Choisissez de nouveau « {0} ».</value>
   </data>
   <data name="PremiereCantPlayFormat" xml:space="preserve">
     <value>La vidéo a été enregistrée, mais 10Lapse ne peut pas la lire ici. Utilisez « {0} » pour l’ouvrir et la vérifier.</value>
@@ -150,7 +150,7 @@
     <value>Exportation de {0}.</value>
   </data>
   <data name="ProgressAnnouncementFormat" xml:space="preserve">
-    <value>{0} pour cent exportés.</value>
+    <value>Exportation : {0} pour cent.</value>
   </data>
   <data name="FailedAnnouncement" xml:space="preserve">
     <value>L’exportation s’est arrêtée.</value>

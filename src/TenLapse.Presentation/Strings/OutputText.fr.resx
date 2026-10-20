@@ -39,10 +39,10 @@
     <value>10Lapse n’a pas pu vérifier les encodeurs vidéo de ce PC : il propose donc le H.264 jusqu’en 1080p.</value>
   </data>
   <data name="FormatReplaced" xml:space="preserve">
-    <value>{0} ne peut pas être exporté sur ce PC : {1} est donc sélectionné.</value>
+    <value>Ce PC ne peut pas exporter en {0} : {1} est donc sélectionné.</value>
   </data>
   <data name="ResolutionReplaced" xml:space="preserve">
-    <value>{0} ne peut pas être exporté sur ce PC avec ces paramètres : {1} est donc sélectionné.</value>
+    <value>Ce PC ne peut pas exporter en {0} avec ces paramètres : {1} est donc sélectionné.</value>
   </data>
   <data name="ResolutionReplacedByShape" xml:space="preserve">
     <value>{0} n’est pas disponible avec ces proportions sur ce PC : {1} est donc sélectionné. Votre choix {0} reviendra avec des proportions qui le permettent.</value>

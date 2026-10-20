@@ -81,9 +81,9 @@
     <value>Arrondi à {0}.</value>
   </data>
   <data name="LengthTooShort" xml:space="preserve">
-    <value>Vos photos ne peuvent pas tenir en {0} : la vitesse la plus rapide est {1}, la vidéo dure donc {2}.</value>
+    <value>Vos photos ne peuvent pas tenir en {0} : la vitesse maximale est de {1}, la vidéo dure donc {2}.</value>
   </data>
   <data name="LengthTooLong" xml:space="preserve">
-    <value>Vos photos ne peuvent pas remplir {0} : la vitesse la plus lente est {1}, la vidéo dure donc {2}.</value>
+    <value>Vos photos ne peuvent pas remplir {0} : la vitesse minimale est de {1}, la vidéo dure donc {2}.</value>
   </data>
 </root>

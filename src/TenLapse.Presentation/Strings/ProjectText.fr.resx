@@ -114,7 +114,7 @@
     <value>Le lecteur ou le dossier réseau a été déconnecté. Reconnectez-le, puis réessayez.</value>
   </data>
   <data name="ErrorCannotRead" xml:space="preserve">
-    <value>Un fichier est illisible : le lecteur ou la carte mémoire qui le contient est peut-être endommagé. Copiez les photos sur un autre lecteur, puis réessayez.</value>
+    <value>Un fichier est illisible : le support qui le contient (disque ou carte mémoire) est peut-être endommagé. Copiez les photos sur un autre disque, puis réessayez.</value>
   </data>
   <data name="ErrorClipboardBusy" xml:space="preserve">
     <value>Une autre application utilise le Presse-papiers. Réessayez dans un instant.</value>
@@ -228,7 +228,7 @@
     <value>Lire</value>
   </data>
   <data name="PreviewPause" xml:space="preserve">
-    <value>Pause</value>
+    <value>Mettre en pause</value>
   </data>
   <data name="PreviewScrubberName" xml:space="preserve">
     <value>Image</value>
@@ -312,28 +312,28 @@
     <value>Ajouter {0} de photos</value>
   </data>
   <data name="DragCaptionSettingsOpen" xml:space="preserve">
-    <value>Fermez les paramètres pour ajouter des photos</value>
+    <value>Fermez Paramètres pour ajouter des photos</value>
   </data>
   <data name="DropTitle" xml:space="preserve">
     <value>Ajouter ces photos à ce projet ?</value>
   </data>
   <data name="DropMessage_one" xml:space="preserve">
-    <value>Ce projet contient {0} photo. Ajoutez-y les nouvelles photos, ou commencez un nouveau projet avec seulement celles-ci. Le nouveau projet remplace celui-ci, sa photo et ses paramètres ; le fichier reste sur votre PC.</value>
+    <value>Ce projet contient {0} photo. Ajoutez-y les nouvelles photos, ou commencez un nouveau projet avec ces seules photos. Le nouveau projet remplace le projet actuel, sa photo et ses paramètres ; le fichier reste sur votre PC.</value>
   </data>
   <data name="DropMessage_other" xml:space="preserve">
-    <value>Ce projet contient {0} photos. Ajoutez-y les nouvelles photos, ou commencez un nouveau projet avec seulement celles-ci. Le nouveau projet remplace celui-ci, ses photos et ses paramètres ; les fichiers restent sur votre PC.</value>
+    <value>Ce projet contient {0} photos. Ajoutez-y les nouvelles photos, ou commencez un nouveau projet avec ces seules photos. Le nouveau projet remplace le projet actuel, ses photos et ses paramètres ; les fichiers restent sur votre PC.</value>
   </data>
   <data name="DropMessage_many" xml:space="preserve">
-    <value>Ce projet contient {0} de photos. Ajoutez-y les nouvelles photos, ou commencez un nouveau projet avec seulement celles-ci. Le nouveau projet remplace celui-ci, ses photos et ses paramètres ; les fichiers restent sur votre PC.</value>
+    <value>Ce projet contient {0} de photos. Ajoutez-y les nouvelles photos, ou commencez un nouveau projet avec ces seules photos. Le nouveau projet remplace le projet actuel, ses photos et ses paramètres ; les fichiers restent sur votre PC.</value>
   </data>
   <data name="DropAddToProject" xml:space="preserve">
     <value>Ajouter au projet</value>
   </data>
   <data name="ImportNothingFound" xml:space="preserve">
-    <value>Aucune photo lisible par 10Lapse n’a été trouvée à cet endroit. Choisissez un dossier ou des fichiers JPEG, PNG, TIFF ou d’autres photos, puis réessayez.</value>
+    <value>Aucune photo lisible par 10Lapse n’a été trouvée à cet endroit. Choisissez un dossier ou des fichiers contenant des photos JPEG, PNG, TIFF ou autres, puis réessayez.</value>
   </data>
   <data name="ImportNothingFoundSubfoldersFormat" xml:space="preserve">
-    <value>Aucune photo n’a été trouvée dans ce dossier. Si elles se trouvent dans ses sous-dossiers, activez « {0} » sous « {1} », puis réessayez.</value>
+    <value>Aucune photo n’a été trouvée dans ce dossier. Si elles se trouvent dans ses sous-dossiers, activez « {0} » dans le menu « {1} », puis réessayez.</value>
   </data>
   <data name="ImportAlreadyAdded" xml:space="preserve">
     <value>Ces photos sont déjà dans ce projet.</value>
@@ -351,7 +351,7 @@
     <value>Ajout des photos arrêté. {0} de photos ont été ajoutées.</value>
   </data>
   <data name="ImportFolderFailedNamed" xml:space="preserve">
-    <value>Impossible d’ouvrir le dossier {0}. Vérifiez que son lecteur ou sa carte mémoire est connecté et que vous pouvez l’ouvrir dans l’Explorateur de fichiers, puis ajoutez-le de nouveau.</value>
+    <value>Impossible d’ouvrir le dossier {0}. Vérifiez que le support qui le contient (disque ou carte mémoire) est connecté et que le dossier s’ouvre dans l’Explorateur de fichiers, puis ajoutez-le de nouveau.</value>
   </data>
   <data name="ImportFoldersNotOpened_other" xml:space="preserve">
     <value>Impossible d’ouvrir {0} dossiers. Vérifiez que leurs lecteurs ou cartes mémoire sont connectés et que vous pouvez les ouvrir dans l’Explorateur de fichiers, puis ajoutez-les de nouveau.</value>
@@ -381,10 +381,10 @@
     <value>Ouvrir dans le Store</value>
   </data>
   <data name="CodecFree" xml:space="preserve">
-    <value>{0} (gratuit)</value>
+    <value>{0} (sans frais)</value>
   </data>
   <data name="CodecFee" xml:space="preserve">
-    <value>{0} (payant)</value>
+    <value>{0} (achat requis)</value>
   </data>
   <data name="CodecNeedsOne_one" xml:space="preserve">
     <value>Cette photo nécessite une extension de Microsoft : {1}.</value>
@@ -420,7 +420,7 @@
     <value>Déposez pour commencer votre timelapse</value>
   </data>
   <data name="FirstLaunchExplanationFormat" xml:space="preserve">
-    <value>{0} transforme vos photos en vidéo. Prenez une photo à quelques secondes d’intervalle, et {1} d’entre elles deviennent un clip de {3} secondes à {2} images par seconde.</value>
+    <value>{0} transforme vos photos en vidéo. Prenez des photos à quelques secondes d’intervalle : {1} d’entre elles donnent une vidéo de {3} secondes à {2} images par seconde.</value>
   </data>
   <data name="FirstLaunchPrivacy" xml:space="preserve">
     <value>Vos photos ne quittent jamais ce PC.</value>
@@ -448,6 +448,9 @@
   </data>
   <data name="FilmstripGapMissing_other" xml:space="preserve">
     <value>{0} photos semblent manquer avant celle-ci : la numérotation des fichiers saute {0} numéros.</value>
+  </data>
+  <data name="FilmstripGapMissing_many" xml:space="preserve">
+    <value>{0} de photos semblent manquer avant celle-ci : la numérotation des fichiers saute {0} de numéros.</value>
   </data>
   <data name="FilmstripGapPause" xml:space="preserve">
     <value>Des photos manquent peut-être avant celle-ci : elle a été prise {0} après la précédente, alors que l’intervalle habituel était d’environ {1}.</value>
@@ -483,25 +486,25 @@
     <value>Taille des miniatures</value>
   </data>
   <data name="FilmstripRemovedFrames_one" xml:space="preserve">
-    <value>{0} image retirée du projet. La photo reste sur votre PC. {1} la rétablit.</value>
+    <value>{0} image retirée du projet. La photo reste sur votre PC. {1} la remet dans le projet.</value>
   </data>
   <data name="FilmstripRemovedFrames_other" xml:space="preserve">
-    <value>{0} images retirées du projet. Les photos restent sur votre PC. {1} les rétablit.</value>
+    <value>{0} images retirées du projet. Les photos restent sur votre PC. {1} les remet dans le projet.</value>
   </data>
   <data name="FilmstripRemovedFrames_many" xml:space="preserve">
-    <value>{0} d’images retirées du projet. Les photos restent sur votre PC. {1} les rétablit.</value>
+    <value>{0} d’images retirées du projet. Les photos restent sur votre PC. {1} les remet dans le projet.</value>
   </data>
   <data name="FilmstripRestoredFrames_one" xml:space="preserve">
-    <value>{0} image rétablie.</value>
+    <value>{0} image remise dans le projet.</value>
   </data>
   <data name="FilmstripRestoredFrames_other" xml:space="preserve">
-    <value>{0} images rétablies.</value>
+    <value>{0} images remises dans le projet.</value>
   </data>
   <data name="FilmstripRestoredFrames_many" xml:space="preserve">
-    <value>{0} d’images rétablies.</value>
+    <value>{0} d’images remises dans le projet.</value>
   </data>
   <data name="FilmstripRestoredNone" xml:space="preserve">
-    <value>Rien à rétablir : ces photos sont de nouveau dans le projet.</value>
+    <value>Rien à remettre : ces photos sont de nouveau dans le projet.</value>
   </data>
   <data name="FilmstripUndoRemove_one" xml:space="preserve">
     <value>Annuler le retrait de {0} image</value>
