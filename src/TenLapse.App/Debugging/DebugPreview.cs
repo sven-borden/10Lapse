@@ -25,9 +25,9 @@ namespace TenLapse.Debugging;
 /// <list type="bullet">
 /// <item><c>--sample-frames=N</c> (parsed in DebugLaunch.cs) generates N photos of a sunset with their frame number
 /// burnt in, <c>--sample-size=WxH</c> (default 2400x1600), and adds them in batches of 100 as they are written.
-/// <c>--sample-plain</c> leaves out the frame number and the bar along the bottom (the Store screenshots, #42). They go
-/// into a folder named after the count, the look and the size (<c>Harbor sunset 742 grain 2400x1600</c>, or
-/// <c>Harbor sunset 742 grain plain 2400x1600</c>) under
+/// <c>--sample-plain</c> leaves out the frame number and the bar along the bottom and draws water below the horizon
+/// (the Store screenshots, #42). They go into a folder named after the count, the look and the size
+/// (<c>Harbor sunset 742 grain 2400x1600</c>, or <c>Harbor sunset 742 plain 2400x1600</c>) under
 /// <c>--sample-folder=PATH</c> (default %TEMP%\10Lapse debug samples). Files already there are reused, so the folder
 /// grows with every count and size tried (up to about 4 GB for 10,000 photos) until <c>--sample-clean</c> deletes it
 /// when the window closes. An agent passes <c>--sample-folder</c> under its own branch folder
@@ -85,7 +85,7 @@ internal static partial class DebugLaunch
         var plain = _args.Contains("--sample-plain", StringComparer.OrdinalIgnoreCase);
 
         // Each photo is drawn from its place in the sequence (index / count), so a folder holds one count and one look only.
-        var look = plain ? "grain plain" : "grain";
+        var look = plain ? "plain" : "grain";
         var folder = Path.Combine(root, string.Create(CultureInfo.InvariantCulture, $"Harbor sunset {count} {look} {width}x{height}"));
         _sampleFolder = folder;
         var stop = _closing.Token;
@@ -172,7 +172,8 @@ internal static partial class DebugLaunch
     }
 
     // A sunset in the brand's ramp: the sky darkens through the sequence, the sun sinks, the frame number sits top left
-    // and a bar along the bottom grows, so a wrong or late frame shows at a glance. Plain leaves out the number and the bar.
+    // and a bar along the bottom grows, so a wrong or late frame shows at a glance. Plain leaves out the number and the bar
+    // and draws water instead of land.
     private static async Task DrawSampleAsync(string path, int index, int count, int width, int height, Color[] ramp, Color land, bool plain)
     {
         var t = count <= 1 ? 0f : (float)index / (count - 1);
@@ -191,8 +192,34 @@ internal static partial class DebugLaunch
             }
 
             var sunY = height * (0.25f + (0.55f * t));
-            session.FillCircle(width * 0.63f, sunY, height * 0.06f, Along(ramp, 0.2f + (0.3f * t)));
-            session.FillRectangle(0, horizon, width, height - horizon, land);
+            var sun = Along(ramp, 0.2f + (0.3f * t));
+            session.FillCircle(width * 0.63f, sunY, height * 0.06f, sun);
+            if (plain)
+            {
+                // Water instead of flat land, which reads as a letterbox bar in a screenshot: the horizon's color
+                // darkening toward the bottom, and the sun's path on it while the sun is up.
+                var horizonColor = Along(ramp, Math.Min(1, t + 0.25f));
+                using (var water = new CanvasLinearGradientBrush(session, Darker(horizonColor, 0.6f), land)
+                {
+                    StartPoint = new Vector2(0, horizon),
+                    EndPoint = new Vector2(0, height),
+                })
+                {
+                    session.FillRectangle(0, horizon, width, height - horizon, water);
+                }
+
+                if (sunY < horizon)
+                {
+                    using (session.CreateLayer(0.2f))
+                    {
+                        session.FillEllipse(width * 0.63f, horizon + ((height - horizon) * 0.35f), height * 0.03f, (height - horizon) * 0.35f, sun);
+                    }
+                }
+            }
+            else
+            {
+                session.FillRectangle(0, horizon, width, height - horizon, land);
+            }
 
             // Fine grain over everything, different in every frame, so the files weigh and decode like photos rather
             // than like flat gradients.
@@ -222,6 +249,9 @@ internal static partial class DebugLaunch
         await target.SaveAsync(temporary, CanvasBitmapFileFormat.Jpeg, 0.9f);
         File.Move(temporary, path, overwrite: true);
     }
+
+    private static Color Darker(Color color, float factor) =>
+        Color.FromArgb(255, (byte)(color.R * factor), (byte)(color.G * factor), (byte)(color.B * factor));
 
     private static Color Along(Color[] ramp, float t)
     {
