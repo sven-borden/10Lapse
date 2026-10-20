@@ -296,7 +296,7 @@ Stock WinUI 3 controls with these tokens. The filmstrip, scrubber, preview gate 
 
 ### Segmented control
 - **Track:** Segment Track fill, Control Stroke border, 5 px corners, 2 px inset, 32 px tall.
-- **Selected:** a neutral Card pill with the Pill shadow and Body strong text. Never amber: it marks a setting, not an action.
+- **Selected:** a neutral Card pill with the Pill shadow and Body strong text. Never amber: it marks a setting, not an action. The pill is 1.14:1 (light) and 1.49:1 (dark) against the track, below WCAG 1.4.11's 3:1; Sven kept it as designed (2026-10-20), because the bold label and the radio selection state carry it. In high contrast the pill is Highlight and its label HighlightText (`SegmentPillInk`, Ink in light and dark), since Window and ButtonFace are one color in Windows' contrast themes.
 - **Motion:** the pill slides between options (250 ms Move). Arrow keys move the selection.
 - **Used for:** speed mode (Per second, Length, Per photo), speed value (24, 25, 30, 50, 60), shape (3:2, 16:9, 9:16, 1:1), Fit or Fill, and the narrow-window panel tabs.
 
