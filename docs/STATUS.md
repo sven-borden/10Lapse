@@ -4,7 +4,7 @@ Updated 2026-10-20. Roadmap: the pinned #59 and the milestones. Working agreemen
 
 ## Now
 
-2026-10-20: **Translations before the flight (Sven): wave 22**, #116 de merged (PR #122), #124 merged (PR #125); #115 fr (PR #123) in its fix round, #117 es building. Wave 21 merged (#113 PR #120, #114 PR #121). Then #117 to #119. Once #119 merges, the orchestrator runs `scripts/pack.ps1` for the flight; a `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
+2026-10-20: **Translations before the flight (Sven): wave 23 in flight**, #117 es and #118 it (Opus). Merged: #115 fr (PR #123), #116 de (PR #122), #124 (PR #125). Wave 21 merged (#113 PR #120, #114 PR #121). Then #117 to #119. Once #119 merges, the orchestrator runs `scripts/pack.ps1` for the flight; a `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
 
 ## Waves
 
@@ -307,6 +307,9 @@ Details are in each PR's "What the next issues should know".
   enforces); Store names in `Media/Strings/StoreExtensionText.resx`, never
   bound to an article or pronoun; `WrapRow`/`WrapLayout`; Debug
   `--motion-drop=`. `a11y-check.ps1` finds the build-26300 folder picker.
+- #115 PR #123: French (`fr`, vous, U+202F typography, "i/s"; free/paid as
+  invariant "(sans frais)"/"(achat requis)"; Ctrl+Z "remet", never
+  "rétablir", which is Redo), `listing.fr.md`.
 - #116 PR #122: German (`de`, Sie, „…“, Strg/Entf), `listing.de.md`; Store
   names from the Store catalog service (market DE). Translator glossaries
   live in each language PR's body.
