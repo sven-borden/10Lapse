@@ -4,7 +4,7 @@ Updated 2026-10-20. Roadmap: the pinned #59 and the milestones. Working agreemen
 
 ## Now
 
-2026-10-20: **Translations before the flight (Sven): wave 22**, #116 de merged (PR #122); #115 fr (PR #123) and the #124 chore (PR #125, English Store names) in their fix rounds. Wave 21 merged (#113 PR #120, #114 PR #121). Then #117 to #119. Once #119 merges, the orchestrator runs `scripts/pack.ps1` for the flight; a `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
+2026-10-20: **Translations before the flight (Sven): wave 22**, #116 de merged (PR #122), #124 merged (PR #125); #115 fr (PR #123) in its fix round, #117 es building. Wave 21 merged (#113 PR #120, #114 PR #121). Then #117 to #119. Once #119 merges, the orchestrator runs `scripts/pack.ps1` for the flight; a `v3.0.0` tag waits for the relaunch (#44) and Sven's OK. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
 
 ## Waves
 
@@ -310,3 +310,6 @@ Details are in each PR's "What the next issues should know".
 - #116 PR #122: German (`de`, Sie, „…“, Strg/Entf), `listing.de.md`; Store
   names from the Store catalog service (market DE). Translator glossaries
   live in each language PR's body.
+- #124 PR #125: English Store names follow the catalog (HEIF Image Extension,
+  WebP Image Extension; keys unchanged); the plural-fallback test reads a
+  test-only resx. Store names: `displaycatalog.mp.microsoft.com` ProductTitle.
