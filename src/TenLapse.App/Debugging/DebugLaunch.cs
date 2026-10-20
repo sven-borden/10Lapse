@@ -12,7 +12,8 @@ namespace TenLapse.Debugging;
 /// those Output settings in the project (to see the Output panel replace what this PC cannot do, with
 /// <c>--max-resolution</c> and the other switches in DebugOutputCapabilities.cs). <c>--theme=light|dark</c> is the
 /// gallery's switch (it sets the main window's theme too). <c>--frame=</c> is in DebugFrame.cs. <c>--crash=command|task|ui|unhandled</c>
-/// is in DebugCrash.cs. <c>--lang=&lt;tag&gt;</c> sets the app's language for the run (#113).
+/// is in DebugCrash.cs. <c>--lang=&lt;tag&gt;</c> sets the app's language for the run (#113), and <c>--region=&lt;tag&gt;</c> its
+/// regional format (numbers, dates; #129).
 /// </summary>
 internal static partial class DebugLaunch
 {
@@ -52,6 +53,33 @@ internal static partial class DebugLaunch
         }
 
         Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = culture.Name;
+    }
+
+    /// <summary>
+    /// The regional format for this run (<c>--region=fr-FR</c>, any BCP-47 tag, #129), or null for this PC's own. With
+    /// <c>--lang</c> it makes a screenshot native: French text with "16,0 s", not this PC's "16.0 s". The Store
+    /// screenshots script passes each language's main region.
+    /// </summary>
+    public static string? Region => Value("--region=");
+
+    /// <summary>
+    /// Sets <see cref="System.Globalization.CultureInfo.CurrentCulture"/> for this process only (the calling thread and
+    /// every thread started after it); nothing is written to Windows or the settings. A tag .NET does not know throws
+    /// <see cref="System.Globalization.CultureNotFoundException"/>, which the caller logs. Call it on the UI thread, before
+    /// anything reads a number or a date.
+    /// </summary>
+    /// <returns>A log line naming the format, or null without <c>--region</c>.</returns>
+    public static string? ApplyRegion()
+    {
+        if (Region is not { Length: > 0 } tag)
+        {
+            return null;
+        }
+
+        var culture = System.Globalization.CultureInfo.GetCultureInfo(tag);
+        System.Globalization.CultureInfo.DefaultThreadCurrentCulture = culture;
+        System.Globalization.CultureInfo.CurrentCulture = culture;
+        return $"Regional format {culture.Name} from the --region switch.";
     }
 
     /// <summary>The first-launch drop zone acts as with Windows animations off (<c>--reduce-motion</c>).</summary>

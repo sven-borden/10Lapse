@@ -27,12 +27,20 @@
 
     The Store takes desktop screenshots from 1366 x 768 (768 x 1366 portrait) up to 3840 x 2160, PNG. -Size 3840x2160
     needs a monitor whose largest window holds that client area (the script skips a shot it cannot size and says so).
-    Build Debug x64 first (dotnet build TenLapse.slnx -c Debug -p:Platform=x64). Output goes to
-    dist/store-screenshots/<Language> (git-ignored). The test data under %LOCALAPPDATA%\Temp\claude\<Branch> is deleted
-    at the end unless -KeepTestData.
+    The script builds the Debug x64 app of its own worktree first (an incremental build, a few seconds when nothing
+    changed), so a stale build can never make the shots: an exe older than the translations once gave English shots in
+    every language folder, silently. Output goes to docs/store/screenshots/<Language> (Git LFS, #129), so a rerun
+    updates the committed set. The test data under %LOCALAPPDATA%\Temp\claude\<Branch> is deleted at the end unless
+    -KeepTestData.
 
     -Language (default en-US) is the app's language for the set (Debug --lang, #113): a shipped one (en-US, fr, de, es,
     it, pt-BR) or any tag that maps to one. The script finds controls by AutomationId, so it works in every language.
+    -Region (Debug --region, #129) is the regional format for the numbers: by default the language's main region (en-US,
+    fr-FR, de-DE, es-ES, it-IT, pt-BR), so a French shot shows "16,0 s" whatever this PC's own format is.
+
+    A shot that fails (the window would not reach its size, the app was too slow) is made again from a fresh start, up
+    to three attempts, and the run says which shots needed more than one. -Only 04 makes both 04-exporting and
+    05-finished.
 
 .EXAMPLE
     pwsh -File scripts/store-screenshots.ps1
@@ -57,6 +65,8 @@ param(
     [string[]]$Only = @(),
     [ValidatePattern('^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$')]
     [string]$Language = 'en-US',
+    [ValidatePattern('^([A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*)?$')]
+    [string]$Region = '',
     [switch]$KeepTestData
 )
 
@@ -65,8 +75,24 @@ $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
 $exe = Join-Path $root 'src/TenLapse.App/bin/x64/Debug/net10.0-windows10.0.26100.0/win-x64/TenLapse.App.exe'
-if (-not (Test-Path $exe)) { throw "Build Debug x64 first: $exe" }
-if (-not $OutDir) { $OutDir = Join-Path $root "dist/store-screenshots/$Language" }
+if (-not $OutDir) { $OutDir = Join-Path $root "docs/store/screenshots/$Language" }
+
+# The regional format of the shots: the language's main region, so numbers read as a native customer's do.
+if (-not $Region) {
+    $mainRegions = @{ 'en-US' = 'en-US'; 'fr' = 'fr-FR'; 'de' = 'de-DE'; 'es' = 'es-ES'; 'it' = 'it-IT'; 'pt-BR' = 'pt-BR' }
+    $Region = if ($mainRegions.ContainsKey($Language)) { $mainRegions[$Language] } else { $Language }
+}
+
+# Build the Debug app of this worktree first: an exe built before the last change to a source or resource file would
+# make the shots of an older app (English in every language folder, once), without a word.
+$dotnetHome = Join-Path $env:LOCALAPPDATA 'Microsoft\dotnet'
+if (Test-Path $dotnetHome) { $env:PATH = "$dotnetHome;$env:PATH" }   # the user install has the SDK; a machine-wide dotnet may not
+$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+$env:DOTNET_NOLOGO = '1'
+Write-Host 'Building the Debug x64 app...'
+$buildLog = & dotnet build (Join-Path $root 'src/TenLapse.App/TenLapse.App.csproj') -c Debug -p:Platform=x64 -nologo -v:q 2>&1
+if ($LASTEXITCODE -ne 0) { $buildLog | Select-Object -Last 30 | ForEach-Object { Write-Host $_ }; throw 'The Debug build failed; no screenshots were made.' }
+if (-not (Test-Path $exe)) { throw "The build did not make $exe" }
 if ($PhotoFolder) { $PhotoFolder = (Resolve-Path $PhotoFolder).Path }
 if ($SlideshowFolder) { $SlideshowFolder = (Resolve-Path $SlideshowFolder).Path }
 
@@ -161,12 +187,15 @@ function Want([string]$id) { $Only.Count -eq 0 -or $Only -contains $id }
 
 $made = [System.Collections.Generic.List[string]]::new()
 $missed = [System.Collections.Generic.List[string]]::new()
+$retried = [System.Collections.Generic.List[string]]::new()
 $run = 0
+$sizeProblem = ''
 
 function Common([string]$theme) {
     $script:run++
     @(
         "--lang=$Language",
+        "--region=$Region",
         "--theme=$theme",
         "--settings-folder=$(Join-Path $base "settings-$script:run")",
         "--cache-folder=$(Join-Path $base 'cache')",
@@ -226,7 +255,16 @@ function Invoke-Element($element) {
 function Set-ClientSize($app, [string]$size) {
     [int]$w, [int]$h = $size -split 'x'
     $transform = $null
-    if (-not $app.Window.TryGetCurrentPattern([System.Windows.Automation.TransformPattern]::Pattern, [ref]$transform)) { return $false }
+    # A window still busy starting (the generated photos) may not answer UI Automation yet: the likely cause of a window
+    # that "cannot reach" its size on a PC that could (#129), so Sized waits and says which of the two it was.
+    $script:sizeProblem = 'the window offers no TransformPattern yet (still starting?)'
+    if (-not $app.Window.TryGetCurrentPattern([System.Windows.Automation.TransformPattern]::Pattern, [ref]$transform)) {
+        # Waiting did not always help (45 s in a few runs), so the element found at the start may have gone stale: look
+        # the window up again by its process, for the next try.
+        $fresh = $AE::RootElement.FindFirst($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ProcessIdProperty, $app.Process.Id)))
+        if ($fresh) { $app.Window = $fresh; $app.Handle = [IntPtr]$fresh.Current.NativeWindowHandle }
+        return $false
+    }
     if ($transform.Current.CanMove) { $transform.Move(0, 0) }
     for ($round = 0; $round -lt 5; $round++) {
         $client = [StoreShot]::Client($app.Handle)
@@ -236,8 +274,23 @@ function Set-ClientSize($app, [string]$size) {
         Start-Sleep -Milliseconds 700
     }
     $client = [StoreShot]::Client($app.Handle)
-    Write-Host "  client area is $($client[0])x$($client[1]), not $size"
+    $outer = [StoreShot]::Outer($app.Handle)
+    $script:sizeProblem = "client area is $($client[0])x$($client[1]) (window $($outer[0])x$($outer[1])), not $size"
+    Write-Host "  $script:sizeProblem"
     $client[0] -eq $w -and $client[1] -eq $h
+}
+
+# Set-ClientSize, tried again for up to $seconds: a window busy with its photos (generating or decoding them, with
+# another program using the CPU) does not always answer UI Automation, and TransformPattern is then missing for a
+# while. The "cannot reach" shots of #129 were this; a shot that still fails is made again by Shot from a fresh start.
+function Wait-ClientSize($app, [string]$size, [double]$seconds = 45) {
+    $until = (Get-Date).AddSeconds($seconds)
+    do {
+        if (Set-ClientSize $app $size) { return $true }
+        if ($app.Process.HasExited) { $script:sizeProblem = 'the app exited'; return $false }
+        Start-Sleep -Milliseconds 1000
+    } while ((Get-Date) -lt $until)
+    $false
 }
 
 # Waits until the project holds the photos (the scrubber's RangeValue maximum is the frame count) and the Output panel
@@ -271,7 +324,7 @@ function Wait-Photos($app, [int]$count, [double]$seekFraction = 0, [double]$seco
 
 function Save-Shot($app, [string]$name, [string]$size, [string]$what, [int]$settle = 1200) {
     if ($app.Process.HasExited) { $missed.Add("$name (the app exited)"); return }
-    if (-not (Set-ClientSize $app $size)) { $missed.Add("$name (the window cannot reach $size here)"); return }
+    if (-not (Wait-ClientSize $app $size)) { $missed.Add("$name (the window cannot reach $size here: $script:sizeProblem)"); return }
     Start-Sleep -Milliseconds $settle
     $path = Join-Path $OutDir "$name.png"
     $result = Save-Client $app.Handle $path
@@ -289,21 +342,32 @@ function Save-Shot($app, [string]$name, [string]$size, [string]$what, [int]$sett
 function Shot([string]$id, [string]$name, [scriptblock]$body, [string[]]$alsoOwns = @()) {
     if (-not (Want $id)) { return }
     Write-Host "Shot $id"
-    foreach ($owned in @($name) + $alsoOwns) { Remove-Item (Join-Path $OutDir "$owned.png") -ErrorAction SilentlyContinue }
-    try { & $body }
-    catch { $missed.Add("$name ($($_.Exception.Message))") }
+    $maxAttempts = 3
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        foreach ($owned in @($name) + $alsoOwns) { Remove-Item (Join-Path $OutDir "$owned.png") -ErrorAction SilentlyContinue }
+        $missedBefore = $missed.Count
+        $madeBefore = $made.Count
+        try { & $body }
+        catch { $missed.Add("$name ($($_.Exception.Message))") }
+        if ($missed.Count -eq $missedBefore) {
+            if ($attempt -gt 1) { $retried.Add("$id ($attempt attempts)") }
+            return
+        }
+        # A failed attempt is not final: the next one starts the app afresh. Only the last attempt's failures are kept.
+        if ($attempt -lt $maxAttempts) {
+            Write-Host "  shot $id attempt ${attempt}: $($missed.GetRange($missedBefore, $missed.Count - $missedBefore) -join '; '); trying again"
+            $missed.RemoveRange($missedBefore, $missed.Count - $missedBefore)
+            $made.RemoveRange($madeBefore, $made.Count - $madeBefore)
+        }
+    }
+    $retried.Add("$id (failed after $maxAttempts attempts)")
 }
 
 # Sizes the window right after the start and says whether the shot can go on; a size this monitor cannot reach skips
 # the shot (and the shots it owns) before any waiting.
 function Sized($app, [string]$size, [string[]]$names) {
-    # A window still busy starting (generating photos, say) may not offer TransformPattern yet: try for about 15 s.
-    $until = (Get-Date).AddSeconds(15)
-    do {
-        if (Set-ClientSize $app $size) { return $true }
-        Start-Sleep -Milliseconds 1000
-    } while ((Get-Date) -lt $until -and -not $app.Process.HasExited)
-    foreach ($name in $names) { $missed.Add("$name (the window cannot reach $size here)") }
+    if (Wait-ClientSize $app $size) { return $true }
+    foreach ($name in $names) { $missed.Add("$name (the window cannot reach $size here: $script:sizeProblem)") }
     $false
 }
 
@@ -429,6 +493,7 @@ finally {
 Write-Host ''
 Write-Host "Screenshots in $OutDir"
 $made | ForEach-Object { Write-Host "  $_" }
+if ($retried.Count -gt 0) { Write-Host "Needed more than one attempt: $($retried -join '; ')" }
 if ($missed.Count -gt 0) {
     Write-Host "Not made: $($missed -join '; ')"
 }

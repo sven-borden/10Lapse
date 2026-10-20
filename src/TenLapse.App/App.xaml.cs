@@ -83,6 +83,20 @@ public partial class App : Application
         {
             _log.Warning($"--lang could not set WinUI's language to {AppLanguage.Tag}; its own strings stay in the display language.", exception);
         }
+
+        // --region sets the regional format (numbers, dates) for this process only, so a screenshot in French shows "16,0 s"
+        // (#129). A tag .NET does not know is logged and the PC's own format stays.
+        try
+        {
+            if (Debugging.DebugLaunch.ApplyRegion() is { } note)
+            {
+                _log.Info(note);
+            }
+        }
+        catch (Exception exception)
+        {
+            _log.Warning($"--region={Debugging.DebugLaunch.Region} is not a regional format .NET knows; this PC's own stays.", exception);
+        }
 #endif
         ExportCleanupLog.Start(_log, _folders.UnfinishedExportsFile);
 

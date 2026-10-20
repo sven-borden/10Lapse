@@ -151,8 +151,8 @@ Raw` (9NCTDW2W1BH8).
 
 Desktop: PNG, 1366 x 768 or larger in landscape or portrait, up to 3840 x 2160, under 50 MB each, up to 10. Captions
 200 characters each. Keep key content in the top two thirds (the Store may lay text over the bottom third).
-`pwsh -File scripts/store-screenshots.ps1 -Language it` makes the Italian set into `dist/store-screenshots/it/`
-(git-ignored), from the same generated sample photos as the English set.
+`pwsh -File scripts/store-screenshots.ps1 -Language it` makes the Italian set into `docs/store/screenshots/it/`
+(in Git LFS), from the same generated sample photos as the English set.
 
 Upload six, in this order; captions are 56 to 111 characters.
 
