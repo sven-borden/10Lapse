@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Spanish (es) translation of StoreExtensionText.resx (#117). The English file's comments are the brief for each key.
+  One neutral Spanish for Spain and Latin America. Informal address ("tú"), as Windows 11 writes Spanish. Windows'
+  Spanish terms (archivo, carpeta, Configuración, equipo); "vídeo" as Windows and the Store write it in es-ES. UI labels
+  named inside a sentence stand in quotation marks (“…”). Spanish needs no _many form here: with digits a million takes
+  no "de" ("1.000.000 fotos"), so every sentence is the same as _other.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HeifImageExtensions" xml:space="preserve">
+    <value>Extensión de imágenes HEIF</value>
+  </data>
+  <data name="HevcVideoExtensions" xml:space="preserve">
+    <value>Extensiones de vídeo HEVC</value>
+  </data>
+  <data name="Av1VideoExtension" xml:space="preserve">
+    <value>Extensión de vídeo AV1</value>
+  </data>
+  <data name="WebpImageExtensions" xml:space="preserve">
+    <value>Extensión de imagen WebP</value>
+  </data>
+  <data name="JpegXlImageExtension" xml:space="preserve">
+    <value>Extensión de imágenes JPEG XL</value>
+  </data>
+  <data name="RawImageExtension" xml:space="preserve">
+    <value>Extensión de imagen de formato raw</value>
+  </data>
+</root>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Spanish (es) translation of SkippedFileText.resx (#117). The English file's comments are the brief for each key.
+  One neutral Spanish for Spain and Latin America. Informal address ("tú"), as Windows 11 writes Spanish. Windows'
+  Spanish terms (archivo, carpeta, Configuración, equipo); "vídeo" as Windows and the Store write it in es-ES. UI labels
+  named inside a sentence stand in quotation marks (“…”). Spanish needs no _many form here: with digits a million takes
+  no "de" ("1.000.000 fotos"), so every sentence is the same as _other.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Skipped_one" xml:space="preserve">
+    <value>{0} foto no se pudo leer y se omitió.</value>
+  </data>
+  <data name="Skipped_other" xml:space="preserve">
+    <value>{0} fotos no se pudieron leer y se omitieron.</value>
+  </data>
+  <data name="UnsupportedFormat" xml:space="preserve">
+    <value>No es un formato de foto que Windows pueda leer</value>
+  </data>
+  <data name="DecodeFailed" xml:space="preserve">
+    <value>Archivo dañado</value>
+  </data>
+  <data name="AccessDenied" xml:space="preserve">
+    <value>Sin permiso para abrirlo</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>Ya no está: movido, eliminado o en una unidad desconectada</value>
+  </data>
+  <data name="Other" xml:space="preserve">
+    <value>No se pudo leer</value>
+  </data>
+  <data name="EmptyFile" xml:space="preserve">
+    <value>Archivo vacío (0 bytes)</value>
+  </data>
+  <data name="Truncated" xml:space="preserve">
+    <value>Archivo dañado: está incompleto</value>
+  </data>
+  <data name="NeedsExtension" xml:space="preserve">
+    <value>Necesita una extensión de Microsoft Store</value>
+  </data>
+  <data name="FileInUse" xml:space="preserve">
+    <value>En uso por otra aplicación</value>
+  </data>
+  <data name="ImageTooLarge" xml:space="preserve">
+    <value>Demasiado grande para abrirlo</value>
+  </data>
+  <data name="CloudFileOffline" xml:space="preserve">
+    <value>En la nube y no disponible sin conexión</value>
+  </data>
+  <data name="CloudOnly" xml:space="preserve">
+    <value>Solo en OneDrive, no en este equipo</value>
+  </data>
+</root>

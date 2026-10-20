@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Spanish (es) translation of ExportText.resx (#117). The English file's comments are the brief for each key.
+  One neutral Spanish for Spain and Latin America. Informal address ("tú"), as Windows 11 writes Spanish. Windows'
+  Spanish terms (archivo, carpeta, Configuración, equipo); "vídeo" as Windows and the Store write it in es-ES. UI labels
+  named inside a sentence stand in quotation marks (“…”). Spanish needs no _many form here: with digits a million takes
+  no "de" ("1.000.000 fotos"), so every sentence is the same as _other.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ExportVideo" xml:space="preserve">
+    <value>Exportar vídeo</value>
+  </data>
+  <data name="ExportingButton" xml:space="preserve">
+    <value>Exportando…</value>
+  </data>
+  <data name="Exporting" xml:space="preserve">
+    <value>Exportando</value>
+  </data>
+  <data name="RunningNameFormat" xml:space="preserve">
+    <value>Exportando {0}</value>
+  </data>
+  <data name="PercentFormat" xml:space="preserve">
+    <value>{0} %</value>
+  </data>
+  <data name="ProgressName" xml:space="preserve">
+    <value>Progreso de la exportación</value>
+  </data>
+  <data name="GettingReady" xml:space="preserve">
+    <value>Preparando…</value>
+  </data>
+  <data name="EstimatingTimeLeft" xml:space="preserve">
+    <value>Calculando el tiempo restante…</value>
+  </data>
+  <data name="Finishing" xml:space="preserve">
+    <value>Terminando el archivo…</value>
+  </data>
+  <data name="TimeLeftSecondsFormat" xml:space="preserve">
+    <value>Tiempo restante: aprox. {0} s</value>
+  </data>
+  <data name="TimeLeftMinutesFormat" xml:space="preserve">
+    <value>Tiempo restante: aprox. {0} min</value>
+  </data>
+  <data name="TimeLeftMinutesHalfFormat" xml:space="preserve">
+    <value>Tiempo restante: aprox. {0} min 30 s</value>
+  </data>
+  <data name="FrameLabel" xml:space="preserve">
+    <value>Fotograma</value>
+  </data>
+  <data name="FramesFormat" xml:space="preserve">
+    <value>{0} de {1}</value>
+  </data>
+  <data name="SpeedLabel" xml:space="preserve">
+    <value>Velocidad</value>
+  </data>
+  <data name="SpeedPhotos_one" xml:space="preserve">
+    <value>{0} fotos por segundo</value>
+  </data>
+  <data name="SpeedPhotos_other" xml:space="preserve">
+    <value>{0} fotos por segundo</value>
+  </data>
+  <data name="SpeedMeasuring" xml:space="preserve">
+    <value>Midiendo…</value>
+  </data>
+  <data name="OutputLabel" xml:space="preserve">
+    <value>Salida</value>
+  </data>
+  <data name="OutputSummaryFormat" xml:space="preserve">
+    <value>{0} · {1} · {2}</value>
+  </data>
+  <data name="MinimizeHint" xml:space="preserve">
+    <value>Puedes minimizar 10Lapse. La exportación continúa y Windows te avisa cuando termina.</value>
+  </data>
+  <data name="CancelExport" xml:space="preserve">
+    <value>Cancelar exportación</value>
+  </data>
+  <data name="RenderingFrameFormat" xml:space="preserve">
+    <value>Generando fotograma {0}</value>
+  </data>
+  <data name="ReadyFormat" xml:space="preserve">
+    <value>{0} está listo</value>
+  </data>
+  <data name="ReadySummaryFormat" xml:space="preserve">
+    <value>{0} · {1} · {2} · {3}</value>
+  </data>
+  <data name="ExportedInLabel" xml:space="preserve">
+    <value>Exportado en</value>
+  </data>
+  <data name="SavedToLabel" xml:space="preserve">
+    <value>Guardado en</value>
+  </data>
+  <data name="SavedToFormat" xml:space="preserve">
+    <value>{0} › {1}</value>
+  </data>
+  <data name="Play" xml:space="preserve">
+    <value>Reproducir</value>
+  </data>
+  <data name="PlayName" xml:space="preserve">
+    <value>Reproducir el vídeo</value>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>Mostrar en carpeta</value>
+  </data>
+  <data name="BackToEditing" xml:space="preserve">
+    <value>Volver a la edición</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Exportación cancelada. Se eliminó el archivo sin terminar.</value>
+  </data>
+  <data name="CancelledFileLeft" xml:space="preserve">
+    <value>Exportación cancelada. Aún no se pudo eliminar el archivo sin terminar, así que 10Lapse lo eliminará la próxima vez que se inicie.</value>
+  </data>
+  <data name="EditsWait" xml:space="preserve">
+    <value>El proyecto no se puede cambiar mientras se exporta el vídeo. Espera a que termine o cancela la exportación.</value>
+  </data>
+  <data name="ImportStillRunning" xml:space="preserve">
+    <value>Todavía se están agregando fotos. Exporta cuando estén todas.</value>
+  </data>
+  <data name="ChangedDuringDialogFormat" xml:space="preserve">
+    <value>La exportación no se inició porque el proyecto o su salida cambiaron mientras el cuadro de diálogo Guardar estaba abierto. Vuelve a elegir “{0}”.</value>
+  </data>
+  <data name="PremiereCantPlayFormat" xml:space="preserve">
+    <value>El vídeo se guardó, pero 10Lapse no puede reproducirlo aquí. Elige “{0}” y ábrelo en otra aplicación para comprobarlo.</value>
+  </data>
+  <data name="CloseTitle" xml:space="preserve">
+    <value>¿Detener la exportación y cerrar?</value>
+  </data>
+  <data name="CloseMessage" xml:space="preserve">
+    <value>El vídeo aún no está terminado. 10Lapse detiene la exportación y elimina el archivo sin terminar.</value>
+  </data>
+  <data name="CloseConfirm" xml:space="preserve">
+    <value>Detener y cerrar</value>
+  </data>
+  <data name="CloseCancel" xml:space="preserve">
+    <value>Seguir exportando</value>
+  </data>
+  <data name="FileTypeName" xml:space="preserve">
+    <value>Vídeo MP4</value>
+  </data>
+  <data name="StartedFormat" xml:space="preserve">
+    <value>Exportando {0}.</value>
+  </data>
+  <data name="ProgressAnnouncementFormat" xml:space="preserve">
+    <value>Exportado el {0} por ciento.</value>
+  </data>
+  <data name="FailedAnnouncement" xml:space="preserve">
+    <value>La exportación se detuvo.</value>
+  </data>
+  <data name="FinishingAnnouncement" xml:space="preserve">
+    <value>Terminando el archivo.</value>
+  </data>
+  <data name="FailedNotificationFormat" xml:space="preserve">
+    <value>No se pudo exportar {0}. Abre 10Lapse para ver por qué.</value>
+  </data>
+  <data name="ExportKeys" xml:space="preserve">
+    <value>Control+E</value>
+  </data>
+</root>
