@@ -189,6 +189,7 @@ $made = [System.Collections.Generic.List[string]]::new()
 $missed = [System.Collections.Generic.List[string]]::new()
 $retried = [System.Collections.Generic.List[string]]::new()
 $run = 0
+$sizeProblem = ''
 
 function Common([string]$theme) {
     $script:run++
@@ -254,7 +255,16 @@ function Invoke-Element($element) {
 function Set-ClientSize($app, [string]$size) {
     [int]$w, [int]$h = $size -split 'x'
     $transform = $null
-    if (-not $app.Window.TryGetCurrentPattern([System.Windows.Automation.TransformPattern]::Pattern, [ref]$transform)) { return $false }
+    # A window still busy starting (the generated photos) may not answer UI Automation yet: the likely cause of a window
+    # that "cannot reach" its size on a PC that could (#129), so Sized waits and says which of the two it was.
+    $script:sizeProblem = 'the window offers no TransformPattern yet (still starting?)'
+    if (-not $app.Window.TryGetCurrentPattern([System.Windows.Automation.TransformPattern]::Pattern, [ref]$transform)) {
+        # Waiting did not always help (45 s in a few runs), so the element found at the start may have gone stale: look
+        # the window up again by its process, for the next try.
+        $fresh = $AE::RootElement.FindFirst($Tree::Children, (New-Object System.Windows.Automation.PropertyCondition($AE::ProcessIdProperty, $app.Process.Id)))
+        if ($fresh) { $app.Window = $fresh; $app.Handle = [IntPtr]$fresh.Current.NativeWindowHandle }
+        return $false
+    }
     if ($transform.Current.CanMove) { $transform.Move(0, 0) }
     for ($round = 0; $round -lt 5; $round++) {
         $client = [StoreShot]::Client($app.Handle)
@@ -265,8 +275,22 @@ function Set-ClientSize($app, [string]$size) {
     }
     $client = [StoreShot]::Client($app.Handle)
     $outer = [StoreShot]::Outer($app.Handle)
-    Write-Host "  client area is $($client[0])x$($client[1]) (window $($outer[0])x$($outer[1])), not $size"
+    $script:sizeProblem = "client area is $($client[0])x$($client[1]) (window $($outer[0])x$($outer[1])), not $size"
+    Write-Host "  $script:sizeProblem"
     $client[0] -eq $w -and $client[1] -eq $h
+}
+
+# Set-ClientSize, tried again for up to $seconds: a window busy with its photos (generating or decoding them, with
+# another program using the CPU) does not always answer UI Automation, and TransformPattern is then missing for a
+# while. The "cannot reach" shots of #129 were this; a shot that still fails is made again by Shot from a fresh start.
+function Wait-ClientSize($app, [string]$size, [double]$seconds = 45) {
+    $until = (Get-Date).AddSeconds($seconds)
+    do {
+        if (Set-ClientSize $app $size) { return $true }
+        if ($app.Process.HasExited) { $script:sizeProblem = 'the app exited'; return $false }
+        Start-Sleep -Milliseconds 1000
+    } while ((Get-Date) -lt $until)
+    $false
 }
 
 # Waits until the project holds the photos (the scrubber's RangeValue maximum is the frame count) and the Output panel
@@ -300,7 +324,7 @@ function Wait-Photos($app, [int]$count, [double]$seekFraction = 0, [double]$seco
 
 function Save-Shot($app, [string]$name, [string]$size, [string]$what, [int]$settle = 1200) {
     if ($app.Process.HasExited) { $missed.Add("$name (the app exited)"); return }
-    if (-not (Set-ClientSize $app $size)) { $missed.Add("$name (the window cannot reach $size here)"); return }
+    if (-not (Wait-ClientSize $app $size)) { $missed.Add("$name (the window cannot reach $size here: $script:sizeProblem)"); return }
     Start-Sleep -Milliseconds $settle
     $path = Join-Path $OutDir "$name.png"
     $result = Save-Client $app.Handle $path
@@ -342,13 +366,8 @@ function Shot([string]$id, [string]$name, [scriptblock]$body, [string[]]$alsoOwn
 # Sizes the window right after the start and says whether the shot can go on; a size this monitor cannot reach skips
 # the shot (and the shots it owns) before any waiting.
 function Sized($app, [string]$size, [string[]]$names) {
-    # A window still busy starting (generating photos, say) may not offer TransformPattern yet: try for about 15 s.
-    $until = (Get-Date).AddSeconds(15)
-    do {
-        if (Set-ClientSize $app $size) { return $true }
-        Start-Sleep -Milliseconds 1000
-    } while ((Get-Date) -lt $until -and -not $app.Process.HasExited)
-    foreach ($name in $names) { $missed.Add("$name (the window cannot reach $size here)") }
+    if (Wait-ClientSize $app $size) { return $true }
+    foreach ($name in $names) { $missed.Add("$name (the window cannot reach $size here: $script:sizeProblem)") }
     $false
 }
 
