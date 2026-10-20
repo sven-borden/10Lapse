@@ -206,7 +206,8 @@ rights (README.md); the 2.x listing's earlier years can go in front if Sven want
 - Short title and voice title: empty (Xbox and voice only). Sort title: Ten Lapse (Sven's call), so a search for the name
   spelled out finds it.
 - Additional license terms: empty (the Store's standard license applies).
-- Trailers and Store logos: #43 (trailer) and #37 (icon) own them.
+- Trailer: the 30 s showreel in `docs/store/showreel/` (#43), with `thumbnail.png` and the captions in
+  `thumbnail-captions.md`. Store logos: #37 (icon) owns them.
 - Outside the listing, on the Properties page: the privacy policy URL is
   `https://github.com/sven-borden/10Lapse/blob/master/PRIVACY.md` (#7), and support
   is `https://github.com/sven-borden/10Lapse/issues`, the page *Send feedback* opens.
