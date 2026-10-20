@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Brazilian Portuguese (pt-BR) translation of OutputText.resx (#119). The comments of the English file are the brief for
+  each key. The quality levels agree with "qualidade" (feminine): Padrão, Alta, Máxima. The replacement notices name
+  10Lapse as the one that selected, so no participle has to agree with a resolution or codec.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Saída</value>
+  </data>
+  <data name="ResolutionLabel" xml:space="preserve">
+    <value>Resolução</value>
+  </data>
+  <data name="FormatLabel" xml:space="preserve">
+    <value>Formato</value>
+  </data>
+  <data name="QualityLabel" xml:space="preserve">
+    <value>Qualidade</value>
+  </data>
+  <data name="Checking" xml:space="preserve">
+    <value>Verificando o que este PC consegue codificar…</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>As opções de saída estão prontas.</value>
+  </data>
+  <data name="ConservativeNote" xml:space="preserve">
+    <value>O 10Lapse não conseguiu verificar os codificadores de vídeo deste PC, então oferece H.264 até 1080p.</value>
+  </data>
+  <data name="FormatReplaced" xml:space="preserve">
+    <value>Este PC não exporta em {0}, então o 10Lapse selecionou {1}.</value>
+  </data>
+  <data name="ResolutionReplaced" xml:space="preserve">
+    <value>Este PC não exporta em {0} com estas configurações, então o 10Lapse selecionou {1}.</value>
+  </data>
+  <data name="ResolutionReplacedByShape" xml:space="preserve">
+    <value>Este PC não exporta em {0} com esta proporção, então o 10Lapse selecionou {1}. Sua escolha de {0} volta com uma proporção que a permita.</value>
+  </data>
+  <data name="KeepSelected" xml:space="preserve">
+    <value>Usar estas configurações</value>
+  </data>
+  <data name="EstimateAbout" xml:space="preserve">
+    <value>Cerca de {0}</value>
+  </data>
+  <data name="Megabytes" xml:space="preserve">
+    <value>{0} MB</value>
+  </data>
+  <data name="Gigabytes" xml:space="preserve">
+    <value>{0} GB</value>
+  </data>
+  <data name="UnderOneMegabyte" xml:space="preserve">
+    <value>Menos de 1 MB</value>
+  </data>
+  <data name="ResolutionOptionFormat" xml:space="preserve">
+    <value>{0} · {1} × {2}</value>
+  </data>
+  <data name="FormatOptionFormat" xml:space="preserve">
+    <value>MP4 · {0}</value>
+  </data>
+  <data name="QualityStandard" xml:space="preserve">
+    <value>Padrão</value>
+  </data>
+  <data name="QualityHigh" xml:space="preserve">
+    <value>Alta</value>
+  </data>
+  <data name="QualityMaximum" xml:space="preserve">
+    <value>Máxima</value>
+  </data>
+</root>

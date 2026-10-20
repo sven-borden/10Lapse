@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Brazilian Portuguese (pt-BR) key names (#119), as Windows names the keys of a Brazilian (ABNT) keyboard: Ctrl
+  (spoken "Control"), Shift, Esc, and "Barra de espaços", the Microsoft pt-BR name for the space bar. Letters and plus
+  signs unchanged.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ShortcutTipFormat" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="ChooseFolderShortcut" xml:space="preserve">
+    <value>Ctrl+O</value>
+  </data>
+  <data name="ChooseFolderKeys" xml:space="preserve">
+    <value>Control+O</value>
+  </data>
+  <data name="ChoosePhotosShortcut" xml:space="preserve">
+    <value>Ctrl+Shift+O</value>
+  </data>
+  <data name="ChoosePhotosKeys" xml:space="preserve">
+    <value>Control+Shift+O</value>
+  </data>
+  <data name="NewProjectShortcut" xml:space="preserve">
+    <value>Ctrl+N</value>
+  </data>
+  <data name="NewProjectKeys" xml:space="preserve">
+    <value>Control+N</value>
+  </data>
+  <data name="ExportShortcut" xml:space="preserve">
+    <value>Ctrl+E</value>
+  </data>
+  <data name="PlayKeys" xml:space="preserve">
+    <value>Barra de espaços</value>
+  </data>
+  <data name="BackKeys" xml:space="preserve">
+    <value>Esc</value>
+  </data>
+</root>

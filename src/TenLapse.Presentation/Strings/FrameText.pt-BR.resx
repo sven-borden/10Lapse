@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Brazilian Portuguese (pt-BR) translation of FrameText.resx (#119). The comments of the English file are the brief for
+  each key. The panel is "Enquadramento" and the video's shape is its "proporção"; "formato" is kept for the file format
+  (Output), and "quadro" for one picture of the video. Fit and Fill are "Ajustar" and "Preencher", as Windows names them
+  for the desktop background.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Enquadramento</value>
+  </data>
+  <data name="ShapeName" xml:space="preserve">
+    <value>Proporção</value>
+  </data>
+  <data name="FitName" xml:space="preserve">
+    <value>Ajuste</value>
+  </data>
+  <data name="ShapeMatch" xml:space="preserve">
+    <value>Fotos</value>
+  </data>
+  <data name="ShapeMatchName" xml:space="preserve">
+    <value>Igual às fotos</value>
+  </data>
+  <data name="FitOption" xml:space="preserve">
+    <value>Ajustar</value>
+  </data>
+  <data name="FillOption" xml:space="preserve">
+    <value>Preencher</value>
+  </data>
+  <data name="FitHint" xml:space="preserve">
+    <value>Com “{0}”, a foto aparece inteira, com faixas onde as proporções diferem.</value>
+  </data>
+  <data name="FillHint" xml:space="preserve">
+    <value>Com “{0}”, as bordas da foto são cortadas e não sobram faixas.</value>
+  </data>
+  <data name="MatchingPhotos" xml:space="preserve">
+    <value>Igual às suas fotos: {0} × {1}.</value>
+  </data>
+  <data name="MatchingNoPhotos" xml:space="preserve">
+    <value>Igual às suas fotos. Enquanto os tamanhos delas não forem conhecidos, a proporção é 16:9.</value>
+  </data>
+  <data name="NoSize" xml:space="preserve">
+    <value>Fotos tão largas ou tão altas são grandes demais para exportar neste PC. Escolha uma proporção fixa, como 16:9.</value>
+  </data>
+  <data name="PortraitHint" xml:space="preserve">
+    <value>A maioria das suas fotos está na vertical, então 9:16 combina melhor com elas.</value>
+  </data>
+  <data name="PortraitApply" xml:space="preserve">
+    <value>Usar 9:16</value>
+  </data>
+  <data name="PortraitDismiss" xml:space="preserve">
+    <value>Ignorar</value>
+  </data>
+  <data name="Announcement" xml:space="preserve">
+    <value>{0}: {1}, {2}.</value>
+  </data>
+</root>

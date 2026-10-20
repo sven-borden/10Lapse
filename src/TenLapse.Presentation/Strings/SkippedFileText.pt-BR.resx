@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Brazilian Portuguese (pt-BR) translation of SkippedFileText.resx (#119). The comments of the English file are the
+  brief for each key. The reasons are fragments of at most 45 characters, no final period. Skipped_one also covers 0 and
+  1,5 in pt-BR; Skipped_many is for exact millions ("1.000.000 de fotos").
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Skipped_one" xml:space="preserve">
+    <value>{0} foto não pôde ser lida e foi ignorada.</value>
+  </data>
+  <data name="Skipped_many" xml:space="preserve">
+    <value>{0} de fotos não puderam ser lidas e foram ignoradas.</value>
+  </data>
+  <data name="Skipped_other" xml:space="preserve">
+    <value>{0} fotos não puderam ser lidas e foram ignoradas.</value>
+  </data>
+  <data name="UnsupportedFormat" xml:space="preserve">
+    <value>Formato de foto que o Windows não lê</value>
+  </data>
+  <data name="DecodeFailed" xml:space="preserve">
+    <value>Arquivo danificado</value>
+  </data>
+  <data name="AccessDenied" xml:space="preserve">
+    <value>Sem permissão para abrir</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>Ausente: movido, excluído ou desconectado</value>
+  </data>
+  <data name="Other" xml:space="preserve">
+    <value>Não foi possível ler</value>
+  </data>
+  <data name="EmptyFile" xml:space="preserve">
+    <value>Arquivo vazio (0 bytes)</value>
+  </data>
+  <data name="Truncated" xml:space="preserve">
+    <value>Arquivo danificado: está incompleto</value>
+  </data>
+  <data name="NeedsExtension" xml:space="preserve">
+    <value>Requer uma extensão da Microsoft Store</value>
+  </data>
+  <data name="FileInUse" xml:space="preserve">
+    <value>Em uso por outro aplicativo</value>
+  </data>
+  <data name="ImageTooLarge" xml:space="preserve">
+    <value>Grande demais para abrir</value>
+  </data>
+  <data name="CloudFileOffline" xml:space="preserve">
+    <value>Na nuvem e indisponível sem conexão</value>
+  </data>
+  <data name="CloudOnly" xml:space="preserve">
+    <value>Só no OneDrive, não neste PC</value>
+  </data>
+</root>
