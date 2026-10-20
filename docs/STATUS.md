@@ -4,7 +4,7 @@ Updated 2026-10-20. Roadmap: the pinned #59 and the milestones. Working agreemen
 
 ## Now
 
-2026-10-20: **3.0 is code-complete and release prep is done; nothing in flight.** Sven merged #112 (showreel, refs #43). The issue review left 20 open issues, each with a current body and a Done when (Decisions). Next steps are Sven's, in order: #7, the flight #40 (`docs/release/flight.md`) with the test pass #41 (`docs/test-matrix.md`) and the #90 watch, then the listing #42 (`docs/store/listing.md`), #43 and the rollout #44. Each release PR says Refs; the issues close once Sven's part is done.
+2026-10-20: **Translations before the flight (Sven): wave 21 in flight**, #113 and #114 (Opus) in parallel. Then the five languages, #115 to #119. Sven's release steps wait for them: #7, the flight #40 (`docs/release/flight.md`) with #41 (`docs/test-matrix.md`) and the #90 watch, then #42 (`docs/store/listing.md`), #43, #44. Release PRs say Refs; those issues close once Sven's part is done.
 
 ## Waves
 
@@ -14,7 +14,14 @@ Opus 5.5, **S** is Sonnet 5.5.
 
 Waves 0 to 20 are done; every issue in them is under Merged below (#40, #41
 and #42 stay open for Sven's part). Milestones 4 (private beta) and 5
-(relaunch) are owner work. Milestone 6 (3.1) gets its own waves once 3.0
+(relaunch) are owner work, except the translations in milestone 4:
+
+- Wave 21: #113 plumbing (O) and #114 translatable English (O), disjoint
+  files (each issue lists what the other owns).
+- Wave 22: #115 fr and #116 de (O). Wave 23: #117 es and #118 it (O).
+  Wave 24: #119 pt-BR (O). Language PRs add new files only.
+
+Milestone 6 (3.1) gets its own waves once 3.0
 ships: #45, #46, #47 and #48 all draw in `FrameRenderer`, so they run one at
 a time.
 
@@ -26,6 +33,8 @@ Nothing blocks the build loop. Everything below waits until release is near
 - #7, before the flight: the 2.1.1 description line and the privacy URL.
 - Release: #40 flight, #41 test pass, #42 listing (the sort title "Ten Lapse"
   is his call), #43 trailer, #44 rollout. Later: #58 pricing.
+- Translations: a Partner Center listing per language from
+  `docs/store/listing.<lang>.md` (#115-#119); a native read where he can.
 - #30 sample sequence (3.1): Sven picks the photos; *Try a sample* comes back
   with them.
 
@@ -39,8 +48,13 @@ Nothing blocks the build loop. Everything below waits until release is near
   package, which the Store installs with the app; it is not self-contained.
   Debug builds run unpackaged for local checks.
 - 2026-10-19 (Sven, #2): Windows 11 only (minimum 10.0.22000.0, #96), x64 and
-  ARM64, no x86; Windows 10 devices keep 2.1.1. English only in 3.0;
-  translations come later.
+  ARM64, no x86; Windows 10 devices keep 2.1.1.
+- 2026-10-20 (Sven, reverses "English only in 3.0" from #2): 3.0 ships in
+  en-US, fr, de, es, it and pt-BR, built before the flight. Neutral cultures
+  serve every region; pt-BR is regional (pt-PT maps to it). The 2026-10-20
+  audit put the work in #113 (runtime, packaging, tests) and #114 (plurals,
+  format strings, culture-aware numbers, layout). Translations use Opus: the
+  text is the product in those markets and no native reviewer is on hand.
 - 2026-10-18 (Sven): the orchestrator merges each PR itself after the review,
   the fix round and a green gate on the PR branch.
 - 2026-10-18 (#3): solution `TenLapse.slnx`. Windows projects target
