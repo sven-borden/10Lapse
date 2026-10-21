@@ -7,6 +7,7 @@ using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using Microsoft.UI.Dispatching;
+using TenLapse.Core.Look;
 using TenLapse.Core.Preview;
 using TenLapse.Core.Projects;
 using TenLapse.Media;
@@ -132,8 +133,14 @@ internal sealed class PreviewRenderLoop : IDisposable
     // #45: the Look panel's Before (true), set on the UI thread: the photos are drawn without their look.
     private volatile bool _showOriginals;
 
+    // #45: the deflicker curve last drawn with (render thread only), and the callback that wakes the thread once a curve it
+    // asked for is computed.
+    private ExposureCurve _drawnCurve = ExposureCurve.None;
+    private readonly Action _curveReady;
+
     public PreviewRenderLoop(CanvasSwapChainPanel panel, PlayerViewModel player, FrameImageCache<CanvasBitmap> images, IErrorPresenter errors, IErrorSink log)
     {
+        _curveReady = OnCurveReady;
         _panel = panel;
         _player = player;
         _images = images;
@@ -571,9 +578,33 @@ internal sealed class PreviewRenderLoop : IDisposable
     }
 
     // The look the photo is drawn with (#45): its deflicker correction from the snapshot's curve, keyed by the photo, or none
-    // while the Look panel shows Before.
-    private FrameLook LookOf(ProjectSnapshot snapshot, Guid frameId) =>
-        _showOriginals || frameId == Guid.Empty ? FrameLook.None : FrameLook.For(snapshot, frameId);
+    // while the Look panel shows Before. The curve is never computed here: a new one (a measuring batch, the strength) is
+    // computed on the pool, and until it is ready the photos keep the correction of the last curve this thread had.
+    private FrameLook LookOf(ProjectSnapshot snapshot, Guid frameId)
+    {
+        if (_showOriginals || frameId == Guid.Empty)
+        {
+            return FrameLook.None;
+        }
+
+        if (ExposureCurve.TryGet(snapshot, _curveReady, out var curve))
+        {
+            _drawnCurve = curve;
+        }
+
+        return new FrameLook((float)_drawnCurve.Correction(frameId));
+    }
+
+    // A curve the render thread asked for is ready: draw again with it. Any thread.
+    private void OnCurveReady()
+    {
+        lock (_gate)
+        {
+            _changes++;
+        }
+
+        _wake.Set();
+    }
 
     // The reframe (motion spec, Reframe): a new shape or fit at the same panel size moves the gate's clip and the photo's
     // rectangle from where they are on screen to their new places, 400 ms Move; with animations off, at once. A resize ends
