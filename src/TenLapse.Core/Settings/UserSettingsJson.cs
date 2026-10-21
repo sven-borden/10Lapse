@@ -1,7 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using TenLapse.Core.Projects;
-using TenLapse.Core.Timing;
 
 namespace TenLapse.Core.Settings;
 
@@ -10,14 +8,16 @@ namespace TenLapse.Core.Settings;
 /// the enum cannot change what a file means) and fractions as <c>[numerator, denominator]</c> (29.97 stays 30000/1001).
 /// Reading is forgiving field by field: a value that is missing keeps its default quietly; one that is unknown or
 /// out of range keeps its default and adds a line to <see cref="SettingsLoadResult.Problems"/>. A file that is not
-/// JSON at all is the defaults with one problem. Nothing here throws on bad input.
+/// JSON at all is the defaults with one problem. Nothing here throws on bad input. The timing, frame and output groups
+/// are written and read by <see cref="JsonFields"/>, which the project file (#52) shares.
 /// </summary>
 public static class UserSettingsJson
 {
     /// <summary>The version this build writes.</summary>
     public const int CurrentVersion = 1;
 
-    private static readonly JsonDocumentOptions _readOptions = new() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+    // A key twice is a damaged file (#52's review): refused while parsing, so no later look at the key can throw.
+    private static readonly JsonDocumentOptions _readOptions = new() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip, AllowDuplicateProperties = false };
     private static readonly JsonSerializerOptions _writeOptions = new() { WriteIndented = true };
 
     // Step n upgrades a version n document to version n + 1, in place. Empty while version 1 is current; a step is
@@ -31,30 +31,14 @@ public static class UserSettingsJson
         var root = new JsonObject
         {
             ["version"] = CurrentVersion,
-            ["timing"] = new JsonObject
-            {
-                ["mode"] = settings.Timing.Mode.ToString(),
-                ["framesPerSecond"] = Pair(settings.Timing.FramesPerSecond),
-                ["lengthSeconds"] = Pair(settings.Timing.LengthSeconds),
-                ["secondsPerPhoto"] = Pair(settings.Timing.SecondsPerPhoto),
-            },
-            ["frame"] = new JsonObject
-            {
-                ["aspect"] = settings.Frame.Aspect.ToString(),
-                ["fit"] = settings.Frame.Fit.ToString(),
-            },
-            ["output"] = new JsonObject
-            {
-                ["resolution"] = settings.Output.Resolution.ToString(),
-                ["format"] = settings.Output.Format.ToString(),
-                ["quality"] = settings.Output.Quality.ToString(),
-                ["gifSize"] = settings.Output.Gif.Size.ToString(),
-                ["gifRate"] = settings.Output.Gif.Rate.ToString(),
-            },
+            ["timing"] = JsonFields.WriteTiming(settings.Timing),
+            ["frame"] = JsonFields.WriteFrame(settings.Frame),
+            ["output"] = JsonFields.WriteOutput(settings.Output),
             ["importFolder"] = settings.ImportFolder,
             ["exportFolder"] = settings.ExportFolder,
             ["successfulExports"] = settings.SuccessfulExports,
             ["ratingAskedVersion"] = settings.RatingAskedVersion,
+            ["recentProjects"] = new JsonArray([.. settings.RecentProjects.Select(path => (JsonNode?)JsonValue.Create(path))]),
         };
         return root.ToJsonString(_writeOptions);
     }
@@ -77,7 +61,7 @@ public static class UserSettingsJson
             return Fallback("The settings file does not hold a settings object.");
         }
 
-        if (!TryVersion(root["version"], out var version))
+        if (!JsonFields.TryVersion(root["version"], out var version))
         {
             return Fallback("The settings file has no usable version.");
         }
@@ -95,127 +79,21 @@ public static class UserSettingsJson
             }
         }
 
-        var timing = Section(root, "timing", problems);
-        var frame = Section(root, "frame", problems);
-        var output = Section(root, "output", problems);
         var defaults = UserSettings.Default;
         var settings = new UserSettings
         {
-            Timing = new TimingSettings(
-                Field(timing, "timing.mode", defaults.Timing.Mode, ReadEnum<SpeedMode>, problems),
-                Field(timing, "timing.framesPerSecond", defaults.Timing.FramesPerSecond, node => InRange(ReadFraction(node), t => TimingSettings.Default with { FramesPerSecond = t }), problems),
-                Field(timing, "timing.lengthSeconds", defaults.Timing.LengthSeconds, node => InRange(ReadFraction(node), t => TimingSettings.Default with { LengthSeconds = t }), problems),
-                Field(timing, "timing.secondsPerPhoto", defaults.Timing.SecondsPerPhoto, node => InRange(ReadFraction(node), t => TimingSettings.Default with { SecondsPerPhoto = t }), problems)),
-            Frame = new FrameSettings(
-                Field(frame, "frame.aspect", defaults.Frame.Aspect, ReadEnum<FrameAspect>, problems),
-                Field(frame, "frame.fit", defaults.Frame.Fit, ReadEnum<FitMode>, problems)),
-            Output = new OutputSettings(
-                Field(output, "output.resolution", defaults.Output.Resolution, ReadEnum<OutputResolution>, problems),
-                Field(output, "output.format", defaults.Output.Format, ReadEnum<VideoFormat>, problems),
-                Field(output, "output.quality", defaults.Output.Quality, ReadEnum<OutputQuality>, problems))
-            {
-                // Added by #51 without a version change: a file from 3.0 has neither field and gets the defaults.
-                Gif = new GifSettings(
-                    Field(output, "output.gifSize", defaults.Output.Gif.Size, ReadEnum<GifSize>, problems),
-                    Field(output, "output.gifRate", defaults.Output.Gif.Rate, ReadEnum<GifFrameRate>, problems)),
-            },
-            ImportFolder = Field(root, "importFolder", defaults.ImportFolder, ReadFolder, problems),
-            ExportFolder = Field(root, "exportFolder", defaults.ExportFolder, ReadFolder, problems),
-            SuccessfulExports = Field(root, "successfulExports", defaults.SuccessfulExports, ReadCount, problems),
-            RatingAskedVersion = Field(root, "ratingAskedVersion", defaults.RatingAskedVersion, ReadVersionText, problems),
+            Timing = JsonFields.ReadTiming(root, "timing", defaults.Timing, problems),
+            Frame = JsonFields.ReadFrame(root, "frame", defaults.Frame, problems),
+            Output = JsonFields.ReadOutput(root, "output", defaults.Output, problems),
+            ImportFolder = JsonFields.Field(root, "importFolder", defaults.ImportFolder, ReadFolder, problems),
+            ExportFolder = JsonFields.Field(root, "exportFolder", defaults.ExportFolder, ReadFolder, problems),
+            SuccessfulExports = JsonFields.Field(root, "successfulExports", defaults.SuccessfulExports, ReadCount, problems),
+            RatingAskedVersion = JsonFields.Field(root, "ratingAskedVersion", defaults.RatingAskedVersion, ReadVersionText, problems),
+            RecentProjects = JsonFields.Field(root, "recentProjects", defaults.RecentProjects, node => ReadRecent(node, problems), problems),
         };
         return new SettingsLoadResult(settings, problems);
 
         static SettingsLoadResult Fallback(string problem) => new(UserSettings.Default, [problem]);
-    }
-
-    private static JsonObject? Section(JsonObject root, string name, List<string> problems)
-    {
-        if (root[name] is JsonObject section)
-        {
-            return section;
-        }
-
-        if (root.TryGetPropertyValue(name, out var value) && value is not null)
-        {
-            problems.Add($"Settings section {name} is not an object; using the defaults for it.");
-        }
-
-        return null;
-    }
-
-    private static JsonArray Pair(Fraction value) => new(value.Numerator, value.Denominator);
-
-    private static bool TryVersion(JsonNode? node, out int version)
-    {
-        version = 0;
-        try
-        {
-            return node is JsonValue value && value.TryGetValue(out version) && version >= 1;
-        }
-        catch (Exception exception) when (exception is InvalidOperationException or FormatException)
-        {
-            return false;
-        }
-    }
-
-    // A missing field (or section) keeps its default without a word: an older file does not know a newer field.
-    private static T Field<T>(JsonObject? section, string path, T fallback, Func<JsonNode, T> read, List<string> problems)
-    {
-        var name = path[(path.LastIndexOf('.') + 1)..];
-        if (section is null || !section.TryGetPropertyValue(name, out var node) || node is null)
-        {
-            return fallback;
-        }
-
-        try
-        {
-            return read(node);
-        }
-        catch (Exception exception) when (exception is not OutOfMemoryException)
-        {
-            // Any non-fatal exception: a hand-edited file must never cost more than the field it spoils.
-            problems.Add($"Setting {path} is not usable ({exception.Message}); using the default.");
-            return fallback;
-        }
-    }
-
-    private static T ReadEnum<T>(JsonNode node)
-        where T : struct, Enum
-    {
-        var text = node.GetValue<string>();
-        foreach (var name in Enum.GetNames<T>())
-        {
-            if (string.Equals(name, text, StringComparison.OrdinalIgnoreCase))
-            {
-                return Enum.Parse<T>(name);
-            }
-        }
-
-        throw new ArgumentException($"\"{text}\" is not a known {typeof(T).Name}.");
-    }
-
-    private static Fraction ReadFraction(JsonNode node)
-    {
-        if (node is not JsonArray { Count: 2 } parts)
-        {
-            throw new FormatException("expected [numerator, denominator]");
-        }
-
-        // A null or nested element is not a number: say so rather than dereference it.
-        if (parts[0] is not JsonValue numerator || parts[1] is not JsonValue denominator)
-        {
-            throw new FormatException("expected two numbers");
-        }
-
-        return new Fraction(numerator.GetValue<int>(), denominator.GetValue<int>());
-    }
-
-    // The timing record checks each input against its range when it is set; borrowing that check keeps one source of truth.
-    private static Fraction InRange(Fraction value, Func<Fraction, TimingSettings> check)
-    {
-        _ = check(value);
-        return value;
     }
 
     private static string? ReadFolder(JsonNode node)
@@ -243,5 +121,30 @@ public static class UserSettingsJson
         return text.Length == 0
             ? null
             : text.Length > 64 || text.Any(char.IsControl) ? throw new ArgumentException("not a version") : text;
+    }
+
+    // The recent project files (#52): full paths, the first MaxRecentProjects. An entry that is not one is dropped and
+    // costs only itself.
+    private static PathList ReadRecent(JsonNode node, List<string> problems)
+    {
+        if (node is not JsonArray entries)
+        {
+            throw new FormatException("expected a list of paths");
+        }
+
+        var paths = new List<string>();
+        foreach (var entry in entries)
+        {
+            if (entry is JsonValue value && value.TryGetValue<string>(out var path) && path.Length > 0 && !path.Contains('\0') && Path.IsPathFullyQualified(path))
+            {
+                paths.Add(path);
+            }
+            else
+            {
+                problems.Add("Field recentProjects has an entry that is not a full file path; it was left out.");
+            }
+        }
+
+        return PathList.Of(paths).Take(UserSettings.MaxRecentProjects);
     }
 }

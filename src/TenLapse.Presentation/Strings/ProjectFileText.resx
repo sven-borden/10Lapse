@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The user-visible text of ProjectFiles/ProjectFileText.cs (#52): saving and opening projects, the recent list and the
+  recovery offer, read through TextResources. English is the neutral language. A translation is a copy of this file named
+  ProjectFileText.<culture>.resx with the values translated; keep the {0} placeholders and their numbers, and keep each
+  entry a whole sentence. The comments say what each placeholder holds.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="FileMenu" xml:space="preserve">
+    <value>File</value>
+    <comment>The command bar button that opens the menu with Open, Save and Save as, as in Paint or Notepad; also its screen reader name. Use the word Windows apps use for their File menu. Keep it to about 12 characters.</comment>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Open…</value>
+    <comment>The File menu item that opens a project file (a dialog follows, hence the ellipsis). Use Windows' own word for Open.</comment>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+    <comment>The File menu item that saves the project to its file (the first time, a Save dialog opens). Use Windows' own word for Save.</comment>
+  </data>
+  <data name="SaveAs" xml:space="preserve">
+    <value>Save as…</value>
+    <comment>The File menu item that saves the project to a new file through a Save dialog. Use Windows' own words for Save as.</comment>
+  </data>
+  <data name="FileTypeName" xml:space="preserve">
+    <value>10Lapse project</value>
+    <comment>The name of the .10lapse file type in the Open and Save dialogs. 10Lapse is the app's name and never changes.</comment>
+  </data>
+  <data name="OpenNotAProjectFormat" xml:space="preserve">
+    <value>“{0}” isn't a 10Lapse project, or it's damaged, so it couldn't be opened.</value>
+    <comment>A Critical InfoBar. {0} the file's name with its extension ("Harbor.10lapse").</comment>
+  </data>
+  <data name="OpenUnreadableFormat" xml:space="preserve">
+    <value>“{0}” couldn't be opened. Check that it's still there and that you can read it, then try again.</value>
+    <comment>A Critical InfoBar when the file cannot be read (gone, locked, no access). {0} the file's name with its extension.</comment>
+  </data>
+  <data name="OpenNewerVersionFormat" xml:space="preserve">
+    <value>“{0}” was saved by a newer version of 10Lapse. Settings this version doesn't know were left out, so Save will ask for a new file and leave this one as it is.</value>
+    <comment>A Caution InfoBar after opening a project file from a newer 10Lapse; the project opened, and Save asks where (Save as) instead of overwriting the file. {0} the file's name with its extension.</comment>
+  </data>
+  <data name="OpenSomeSettingsFormat" xml:space="preserve">
+    <value>Some settings in “{0}” couldn't be read and were set back to their defaults.</value>
+    <comment>A Caution InfoBar after opening a project file with a damaged setting; the project opened. {0} the file's name with its extension.</comment>
+  </data>
+  <data name="MissingPhotos_one" xml:space="preserve">
+    <value>{0} photo of this project wasn't found. It stays in the project file: put it back where it was, then open the project again.</value>
+    <comment>A Caution InfoBar after opening a project, with a list of the photos behind "View list". {0} the count. The photo stays in the project file, so it comes back once it is where it was. Removing never deletes: the photo was moved or deleted outside 10Lapse.</comment>
+  </data>
+  <data name="MissingPhotos_other" xml:space="preserve">
+    <value>{0} photos of this project weren't found. They stay in the project file: put them back where they were, then open the project again.</value>
+    <comment>As MissingPhotos_one, for other counts. {0} the count, already written in the user's format ("1,240").</comment>
+  </data>
+  <data name="SaveFailedFormat" xml:space="preserve">
+    <value>“{0}” couldn't be saved. Check that its folder is still there and that you can write to it, then try again.</value>
+    <comment>A Critical InfoBar when writing the project file fails; the file on disk is unchanged. {0} the file's name with its extension.</comment>
+  </data>
+  <data name="UnsavedTitleFormat" xml:space="preserve">
+    <value>Save changes to “{0}”?</value>
+    <comment>The title of the question before unsaved changes would be lost (opening another project, New project, starting a new project from a drop, closing the window). {0} the project's name.</comment>
+  </data>
+  <data name="UnsavedMessage" xml:space="preserve">
+    <value>If you don't save, your changes to this project will be lost.</value>
+    <comment>The question's text.</comment>
+  </data>
+  <data name="UnsavedSave" xml:space="preserve">
+    <value>Save</value>
+    <comment>The question's default button: saves, then goes on. Keep it to about 16 characters.</comment>
+  </data>
+  <data name="UnsavedDontSave" xml:space="preserve">
+    <value>Don't save</value>
+    <comment>The question's button that goes on without saving. Use the words Windows apps use. Keep it to about 16 characters.</comment>
+  </data>
+  <data name="RecoveryOfferFormat" xml:space="preserve">
+    <value>10Lapse closed before your changes to “{0}” were saved. Restore them to carry on where you left off.</value>
+    <comment>An InfoBar at launch after 10Lapse ended without closing (a crash, a power cut) with unsaved changes. {0} the project's name ("Harbor sunset"). 10Lapse never changes.</comment>
+  </data>
+  <data name="RecoveryRestore" xml:space="preserve">
+    <value>Restore</value>
+    <comment>The recovery InfoBar's button: opens the unsaved project as it was. Not the word for Undo. Keep it to about 16 characters.</comment>
+  </data>
+  <data name="RecentHeading" xml:space="preserve">
+    <value>Recent projects</value>
+    <comment>The heading over the list of recently opened or saved projects on the first-launch screen.</comment>
+  </data>
+  <data name="RecentClear" xml:space="preserve">
+    <value>Clear list</value>
+    <comment>A text button beside the heading that empties the recent list (the files stay). Keep it to about 16 characters.</comment>
+  </data>
+  <data name="RecentClearName" xml:space="preserve">
+    <value>Clear the list of recent projects</value>
+    <comment>The screen reader name of the Clear list button.</comment>
+  </data>
+  <data name="RecentNotFound" xml:space="preserve">
+    <value>Not found</value>
+    <comment>Beside a recent project whose file was moved or deleted. Keep it to about 14 characters.</comment>
+  </data>
+  <data name="RecentItemNameFormat" xml:space="preserve">
+    <value>{0}, in {1}</value>
+    <comment>A recent project's screen reader name. {0} the project's name ("Harbor sunset"), {1} its folder ("D:\Trips").</comment>
+  </data>
+  <data name="RecentItemMissingNameFormat" xml:space="preserve">
+    <value>{0}, {1}</value>
+    <comment>A missing recent project's screen reader name. {0} the project's name, {1} the RecentNotFound note.</comment>
+  </data>
+  <data name="RecentGoneFormat" xml:space="preserve">
+    <value>“{0}” isn't where it was saved any more, so it was taken off the list.</value>
+    <comment>A Caution InfoBar after clicking a recent project whose file is gone. {0} the project's name.</comment>
+  </data>
+  <data name="SaveFolderGoneFormat" xml:space="preserve">
+    <value>“{0}” couldn't be saved because its folder isn't there any more. Connect the drive it was on, or choose Save as to save it somewhere else.</value>
+    <comment>A Critical InfoBar when the project file's folder is gone (an unplugged drive, a moved folder); Save never makes the folder again. Its button is the File menu's Save as. {0} the file's name with its extension.</comment>
+  </data>
+  <data name="NoPhotosFound_one" xml:space="preserve">
+    <value>The photo of “{1}” wasn't found, so the project wasn't opened. Connect the drive it's on or put it back where it was, then open the project again.</value>
+    <comment>A Caution InfoBar when none of a project's photos are where it saved them (a drive not connected), with the list of where they were looked for behind "View list"; the project did not open and its file is unchanged. {0} the count (1 here), {1} the project's name ("Harbor sunset").</comment>
+  </data>
+  <data name="NoPhotosFound_other" xml:space="preserve">
+    <value>None of the {0} photos of “{1}” were found, so the project wasn't opened. Connect the drive they're on or put them back where they were, then open the project again.</value>
+    <comment>As NoPhotosFound_one, for other counts. {0} the count, already written in the user's format ("1,240"), {1} the project's name.</comment>
+  </data>
+  <data name="NewerSaveAsFormat" xml:space="preserve">
+    <value>“{0}” was saved by a newer version of 10Lapse. Saving over it would drop what this version doesn't know, so choose where to save this project.</value>
+    <comment>A Caution InfoBar when Save opens the Save as dialog because the project's file came from a newer 10Lapse. {0} the file's name with its extension.</comment>
+  </data>
+  <data name="CloudOnlyPhotos_one" xml:space="preserve">
+    <value>{0} photo of this project is only in OneDrive, about {1}. It downloads when the preview or the export needs it.</value>
+    <comment>A Caution InfoBar after opening a project whose photos OneDrive keeps online only. {0} the count, {1} their size ("2.4 GB").</comment>
+  </data>
+  <data name="CloudOnlyPhotos_other" xml:space="preserve">
+    <value>{0} photos of this project are only in OneDrive, about {1} in all. They download as the preview and the export need them.</value>
+    <comment>As CloudOnlyPhotos_one, for other counts. {0} the count, already written in the user's format ("1,240"), {1} their size in all ("2.4 GB").</comment>
+  </data>
+</root>

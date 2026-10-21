@@ -215,6 +215,24 @@ public partial class App : Application
             infoBars,
             codecs,
             errors);
+        // Saving and opening projects (#52): the File menu, the recent list on the first-launch screen, the question before
+        // unsaved changes would be lost, and the crash safety net. The recovery copies sit beside the settings file, in
+        // the app's own folder, never beside the user's project.
+        var recovery = new Core.Projects.RecoveryStore(_folders.RecoveryFolder);
+        var files = new Presentation.ProjectFiles.ProjectFilesViewModel(
+            shell,
+            new ProjectFilePicker(() => window!.AppWindow.Id),
+            Core.Projects.ProjectFileSystem.Instance,
+            remembered,
+            recovery,
+            dialogs,
+            infoBars,
+            errors,
+            _log,
+            import);
+        var recent = new Presentation.ProjectFiles.RecentProjectsViewModel(remembered, files, Core.Projects.ProjectFileSystem.Instance, infoBars, errors);
+        var autosave = new Presentation.ProjectFiles.ProjectAutosave(shell, recovery, errors, content: files.RecoveryContent);
+
         // The Output panel (#23) offers only what the probe confirms; until then it says it is checking. A probe
         // that is slow or fails leaves it with H.264 up to 1080p (OutputCapabilitiesDelivery).
         var output = new OutputPanelViewModel(shell, errors);
@@ -257,7 +275,10 @@ public partial class App : Application
             preview,
             notifications,
             exportWindow => new Presentation.Export.ExportServices(exporter, savePicker, remembered, dialogs, infoBars, new ExplorerFileReveal(), exportWindow, new PowerRequestKeepAwake(logOnly)),
-            _startup);
+            _startup,
+            files,
+            recent,
+            autosave);
         _startup.Phase("attaching the window's services");
         window.Closed += (_, _) => notifications.Dispose();
         window.FirstFrameRendered += (_, _) => encoders.Start();
@@ -292,6 +313,31 @@ public partial class App : Application
         // After the Debug switches, so only the user's own changes are remembered. The last change is written as the window closes.
         errors.Guard(() => remembered.Attach(shell), ProjectText.SettingsAttachFailed);
         window.Closed += (_, _) => remembered.Dispose();
+
+        // The recovery copy follows the user's own changes from here (#52). A clean close removes it; the window closes only
+        // after the question about unsaved changes (WindowCloseGate).
+        errors.Guard(autosave.Attach, Presentation.ProjectFiles.ProjectFileText.AutosaveFailedContext);
+        window.Closed += (_, _) =>
+        {
+            autosave.Dispose();
+            recent.Dispose();
+            files.Dispose();
+        };
+
+        // Once the window is on screen: the project 10Lapse was started with (a double click on a .10lapse file, or the
+        // command line), then the offer to restore a project a 10Lapse that ended without closing could not save.
+        var launchFile = LaunchFile.Find();
+        window.FirstFrameRendered += (_, _) => _ = errors.GuardAsync(
+            async () =>
+            {
+                if (launchFile is not null)
+                {
+                    await errors.GuardAsync(() => files.OpenPathAsync(launchFile), Presentation.ProjectFiles.ProjectFileText.OpenAtLaunchFailedContext);
+                }
+
+                await files.OfferRecoveryAsync();
+            },
+            Presentation.ProjectFiles.ProjectFileText.RecoveryLookFailedContext);
 #if DEBUG
         if (Debugging.DebugMissingCodecs.FromSwitches(Environment.GetCommandLineArgs()) is { } fakedMissing)
         {

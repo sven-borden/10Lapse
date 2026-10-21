@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="FileMenu" xml:space="preserve">
+    <value>Fichier</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Ouvrir…</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="SaveAs" xml:space="preserve">
+    <value>Enregistrer sous…</value>
+  </data>
+  <data name="FileTypeName" xml:space="preserve">
+    <value>Projet 10Lapse</value>
+  </data>
+  <data name="OpenNotAProjectFormat" xml:space="preserve">
+    <value>Impossible d’ouvrir « {0} » : ce n’est pas un projet 10Lapse, ou il est endommagé.</value>
+  </data>
+  <data name="OpenUnreadableFormat" xml:space="preserve">
+    <value>Impossible d’ouvrir « {0} ». Vérifiez qu’il est toujours là et que vous pouvez le lire, puis réessayez.</value>
+  </data>
+  <data name="OpenNewerVersionFormat" xml:space="preserve">
+    <value>« {0} » a été enregistré avec une version plus récente de 10Lapse. Les paramètres que cette version ne connaît pas ont été laissés de côté : Enregistrer demandera un nouveau fichier et laissera celui-ci intact.</value>
+  </data>
+  <data name="OpenSomeSettingsFormat" xml:space="preserve">
+    <value>Certains paramètres de « {0} » n’ont pas pu être lus et ont repris leur valeur par défaut.</value>
+  </data>
+  <data name="MissingPhotos_one" xml:space="preserve">
+    <value>{0} photo de ce projet est introuvable. Elle reste dans le fichier du projet : remettez-la à sa place, puis rouvrez le projet.</value>
+  </data>
+  <data name="MissingPhotos_many" xml:space="preserve">
+    <value>{0} de photos de ce projet sont introuvables. Elles restent dans le fichier du projet : remettez-les à leur place, puis rouvrez le projet.</value>
+  </data>
+  <data name="MissingPhotos_other" xml:space="preserve">
+    <value>{0} photos de ce projet sont introuvables. Elles restent dans le fichier du projet : remettez-les à leur place, puis rouvrez le projet.</value>
+  </data>
+  <data name="SaveFailedFormat" xml:space="preserve">
+    <value>Impossible d’enregistrer « {0} ». Vérifiez que son dossier existe toujours et que vous pouvez y écrire, puis réessayez.</value>
+  </data>
+  <data name="UnsavedTitleFormat" xml:space="preserve">
+    <value>Enregistrer les modifications de « {0} » ?</value>
+  </data>
+  <data name="UnsavedMessage" xml:space="preserve">
+    <value>Si vous n’enregistrez pas, vos modifications de ce projet seront perdues.</value>
+  </data>
+  <data name="UnsavedSave" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="UnsavedDontSave" xml:space="preserve">
+    <value>Ne pas enregistrer</value>
+  </data>
+  <data name="RecoveryOfferFormat" xml:space="preserve">
+    <value>10Lapse s’est fermé avant que vos modifications de « {0} » soient enregistrées. Restaurez-les pour reprendre là où vous en étiez.</value>
+  </data>
+  <data name="RecoveryRestore" xml:space="preserve">
+    <value>Restaurer</value>
+  </data>
+  <data name="RecentHeading" xml:space="preserve">
+    <value>Projets récents</value>
+  </data>
+  <data name="RecentClear" xml:space="preserve">
+    <value>Effacer la liste</value>
+  </data>
+  <data name="RecentClearName" xml:space="preserve">
+    <value>Effacer la liste des projets récents</value>
+  </data>
+  <data name="RecentNotFound" xml:space="preserve">
+    <value>Introuvable</value>
+  </data>
+  <data name="RecentItemNameFormat" xml:space="preserve">
+    <value>{0}, dans {1}</value>
+  </data>
+  <data name="RecentItemMissingNameFormat" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="RecentGoneFormat" xml:space="preserve">
+    <value>« {0} » n’est plus là où il a été enregistré ; il a été retiré de la liste.</value>
+  </data>
+  <data name="SaveFolderGoneFormat" xml:space="preserve">
+    <value>Impossible d’enregistrer « {0} » : son dossier n’existe plus. Rebranchez le lecteur où il se trouvait, ou choisissez Enregistrer sous pour l’enregistrer ailleurs.</value>
+  </data>
+  <data name="NoPhotosFound_one" xml:space="preserve">
+    <value>La photo de « {1} » est introuvable, le projet n’a donc pas été ouvert. Branchez le lecteur où elle se trouve ou remettez-la à sa place, puis rouvrez le projet.</value>
+  </data>
+  <data name="NoPhotosFound_many" xml:space="preserve">
+    <value>Aucune des {0} de photos de « {1} » n’a été trouvée, le projet n’a donc pas été ouvert. Branchez le lecteur où elles se trouvent ou remettez-les à leur place, puis rouvrez le projet.</value>
+  </data>
+  <data name="NoPhotosFound_other" xml:space="preserve">
+    <value>Aucune des {0} photos de « {1} » n’a été trouvée, le projet n’a donc pas été ouvert. Branchez le lecteur où elles se trouvent ou remettez-les à leur place, puis rouvrez le projet.</value>
+  </data>
+  <data name="NewerSaveAsFormat" xml:space="preserve">
+    <value>« {0} » a été enregistré avec une version plus récente de 10Lapse. L’écraser supprimerait ce que cette version ne connaît pas : choisissez où enregistrer ce projet.</value>
+  </data>
+  <data name="CloudOnlyPhotos_one" xml:space="preserve">
+    <value>{0} photo de ce projet se trouve uniquement dans OneDrive, environ {1}. Elle sera téléchargée quand l’aperçu ou l’exportation en aura besoin.</value>
+  </data>
+  <data name="CloudOnlyPhotos_many" xml:space="preserve">
+    <value>{0} de photos de ce projet se trouvent uniquement dans OneDrive, environ {1} au total. Elles seront téléchargées quand l’aperçu ou l’exportation en auront besoin.</value>
+  </data>
+  <data name="CloudOnlyPhotos_other" xml:space="preserve">
+    <value>{0} photos de ce projet se trouvent uniquement dans OneDrive, environ {1} au total. Elles seront téléchargées quand l’aperçu ou l’exportation en auront besoin.</value>
+  </data>
+</root>

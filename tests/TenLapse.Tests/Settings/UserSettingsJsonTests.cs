@@ -16,7 +16,30 @@ public sealed class UserSettingsJsonTests
         ExportFolder = @"D:\Videos\10Lapse",
         SuccessfulExports = 7,
         RatingAskedVersion = "3.0.0.0",
+        RecentProjects = PathList.Of([@"C:\Projects\Harbor.10lapse", @"D:\Trips\Alps.10lapse"]),
     };
+
+    [Fact]
+    public void TheRecentListKeepsFullPathsOnlyInOrderAndAtMostFive()
+    {
+        var result = UserSettingsJson.Read("""
+            { "version": 1, "recentProjects": [ "C:\\A.10lapse", "relative.10lapse", 3, "C:\\B.10lapse", "c:\\a.10lapse",
+              "C:\\C.10lapse", "C:\\D.10lapse", "C:\\E.10lapse", "C:\\F.10lapse" ] }
+            """);
+
+        Assert.Equal([@"C:\A.10lapse", @"C:\B.10lapse", @"C:\C.10lapse", @"C:\D.10lapse", @"C:\E.10lapse"], result.Settings.RecentProjects);
+        Assert.Equal(2, result.Problems.Count);
+    }
+
+    [Fact]
+    public void AnOlderFileHasNoRecentProjects() =>
+        Assert.Empty(UserSettingsJson.Read("""{ "version": 1 }""").Settings.RecentProjects);
+
+    [Fact]
+    public void ARecentPathMovesToTheFrontOnceWhateverItsCase() =>
+        Assert.Equal(
+            PathList.Of([@"C:\B.10lapse", @"C:\A.10lapse"]),
+            PathList.Of([@"C:\A.10lapse", @"C:\B.10lapse"]).WithFirst(@"c:\b.10lapse", UserSettings.MaxRecentProjects));
 
     private const string V1 = """
         {

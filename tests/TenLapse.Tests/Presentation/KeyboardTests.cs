@@ -9,15 +9,18 @@ namespace TenLapse.Tests.Presentation;
 /// </summary>
 public sealed class KeyboardTests
 {
-    private static readonly ShortcutScreen _editing = new(SettingsOpen: false, DialogOpen: false, ShowsNewProject: true, ShowsExport: true);
+    private static readonly ShortcutScreen _editing = new(SettingsOpen: false, DialogOpen: false, ShowsNewProject: true, ShowsExport: true, ShowsSave: true);
     private static readonly ShortcutScreen _empty = new(SettingsOpen: false, DialogOpen: false, ShowsNewProject: false, ShowsExport: false);
 
     [Theory]
-    [InlineData('O', false, ShellShortcut.ChooseFolder)]
-    [InlineData('o', false, ShellShortcut.ChooseFolder)]
-    [InlineData('O', true, ShellShortcut.ChoosePhotos)]
+    [InlineData('I', false, ShellShortcut.ChooseFolder)]
+    [InlineData('i', false, ShellShortcut.ChooseFolder)]
+    [InlineData('I', true, ShellShortcut.ChoosePhotos)]
     [InlineData('N', false, ShellShortcut.NewProject)]
     [InlineData('E', false, ShellShortcut.Export)]
+    [InlineData('O', false, ShellShortcut.Open)]
+    [InlineData('S', false, ShellShortcut.Save)]
+    [InlineData('S', true, ShellShortcut.SaveAs)]
     public void CtrlWithTheLetterIsTheShortcut(char letter, bool shift, ShellShortcut expected) =>
         Assert.Equal(expected, ShellShortcuts.Resolve(letter, control: true, shift, other: false));
 
@@ -29,7 +32,8 @@ public sealed class KeyboardTests
     [InlineData('E', true, true, false)]
     [InlineData('E', false, true, true)]
     [InlineData('Z', false, true, false)]
-    [InlineData('S', false, true, false)]
+    [InlineData('O', true, true, false)]
+    [InlineData('S', false, true, true)]
     public void AnyOtherCombinationIsNoShortcut(char letter, bool shift, bool control, bool other) =>
         Assert.Null(ShellShortcuts.Resolve(letter, control, shift, other));
 
@@ -38,6 +42,9 @@ public sealed class KeyboardTests
     [InlineData(ShellShortcut.ChoosePhotos)]
     [InlineData(ShellShortcut.NewProject)]
     [InlineData(ShellShortcut.Export)]
+    [InlineData(ShellShortcut.Open)]
+    [InlineData(ShellShortcut.Save)]
+    [InlineData(ShellShortcut.SaveAs)]
     public void EveryShortcutWorksWhileEditing(ShellShortcut shortcut) =>
         Assert.True(ShellShortcuts.IsAvailable(shortcut, _editing));
 
@@ -46,7 +53,10 @@ public sealed class KeyboardTests
     [InlineData(ShellShortcut.ChoosePhotos, true)]
     [InlineData(ShellShortcut.NewProject, false)]
     [InlineData(ShellShortcut.Export, false)]
-    public void OnTheEmptyScreenOnlyAddingPhotosWorks(ShellShortcut shortcut, bool works) =>
+    [InlineData(ShellShortcut.Open, true)]
+    [InlineData(ShellShortcut.Save, false)]
+    [InlineData(ShellShortcut.SaveAs, false)]
+    public void OnTheEmptyScreenOnlyAddingPhotosAndOpenWork(ShellShortcut shortcut, bool works) =>
         Assert.Equal(works, ShellShortcuts.IsAvailable(shortcut, _empty));
 
     [Theory]
@@ -54,6 +64,9 @@ public sealed class KeyboardTests
     [InlineData(ShellShortcut.ChoosePhotos)]
     [InlineData(ShellShortcut.NewProject)]
     [InlineData(ShellShortcut.Export)]
+    [InlineData(ShellShortcut.Open)]
+    [InlineData(ShellShortcut.Save)]
+    [InlineData(ShellShortcut.SaveAs)]
     public void NoShortcutWorksOnTheSettingsPageOrUnderADialog(ShellShortcut shortcut)
     {
         Assert.False(ShellShortcuts.IsAvailable(shortcut, _editing with { SettingsOpen = true }));
@@ -63,6 +76,13 @@ public sealed class KeyboardTests
     [Fact]
     public void ExportFollowsItsButton() =>
         Assert.False(ShellShortcuts.IsAvailable(ShellShortcut.Export, _editing with { ShowsExport = false }));
+
+    [Fact]
+    public void SaveAndSaveAsFollowTheirMenuItems()
+    {
+        Assert.False(ShellShortcuts.IsAvailable(ShellShortcut.Save, _editing with { ShowsSave = false }));
+        Assert.False(ShellShortcuts.IsAvailable(ShellShortcut.SaveAs, _editing with { ShowsSave = false }));
+    }
 
     [Theory]
     [InlineData(false, true, ShellScreen.Empty)]
@@ -133,7 +153,10 @@ public sealed class KeyboardTests
     {
         Assert.Equal("New project (Ctrl+N)", ShortcutTips.NewProject);
         Assert.Equal("Export video (Ctrl+E)", ShortcutTips.Export);
-        Assert.Equal("Control+O", KeyText.ChooseFolderKeys);
-        Assert.Equal("Control+Shift+O", KeyText.ChoosePhotosKeys);
+        Assert.Equal("Control+I", KeyText.ChooseFolderKeys);
+        Assert.Equal("Control+Shift+I", KeyText.ChoosePhotosKeys);
+        Assert.Equal("Control+O", KeyText.OpenKeys);
+        Assert.Equal("Ctrl+S", KeyText.SaveShortcut);
+        Assert.Equal("Control+Shift+S", KeyText.SaveAsKeys);
     }
 }

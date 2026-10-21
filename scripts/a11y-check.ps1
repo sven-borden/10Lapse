@@ -16,12 +16,13 @@
         editing-wide          editing at 1280 x 800
         narrow-timing, narrow-frame, narrow-output   900 px wide, each tab of the panel
         export-running        the export panel at 1280 x 800
-        close-question        the close-during-export dialog (skipped when the export finished first)
+        save-question         the close's "Save changes to ...?" on the unsaved sample project (#52), then Don't save
+        close-question        the close-during-export dialog after it (skipped when the export finished first)
         finished, finished-narrow   the finished state
-        new-project-question  New project's question on a project with changes (the shortcuts run)
+        new-project-question  New project's "Save changes to ...?" on a project with changes (the shortcuts run)
 
-    The fourth run (shortcuts) proves the keyboard-only path without pressing a key: Debug --shortcut-after runs Ctrl+O,
-    Ctrl+N, Ctrl+E, Ctrl+N, Ctrl+E and Ctrl+O at fixed seconds through the method each keyboard accelerator calls, on
+    The fourth run (shortcuts) proves the keyboard-only path without pressing a key: Debug --shortcut-after runs Ctrl+I,
+    Ctrl+N, Ctrl+E, Ctrl+N, Ctrl+E and Ctrl+I at fixed seconds through the method each keyboard accelerator calls, on
     Editing (with "24" typed into the Timing box and not committed), the question, the finished state, the Empty screen
     and the Settings page; focus-keys.log says which applied. The fifth run (newproject) confirms New project with an
     InfoBar open; focus-newproject.log shows where focus landed.
@@ -69,6 +70,9 @@ $AE = [System.Windows.Automation.AutomationElement]
 $Tree = [System.Windows.Automation.TreeScope]
 
 function Common([string]$name) {
+    # A fresh settings folder per launch: a run stopped earlier leaves its recovery copy there (#52), and a Restore InfoBar
+    # would join the scan.
+    Remove-Item (Join-Path $base "a11y-settings-$name") -Recurse -Force -ErrorAction SilentlyContinue
     @(
         # The checks find controls by their English UIA names, so the app speaks English whatever Windows says (#113).
         '--lang=en-US',
@@ -166,6 +170,16 @@ function Invoke-Element($element) {
     if ($element) { $element.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
 }
 
+# Waits (at most $seconds) until no element with this automation id is on screen: a dialog that closed.
+function Wait-Gone($app, [string]$id, [double]$seconds = 5) {
+    $until = (Get-Date).AddSeconds($seconds)
+    $condition = New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, $id)
+    while ((Get-Date) -lt $until -and -not $app.Process.HasExited) {
+        if (-not (@($app.Window.FindAll($Tree::Descendants, $condition)) | Where-Object { -not $_.Current.IsOffscreen })) { return }
+        Start-Sleep -Milliseconds 200
+    }
+}
+
 function Close-InfoBar($app) {
     $bar = Find-Id $app 'ShellInfoBar' 2
     if ($bar) {
@@ -253,6 +267,15 @@ if (Want 'export') {
         if (Find-Id $app 'CancelButton' 240) {
             $windowPattern = $null
             if ($app.Window.TryGetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern, [ref]$windowPattern)) { $windowPattern.Close() }
+            # The sample project has unsaved changes, so the close asks "Save changes to ...?" first (#52): scanned as a
+            # screen of its own, then Don't save (its SecondaryButton), and the export's "Stop the export and close?" follows.
+            $dontSave = Find-Id $app 'SecondaryButton' 5
+            if ($dontSave) {
+                Invoke-Scan $app 'save-question'
+                Invoke-Element $dontSave
+                Wait-Gone $app 'SecondaryButton'
+            }
+            else { Skip 'save-question' 'the close did not ask to save' }
             $keep = Find-Id $app 'CloseButton' 5
             if ($keep) {
                 Invoke-Scan $app 'close-question'
@@ -273,18 +296,18 @@ if (Want 'export') {
 }
 
 # 4: the keyboard-only path through the shortcuts, run by Debug --shortcut-after at fixed seconds after launch, through
-# the same method each keyboard accelerator calls (no key is pressed): Ctrl+O opens the folder picker (closed again here
+# the same method each keyboard accelerator calls (no key is pressed): Ctrl+I opens the folder picker (closed again here
 # through UIA), Ctrl+N on a project with changes asks first (scanned, then Cancel), Ctrl+E exports (--export-to answers the
 # Save dialog, --export-wait keeps it from starting by itself), Ctrl+N after the export opens the Empty screen, Ctrl+E
-# there and Ctrl+O on the Settings page do nothing. focus-keys.log has each shortcut's result and every focus landing.
+# there and Ctrl+I on the Settings page do nothing. focus-keys.log has each shortcut's result and every focus landing.
 if (Want 'keys') {
     Write-Host 'Run: shortcuts'
     $export2 = Join-Path $base 'a11y-keys.mp4'
     Remove-Item $export2 -ErrorAction SilentlyContinue
-    $app = Start-App ((Common 'keys') + '--sample-frames=400' + '--output=2160' + "--export-to=$export2" + '--export-wait' + '--shortcut-after=ctrl+o@8,ctrl+n@14,ctrl+e@26,ctrl+n@40,ctrl+e@43,ctrl+o@52')
+    $app = Start-App ((Common 'keys') + '--sample-frames=400' + '--output=2160' + "--export-to=$export2" + '--export-wait' + '--shortcut-after=ctrl+i@8,ctrl+n@14,ctrl+e@26,ctrl+n@40,ctrl+e@43,ctrl+i@52')
     try {
         Resize $app 1280 800
-        # Ctrl+O at 8 s: the folder picker is a second window of the process.
+        # Ctrl+I at 8 s: the folder picker is a second window of the process.
         $picker = $null
         $until = (Get-Date).AddSeconds(20)
         while (-not $picker -and (Get-Date) -lt $until -and -not $app.Process.HasExited) {
@@ -300,11 +323,11 @@ if (Want 'keys') {
             }
         }
         if ($picker) {
-            $summary.Add("ctrl+o opened '$($picker.Current.Name)' ($($picker.Current.ClassName)); closed through UIA")
-            Write-Host "  Ctrl+O opened '$($picker.Current.Name)'"
+            $summary.Add("ctrl+i opened '$($picker.Current.Name)' ($($picker.Current.ClassName)); closed through UIA")
+            Write-Host "  Ctrl+I opened '$($picker.Current.Name)'"
             $picker.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
         }
-        else { Skip 'ctrl+o picker' 'no picker window appeared' }
+        else { Skip 'ctrl+i picker' 'no picker window appeared' }
         # Ctrl+N at 14 s: the project has changes, so it asks first.
         Wait-Until $app 14
         if (Find-Id $app 'PrimaryButton' 8) {
@@ -344,7 +367,7 @@ if (Want 'keys') {
         Wait-Until $app 45
         if (Find-Id $app 'ChooseFolderButton' 5) { $summary.Add('ctrl+n after the export: the Empty screen') }
         Invoke-Element (Find-Id $app 'SettingsButton' 2)
-        # Ctrl+O at 52 s on the Settings page.
+        # Ctrl+I at 52 s on the Settings page.
         Wait-Until $app 55
         Invoke-Element (Find-Id $app 'BackButton' 2)
         Start-Sleep -Seconds 2
@@ -362,9 +385,11 @@ if (Want 'newproject') {
         Resize $app 1280 800
         if (Find-Id $app 'ShellInfoBar' 14) { $summary.Add('newproject: the skipped-photos InfoBar is open before Ctrl+N') }
         Wait-Until $app 15
-        $confirm = Find-Id $app 'PrimaryButton' 8
+        # The project has unsaved changes, so New project asks "Save changes to ...?" (#52): Don't save goes on (Save would
+        # open the Save dialog).
+        $confirm = Find-Id $app 'SecondaryButton' 8
         if ($confirm) {
-            $summary.Add("newproject: the question asked; confirmed '$($confirm.Current.Name)'")
+            $summary.Add("newproject: the question asked; answered '$($confirm.Current.Name)'")
             Invoke-Element $confirm
         }
         Start-Sleep -Seconds 4

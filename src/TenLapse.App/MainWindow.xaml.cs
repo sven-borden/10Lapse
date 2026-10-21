@@ -64,8 +64,13 @@ public sealed partial class MainWindow : Window
     /// <param name="notifications">The export's Windows notifications, registered at start (#24).</param>
     /// <param name="exportServices">Builds the export's services (#24) around this window's taskbar button and notifications.</param>
     /// <param name="startup">Logs the start-up phases (#90).</param>
-    internal MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, ExportNotifications notifications, Func<IExportWindow, ExportServices> exportServices, StartupTrace startup)
+    /// <param name="files">Open, Save and Save as (#52); closing with unsaved changes asks through it.</param>
+    /// <param name="recent">The first-launch screen's recent projects (#52).</param>
+    /// <param name="autosave">The recovery copy (#52), kept for the next launch when the close question itself fails.</param>
+    internal MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, ExportNotifications notifications, Func<IExportWindow, ExportServices> exportServices, StartupTrace startup, Presentation.ProjectFiles.ProjectFilesViewModel files, Presentation.ProjectFiles.RecentProjectsViewModel recent, Presentation.ProjectFiles.ProjectAutosave autosave)
     {
+        ArgumentNullException.ThrowIfNull(autosave);
+        ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(errors);
         ArgumentNullException.ThrowIfNull(presenter);
@@ -87,11 +92,20 @@ public sealed partial class MainWindow : Window
         notifications.Invoked += (_, _) => _queue.TryEnqueueGuarded(errors, Activate, ExportText.NotificationFailed);
 
         _startup.Phase("building the shell");
-        _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter, preview, exportServices(_exportFeedback));
+        _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter, preview, exportServices(_exportFeedback), files, recent);
         // The language of the text (#113), for WinUI's own strings, line breaks and font fallback; the tree inherits it.
         _shell.Language = AppLanguage.Tag;
         Content = _shell;
-        _closeGate = new WindowCloseGate(() => _shell.Export.MayCloseNow, _shell.Export.PrepareToCloseAsync, _shell.Export.CancelForClose, Close, presenter);
+        // Unsaved changes ask "Save changes to …?" first (#52), then a running export asks to stop.
+        _closeGate = new WindowCloseGate(
+            () => _shell.Export.MayCloseNow,
+            _shell.Export.PrepareToCloseAsync,
+            _shell.Export.CancelForClose,
+            Close,
+            presenter,
+            () => files.HasUnsavedWork,
+            files.ConfirmCloseAsync,
+            autosave.KeepForNextLaunch);
         _startup.Phase("setting the title bar and the backdrop");
 
         // Window is not a DependencyObject, so its Title cannot take a binding: follow the view model by hand.
@@ -221,7 +235,7 @@ public sealed partial class MainWindow : Window
 
     private bool IsMinimized => AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized };
 
-    // Closing during an export asks first (#24, WindowCloseGate). AppWindow.Closing is raised by the window's message
+    // Closing with unsaved changes (#52) or during an export (#24) asks first (WindowCloseGate). AppWindow.Closing is raised by the window's message
     // handling, not by XAML, so the answer runs inside RunLogged (#90); Cancel is set only once the gate has answered,
     // so a failure lets the window close (the gate itself never throws, and stops a running export when its check fails).
     private void OnClosing(AppWindow sender, AppWindowClosingEventArgs args) =>

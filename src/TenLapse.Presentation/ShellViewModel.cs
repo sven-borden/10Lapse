@@ -88,6 +88,14 @@ public sealed partial class ShellViewModel : ObservableObject
     /// </summary>
     public IAsyncRelayCommand NewProjectCommand { get; }
 
+    /// <summary>
+    /// The question before the current project is replaced with unsaved work (#52): <c>ProjectFilesViewModel</c> sets it to
+    /// its "Save changes to …?" (Save, Don't save, Cancel), the question Open and Close ask too, so <c>New project</c> and
+    /// the drop's "Start new project" ask it as well. True to go on (saved, or not to be saved; also when there is nothing
+    /// to ask), false to keep the project. Null (tests, before #52) keeps 3.0's confirmation for <c>New project</c>.
+    /// </summary>
+    public Func<Task<bool>>? UnsavedWorkQuestion { get; set; }
+
     /// <summary>Opens the Settings page (the command bar's Settings button).</summary>
     public IRelayCommand OpenSettingsCommand { get; }
 
@@ -144,12 +152,39 @@ public sealed partial class ShellViewModel : ObservableObject
         return true;
     }
 
+    /// <summary>
+    /// Replaces the current project, without asking, with the empty one <paramref name="create"/> makes (#52: an opened
+    /// or restored project, made with its file's settings; the caller asked first and adds the frames next, so the views
+    /// see them arrive as an import's). Raises <see cref="ProjectReplaced"/> and disposes the previous project like
+    /// <c>New project</c>. On the UI thread.
+    /// </summary>
+    /// <param name="create">Makes a new, empty, clean project (the <see cref="Project"/> settings constructor).</param>
+    /// <returns>False when nothing changed: <c>New project</c>'s question is open, or an export holds the project.</returns>
+    public bool ReplaceWithoutAsking(Func<Project> create)
+    {
+        ArgumentNullException.ThrowIfNull(create);
+        if (_replacing || !Edits.Allow())
+        {
+            return false;
+        }
+
+        Replace(CurrentProject, create);
+        return true;
+    }
+
     private async Task ReplaceProjectAsync(bool askFirst)
     {
         // Only this method and ReplaceWithoutAsking replace CurrentProject, and _replacing keeps them from running
         // while the question is open, so it is the same after the await.
         var previous = CurrentProject;
-        if (askFirst
+        if (askFirst && UnsavedWorkQuestion is { } question)
+        {
+            if (!await question())
+            {
+                return;
+            }
+        }
+        else if (askFirst
             && previous.Model.HasWorkToLose
             && !await _dialogs.ConfirmAsync(ProjectText.NewProjectConfirmation(previous.FrameCount)))
         {
@@ -159,9 +194,9 @@ public sealed partial class ShellViewModel : ObservableObject
         Replace(previous);
     }
 
-    private void Replace(ProjectViewModel previous)
+    private void Replace(ProjectViewModel previous, Func<Project>? create = null)
     {
-        CurrentProject = new ProjectViewModel(CreateEmptyProject(previous.Model), _errors);
+        CurrentProject = new ProjectViewModel(CreateEmptyProject(previous.Model, create), _errors);
 
         // The swap is done, so nothing below may fail the command: each handler runs in its own try, the old
         // project is disposed (which never throws), then every handler failure is reported.
@@ -222,9 +257,9 @@ public sealed partial class ShellViewModel : ObservableObject
         }
     }
 
-    private Project CreateEmptyProject(Project? previous)
+    private Project CreateEmptyProject(Project? previous, Func<Project>? create = null)
     {
-        var project = _createProject();
+        var project = (create ?? _createProject)();
         if (project is null || ReferenceEquals(project, previous) || project.Frames.Length > 0 || project.SkippedFiles.Length > 0 || project.IsDirty)
         {
             throw new InvalidOperationException(

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="FileMenu" xml:space="preserve">
+    <value>Archivo</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Abrir…</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="SaveAs" xml:space="preserve">
+    <value>Guardar como…</value>
+  </data>
+  <data name="FileTypeName" xml:space="preserve">
+    <value>Proyecto de 10Lapse</value>
+  </data>
+  <data name="OpenNotAProjectFormat" xml:space="preserve">
+    <value>No se pudo abrir “{0}”: no es un proyecto de 10Lapse o está dañado.</value>
+  </data>
+  <data name="OpenUnreadableFormat" xml:space="preserve">
+    <value>No se pudo abrir “{0}”. Comprueba que sigue ahí y que puedes leerlo, y vuelve a intentarlo.</value>
+  </data>
+  <data name="OpenNewerVersionFormat" xml:space="preserve">
+    <value>“{0}” se guardó con una versión más reciente de 10Lapse. Se omitió la configuración que esta versión no conoce, así que Guardar pedirá un archivo nuevo y dejará este como está.</value>
+  </data>
+  <data name="OpenSomeSettingsFormat" xml:space="preserve">
+    <value>Parte de la configuración de “{0}” no se pudo leer y volvió a sus valores predeterminados.</value>
+  </data>
+  <data name="MissingPhotos_one" xml:space="preserve">
+    <value>No se encontró {0} foto de este proyecto. Sigue en el archivo del proyecto: vuelve a ponerla donde estaba y abre el proyecto de nuevo.</value>
+  </data>
+  <data name="MissingPhotos_many" xml:space="preserve">
+    <value>No se encontraron {0} de fotos de este proyecto. Siguen en el archivo del proyecto: vuelve a ponerlas donde estaban y abre el proyecto de nuevo.</value>
+  </data>
+  <data name="MissingPhotos_other" xml:space="preserve">
+    <value>No se encontraron {0} fotos de este proyecto. Siguen en el archivo del proyecto: vuelve a ponerlas donde estaban y abre el proyecto de nuevo.</value>
+  </data>
+  <data name="SaveFailedFormat" xml:space="preserve">
+    <value>No se pudo guardar “{0}”. Comprueba que su carpeta sigue ahí y que puedes guardar en ella, y vuelve a intentarlo.</value>
+  </data>
+  <data name="UnsavedTitleFormat" xml:space="preserve">
+    <value>¿Quieres guardar los cambios de “{0}”?</value>
+  </data>
+  <data name="UnsavedMessage" xml:space="preserve">
+    <value>Si no guardas, se perderán los cambios de este proyecto.</value>
+  </data>
+  <data name="UnsavedSave" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="UnsavedDontSave" xml:space="preserve">
+    <value>No guardar</value>
+  </data>
+  <data name="RecoveryOfferFormat" xml:space="preserve">
+    <value>10Lapse se cerró antes de guardar tus cambios en “{0}”. Restáuralos para seguir donde lo dejaste.</value>
+  </data>
+  <data name="RecoveryRestore" xml:space="preserve">
+    <value>Restaurar</value>
+  </data>
+  <data name="RecentHeading" xml:space="preserve">
+    <value>Proyectos recientes</value>
+  </data>
+  <data name="RecentClear" xml:space="preserve">
+    <value>Vaciar lista</value>
+  </data>
+  <data name="RecentClearName" xml:space="preserve">
+    <value>Vaciar la lista de proyectos recientes</value>
+  </data>
+  <data name="RecentNotFound" xml:space="preserve">
+    <value>No encontrado</value>
+  </data>
+  <data name="RecentItemNameFormat" xml:space="preserve">
+    <value>{0}, en {1}</value>
+  </data>
+  <data name="RecentItemMissingNameFormat" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="RecentGoneFormat" xml:space="preserve">
+    <value>“{0}” ya no está donde se guardó, así que se quitó de la lista.</value>
+  </data>
+  <data name="SaveFolderGoneFormat" xml:space="preserve">
+    <value>No se pudo guardar “{0}” porque su carpeta ya no está. Vuelve a conectar la unidad en la que estaba o elige Guardar como para guardarlo en otro lugar.</value>
+  </data>
+  <data name="NoPhotosFound_one" xml:space="preserve">
+    <value>No se encontró la foto de “{1}”, así que el proyecto no se abrió. Conecta la unidad en la que está o vuelve a ponerla donde estaba y abre el proyecto de nuevo.</value>
+  </data>
+  <data name="NoPhotosFound_many" xml:space="preserve">
+    <value>No se encontró ninguna de las {0} de fotos de “{1}”, así que el proyecto no se abrió. Conecta la unidad en la que están o vuelve a ponerlas donde estaban y abre el proyecto de nuevo.</value>
+  </data>
+  <data name="NoPhotosFound_other" xml:space="preserve">
+    <value>No se encontró ninguna de las {0} fotos de “{1}”, así que el proyecto no se abrió. Conecta la unidad en la que están o vuelve a ponerlas donde estaban y abre el proyecto de nuevo.</value>
+  </data>
+  <data name="NewerSaveAsFormat" xml:space="preserve">
+    <value>“{0}” se guardó con una versión más reciente de 10Lapse. Guardar encima borraría lo que esta versión no conoce, así que elige dónde guardar este proyecto.</value>
+  </data>
+  <data name="CloudOnlyPhotos_one" xml:space="preserve">
+    <value>{0} foto de este proyecto solo está en OneDrive, unos {1}. Se descarga cuando la vista previa o la exportación la necesitan.</value>
+  </data>
+  <data name="CloudOnlyPhotos_many" xml:space="preserve">
+    <value>{0} de fotos de este proyecto solo están en OneDrive, unos {1} en total. Se descargan a medida que la vista previa y la exportación las necesitan.</value>
+  </data>
+  <data name="CloudOnlyPhotos_other" xml:space="preserve">
+    <value>{0} fotos de este proyecto solo están en OneDrive, unos {1} en total. Se descargan a medida que la vista previa y la exportación las necesitan.</value>
+  </data>
+</root>

@@ -60,7 +60,7 @@ internal static class DebugFocusWalk
         _timer.Start();
     }
 
-    // --shortcut-after=ctrl+n@8,ctrl+o@3: at each of those seconds after launch, runs that shortcut through the same method
+    // --shortcut-after=ctrl+n@8,ctrl+i@3: at each of those seconds after launch, runs that shortcut through the same method
     // its keyboard accelerator calls (ShellView.RunShortcut), and notes whether it applied on the screen of the moment. It
     // proves what each shortcut does without real key presses; the key reaching the accelerator is the framework's part.
     private static readonly List<DispatcherQueueTimer> _shortcutTimers = [];
@@ -78,10 +78,13 @@ internal static class DebugFocusWalk
             var parts = entry.Split('@');
             ShellShortcut? shortcut = parts[0].ToUpperInvariant() switch
             {
-                "CTRL+O" => ShellShortcut.ChooseFolder,
-                "CTRL+SHIFT+O" => ShellShortcut.ChoosePhotos,
+                "CTRL+I" => ShellShortcut.ChooseFolder,
+                "CTRL+SHIFT+I" => ShellShortcut.ChoosePhotos,
                 "CTRL+N" => ShellShortcut.NewProject,
                 "CTRL+E" => ShellShortcut.Export,
+                "CTRL+O" => ShellShortcut.Open,
+                "CTRL+S" => ShellShortcut.Save,
+                "CTRL+SHIFT+S" => ShellShortcut.SaveAs,
                 _ => null,
             };
             if (shortcut is not { } chosen || parts.Length != 2

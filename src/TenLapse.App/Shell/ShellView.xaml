@@ -24,8 +24,9 @@
   first, then the inspector. The stage and the InfoBar layer stay in cell (0, 0) and need no change. The Output and
   export panels have their own Narrow states (OutputPanel.SetNarrow, ExportPanel.SetNarrow).
 
-  Unbuilt actions are absent, not disabled (CLAUDE.md): the command bar holds Add photos (#12), New project, Settings
-  and Export video (#24, with frames and an output to export), with a commented slot for each later button. Buttons for a project go in ProjectCommands (left), the Export
+  Unbuilt actions are absent, not disabled (CLAUDE.md): the command bar holds File (#52: Open, and Save and Save as with
+  photos), Add photos (#12), New project, Settings and Export video (#24, with frames and an output to export), with a
+  commented slot for each later button. Buttons for a project go in ProjectCommands (left), the Export
   button in WorkCommands (right): the Settings state hides both and shows Back.
 -->
 <UserControl
@@ -36,6 +37,7 @@
   xmlns:export="using:TenLapse.Presentation.Export"
   xmlns:keyboard="using:TenLapse.Presentation.Keyboard"
   xmlns:presentation="using:TenLapse.Presentation"
+  xmlns:projectFiles="using:TenLapse.Presentation.ProjectFiles"
   xmlns:services="using:TenLapse.Presentation.Services"
   xmlns:shell="using:TenLapse.Shell">
 
@@ -53,18 +55,21 @@
     DragOver="OnDragOver"
     Drop="OnDrop">
     <!--
-      The shell's shortcuts (#38, the canvas keyboard map): Ctrl+O Choose folder, Ctrl+Shift+O Choose photos, Ctrl+N New
-      project, Ctrl+E Export video. Here and not on their buttons: an accelerator on a collapsed or disabled button does not
+      The shell's shortcuts (#38, the canvas keyboard map; #52): Ctrl+I Choose folder, Ctrl+Shift+I Choose photos, Ctrl+N
+      New project, Ctrl+E Export video, Ctrl+O Open, Ctrl+S Save, Ctrl+Shift+S Save as. Here and not on their buttons: an accelerator on a collapsed or disabled button does not
       fire, and New project and Export are collapsed without a project. ShellShortcuts (Presentation, tested) says where
       each works: where its control is on screen, never on the Settings page or under a dialog. The controls advertise
       them (AcceleratorKey, tooltip, the menu's key text). Space, the arrows, Delete and Ctrl+Z depend on the focused
       control and stay key handlers (TransportKeyboard, FilmstripKeyboard).
     -->
     <Grid.KeyboardAccelerators>
-      <KeyboardAccelerator Key="O" Invoked="OnShortcut" Modifiers="Control" />
-      <KeyboardAccelerator Key="O" Invoked="OnShortcut" Modifiers="Control,Shift" />
+      <KeyboardAccelerator Key="I" Invoked="OnShortcut" Modifiers="Control" />
+      <KeyboardAccelerator Key="I" Invoked="OnShortcut" Modifiers="Control,Shift" />
       <KeyboardAccelerator Key="N" Invoked="OnShortcut" Modifiers="Control" />
       <KeyboardAccelerator Key="E" Invoked="OnShortcut" Modifiers="Control" />
+      <KeyboardAccelerator Key="O" Invoked="OnShortcut" Modifiers="Control" />
+      <KeyboardAccelerator Key="S" Invoked="OnShortcut" Modifiers="Control" />
+      <KeyboardAccelerator Key="S" Invoked="OnShortcut" Modifiers="Control,Shift" />
     </Grid.KeyboardAccelerators>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
@@ -298,8 +303,67 @@
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
+        <!--
+          File (#52; no canvas design): a subtle menu button first, where Windows apps keep their File menu, so the screen
+          keeps its one accent button. Open is always there; Save and Save as only with photos (absent, not disabled).
+          The shortcuts are on ShellRoot (an accelerator on a collapsed item does not fire); the items show their keys.
+        -->
+        <Button
+          x:Name="FileButton"
+          Height="{StaticResource ControlHeight}"
+          Padding="{StaticResource PaddingButtonSubtle}"
+          AutomationProperties.Name="{x:Bind projectFiles:ProjectFileText.FileMenu}">
+          <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+              <MenuFlyoutItem
+                x:Name="OpenItem"
+                AutomationProperties.AcceleratorKey="{x:Bind keyboard:KeyText.OpenKeys}"
+                Command="{x:Bind Files.OpenCommand}"
+                KeyboardAcceleratorTextOverride="{x:Bind keyboard:KeyText.OpenShortcut}"
+                Text="{x:Bind projectFiles:ProjectFileText.Open}">
+                <MenuFlyoutItem.Icon>
+                  <!-- Segoe Fluent Icons "OpenFile". -->
+                  <FontIcon Glyph="&#xE8E5;" />
+                </MenuFlyoutItem.Icon>
+              </MenuFlyoutItem>
+              <MenuFlyoutItem
+                x:Name="SaveItem"
+                AutomationProperties.AcceleratorKey="{x:Bind keyboard:KeyText.SaveKeys}"
+                Command="{x:Bind Files.SaveCommand}"
+                KeyboardAcceleratorTextOverride="{x:Bind keyboard:KeyText.SaveShortcut}"
+                Text="{x:Bind projectFiles:ProjectFileText.Save}"
+                Visibility="{x:Bind Files.CanSave, Mode=OneWay}">
+                <MenuFlyoutItem.Icon>
+                  <!-- Segoe Fluent Icons "Save". -->
+                  <FontIcon Glyph="&#xE74E;" />
+                </MenuFlyoutItem.Icon>
+              </MenuFlyoutItem>
+              <MenuFlyoutItem
+                x:Name="SaveAsItem"
+                AutomationProperties.AcceleratorKey="{x:Bind keyboard:KeyText.SaveAsKeys}"
+                Command="{x:Bind Files.SaveAsCommand}"
+                KeyboardAcceleratorTextOverride="{x:Bind keyboard:KeyText.SaveAsShortcut}"
+                Text="{x:Bind projectFiles:ProjectFileText.SaveAs}"
+                Visibility="{x:Bind Files.CanSave, Mode=OneWay}">
+                <MenuFlyoutItem.Icon>
+                  <!-- Segoe Fluent Icons "SaveAs". -->
+                  <FontIcon Glyph="&#xE792;" />
+                </MenuFlyoutItem.Icon>
+              </MenuFlyoutItem>
+            </MenuFlyout>
+          </Button.Flyout>
+          <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+            <!-- Segoe Fluent Icons "Page", a plain document. -->
+            <FontIcon
+              VerticalAlignment="Center"
+              FontSize="16"
+              Glyph="&#xE7C3;" />
+            <TextBlock VerticalAlignment="Center" Text="{x:Bind projectFiles:ProjectFileText.FileMenu}" />
+          </StackPanel>
+        </Button>
         <!--
           Add photos (#12): a subtle button with the plus icon, always visible (the Settings state hides the whole
           panel). It opens a menu: Choose folder…, Choose photos…, and the Include subfolders toggle, which also
@@ -307,6 +371,7 @@
         -->
         <Button
           x:Name="AddPhotosButton"
+          Grid.Column="1"
           Height="{StaticResource ControlHeight}"
           Padding="{StaticResource PaddingButtonSubtle}"
           AutomationProperties.Name="{x:Bind presentation:ProjectText.AddPhotos}">
@@ -352,7 +417,7 @@
         -->
         <Button
           x:Name="NewProjectButton"
-          Grid.Column="1"
+          Grid.Column="2"
           Height="{StaticResource ControlHeight}"
           Padding="{StaticResource PaddingButtonSubtle}"
           AutomationProperties.AcceleratorKey="{x:Bind keyboard:KeyText.NewProjectKeys}"
@@ -382,7 +447,7 @@
         -->
         <Grid
           x:Name="ImportProgress"
-          Grid.Column="2"
+          Grid.Column="3"
           Margin="8,0,0,0"
           HorizontalAlignment="Left"
           VerticalAlignment="Center"

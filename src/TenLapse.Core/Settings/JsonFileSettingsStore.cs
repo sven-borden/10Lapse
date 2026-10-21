@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 
 namespace TenLapse.Core.Settings;
@@ -54,37 +55,55 @@ public sealed class JsonFileSettingsStore : ISettingsStore
     public void Save(UserSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        var folder = Path.GetDirectoryName(FilePath);
-        if (!string.IsNullOrEmpty(folder))
-        {
-            Directory.CreateDirectory(folder);
-        }
 
-        // A name of its own, so two running copies of the app never write the same temporary file.
-        var temporary = FilePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        // Through a temporary file and one rename (#52 shares it with the project files).
+        IO.AtomicFile.WriteAllText(FilePath, UserSettingsJson.Write(settings));
+    }
+
+    /// <summary>
+    /// Reads, changes and writes the file under a lock every 10Lapse process takes for this file (a named mutex), so two
+    /// windows (#52) never write over each other's changes. A lock its holder never released (the process died) is taken
+    /// over: the file itself is always whole (<see cref="IO.AtomicFile"/>). Waits at most <see cref="LockWait"/>, then
+    /// throws <see cref="IOException"/>; the caller tries again at the next change.
+    /// </summary>
+    public UserSettings Update(Func<UserSettings, UserSettings> change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        using var mutex = new Mutex(initiallyOwned: false, MutexName);
+        var owned = false;
         try
         {
-            using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            try
             {
-                var bytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(UserSettingsJson.Write(settings));
-                stream.Write(bytes);
-                stream.Flush(flushToDisk: true);
+                owned = mutex.WaitOne(LockWait);
+            }
+            catch (AbandonedMutexException)
+            {
+                owned = true;
             }
 
-            // The data is on disk already (Flush above); the rename swaps it in whole or not at all.
-            File.Move(temporary, FilePath, overwrite: true);
+            if (!owned)
+            {
+                throw new IOException("Another 10Lapse is writing the settings file; the change is written with the next one.");
+            }
+
+            var next = change(Load().Settings);
+            Save(next);
+            return next;
         }
         finally
         {
-            // After a good write the temporary file is gone already; after a failed one it must not stay behind.
-            try
+            if (owned)
             {
-                File.Delete(temporary);
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                // Nothing more to do for a leftover temporary file; the save's own error is what matters.
+                mutex.ReleaseMutex();
             }
         }
     }
+
+    /// <summary>The longest <see cref="Update"/> waits for another 10Lapse's write.</summary>
+    public static readonly TimeSpan LockWait = TimeSpan.FromSeconds(5);
+
+    // One name per settings file (a Debug --settings-folder gets its own), in this session's namespace.
+    private string MutexName =>
+        @"Local\TenLapse.Settings." + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(FilePath).ToUpperInvariant())))[..32];
 }

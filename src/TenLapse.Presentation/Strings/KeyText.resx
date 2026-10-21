@@ -24,19 +24,19 @@
     <comment>A tooltip with a shortcut. {0} the control's name ("New project"), {1} its shortcut ("Ctrl+N").</comment>
   </data>
   <data name="ChooseFolderShortcut" xml:space="preserve">
-    <value>Ctrl+O</value>
-    <comment>Choose folder's shortcut, in a tooltip and beside the Add photos menu item. The letter O is fixed; translate only "Ctrl", as Windows names that key on a keyboard of your language.</comment>
+    <value>Ctrl+I</value>
+    <comment>Choose folder's shortcut, in a tooltip and beside the Add photos menu item. The letter I is fixed; translate only "Ctrl", as Windows names that key on a keyboard of your language.</comment>
   </data>
   <data name="ChooseFolderKeys" xml:space="preserve">
-    <value>Control+O</value>
+    <value>Control+I</value>
     <comment>Choose folder's shortcut as a screen reader names it. Translate only "Control", as Windows names that key in your language.</comment>
   </data>
   <data name="ChoosePhotosShortcut" xml:space="preserve">
-    <value>Ctrl+Shift+O</value>
+    <value>Ctrl+Shift+I</value>
     <comment>Choose photos' shortcut, in a tooltip and beside the Add photos menu item. Translate only "Ctrl" and "Shift", as Windows names those keys on a keyboard of your language.</comment>
   </data>
   <data name="ChoosePhotosKeys" xml:space="preserve">
-    <value>Control+Shift+O</value>
+    <value>Control+Shift+I</value>
     <comment>Choose photos' shortcut as a screen reader names it. Translate only "Control" and "Shift".</comment>
   </data>
   <data name="NewProjectShortcut" xml:space="preserve">
@@ -50,6 +50,30 @@
   <data name="ExportShortcut" xml:space="preserve">
     <value>Ctrl+E</value>
     <comment>Export video's shortcut in its tooltip. Translate only "Ctrl".</comment>
+  </data>
+  <data name="OpenShortcut" xml:space="preserve">
+    <value>Ctrl+O</value>
+    <comment>File, Open's shortcut, in its menu item. The letter O is fixed; translate only "Ctrl".</comment>
+  </data>
+  <data name="OpenKeys" xml:space="preserve">
+    <value>Control+O</value>
+    <comment>File, Open's shortcut as a screen reader names it. Translate only "Control".</comment>
+  </data>
+  <data name="SaveShortcut" xml:space="preserve">
+    <value>Ctrl+S</value>
+    <comment>File, Save's shortcut, in its menu item. The letter S is fixed; translate only "Ctrl".</comment>
+  </data>
+  <data name="SaveKeys" xml:space="preserve">
+    <value>Control+S</value>
+    <comment>File, Save's shortcut as a screen reader names it. Translate only "Control".</comment>
+  </data>
+  <data name="SaveAsShortcut" xml:space="preserve">
+    <value>Ctrl+Shift+S</value>
+    <comment>File, Save as's shortcut, in its menu item. Translate only "Ctrl" and "Shift".</comment>
+  </data>
+  <data name="SaveAsKeys" xml:space="preserve">
+    <value>Control+Shift+S</value>
+    <comment>File, Save as's shortcut as a screen reader names it. Translate only "Control" and "Shift".</comment>
   </data>
   <data name="PlayKeys" xml:space="preserve">
     <value>Space</value>

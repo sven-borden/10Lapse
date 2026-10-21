@@ -13,6 +13,7 @@ using TenLapse.Presentation.Export;
 using TenLapse.Presentation.FirstLaunch;
 using TenLapse.Presentation.Keyboard;
 using TenLapse.Presentation.Motion;
+using TenLapse.Presentation.ProjectFiles;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using TenLapse.Themes;
@@ -64,7 +65,9 @@ public sealed partial class ShellView : UserControl
     /// <param name="presenter">The error path for the drop handler.</param>
     /// <param name="preview">The preview's player, images and cache (#19), for the stage's preview and transport.</param>
     /// <param name="exportServices">What the export (#24) works through: the exporter, the Save dialog, the window's taskbar and notification.</param>
-    internal ShellView(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, ExportServices exportServices)
+    /// <param name="files">The File menu's Open, Save and Save as (#52).</param>
+    /// <param name="recent">The first-launch screen's recent projects (#52).</param>
+    internal ShellView(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, ExportServices exportServices, ProjectFilesViewModel files, RecentProjectsViewModel recent)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(settings);
@@ -73,8 +76,11 @@ public sealed partial class ShellView : UserControl
         ArgumentNullException.ThrowIfNull(infoBars);
         ArgumentNullException.ThrowIfNull(errors);
         ArgumentNullException.ThrowIfNull(presenter);
+        ArgumentNullException.ThrowIfNull(files);
+        ArgumentNullException.ThrowIfNull(recent);
         ViewModel = viewModel;
         Import = import;
+        Files = files;
         _errors = errors;
         Announcer.Errors = errors;
         _presenter = presenter;
@@ -99,7 +105,7 @@ public sealed partial class ShellView : UserControl
         Debugging.DebugTiming.Apply(_timing);
         Debugging.DebugFrame.Apply(_frame);
 #endif
-        FirstLaunch.Attach(import, presenter, errors);
+        FirstLaunch.Attach(import, recent, presenter, errors);
         _emptyRegionVisibilityToken = EmptyRegion.RegisterPropertyChangedCallback(VisibilityProperty, OnEmptyRegionVisibilityChanged);
 
         _infoBarShadow = FlyoutShadow.Attach(InfoBarShadowCaster);
@@ -168,6 +174,9 @@ public sealed partial class ShellView : UserControl
 
     /// <summary>The import's view model, for x:Bind.</summary>
     public ImportViewModel Import { get; }
+
+    /// <summary>The File menu's view model (#52), for x:Bind.</summary>
+    public ProjectFilesViewModel Files { get; }
 
     /// <summary>The export's view model (#24), for x:Bind and for the window's close check.</summary>
     public ExportViewModel Export { get; }
@@ -606,7 +615,7 @@ public sealed partial class ShellView : UserControl
     // The Export button's opacity while the export panel or the finished state shows (the canvas's exportOpacity).
     private const double DimmedExportOpacity = 0.6;
 
-    // Ctrl+O, Ctrl+Shift+O, Ctrl+N and Ctrl+E (ShellView.xaml): handled only where the shortcut works, so elsewhere the key
+    // Ctrl+I, Ctrl+Shift+I, Ctrl+N, Ctrl+E, Ctrl+O, Ctrl+S and Ctrl+Shift+S (ShellView.xaml): handled only where the shortcut works, so elsewhere the key
     // goes on as if there were no shortcut.
     private void OnShortcut(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
@@ -623,7 +632,7 @@ public sealed partial class ShellView : UserControl
     /// </summary>
     internal bool RunShortcut(ShellShortcut shortcut)
     {
-        var screen = new ShortcutScreen(ViewModel.IsSettingsOpen, IsDialogOpen(), ViewModel.ShowsProjectName, Export.ShowsExportButton);
+        var screen = new ShortcutScreen(ViewModel.IsSettingsOpen, IsDialogOpen(), ViewModel.ShowsProjectName, Export.ShowsExportButton, Files.CanSave);
         if (!ShellShortcuts.IsAvailable(shortcut, screen))
         {
             return false;
@@ -637,6 +646,9 @@ public sealed partial class ShellView : UserControl
             ShellShortcut.ChooseFolder => Import.ChooseFolderCommand,
             ShellShortcut.ChoosePhotos => Import.ChoosePhotosCommand,
             ShellShortcut.NewProject => ViewModel.NewProjectCommand,
+            ShellShortcut.Open => Files.OpenCommand,
+            ShellShortcut.Save => Files.SaveCommand,
+            ShellShortcut.SaveAs => Files.SaveAsCommand,
             _ => Export.ExportCommand,
         };
         if (command.CanExecute(null))

@@ -51,7 +51,20 @@
         notification activator (a COM class served by the app itself). An extension, not a capability: the app still
         declares runFullTrust and nothing else.
       -->
+      <!--
+        Project files (#52): .10lapse opens in 10Lapse from File Explorer. An extension, not a capability: the app still
+        declares runFullTrust and nothing else. Each double click starts a 10Lapse of its own with that project
+        (LaunchFile); a running one keeps its project. The type's name is localized in Strings/<lang>/Resources.resw.
+      -->
       <Extensions>
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="tenlapseproject">
+            <uap:DisplayName>ms-resource:ProjectFileTypeName</uap:DisplayName>
+            <uap:SupportedFileTypes>
+              <uap:FileType ContentType="application/json">.10lapse</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
         <desktop:Extension Category="windows.toastNotificationActivation">
           <desktop:ToastNotificationActivation ToastActivatorCLSID="9e7d1168-7b23-4663-923a-fb9327d7d040" />
         </desktop:Extension>

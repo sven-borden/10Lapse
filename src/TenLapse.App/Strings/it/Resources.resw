@@ -18,4 +18,7 @@
   <data name="AppDescription" xml:space="preserve">
     <value>Trasforma una cartella di foto in un video timelapse.</value>
   </data>
+  <data name="ProjectFileTypeName" xml:space="preserve">
+    <value>Progetto 10Lapse</value>
+  </data>
 </root>

@@ -3,10 +3,12 @@ using Microsoft.Graphics.Canvas.UI.Xaml;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using TenLapse.Presentation;
 using TenLapse.Presentation.FirstLaunch;
 using TenLapse.Presentation.Motion;
+using TenLapse.Presentation.ProjectFiles;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using TenLapse.Themes;
@@ -68,22 +70,71 @@ public sealed partial class FirstLaunchView : UserControl
     /// <summary>The import whose commands the buttons run (#12), for x:Bind.</summary>
     public ImportViewModel? Import { get; private set; }
 
-    /// <summary>Hands over the import and the error path. Call once, before the view loads.</summary>
-    public void Attach(ImportViewModel import, IErrorPresenter errors, IErrorSink sink)
+    /// <summary>The recent projects under the actions (#52), for x:Bind.</summary>
+    public RecentProjectsViewModel? Recent { get; private set; }
+
+    /// <summary>Hands over the import, the recent projects and the error path. Call once, before the view loads.</summary>
+    public void Attach(ImportViewModel import, RecentProjectsViewModel recent, IErrorPresenter errors, IErrorSink sink)
     {
         ArgumentNullException.ThrowIfNull(import);
+        ArgumentNullException.ThrowIfNull(recent);
         ArgumentNullException.ThrowIfNull(errors);
         ArgumentNullException.ThrowIfNull(sink);
         Import = import;
+        Recent = recent;
         _errors = errors;
         _sink = sink;
+        recent.FocusRequested += OnRecentFocusRequested;
     }
 
-    /// <summary>The shell's Empty region was shown or hidden (an import arrived, Settings opened or closed).</summary>
+    // Clear list, or a missing project taken off: the focused button left with the list. Focus goes to the item now in
+    // its place, or to Choose folder, once the list has laid out its new buttons (#52, DESIGN.md: focus moves with the work).
+    private void OnRecentFocusRequested(object? sender, int? index)
+    {
+        if (_sink is not { } sink)
+        {
+            return;
+        }
+
+        DispatcherQueue.TryEnqueueGuarded(
+            sink,
+            () =>
+            {
+                if (index is { } at
+                    && RecentList.ContainerFromIndex(at) is DependencyObject container
+                    && VisualTreeHelper.GetChildrenCount(container) > 0
+                    && VisualTreeHelper.GetChild(container, 0) is Control item
+                    && item.Focus(FocusState.Programmatic))
+                {
+                    return;
+                }
+
+                FocusChooseFolder();
+            },
+            ProjectFileText.RecentClearFailedContext);
+    }
+
+    /// <summary>
+    /// The shell's Empty region was shown or hidden (an import arrived, Settings opened or closed). Shown, the recent list
+    /// looks again whether its files are there (#52).
+    /// </summary>
     public void SetRegionVisible(bool visible)
     {
         _regionVisible = visible;
         UpdatePlayback();
+        if (visible)
+        {
+            RefreshRecent();
+        }
+    }
+
+    // Looks off the UI thread whether each recent project's file is still there; the list marks the missing ones.
+    private void RefreshRecent()
+    {
+        if (Recent is { } recent && _errors is { } errors)
+        {
+            _ = errors.GuardAsync(recent.RefreshAsync, ProjectFileText.RecentRefreshFailedContext);
+        }
     }
 
     /// <summary>
@@ -118,6 +169,11 @@ public sealed partial class FirstLaunchView : UserControl
     {
         _timer.Stop();
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        if (Recent is { } recent)
+        {
+            recent.FocusRequested -= OnRecentFocusRequested;
+        }
+
         TitleText.UnregisterPropertyChangedCallback(TextBlock.TextProperty, _titleTextToken);
         _shadow?.Dispose();
         _shadow = null;
@@ -137,6 +193,9 @@ public sealed partial class FirstLaunchView : UserControl
                 _shadow ??= FlyoutShadow.Attach(DaybreakShadowCaster);
                 ActualThemeChanged += OnActualThemeChanged;
                 UpdatePlayback();
+
+                // The first look at the recent projects' files (#52); later ones come each time the screen shows again.
+                RefreshRecent();
 #if DEBUG
                 if (Debugging.DebugLaunch.DragOver)
                 {

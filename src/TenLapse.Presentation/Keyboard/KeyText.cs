@@ -37,6 +37,24 @@ public static class KeyText
     /// <summary>Export video's shortcut in its tooltip (its accelerator key is <c>ExportText.ExportKeys</c>).</summary>
     public static string ExportShortcut => _strings.Get();
 
+    /// <summary>File, Open's shortcut beside its menu item (#52).</summary>
+    public static string OpenShortcut => _strings.Get();
+
+    /// <summary>File, Open's shortcut as a screen reader names it (its accelerator key).</summary>
+    public static string OpenKeys => _strings.Get();
+
+    /// <summary>File, Save's shortcut beside its menu item (#52).</summary>
+    public static string SaveShortcut => _strings.Get();
+
+    /// <summary>File, Save's shortcut as a screen reader names it (its accelerator key).</summary>
+    public static string SaveKeys => _strings.Get();
+
+    /// <summary>File, Save as's shortcut beside its menu item (#52).</summary>
+    public static string SaveAsShortcut => _strings.Get();
+
+    /// <summary>File, Save as's shortcut as a screen reader names it (its accelerator key).</summary>
+    public static string SaveAsKeys => _strings.Get();
+
     /// <summary>The play button's key, the space bar: in its tooltip and as a screen reader names it (its accelerator key).</summary>
     public static string PlayKeys => _strings.Get();
 

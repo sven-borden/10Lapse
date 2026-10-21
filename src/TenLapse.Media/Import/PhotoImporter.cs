@@ -27,7 +27,7 @@ public sealed class PhotoImporter : IPhotoImportSource
     private const int MaxFolderDepth = 32;
 
     // FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS, FILE_ATTRIBUTE_RECALL_ON_OPEN (no FileAttributes names) and Offline.
-    private const FileAttributes CloudOnlyAttributes = (FileAttributes)0x400000 | (FileAttributes)0x40000 | FileAttributes.Offline;
+    private const FileAttributes CloudOnlyAttributes = Core.Projects.FileFacts.CloudOnlyAttributes;
 
     // A read batch is handed out at this size, or sooner once this much time has passed since the last one.
     private static readonly TimeSpan _readBatchInterval = TimeSpan.FromMilliseconds(150);

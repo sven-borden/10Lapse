@@ -7,7 +7,10 @@
                 window would accept is over it, the outline turns Deep Amber Indicator over an 8 % amber wash and
                 the title says "Drop to start your timelapse" (167 ms Enter fade; Daybreak lifts 6 px over 250 ms).
     Left        the title, one explanation sentence, Choose folder (the screen's one accent button) and Choose
-                photos (standard), then "Your photos never leave this PC." with a lock.
+                photos (standard), then "Your photos never leave this PC." with a lock, then the recent projects
+                (#52; no canvas design): a Body strong heading with an Ember Link "Clear list", and up to five subtle
+                buttons, each the project's name over its folder (or "Not found") in Ink Secondary. The column scrolls
+                when a short window cannot hold it.
     Right       Daybreak, a small timelapse of a harbor from day to night (FirstLaunchView.xaml.cs draws it with
                 Win2D): the frame with the Flyout shadow, a strip of twelve thumbnails with the current one ringed,
                 and its frame number and time code. Decoration only, hidden from UI Automation.
@@ -21,6 +24,7 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:keyboard="using:TenLapse.Presentation.Keyboard"
   xmlns:presentation="using:TenLapse.Presentation"
+  xmlns:projectFiles="using:TenLapse.Presentation.ProjectFiles"
   xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml">
 
   <Grid x:Name="DropZone" SizeChanged="OnDropZoneSizeChanged">
@@ -49,6 +53,14 @@
         <ColumnDefinition x:Name="DaybreakColumnDefinition" Width="1.1*" />
       </Grid.ColumnDefinitions>
 
+      <!-- Scrolls only when a short window cannot hold the texts and the recent list (#52); centered otherwise. -->
+      <ScrollViewer
+        x:Name="TextScroller"
+        VerticalAlignment="Center"
+        HorizontalScrollBarVisibility="Disabled"
+        HorizontalScrollMode="Disabled"
+        VerticalScrollBarVisibility="Auto"
+        VerticalScrollMode="Auto">
       <StackPanel
         x:Name="TextColumn"
         MaxWidth="440"
@@ -128,7 +140,78 @@
             Style="{StaticResource CaptionSecondaryTextStyle}"
             Text="{x:Bind presentation:ProjectText.FirstLaunchPrivacy}" />
         </StackPanel>
+        <!--
+          Recent projects (#52), only when there are some. The buttons are subtle (DESIGN.md, Buttons: transparent, an ink
+          wash on hover), so the screen keeps its one accent button; Clear list is an Ember Link text button.
+        -->
+        <StackPanel
+          x:Name="RecentSection"
+          Spacing="{StaticResource SpacingXs}"
+          Visibility="{x:Bind Recent.HasItems, Mode=OneWay, FallbackValue=Collapsed}">
+          <StackPanel.Resources>
+            <ResourceDictionary>
+              <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                  <SolidColorBrush x:Key="ButtonBackground" Color="Transparent" />
+                  <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{ThemeResource SubtleFillHoverColor}" />
+                  <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{ThemeResource SubtleFillPressedColor}" />
+                  <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent" />
+                  <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+                  <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+                  <SolidColorBrush x:Key="ButtonForeground" Color="{ThemeResource InkColor}" />
+                  <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{ThemeResource InkColor}" />
+                  <SolidColorBrush x:Key="ButtonForegroundPressed" Color="{ThemeResource InkSecondaryColor}" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                  <SolidColorBrush x:Key="ButtonBackground" Color="Transparent" />
+                  <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{ThemeResource SubtleFillHoverColor}" />
+                  <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{ThemeResource SubtleFillPressedColor}" />
+                  <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent" />
+                  <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+                  <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+                  <SolidColorBrush x:Key="ButtonForeground" Color="{ThemeResource InkColor}" />
+                  <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{ThemeResource InkColor}" />
+                  <SolidColorBrush x:Key="ButtonForegroundPressed" Color="{ThemeResource InkSecondaryColor}" />
+                </ResourceDictionary>
+              </ResourceDictionary.ThemeDictionaries>
+            </ResourceDictionary>
+          </StackPanel.Resources>
+          <Grid>
+            <TextBlock
+              VerticalAlignment="Center"
+              AutomationProperties.HeadingLevel="Level2"
+              Style="{StaticResource BodyStrongTextStyle}"
+              Text="{x:Bind projectFiles:ProjectFileText.RecentHeading}" />
+            <HyperlinkButton
+              x:Name="ClearRecentButton"
+              HorizontalAlignment="Right"
+              AutomationProperties.Name="{x:Bind projectFiles:ProjectFileText.RecentClearName}"
+              Command="{x:Bind Recent.ClearCommand, Mode=OneWay}"
+              Content="{x:Bind projectFiles:ProjectFileText.RecentClear}" />
+          </Grid>
+          <ItemsControl x:Name="RecentList" IsTabStop="False" ItemsSource="{x:Bind Recent.Items, Mode=OneWay}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="projectFiles:RecentProjectItem">
+                <!-- 12 px out on the left, so the name lines up with the texts above and the hover wash keeps its padding. -->
+                <Button
+                  Margin="-12,0,0,0"
+                  Padding="12,6,12,6"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Left"
+                  AutomationProperties.Name="{x:Bind AutomationName, Mode=OneWay}"
+                  Command="{x:Bind OpenCommand}"
+                  ToolTipService.ToolTip="{x:Bind Path}">
+                  <StackPanel>
+                    <TextBlock Style="{StaticResource BodyTextStyle}" Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind Detail, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
       </StackPanel>
+      </ScrollViewer>
 
       <!-- Daybreak: decoration that explains the app without words, so screen readers skip it (aria-hidden in the prototype). -->
       <Grid

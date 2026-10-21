@@ -93,7 +93,70 @@ public sealed class WindowCloseGateTests
         Assert.Equal(2, _asks);
     }
 
-    private WindowCloseGate Gate(Func<bool> mayCloseNow, Func<Task<bool>> prepare)
+    [Fact]
+    public void UnsavedChangesAskFirstAndCancelKeepsTheWindow()
+    {
+        var saveQuestions = 0;
+        var gate = Gate(mayCloseNow: () => true, prepare: () => throw new InvalidOperationException("no export"), unsaved: () => true, confirm: () =>
+        {
+            saveQuestions++;
+            return Task.FromResult(false);
+        });
+
+        Assert.False(gate.Closing());
+
+        Assert.Equal(1, saveQuestions);
+        Assert.Equal(0, _closes);
+        Assert.Equal(0, _asks);
+    }
+
+    [Fact]
+    public void AnsweredUnsavedChangesCloseTheWindow()
+    {
+        var gate = Gate(mayCloseNow: () => true, prepare: () => throw new InvalidOperationException("no export"), unsaved: () => true, confirm: () => Task.FromResult(true));
+
+        Assert.False(gate.Closing());
+
+        Assert.Equal(1, _closes);
+        Assert.True(gate.Closing());
+    }
+
+    [Fact]
+    public void TheSaveQuestionComesBeforeTheExportQuestion()
+    {
+        var order = new List<string>();
+        var gate = Gate(
+            mayCloseNow: () => false,
+            prepare: () =>
+            {
+                order.Add("export");
+                return Task.FromResult(true);
+            },
+            unsaved: () => true,
+            confirm: () =>
+            {
+                order.Add("save");
+                return Task.FromResult(true);
+            });
+
+        Assert.False(gate.Closing());
+
+        Assert.Equal(["save", "export"], order);
+        Assert.Equal(1, _closes);
+    }
+
+    [Fact]
+    public void CancellingTheSaveQuestionNeverStopsTheExport()
+    {
+        var gate = Gate(mayCloseNow: () => false, prepare: () => Task.FromResult(true), unsaved: () => true, confirm: () => Task.FromResult(false));
+
+        Assert.False(gate.Closing());
+
+        Assert.Equal(0, _asks);
+        Assert.Equal(0, _closes);
+    }
+
+    private WindowCloseGate Gate(Func<bool> mayCloseNow, Func<Task<bool>> prepare, Func<bool>? unsaved = null, Func<Task<bool>>? confirm = null)
     {
         SynchronizationContext.SetSynchronizationContext(null);
         return new(
@@ -105,6 +168,26 @@ public sealed class WindowCloseGateTests
             },
             () => _cancels++,
             () => _closes++,
-            _errors);
+            _errors,
+            unsaved,
+            confirm,
+            () => _kept++);
+    }
+
+    private int _kept;
+
+    [Fact]
+    public void ASaveQuestionThatFailsIsLoggedAsSuchKeepsTheRecoveryCopyAndLetsTheWindowClose()
+    {
+        var gate = Gate(mayCloseNow: () => true, prepare: () => throw new InvalidOperationException("no export"), unsaved: () => true, confirm: () => throw new InvalidOperationException("No XAML root."));
+
+        Assert.False(gate.Closing());
+
+        var (exception, context) = Assert.Single(_errors.Reported);
+        Assert.Equal("No XAML root.", exception.Message);
+        Assert.Equal(TenLapse.Presentation.ProjectFiles.ProjectFileText.CloseQuestionFailedContext, context);
+        Assert.Equal(1, _kept);
+        Assert.Equal(1, _closes);
+        Assert.True(gate.Closing());
     }
 }
