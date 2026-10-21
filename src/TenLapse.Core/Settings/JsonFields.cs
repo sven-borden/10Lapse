@@ -76,6 +76,29 @@ internal static class JsonFields
         };
     }
 
+    /// <summary>
+    /// The sequence group (#49): the holds in seconds as decimal numbers (whole tenths, so "1.5" reads back exactly), the
+    /// plays and the boomerang. Project files only: a new project starts plain.
+    /// </summary>
+    public static JsonObject WriteSequence(SequenceSettings sequence) => new()
+    {
+        ["holdStartSeconds"] = Seconds(sequence.HoldStart),
+        ["holdEndSeconds"] = Seconds(sequence.HoldEnd),
+        ["plays"] = sequence.Plays,
+        ["boomerang"] = sequence.Boomerang,
+    };
+
+    /// <summary>Reads the sequence group named <paramref name="name"/>, field by field; a value out of range keeps the fallback's.</summary>
+    public static SequenceSettings ReadSequence(JsonObject root, string name, SequenceSettings fallback, List<string> problems)
+    {
+        var section = Section(root, name, problems);
+        return new SequenceSettings(
+            Field(section, $"{name}.holdStartSeconds", fallback.HoldStart, node => Checked(ReadSeconds(node), hold => SequenceSettings.Default with { HoldStart = hold }), problems),
+            Field(section, $"{name}.holdEndSeconds", fallback.HoldEnd, node => Checked(ReadSeconds(node), hold => SequenceSettings.Default with { HoldEnd = hold }), problems),
+            Field(section, $"{name}.plays", fallback.Plays, node => Checked(node.GetValue<int>(), plays => SequenceSettings.Default with { Plays = plays }), problems),
+            Field(section, $"{name}.boomerang", fallback.Boomerang, node => node.GetValue<bool>(), problems));
+    }
+
     /// <summary>The object named <paramref name="name"/>, or null when it is missing (quietly) or not an object (a problem).</summary>
     public static JsonObject? Section(JsonObject root, string name, List<string> problems)
     {
@@ -165,6 +188,25 @@ internal static class JsonFields
         }
 
         return new Fraction(numerator.GetValue<int>(), denominator.GetValue<int>());
+    }
+
+    // Seconds as a decimal number, exact for the tenths a hold is made of.
+    private static decimal Seconds(TimeSpan value) => (decimal)value.Ticks / FrameTiming.TicksPerSecond;
+
+    private static TimeSpan ReadSeconds(JsonNode node)
+    {
+        var seconds = node.GetValue<decimal>();
+        var ticks = seconds * FrameTiming.TicksPerSecond;
+        return decimal.Truncate(ticks) == ticks && ticks is >= 0 and <= long.MaxValue
+            ? TimeSpan.FromTicks((long)ticks)
+            : throw new FormatException($"{seconds} s is not a whole number of 100 ns ticks");
+    }
+
+    // The sequence record checks each value when it is set, as the timing record does.
+    private static T Checked<T>(T value, Func<T, SequenceSettings> check)
+    {
+        _ = check(value);
+        return value;
     }
 
     // The timing record checks each input against its range when it is set; borrowing that check keeps one source of truth.

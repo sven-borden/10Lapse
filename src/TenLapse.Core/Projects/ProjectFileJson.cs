@@ -80,6 +80,7 @@ public static class ProjectFileJson
         nameof(ProjectSnapshot.FrameSettings),
         nameof(ProjectSnapshot.Output),
         nameof(ProjectSnapshot.SortMode),
+        nameof(ProjectSnapshot.Sequence),
     };
 
     /// <inheritdoc cref="StoredSnapshotProperties"/>
@@ -93,6 +94,9 @@ public static class ProjectFileJson
         nameof(ProjectSnapshot.FilePath),
         nameof(ProjectSnapshot.EffectiveRate),
         nameof(ProjectSnapshot.VideoSize),
+        nameof(ProjectSnapshot.EffectiveSequence),
+        nameof(ProjectSnapshot.Playback),
+        nameof(ProjectSnapshot.Duration),
         "EqualityContract",
     };
 
@@ -108,6 +112,7 @@ public static class ProjectFileJson
             ["frame"] = JsonFields.WriteFrame(content.Frame),
             ["output"] = JsonFields.WriteOutput(content.Output),
             ["sortMode"] = content.SortMode.ToString(),
+            ["sequence"] = JsonFields.WriteSequence(content.Sequence),
         };
 
         if (content.RecoveredName is not null || content.RecoveredFilePath is not null)
@@ -178,6 +183,7 @@ public static class ProjectFileJson
             Frame = JsonFields.ReadFrame(root, "frame", FrameSettings.Default, problems),
             Output = JsonFields.ReadOutput(root, "output", OutputSettings.Default, problems),
             SortMode = JsonFields.Field(root, "sortMode", SortMode.CaptureTime, JsonFields.ReadEnum<SortMode>, problems),
+            Sequence = JsonFields.ReadSequence(root, "sequence", SequenceSettings.Default, problems),
             RecoveredName = JsonFields.Field(recovered, "recovered.name", null, ReadText, problems),
             RecoveredFilePath = JsonFields.Field(recovered, "recovered.projectFile", null, ReadFullPath, problems),
             Frames = ReadFrames(root, problems),
