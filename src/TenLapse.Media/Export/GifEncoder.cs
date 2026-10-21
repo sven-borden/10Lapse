@@ -28,8 +28,9 @@ namespace TenLapse.Media.Export;
 /// transparent one) follows the light as a timelapse goes from day to dusk; one palette for the whole clip would have
 /// to share 256 colours between noon and night. Error diffusion (<see cref="WICBitmapDitherType.WICBitmapDitherTypeErrorDiffusion"/>)
 /// spreads each pixel's rounding error to its neighbours, so a sunset sky shows a smooth gradient instead of the bands
-/// a nearest-colour mapping draws; an ordered dither leaves a visible cross-hatch on the same sky (#51, measured by
-/// <c>GifDitherTests</c>). Its cost is a slightly larger file and a fine grain that changes from frame to frame.
+/// a nearest-colour mapping draws. WIC's ordered dithers take only its fixed palettes, and on the halftone palette a
+/// sunset comes out far coarser (measured by <c>GifExportTests.ErrorDiffusionDrawsTheSmoothestSunset</c>). The cost is
+/// a somewhat larger file and a fine grain that changes from frame to frame.
 /// </para>
 /// <para>
 /// Created on a thread pool (MTA) thread and then called from one thread at a time, like every encoder; the WIC objects
@@ -162,13 +163,25 @@ internal sealed class GifEncoder : IVideoEncoder
                 _factory.CreateBitmapFromMemory((uint)_width, (uint)_height, &bgr, (uint)(_width * 4), (uint)pixels.Length, pixels, out bitmap);
             }
 
+            // WIC takes an ordered dither only with one of its fixed palettes (E_INVALIDARG with a custom one), so the
+            // comparison in GifExportTests runs it on the 256-colour halftone palette; the product never does.
+            var fixedPalette = Dither != WICBitmapDitherType.WICBitmapDitherTypeErrorDiffusion && Dither != WICBitmapDitherType.WICBitmapDitherTypeNone;
+            var translate = fixedPalette ? WICBitmapPaletteType.WICBitmapPaletteTypeFixedHalftone256 : WICBitmapPaletteType.WICBitmapPaletteTypeCustom;
             _factory.CreatePalette(out palette);
-            palette.InitializeFromBitmap(bitmap, 256, false);
+            if (fixedPalette)
+            {
+                palette.InitializePredefined(translate, false);
+            }
+            else
+            {
+                palette.InitializeFromBitmap(bitmap, 256, false);
+            }
+
             _factory.CreateFormatConverter(out indexed);
             unsafe
             {
                 var eight = PInvoke.GUID_WICPixelFormat8bppIndexed;
-                indexed.Initialize(bitmap, &eight, Dither, palette, 0, WICBitmapPaletteType.WICBitmapPaletteTypeCustom);
+                indexed.Initialize(bitmap, &eight, Dither, palette, 0, translate);
             }
 
             IPropertyBag2 options = null!;
