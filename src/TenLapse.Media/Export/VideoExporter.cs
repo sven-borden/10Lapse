@@ -19,7 +19,7 @@ public sealed record VideoExportResult(int FrameCount, long Duration, VideoEncod
 
 /// <summary>
 /// The streaming export: decode, process (<see cref="FrameRenderer"/>, Fit or Fill) and encode (H.264 or HEVC
-/// MP4) run at once, connected by bounded queues, so memory stays flat whatever the frame count.
+/// MP4 through <see cref="SinkWriterEncoder"/>, or an animated GIF through <see cref="GifEncoder"/>, #51) run at once, connected by bounded queues, so memory stays flat whatever the frame count.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -72,7 +72,10 @@ public static class VideoExporter
     /// </summary>
     internal static int StuckEncoderCalls => Volatile.Read(ref _stuckCalls);
 
-    /// <summary>Writes every frame of <paramref name="source"/> to an MP4 at <paramref name="outputPath"/>, replacing it.</summary>
+    /// <summary>
+    /// Writes every frame of <paramref name="source"/> to an MP4 (or, for <see cref="VideoFormat.Gif"/>, an animated GIF)
+    /// at <paramref name="outputPath"/>, replacing it.
+    /// </summary>
     /// <param name="progress">Receives the number of frames the encoder has taken, from worker threads.</param>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
     /// <exception cref="VideoExportException">
@@ -91,7 +94,14 @@ public static class VideoExporter
         VideoExportSettings settings,
         IProgress<int>? progress = null,
         CancellationToken cancellationToken = default) =>
-        ExportAsync(source, outputPath, settings, progress, cancellationToken, static (path, s, device) => new SinkWriterEncoder(path, s, device));
+        ExportAsync(source, outputPath, settings, progress, cancellationToken, OpenEncoder);
+
+    /// <summary>
+    /// The product's encode stage for the settings' format: the sink writer for MP4, the WIC GIF encoder for a GIF. The one
+    /// place a format picks its encoder; the rest of the pipeline (decode, draw, cancel, stall guard, clean-up) is shared.
+    /// </summary>
+    internal static IVideoEncoder OpenEncoder(string path, VideoExportSettings settings, VideoDevice device) =>
+        settings.Format == VideoFormat.Gif ? new GifEncoder(path, settings, device) : new SinkWriterEncoder(path, settings, device);
 
     /// <summary>The export with the encode stage supplied, for tests that need it to fail on cue.</summary>
     internal static async Task<VideoExportResult> ExportAsync(

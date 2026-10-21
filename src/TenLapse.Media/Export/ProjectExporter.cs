@@ -74,13 +74,23 @@ public static class ProjectExporter
 
     /// <summary>
     /// The export settings for a snapshot: <see cref="ProjectSnapshot.VideoSize"/>, the effective rate, the fit mode,
-    /// the codec and <see cref="ExportBitrate.For"/> of the quality.
+    /// the codec and <see cref="ExportBitrate.For"/> of the quality. A GIF (#51) has no bitrate, and plays at
+    /// <see cref="GifOutput.EffectiveRate"/>: its preset, or the video's own rate when that is slower.
     /// </summary>
     public static VideoExportSettings SettingsFor(ProjectSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         var size = snapshot.VideoSize;
         var rate = snapshot.EffectiveRate.Rate;
+        if (snapshot.Output.Format == VideoFormat.Gif)
+        {
+            return new VideoExportSettings(size.Width, size.Height, GifOutput.EffectiveRate(rate, snapshot.Output.Gif.Rate))
+            {
+                Format = VideoFormat.Gif,
+                Fit = snapshot.FrameSettings.Fit,
+            };
+        }
+
         return new VideoExportSettings(size.Width, size.Height, rate)
         {
             Format = snapshot.Output.Format,
@@ -121,14 +131,33 @@ public static class ProjectExporter
 
         var target = Path.GetFullPath(outputPath);
         var settings = options.Tune(SettingsFor(snapshot));
-        var source = new PhotoFileSource([.. snapshot.Frames.Select(frame => frame.SourcePath)], settings.Fit);
-        var tracker = new ExportProgressTracker(source.FrameCount, progress, options.Clock);
+        var frames = FramesFor(snapshot, settings);
+        var source = new PhotoFileSource([.. frames.Select(index => snapshot.Frames[index].SourcePath)], settings.Fit);
+
+        // Progress counts the project's frames, so the film gate, the filmstrip and "0312 of 0742" stay in photos when a
+        // GIF shows only some of them.
+        var tracker = new ExportProgressTracker(snapshot.Frames.Length, progress, options.Clock);
         tracker.Enter(ExportStage.Preparing);
-        return Task.Run(() => RunAsync(source, target, settings, tracker, options, cancellationToken), CancellationToken.None);
+        return Task.Run(() => RunAsync(source, frames, target, settings, tracker, options, cancellationToken), CancellationToken.None);
+    }
+
+    /// <summary>
+    /// The project frame each exported frame shows, in order: every frame for a video; for a GIF that plays slower than
+    /// the video, the frame the video shows at each GIF frame's start (<see cref="GifOutput.SourceFrames"/>).
+    /// </summary>
+    internal static int[] FramesFor(ProjectSnapshot snapshot, VideoExportSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(settings);
+        var count = snapshot.Frames.Length;
+        return settings.Format == VideoFormat.Gif
+            ? GifOutput.SourceFrames(count, snapshot.EffectiveRate.Rate, settings.FrameRate)
+            : [.. Enumerable.Range(0, count)];
     }
 
     private static async Task<ProjectExportResult> RunAsync(
         PhotoFileSource source,
+        int[] frames,
         string target,
         VideoExportSettings settings,
         ExportProgressTracker tracker,
@@ -152,21 +181,35 @@ public static class ProjectExporter
 
         try
         {
-            var createEncoder = options.CreateEncoder ?? (static (path, s, device) => new SinkWriterEncoder(path, s, device));
-            var written = await VideoExporter.ExportAsync(
-                source,
-                partial,
-                settings,
-                tracker,
-                cancellationToken,
-                (path, s, device) =>
+            var createEncoder = options.CreateEncoder ?? VideoExporter.OpenEncoder;
+            VideoExportResult written;
+            try
+            {
+                written = await VideoExporter.ExportAsync(
+                    source,
+                    partial,
+                    settings,
+                    new CoveredFrames(tracker, frames, tracker.Count),
+                    cancellationToken,
+                    (path, s, device) =>
+                    {
+                        // Hidden once the encoder has it open: the sink writer and the GIF encoder create their file
+                        // with CREATE_ALWAYS, which Windows refuses on an existing hidden file.
+                        var encoder = createEncoder(path, s, device);
+                        SetHidden(path, true);
+                        return encoder;
+                    }).ConfigureAwait(false);
+            }
+            catch (VideoExportException exception) when (exception.FrameIndex is int index && index < frames.Length && frames[index] != index)
+            {
+                // The pipeline counts the GIF's frames; the message names the project's frame, the photo the user can find.
+                throw new VideoExportException(exception.Message, exception.Failure, exception.InnerException)
                 {
-                    // Hidden once the encoder has it open: the sink writer creates its file with CREATE_ALWAYS,
-                    // which Windows refuses on an existing hidden file.
-                    var encoder = createEncoder(path, s, device);
-                    SetHidden(path, true);
-                    return encoder;
-                }).ConfigureAwait(false);
+                    FrameIndex = frames[index],
+                    SourcePath = exception.SourcePath,
+                    DeviceRemovedReason = exception.DeviceRemovedReason,
+                };
+            }
 
             tracker.Enter(ExportStage.Finishing);
             SetHidden(partial, false);
@@ -350,6 +393,23 @@ public static class ProjectExporter
     // E_ACCESSDENIED, ERROR_SHARING_VIOLATION, ERROR_LOCK_VIOLATION, ERROR_USER_MAPPED_FILE: another process has the file.
     private static bool IsHeld(Exception exception) =>
         unchecked((uint)exception.HResult) is 0x80070005 or 0x80070020 or 0x80070021 or 0x800704C8;
+}
+
+/// <summary>
+/// Turns the encoder's count of exported frames into the count of project frames they cover, for the progress: once m
+/// frames are written, every project frame before the one exported frame m shows is done; once all are, every project
+/// frame is. For a video both counts are the same; for a GIF that skips frames this keeps the progress in photos.
+/// </summary>
+/// <param name="target">The progress in project frames.</param>
+/// <param name="frames">The project frame each exported frame shows, strictly increasing.</param>
+/// <param name="projectFrames">The project's frame count.</param>
+internal sealed class CoveredFrames(IProgress<int> target, int[] frames, int projectFrames) : IProgress<int>
+{
+    /// <summary>The project frames done once <paramref name="exported"/> frames are written.</summary>
+    public int Covered(int exported) => exported >= frames.Length ? projectFrames : frames[Math.Max(0, exported)];
+
+    /// <inheritdoc />
+    public void Report(int value) => target.Report(Covered(value));
 }
 
 /// <summary>Test seams of <see cref="ProjectExporter"/>.</summary>
