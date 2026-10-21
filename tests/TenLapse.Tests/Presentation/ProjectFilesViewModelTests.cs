@@ -152,6 +152,7 @@ public sealed class ProjectFilesViewModelTests : IDisposable
     [Theory]
     [InlineData("{ not a project")]
     [InlineData("""{ "settings": 1 }""")]
+    [InlineData("""{ "format": "10Lapse project", "format": "10Lapse project", "version": 1 }""")]
     public async Task AFileThatIsNotAProjectSaysSoAndChangesNothing(string text)
     {
         var (shell, files) = Create();

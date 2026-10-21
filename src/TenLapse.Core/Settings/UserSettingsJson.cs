@@ -16,7 +16,8 @@ public static class UserSettingsJson
     /// <summary>The version this build writes.</summary>
     public const int CurrentVersion = 1;
 
-    private static readonly JsonDocumentOptions _readOptions = new() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+    // A key twice is a damaged file (#52's review): refused while parsing, so no later look at the key can throw.
+    private static readonly JsonDocumentOptions _readOptions = new() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip, AllowDuplicateProperties = false };
     private static readonly JsonSerializerOptions _writeOptions = new() { WriteIndented = true };
 
     // Step n upgrades a version n document to version n + 1, in place. Empty while version 1 is current; a step is

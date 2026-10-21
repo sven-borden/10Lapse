@@ -60,7 +60,9 @@ public static class ProjectFileJson
     /// <summary>The largest project file that is read. 5,000 frames take about 2 MB; anything far bigger is not ours.</summary>
     public const long MaxFileBytes = 64L * 1024 * 1024;
 
-    private static readonly JsonDocumentOptions _readOptions = new() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip, MaxDepth = 16 };
+    // A key twice in one object is damage, not a choice: allowed, the first look at that key would throw (JsonObject's
+    // dictionary), so the parser refuses it and the file reads as not JSON.
+    private static readonly JsonDocumentOptions _readOptions = new() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip, MaxDepth = 16, AllowDuplicateProperties = false };
     private static readonly JsonSerializerOptions _writeOptions = new() { WriteIndented = true };
 
     // Step n upgrades a version n document to version n + 1, in place. Empty while version 1 is current; a step is added
@@ -119,6 +121,19 @@ public static class ProjectFileJson
 
     /// <summary>Reads a project file's text. Never throws.</summary>
     public static ProjectFileReadResult Read(string? json)
+    {
+        try
+        {
+            return ReadCore(json);
+        }
+        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or FormatException)
+        {
+            // A shape no check below foresaw: a damaged file, never a throw.
+            return ProjectFileReadResult.Failed(ProjectFileFailure.NotAProject, $"The project file could not be read as a project ({exception.Message}).");
+        }
+    }
+
+    private static ProjectFileReadResult ReadCore(string? json)
     {
         JsonNode? parsed;
         try

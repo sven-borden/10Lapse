@@ -181,6 +181,9 @@ public sealed class ProjectFileJsonTests
     [InlineData("""{ "format": "10Lapse project" }""", ProjectFileFailure.NoUsableVersion)]
     [InlineData("""{ "format": "10Lapse project", "version": "one" }""", ProjectFileFailure.NoUsableVersion)]
     [InlineData("""{ "format": "10Lapse project", "version": 0 }""", ProjectFileFailure.NoUsableVersion)]
+    [InlineData("""{ "format": "10Lapse project", "format": "x", "version": 1 }""", ProjectFileFailure.NotJson)]
+    [InlineData("""{ "format": "10Lapse project", "version": 1, "frames": [ { "path": "C:\\a.jpg", "path": "C:\\b.jpg" } ] }""", ProjectFileFailure.NotJson)]
+    [InlineData("""{ "format": "10Lapse project", "version": 1, "timing": { "mode": "PerSecond", "mode": "PerPhoto" } }""", ProjectFileFailure.NotJson)]
     public void AFileThatIsNotAProjectIsAFailureNotAThrow(string text, ProjectFileFailure failure)
     {
         var result = ProjectFileJson.Read(text);
