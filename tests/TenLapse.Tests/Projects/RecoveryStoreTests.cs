@@ -94,6 +94,38 @@ public sealed class RecoveryStoreTests : IDisposable
     }
 
     [Fact]
+    public void ARestoredOfferSavedBeforeItsOwnCopyWasWrittenIsNotOfferedAgainAfterACrash()
+    {
+        // Restore, then Save within the autosave's pause: the project is clean, so the autosave only clears.
+        Directory.CreateDirectory(_folder);
+        File.WriteAllText(Path.Combine(_folder, "deadbeef.10lapse"), "left behind");
+        var crashed = new RecoveryStore(_folder);
+        Assert.NotNull(crashed.TakeOrphan());
+        crashed.MarkOfferRestored();
+        crashed.Clear();
+
+        ReleaseLockWithoutCleaning(crashed);
+
+        using var next = new RecoveryStore(_folder);
+        Assert.Null(next.TakeOrphan());
+    }
+
+    [Fact]
+    public void AnOfferNotRestoredSurvivesClear()
+    {
+        Directory.CreateDirectory(_folder);
+        File.WriteAllText(Path.Combine(_folder, "deadbeef.10lapse"), "left behind");
+        var crashed = new RecoveryStore(_folder);
+        Assert.NotNull(crashed.TakeOrphan());
+        crashed.Clear();
+
+        ReleaseLockWithoutCleaning(crashed);
+
+        using var next = new RecoveryStore(_folder);
+        Assert.Equal("left behind", next.TakeOrphan()?.Text);
+    }
+
+    [Fact]
     public void ClearRemovesOnlyThisAppsCopy()
     {
         using var running = new RecoveryStore(_folder);

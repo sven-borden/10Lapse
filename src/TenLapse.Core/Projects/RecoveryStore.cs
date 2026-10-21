@@ -83,6 +83,13 @@ public sealed class RecoveryStore : IRecoveryStore
         lock (_gate)
         {
             TryDelete(CopyPath);
+
+            // A restored copy that was then saved (or emptied) before this process wrote its own: nothing is left to
+            // offer, so it must not come back if this run ends without closing.
+            if (_offerRestored)
+            {
+                TryDelete(OfferPath);
+            }
         }
     }
 
