@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using TenLapse.Core.Text;
+using TenLapse.Core.Timing;
 
 namespace TenLapse.Core.Projects;
 
@@ -36,6 +37,9 @@ public enum ProjectChanges
 
     /// <summary><see cref="Project.FilePath"/> changed (#52: the project was opened from, saved to or restored for a file).</summary>
     File = 1 << 8,
+
+    /// <summary><see cref="Project.Sequence"/> changed (#49: holds, plays, boomerang).</summary>
+    Sequence = 1 << 9,
 }
 
 /// <summary>The kind of a <see cref="FrameChange"/>.</summary>
@@ -172,8 +176,40 @@ public sealed record ProjectSnapshot
     /// <summary>The <c>.10lapse</c> file this project was opened from or last saved to (#52), or null while it has none.</summary>
     public string? FilePath { get; internal init; }
 
-    /// <summary>The rate these frames play and export at: <see cref="TimingSettings.EffectiveRate"/> for <see cref="Frames"/>.</summary>
-    public PlaybackRate EffectiveRate => Timing.EffectiveRate(Frames.Length);
+    /// <summary>How the photos play out (#49): holds, plays, boomerang. The settings the user chose; see <see cref="Playback"/> for the video.</summary>
+    public SequenceSettings Sequence { get; internal init; } = SequenceSettings.Default;
+
+    /// <summary>
+    /// The sequence settings as this snapshot's output plays them: <see cref="Sequence"/>, with one play for a GIF, which
+    /// loops by itself (<see cref="SequenceSettings.For"/>).
+    /// </summary>
+    public SequenceSettings EffectiveSequence => Sequence.For(Output.Format);
+
+    /// <summary>
+    /// The rate these frames play and export at: <see cref="TimingSettings.EffectiveRate(int, SequenceSettings)"/> for
+    /// <see cref="Frames"/> and <see cref="EffectiveSequence"/> (in Length mode the target is the whole video's length).
+    /// </summary>
+    public PlaybackRate EffectiveRate => Timing.EffectiveRate(Frames.Length, EffectiveSequence);
+
+    /// <summary>
+    /// The video's frames (#49): which photo each one shows, holds, plays and boomerang resolved at <see cref="EffectiveRate"/>.
+    /// The preview plays it, the export writes it (a GIF samples it at its own rate), and its <see cref="FrameSequence.Length"/>
+    /// is the video's frame count.
+    /// </summary>
+    public FrameSequence Playback => EffectiveSequence.Resolve(Frames.Length, EffectiveRate.Rate);
+
+    /// <summary>
+    /// The video's length in 100 ns ticks: <see cref="Playback"/>'s frames at <see cref="EffectiveRate"/>, holds, plays
+    /// and boomerang included. The one number for "how long is the video" (the Timing readout, music fitted to it).
+    /// </summary>
+    public long Duration
+    {
+        get
+        {
+            var rate = EffectiveRate.Rate;
+            return EffectiveSequence.Resolve(Frames.Length, rate).Duration(rate);
+        }
+    }
 
     /// <summary>
     /// The video's width and height in pixels, which the export writes and the preview draws: the resolution
@@ -234,6 +270,17 @@ public sealed class Project
     public Project()
         : this(TimingSettings.Default, FrameSettings.Default, OutputSettings.Default, SortMode.CaptureTime)
     {
+    }
+
+    /// <summary>
+    /// Creates an empty, clean project with these settings and <paramref name="sequence"/> (#49: an opened file's holds,
+    /// plays and boomerang), owned by the calling thread. Like the constructor without it, this is not an edit.
+    /// </summary>
+    public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode, SequenceSettings sequence)
+        : this(timing, frameSettings, output, sortMode)
+    {
+        ArgumentNullException.ThrowIfNull(sequence);
+        _state = _state with { Sequence = sequence };
     }
 
     /// <summary>
@@ -299,6 +346,19 @@ public sealed class Project
             if (Changes(_state.Timing, value))
             {
                 Commit(_state with { Timing = value }, ProjectChanges.Timing);
+            }
+        }
+    }
+
+    /// <summary>Holds, plays and boomerang (#49). The video's frames are <see cref="ProjectSnapshot.Playback"/>.</summary>
+    public SequenceSettings Sequence
+    {
+        get => _state.Sequence;
+        set
+        {
+            if (Changes(_state.Sequence, value))
+            {
+                Commit(_state with { Sequence = value }, ProjectChanges.Sequence);
             }
         }
     }

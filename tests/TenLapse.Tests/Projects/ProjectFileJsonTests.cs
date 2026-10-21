@@ -34,6 +34,40 @@ public sealed class ProjectFileJsonTests
     }
 
     [Fact]
+    public void TheSequenceGroupSurvivesAWriteAndARead()
+    {
+        // #49: holds in tenths of a second, the plays and the boomerang.
+        var sequence = new SequenceSettings(TimeSpan.FromSeconds(1.5), TimeSpan.FromSeconds(10), 5, boomerang: true);
+
+        Assert.Equal(sequence, RoundTrip(new ProjectFileContent { Sequence = sequence }).Sequence);
+        Assert.Equal(SequenceSettings.Default, RoundTrip(new ProjectFileContent()).Sequence);
+        Assert.Contains("\"holdStartSeconds\": 1.5", ProjectFileJson.Write(new ProjectFileContent { Sequence = sequence }), StringComparison.Ordinal);
+
+        var project = new ProjectFileContent { Sequence = sequence }.CreateEmptyProject();
+        Assert.Equal(sequence, project.Sequence);
+        Assert.False(project.Snapshot.IsDirty);
+    }
+
+    [Fact]
+    public void AFileWithoutTheSequenceOrWithABadOnePlaysThePhotosOnce()
+    {
+        var written = ProjectFileJson.Write(new ProjectFileContent { Sequence = new SequenceSettings(TimeSpan.FromSeconds(2), TimeSpan.Zero, 3, true) });
+        var root = System.Text.Json.Nodes.JsonNode.Parse(written)!.AsObject();
+
+        // A file from before #49 has no sequence group: plain, without a word.
+        root.Remove("sequence");
+        var before = ProjectFileJson.Read(root.ToJsonString());
+        Assert.Equal(SequenceSettings.Default, before.Content!.Sequence);
+        Assert.Empty(before.Problems);
+
+        // A hand-edited one keeps the default for each field it spoils, and says so.
+        root["sequence"] = new System.Text.Json.Nodes.JsonObject { ["holdStartSeconds"] = 0.15m, ["holdEndSeconds"] = 11, ["plays"] = 9, ["boomerang"] = "yes" };
+        var spoiled = ProjectFileJson.Read(root.ToJsonString());
+        Assert.Equal(SequenceSettings.Default, spoiled.Content!.Sequence);
+        Assert.Equal(4, spoiled.Problems.Count);
+    }
+
+    [Fact]
     public void TheFrameOutputAndOrderGroupsSurviveAWriteAndARead()
     {
         foreach (var aspect in Enum.GetValues<FrameAspect>())
@@ -247,6 +281,7 @@ public sealed class ProjectFileJsonTests
             (TimingSettings.Default, value => new ProjectFileContent { Timing = (TimingSettings)value }, content => content.Timing),
             (FrameSettings.Default, value => new ProjectFileContent { Frame = (FrameSettings)value }, content => content.Frame),
             (OutputSettings.Default, value => new ProjectFileContent { Output = (OutputSettings)value }, content => content.Output),
+            (SequenceSettings.Default, value => new ProjectFileContent { Sequence = (SequenceSettings)value }, content => content.Sequence),
         ];
         var walked = new List<string>();
         foreach (var (defaults, make, take) in groups)
@@ -264,6 +299,8 @@ public sealed class ProjectFileJsonTests
 
         Assert.Contains("OutputSettings.Gif.Size", walked);
         Assert.Contains("OutputSettings.Gif.Rate", walked);
+        Assert.Contains("SequenceSettings.HoldStart", walked);
+        Assert.Contains("SequenceSettings.Boomerang", walked);
     }
 
     // Every settable property of a settings record, recursing into the records it holds.
@@ -309,6 +346,22 @@ public sealed class ProjectFileJsonTests
         if (type == typeof(Fraction))
         {
             return [new Fraction(7, 2)];
+        }
+
+        // #49's holds, plays and boomerang.
+        if (type == typeof(TimeSpan))
+        {
+            return [TimeSpan.FromSeconds(2.5), TimeSpan.FromSeconds(10)];
+        }
+
+        if (type == typeof(int))
+        {
+            return [3, 5];
+        }
+
+        if (type == typeof(bool))
+        {
+            return [!(bool)current!];
         }
 
         throw new InvalidOperationException($"No test values for a setting of type {type.Name}: add some here.");

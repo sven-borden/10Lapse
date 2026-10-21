@@ -14,6 +14,8 @@ namespace TenLapse.Preview;
 /// <summary>
 /// The scrubber (#19): shows where the playhead is and seeks where the pointer presses and drags. Playback pauses for
 /// the drag and goes on after it. The arithmetic (<see cref="PlayerViewModel.FrameAtFraction"/>) is the view model's.
+/// It spans the video's frames (#49, <see cref="PlayerViewModel.Position"/>): with holds, plays or a boomerang it runs
+/// over the whole video as it plays and exports, not over the photos once.
 /// </summary>
 public sealed partial class Scrubber : UserControl
 {
@@ -65,15 +67,15 @@ public sealed partial class Scrubber : UserControl
         _player = null;
     }
 
-    /// <summary>A seek from UI Automation (RangeValue's SetValue): frame number from 1.</summary>
+    /// <summary>A seek from UI Automation (RangeValue's SetValue): the video's frame number from 1.</summary>
     internal void SeekFromAutomation(int frameNumber) =>
-        _errors?.Guard(() => _player?.Seek(frameNumber - 1), ProjectText.PreviewSeekFailed);
+        _errors?.Guard(() => _player?.SeekPosition(frameNumber - 1), ProjectText.PreviewSeekFailed);
 
     protected override AutomationPeer OnCreateAutomationPeer() => new ScrubberAutomationPeer(this);
 
     private void OnPlayerPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(PlayerViewModel.CurrentFrame) or nameof(PlayerViewModel.FrameCount) or nameof(PlayerViewModel.IsPlaying))
+        if (e.PropertyName is nameof(PlayerViewModel.Position) or nameof(PlayerViewModel.PositionCount) or nameof(PlayerViewModel.IsPlaying))
         {
             Place();
         }
@@ -86,7 +88,7 @@ public sealed partial class Scrubber : UserControl
             return;
         }
 
-        var fraction = PlayerViewModel.FractionOfFrame(player.CurrentFrame, player.FrameCount);
+        var fraction = PlayerViewModel.FractionOfFrame(player.Position, player.PositionCount);
         var travel = Math.Max(0, ActualWidth - (2 * Inset));
         KnobOffset.X = fraction * travel;
         Played.Width = fraction * travel;
@@ -99,9 +101,9 @@ public sealed partial class Scrubber : UserControl
 
         // The range follows the clip (photos arriving or removed, even while playing): a client never reads a value
         // past the maximum it knows.
-        if (player.FrameCount != _announcedCount)
+        if (player.PositionCount != _announcedCount)
         {
-            var count = player.FrameCount;
+            var count = player.PositionCount;
             var (minimumBefore, maximumBefore) = (_announcedCount > 0 ? 1.0 : 0.0, (double)_announcedCount);
             _announcedCount = count;
             peer.RaisePropertyChangedEvent(RangeValuePatternIdentifiers.MaximumProperty, maximumBefore, (double)count);
@@ -112,11 +114,11 @@ public sealed partial class Scrubber : UserControl
         }
 
         // Narrator hears the value change only while paused: playback would read out every frame.
-        if (!player.IsPlaying && player.CurrentFrame != _announcedFrame)
+        if (!player.IsPlaying && player.Position != _announcedFrame)
         {
             var before = _announcedFrame + 1.0;
-            _announcedFrame = player.CurrentFrame;
-            peer.RaisePropertyChangedEvent(RangeValuePatternIdentifiers.ValueProperty, before, player.CurrentFrame + 1.0);
+            _announcedFrame = player.Position;
+            peer.RaisePropertyChangedEvent(RangeValuePatternIdentifiers.ValueProperty, before, player.Position + 1.0);
         }
     }
 
@@ -181,7 +183,7 @@ public sealed partial class Scrubber : UserControl
         var x = e.GetCurrentPoint(this).Position.X;
         var travel = ActualWidth - (2 * Inset);
         var fraction = travel <= 0 ? 0 : (x - Inset) / travel;
-        player.Seek(PlayerViewModel.FrameAtFraction(fraction, player.FrameCount));
+        player.SeekPosition(PlayerViewModel.FrameAtFraction(fraction, player.PositionCount));
     }
 
     private void SetPointerOver(bool over)
@@ -193,14 +195,14 @@ public sealed partial class Scrubber : UserControl
         }
     }
 
-    /// <summary>A slider to UI Automation: its value is the frame number, from 1.</summary>
+    /// <summary>A slider to UI Automation: its value is the video's frame number, from 1.</summary>
     private sealed partial class ScrubberAutomationPeer(Scrubber owner) : FrameworkElementAutomationPeer(owner), IRangeValueProvider
     {
-        public double Value => (owner.Player?.CurrentFrame ?? -1) + 1.0;
+        public double Value => (owner.Player?.Position ?? -1) + 1.0;
 
         public double Minimum => owner.Player is { HasFrames: true } ? 1 : 0;
 
-        public double Maximum => owner.Player?.FrameCount ?? 0;
+        public double Maximum => owner.Player?.PositionCount ?? 0;
 
         public double SmallChange => 1;
 

@@ -81,6 +81,9 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     private int _run;
     private ExportedVideo? _video;
     private ExportStatus? _applied;
+
+    // The running export's video frames (#49): its progress counts them; the strip, the gate and the photo shown follow the photos.
+    private Core.Timing.FrameSequence _sequence;
     private TimeSpan _appliedAt;
     private int _announcedTenth;
     private TimeSpan _announcedAt;
@@ -236,7 +239,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string FramesText { get; private set; }
 
-    /// <summary>"4.3 photos per second".</summary>
+    /// <summary>"4.3 frames per second".</summary>
     [ObservableProperty]
     public partial string SpeedText { get; private set; }
 
@@ -248,9 +251,17 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string RenderingText { get; private set; }
 
-    /// <summary>The 0-based frame being written: the film gate's position.</summary>
+    /// <summary>The 0-based photo (project frame) the frame being written shows.</summary>
     [ObservableProperty]
     public partial int CurrentFrame { get; private set; }
+
+    /// <summary>
+    /// How far the film gate has come, 0 to 1: the share of the photos written at least once (#49). It goes with
+    /// <see cref="Fraction"/> when nothing is held, repeated or reversed, and waits at the end while the plays and the way
+    /// back are written.
+    /// </summary>
+    [ObservableProperty]
+    public partial double GateFraction { get; private set; }
 
     /// <summary>The frames the running export writes (the film gate's thumbnails); empty when none runs.</summary>
     [ObservableProperty]
@@ -483,7 +494,8 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         FileName = fileName;
         OutputSummary = ExportText.OutputSummary(snapshot);
         // The numbers first, so the film gate starts the new export at 0 rather than where the last one ended.
-        Show(new ExportStatus(ExportPhase.Preparing, 0, snapshot.Frames.Length, null, null));
+        _sequence = snapshot.Playback;
+        Show(new ExportStatus(ExportPhase.Preparing, 0, _sequence.Length, null, null));
         ExportFrames = snapshot.Frames;
         SavedBesideText = string.Empty;
         _shell.Edits.Close();
@@ -542,7 +554,8 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         Show(status);
 
         // The preview shows the frame being written, unless the user is playing it or has just moved it (each seek also
-        // decodes a frame beside the export); the strip dims what is still to come.
+        // decodes a frame beside the export); the strip dims what is still to come. The progress counts the video's frames
+        // (#49), which is the preview's timeline too.
         var writing = Math.Clamp(status.Frame, 0, Math.Max(0, status.FrameCount - 1));
         // Not while the window is minimized or hidden: nothing should decode and draw unseen (#19), and the export does not
         // wait for the preview. It catches up with the next report after the window shows again.
@@ -551,7 +564,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
             SeekPreview(writing);
         }
 
-        _filmstrip.SetPending(ExportFrames, status.Frame);
+        _filmstrip.SetPending(ExportFrames, _sequence.PhotosCovered(status.Frame));
         _services.Window.ShowProgress(status.Phase == ExportPhase.Preparing ? null : status.Fraction);
 
         // The last step has a sentence of its own: the file can take a few seconds to complete after the last frame.
@@ -579,8 +592,10 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         TimeLeftText = ExportText.TimeLeft(status);
         FramesText = ExportText.Frames(status.Frame, status.FrameCount);
         SpeedText = ExportText.Speed(status.FramesPerSecond);
-        CurrentFrame = Math.Clamp(status.Frame, 0, Math.Max(0, status.FrameCount - 1));
-        RenderingText = ExportText.RenderingFrame(CurrentFrame, status.FrameCount);
+        var writing = Math.Clamp(status.Frame, 0, Math.Max(0, status.FrameCount - 1));
+        CurrentFrame = writing < _sequence.Length ? _sequence.PhotoAt(writing) : writing;
+        GateFraction = _sequence.PhotoCount == 0 ? status.Fraction : (double)_sequence.PhotosCovered(status.Frame) / _sequence.PhotoCount;
+        RenderingText = ExportText.RenderingFrame(writing, status.FrameCount);
     }
 
     private void Finish(ProjectViewModel project, ProjectSnapshot snapshot, OutputSettings output, ExportedVideo video, TimeSpan took)
@@ -666,12 +681,12 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void SeekPreview(int frame)
+    private void SeekPreview(int position)
     {
         _seeking = true;
         try
         {
-            _player.Seek(frame);
+            _player.SeekPosition(position);
         }
         finally
         {

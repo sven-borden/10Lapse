@@ -108,13 +108,15 @@ internal static class GoldenExport
         FrameAspect aspect,
         FitMode fit,
         VideoFormat format = VideoFormat.Mp4H264,
-        OutputQuality quality = OutputQuality.High)
+        OutputQuality quality = OutputQuality.High,
+        SequenceSettings? sequence = null)
     {
         var project = new Project(
             timing,
             new FrameSettings(aspect, fit),
             new OutputSettings(OutputResolution.Hd720, format, quality),
-            SortMode.Manual);
+            SortMode.Manual,
+            sequence ?? SequenceSettings.Default);
         project.AddFrames(frames);
         return project.Snapshot;
     }

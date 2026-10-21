@@ -93,6 +93,9 @@ public sealed record ProjectFileContent
     /// <summary>The order the user chose (<see cref="ProjectSnapshot.SortMode"/>). The frames are stored in that order already.</summary>
     public SortMode SortMode { get; init; } = SortMode.CaptureTime;
 
+    /// <summary>The sequence group (<see cref="ProjectSnapshot.Sequence"/>, #49): a file from before it plays the photos once, forward, with no holds.</summary>
+    public SequenceSettings Sequence { get; init; } = SequenceSettings.Default;
+
     /// <summary>A recovery copy only: the project's name, which a project that was never saved has no file to take it from.</summary>
     public string? RecoveredName { get; init; }
 
@@ -114,6 +117,7 @@ public sealed record ProjectFileContent
             Frame = snapshot.FrameSettings,
             Output = snapshot.Output,
             SortMode = snapshot.SortMode,
+            Sequence = snapshot.Sequence,
         };
     }
 
@@ -176,5 +180,5 @@ public sealed record ProjectFileContent
     }
 
     /// <summary>A new, empty, clean project with these settings, owned by the calling thread; the caller adds the frames.</summary>
-    public Project CreateEmptyProject() => new(Timing, Frame, Output, SortMode);
+    public Project CreateEmptyProject() => new(Timing, Frame, Output, SortMode, Sequence);
 }

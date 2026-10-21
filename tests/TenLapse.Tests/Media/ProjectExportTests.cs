@@ -411,7 +411,8 @@ public sealed class ProjectExportTests : IDisposable
     public async Task AGifCountsItsProgressInPhotosAndWritesTheFramesItShows()
     {
         // 30 photos at 30 fps as a GIF of up to 10 fps: 10 GIF frames, photos 0, 3, 6 and so on; progress in photos.
-        var photos = ManyPhotos(30).ToList();
+        // Two pictures in turn, so no two GIF frames in a row are the same (the encoder would store them as one).
+        var photos = AlternatingPhotos(30).ToList();
         var snapshot = GoldenExport.Snapshot(photos.Select(path => GoldenExport.FrameOf(path)), TimingSettings.PerSecond(new Fraction(30, 1)), FrameAspect.Ratio16x9, FitMode.Fill, VideoFormat.Gif);
         var settings = ProjectExporter.SettingsFor(snapshot);
         Assert.Equal((480, 270, new Fraction(10, 1), VideoFormat.Gif, (uint?)null), (settings.Width, settings.Height, settings.FrameRate, settings.Format, settings.Bitrate));
@@ -429,6 +430,50 @@ public sealed class ProjectExportTests : IDisposable
         Assert.True(reports.Zip(reports.Skip(1)).All(pair => pair.First.Frame <= pair.Second.Frame));
         Assert.All(reports.Where(report => report.Stage == ExportStage.Encoding), report => Assert.Equal(0, report.Frame % 3));
         Assert.Empty(ProjectExporter.PartialFilesOf(output));
+    }
+
+    [Fact]
+    public void TheExportedFramesFollowTheSequenceForAVideoAndAGif()
+    {
+        // #49: 10 photos at 30 fps as a boomerang played twice, 0.2 s held first and 0.1 s last (photo 0,
+        // home again): 6 + 36 + 3 frames.
+        var photos = ManyPhotos(10).Select(path => GoldenExport.FrameOf(path)).ToList();
+        var sequence = new SequenceSettings(TimeSpan.FromSeconds(0.2), TimeSpan.FromSeconds(0.1), 2, boomerang: true);
+        var video = GoldenExport.Snapshot(photos, TimingSettings.PerSecond(new Fraction(30, 1)), FrameAspect.Ratio16x9, FitMode.Fill, sequence: sequence);
+
+        var frames = ProjectExporter.FramesFor(video, ProjectExporter.SettingsFor(video));
+        Assert.Equal(45, frames.Length);
+        Assert.Equal([0, 0, 0, 0, 0, 0, 0, 1, 2], frames[..9]);
+        Assert.Equal([3, 2, 1, 0, 0, 0], frames[^6..]);
+        Assert.Equal(Enumerable.Range(0, 45).Select(video.Playback.PhotoAt), frames);
+
+        // A GIF plays the photos once (it loops by itself) and shows, at each of its 10 fps frames, the photo the video shows.
+        var gif = GoldenExport.Snapshot(photos, TimingSettings.PerSecond(new Fraction(30, 1)), FrameAspect.Ratio16x9, FitMode.Fill, VideoFormat.Gif, sequence: sequence);
+        var gifSettings = ProjectExporter.SettingsFor(gif);
+        Assert.Equal(6 + 18 + 3, gif.Playback.Length);
+        Assert.Equal(GifOutput.SourceFrames(27, new Fraction(30, 1), new Fraction(10, 1)).Select(gif.Playback.PhotoAt), ProjectExporter.FramesFor(gif, gifSettings));
+        Assert.Equal([0, 0, 0, 3, 6, 9, 6, 3, 0], ProjectExporter.FramesFor(gif, gifSettings));
+    }
+
+    [Fact]
+    public async Task ASequenceExportCountsItsProgressInVideoFramesAndLastsAsLong()
+    {
+        // 12 photos at 30 fps as a boomerang with 0.5 s held at both ends: 15 + 22 + 15 = 52 frames, 1.73 s.
+        var photos = ManyPhotos(12).Select(path => GoldenExport.FrameOf(path)).ToList();
+        var sequence = new SequenceSettings(TimeSpan.FromSeconds(0.5), TimeSpan.FromSeconds(0.5), 1, boomerang: true);
+        var snapshot = GoldenExport.Snapshot(photos, TimingSettings.PerSecond(new Fraction(30, 1)), FrameAspect.Ratio16x9, FitMode.Fill, sequence: sequence);
+        var reports = new List<ExportProgress>();
+        var output = _scratch.PathOf("sequence.mp4");
+
+        var result = await ExportOrSkipAsync(snapshot, output, new Synchronous(reports.Add));
+
+        Assert.Equal(52, result.FrameCount);
+        Assert.Equal(FrameTiming.Duration(52, new Fraction(30, 1)), result.Duration);
+        Assert.Equal(snapshot.Duration, result.Duration);
+        Assert.Equal(52, VideoFileReader.Read(output).FrameCount);
+        Assert.All(reports, report => Assert.Equal(52, report.FrameCount));
+        Assert.Equal((ExportStage.Finishing, 52), (reports[^1].Stage, reports[^1].Frame));
+        Assert.True(reports.Zip(reports.Skip(1)).All(pair => pair.First.Frame <= pair.Second.Frame));
     }
 
     [Fact]
@@ -457,7 +502,7 @@ public sealed class ProjectExportTests : IDisposable
         // The disk fills up a few frames in, at the stream the WIC GIF encoder writes to (GifEncoder's open seam): WIC
         // passes ERROR_DISK_FULL through, and the user reads "The disk is full", not "The GIF encoder stopped".
         SkipWithoutGraphicsDevice();
-        var photos = ManyPhotos(30).ToList();
+        var photos = AlternatingPhotos(30).ToList();
         var snapshot = GoldenExport.Snapshot(photos.Select(path => GoldenExport.FrameOf(path)), TimingSettings.PerSecond(new Fraction(30, 1)), FrameAspect.Ratio16x9, FitMode.Fill, VideoFormat.Gif);
         var output = _scratch.PathOf("full.gif");
 
@@ -524,6 +569,22 @@ public sealed class ProjectExportTests : IDisposable
             if (!File.Exists(path))
             {
                 File.Copy(source, path);
+            }
+
+            yield return path;
+        }
+    }
+
+    // Two different pictures in turn (the scene and a grey one): what a GIF test needs where identical frames in a row
+    // would be stored as one.
+    private IEnumerable<string> AlternatingPhotos(int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            var path = _scratch.PathOf($"alternating-{i:D4}.jpg");
+            if (!File.Exists(path))
+            {
+                File.Copy(PhotoFixtureCatalogue.Get(i % 2 == 0 ? "orientation-1.jpg" : "gray.jpg").Path, path);
             }
 
             yield return path;

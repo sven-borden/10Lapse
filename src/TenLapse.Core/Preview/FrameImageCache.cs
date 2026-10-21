@@ -44,7 +44,7 @@ public sealed record FrameImageCacheOptions
 /// <summary>
 /// The preview's frame images (#19): keeps the frames around the playhead loaded, in memory, best first, and builds
 /// the proxies of the whole project in the background. The render thread takes images with <see cref="Acquire"/>
-/// without ever waiting; the player says where it is with <see cref="SetFocus"/>; the project's frames arrive with
+/// without ever waiting; the player says where it is with <see cref="SetFocus(int, bool, int)"/>; the project's frames arrive with
 /// <see cref="SetFrames"/>.
 /// </summary>
 /// <remarks>
@@ -91,6 +91,9 @@ public sealed class FrameImageCache<TImage> : IDisposable
     private int _focus;
     private bool _playing;
     private int _lookahead;
+
+    // The photos playback shows next, in order (#49), when the player gave them; null for the frames after the focus.
+    private int[]? _ahead;
     private long _bytes;
     private long _useClock;
     private bool _disposed;
@@ -225,15 +228,30 @@ public sealed class FrameImageCache<TImage> : IDisposable
         Wake();
     }
 
-    /// <summary>Where the player is: the frame on screen, whether it plays, and how many frames ahead to keep ready while it does.</summary>
-    public void SetFocus(int index, bool playing, int lookahead)
+    /// <summary>
+    /// Where the player is: the frame on screen, whether it plays, and how many frames after it to keep ready while it
+    /// does (looping to the first).
+    /// </summary>
+    public void SetFocus(int index, bool playing, int lookahead) => Focus(index, playing, Math.Max(0, lookahead), null);
+
+    /// <summary>
+    /// Where the player is, playing a sequence (#49): the frame on screen, and the frames it shows next, in order, to keep
+    /// ready while it plays (through a boomerang's turn and into the next loop, review of PR #134).
+    /// </summary>
+    public void SetFocus(int index, bool playing, IReadOnlyList<int> ahead)
+    {
+        ArgumentNullException.ThrowIfNull(ahead);
+        Focus(index, playing, ahead.Count, [.. ahead]);
+    }
+
+    private void Focus(int index, bool playing, int lookahead, int[]? ahead)
     {
         lock (_gate)
         {
             // Before the frames arrive the index is kept as given; SetFrames clamps it.
             index = _frames.IsEmpty ? Math.Max(0, index) : Math.Clamp(index, 0, _frames.Length - 1);
-            lookahead = Math.Max(0, lookahead);
-            if (_disposed || (index == _focus && playing == _playing && lookahead == _lookahead))
+            var sameAhead = ahead is null ? _ahead is null : _ahead is not null && ahead.AsSpan().SequenceEqual(_ahead);
+            if (_disposed || (index == _focus && playing == _playing && lookahead == _lookahead && sameAhead))
             {
                 return;
             }
@@ -241,6 +259,7 @@ public sealed class FrameImageCache<TImage> : IDisposable
             _focus = index;
             _playing = playing;
             _lookahead = lookahead;
+            _ahead = ahead;
         }
 
         Wake();
@@ -607,6 +626,20 @@ public sealed class FrameImageCache<TImage> : IDisposable
         yield return _focus;
         if (_playing)
         {
+            if (_ahead is { } upcoming)
+            {
+                // The frames the sequence shows next, in its order (#49).
+                foreach (var index in upcoming)
+                {
+                    if (index >= 0 && index < count && index != _focus)
+                    {
+                        yield return index;
+                    }
+                }
+
+                yield break;
+            }
+
             for (var ahead = 1; ahead <= _lookahead && ahead < count; ahead++)
             {
                 yield return (_focus + ahead) % count;

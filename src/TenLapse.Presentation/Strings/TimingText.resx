@@ -112,4 +112,52 @@
     <value>Your photos can't fill {0}: the slowest speed is {1}, so the video is {2} long.</value>
     <comment>Length mode, when the photos cannot fill the chosen length even at the slowest speed. {0} the chosen length, {1} the slowest speed ("10 s per photo"), {2} the length the video has instead.</comment>
   </data>
+  <data name="DirectionName" xml:space="preserve">
+    <value>Direction</value>
+    <comment>The caption over the switch between Forward and Boomerang in the Timing panel; also the switch's screen reader name. Keep it short (a caption).</comment>
+  </data>
+  <data name="DirectionForward" xml:space="preserve">
+    <value>Forward</value>
+    <comment>The first part of the direction switch: the photos play forward, as usual. Keep it to about 11 characters: the two parts share the 280 px row equally; longer text ends in an ellipsis.</comment>
+  </data>
+  <data name="DirectionBoomerang" xml:space="preserve">
+    <value>Boomerang</value>
+    <comment>The second part of the direction switch: the photos play forward, then backward to the first one (a boomerang loop). Keep it to about 11 characters.</comment>
+  </data>
+  <data name="PlaysName" xml:space="preserve">
+    <value>Times played</value>
+    <comment>The caption over the row of numbers 1 to 5: how many times the photos play one after the other in the video; also the row's screen reader name.</comment>
+  </data>
+  <data name="PlaysGif" xml:space="preserve">
+    <value>A GIF loops by itself, so it plays your photos once.</value>
+    <comment>In place of the numbers 1 to 5 while the output is an animated GIF: a GIF repeats forever on its own, so the photos are in it once.</comment>
+  </data>
+  <data name="HoldStart" xml:space="preserve">
+    <value>Hold at start</value>
+    <comment>The caption over the box for how many seconds the first frame stays on screen before the photos play; also the box's screen reader name. A hold is a freeze frame: use your language's video-editing term for it (German Standbild, French arrêt sur image, Italian fermo immagine), never the Pause button's word, which sits next to it in the player. Keep it short (two boxes share the row; it may wrap to two lines).</comment>
+  </data>
+  <data name="HoldEnd" xml:space="preserve">
+    <value>Hold at end</value>
+    <comment>The caption over the box for how many seconds the last frame stays on screen after the photos played. The same freeze-frame term as Hold at start. Keep it short.</comment>
+  </data>
+  <data name="NotANumberHold" xml:space="preserve">
+    <value>Type a hold in seconds, like {2}. It can be from {0} to {1}.</value>
+    <comment>Under the hold boxes when what was typed is not a number of seconds. {0} the shortest hold ("0 s"), {1} the longest ("10 s"), {2} one and a half written with your decimal separator ("1.5").</comment>
+  </data>
+  <data name="ClampedHold" xml:space="preserve">
+    <value>A hold can be from {2} to {3}, so {0} is now {1}.</value>
+    <comment>Under the hold boxes when a hold past the range was typed. {0} what was typed, as typed, {1} the hold now set ("10 s"), {2} the shortest ("0 s"), {3} the longest ("10 s").</comment>
+  </data>
+  <data name="HoldLasts" xml:space="preserve">
+    <value>Lasts {0} in whole frames.</value>
+    <comment>Under a hold box when, at the video's speed, the hold lasts another length than the box shows: a hold is a whole number of the video's frames, at least one (at 2 s per photo, 0.3 s lasts one 2 s frame). {0} the length it lasts ("2.0 s"). Half a row wide; it may wrap.</comment>
+  </data>
+  <data name="LengthHoldsTooLong" xml:space="preserve">
+    <value>The holds alone fill {0} (they last {1}): shorten them to make room for your photos. The video is {2} long.</value>
+    <comment>Length mode, when the holds at the start and the end together last as long as the chosen length or longer, so no speed lets the photos fit. {0} the chosen length ("5 s"), {1} the two holds together ("20 s"), {2} the length the video has instead. A hold is a freeze frame: use the word of the Hold at start and Hold at end boxes, not the Pause button's.</comment>
+  </data>
+  <data name="ThousandsSeparatorHold" xml:space="preserve">
+    <value>Type the hold with one decimal at most, from {0} to {1}, like {2}.</value>
+    <comment>Under the hold boxes when what was typed has a separator and three digits ("2.500", "1,000"), which could be a thousands separator or a decimal point. {0} the shortest hold ("0 s"), {1} the longest ("10 s"), {2} one and a half written with your decimal separator ("1.5"). A hold is a freeze frame: use the word of the Hold at start and Hold at end boxes.</comment>
+  </data>
 </root>

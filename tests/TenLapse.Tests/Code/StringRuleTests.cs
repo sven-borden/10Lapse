@@ -38,6 +38,7 @@ public sealed partial class StringRuleTests
     [
         Path.Combine("src", "TenLapse.Core", "Timing", "TimingFormat.cs"),
         Path.Combine("src", "TenLapse.Presentation", "Timing", "TimingInput.cs"),
+        Path.Combine("src", "TenLapse.Presentation", "Timing", "HoldInput.cs"),
         Path.Combine("src", "TenLapse.Presentation", "Timing", "TimingPanelViewModel.cs"),
         Path.Combine("src", "TenLapse.Presentation", "Output", "OutputPlan.cs"),
         Path.Combine("src", "TenLapse.Presentation", "Services", "SkippedFilesInfoBar.cs"),

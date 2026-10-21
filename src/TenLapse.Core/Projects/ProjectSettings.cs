@@ -147,6 +147,73 @@ public sealed record TimingSettings
             : new PlaybackRate(rate, RateClamp.None);
     }
 
+    /// <summary>
+    /// The rate for <paramref name="frameCount"/> photos played as <paramref name="sequence"/> says (#49). Per second and
+    /// Per photo give their input, as <see cref="EffectiveRate(int)"/>. Length takes its target as the length of the whole
+    /// video: the photos' frames (every play, out and back) fill the target less the holds, so the holds keep the seconds
+    /// asked for. A hold is whole frames at the rate, at least one (<see cref="SequenceSettings.HoldFrames"/>), which at a
+    /// slow rate can be far longer than asked; so the rate is solved again with the holds as the frames they come to,
+    /// until it gives the same frames back, and the video comes out within a frame of the target (review of PR #134). A
+    /// target the holds alone fill or pass cannot be reached: the rate is the maximum, clamped, as is a rate the frames
+    /// push past it. Without holds, plays or a boomerang this is <see cref="EffectiveRate(int)"/>.
+    /// </summary>
+    public PlaybackRate EffectiveRate(int frameCount, SequenceSettings sequence)
+    {
+        ArgumentNullException.ThrowIfNull(sequence);
+        if (Mode != SpeedMode.Length || sequence.IsPlain || frameCount == 0)
+        {
+            return EffectiveRate(frameCount);
+        }
+
+        // The seconds left for the photos: the target less the holds, exactly (the target is a fraction, the holds ticks).
+        var left = ((Int128)LengthSeconds.Numerator * FrameTiming.TicksPerSecond) - ((Int128)sequence.Holds.Ticks * LengthSeconds.Denominator);
+        if (left <= 0)
+        {
+            return new PlaybackRate(FrameRates.Max, RateClamp.Max);
+        }
+
+        // Both fit a long (an int numerator times 10^7); the fraction reduces them. A target with a large denominator (not
+        // one the panel makes) may not reduce into int parts: the nearest decimal does then.
+        var scale = (long)LengthSeconds.Denominator * FrameTiming.TicksPerSecond;
+        Fraction seconds;
+        try
+        {
+            seconds = new Fraction((long)left, scale);
+        }
+        catch (OverflowException)
+        {
+            seconds = Fraction.FromDecimal((decimal)(long)left / scale);
+        }
+
+        var photoFrames = sequence.PhotoFrames(frameCount);
+        var rate = FrameRates.FromTotalLength(photoFrames, seconds);
+
+        // The frames the holds come to only grow with the rate, so the rounds settle (in one or two in practice).
+        var holds = HeldFrames(sequence, rate);
+        for (var round = 0; round < MaxHoldRounds && rate <= FrameRates.Max; round++)
+        {
+            rate = FrameRates.FromTotalLength(photoFrames + holds, LengthSeconds);
+            var again = HeldFrames(sequence, rate);
+            if (again == holds)
+            {
+                break;
+            }
+
+            holds = again;
+        }
+
+        return rate < FrameRates.Min ? new PlaybackRate(FrameRates.Min, RateClamp.Min)
+            : rate > FrameRates.Max ? new PlaybackRate(FrameRates.Max, RateClamp.Max)
+            : new PlaybackRate(rate, RateClamp.None);
+    }
+
+    // Rounds of solving Length mode's rate with the holds as frames: far more than it takes.
+    private const int MaxHoldRounds = 16;
+
+    // The frames both holds take at rate.
+    private static long HeldFrames(SequenceSettings sequence, Fraction rate) =>
+        (long)SequenceSettings.HoldFrames(sequence.HoldStart, rate) + SequenceSettings.HoldFrames(sequence.HoldEnd, rate);
+
     private static Fraction InRange(Fraction value, Fraction min, Fraction max, string message) =>
         value >= min && value <= max ? value : throw new ArgumentOutOfRangeException(nameof(value), value, message);
 }
