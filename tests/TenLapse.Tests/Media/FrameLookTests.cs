@@ -131,6 +131,32 @@ public sealed class FrameLookTests
     }
 
     [Fact]
+    public async Task APhotoThatWasNotMeasuredTakesItsNeighboursCorrectionInPreviewAndExport()
+    {
+        // A photo that could not be measured (#45 review): the export and the preview both give it the correction between
+        // its neighbours', never none between corrected photos.
+        var frames = Enumerable.Range(0, 5).Select(i => GoldenExport.FrameOf($@"C:\Photos\Look\IMG_{i}.jpg") with { Exposure = new PhotoExposure(-2 + (0.4 * (i % 2))) }).ToArray();
+        frames[2] = frames[2] with { Exposure = null };
+        var project = new Project(TimingSettings.Default, FrameSettings.Default, OutputSettings.Default, SortMode.Manual, new LookSettings(true, 100));
+        project.AddFrames(frames);
+        var snapshot = project.Snapshot;
+        int[] order = [0, 1, 2, 3, 4];
+
+        var export = new PhotoFileSource([.. order.Select(i => frames[i].SourcePath)], FitMode.Fill, ProjectExporter.LooksFor(snapshot, order)!);
+        var ready = new TaskCompletionSource();
+        if (!ExposureCurve.TryGet(snapshot, () => ready.TrySetResult(), out _))
+        {
+            await ready.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        }
+
+        Assert.True(ExposureCurve.TryGet(snapshot, null, out var preview));
+        var between = (export.LookOf(1).Stops + export.LookOf(3).Stops) / 2;
+        Assert.NotEqual(0, export.LookOf(2).Stops);
+        Assert.Equal(between, export.LookOf(2).Stops, 1e-5);
+        Assert.Equal(export.LookOf(2).Stops, (float)preview.Correction(frames[2].Id), 1e-6);
+    }
+
+    [Fact]
     public async Task TheMeterMeasuresAPhotoOnDiskAndAMissingOneFails()
     {
         SkipWithoutGraphicsDevice();

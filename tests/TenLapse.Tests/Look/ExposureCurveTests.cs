@@ -14,6 +14,8 @@ public sealed class ExposureCurveTests(ITestOutputHelper output)
     // the corrected curve well under it.
     private const double Unnoticeable = 1.0 / 30;
 
+    private static readonly TimeSpan _patience = TimeSpan.FromSeconds(10);
+
     private static double[] Zeros(int count) => new double[count];
 
     private static double[] Corrected(IReadOnlyList<double> brightness, IReadOnlyList<double> exposure, double strength = 1)
@@ -49,7 +51,8 @@ public sealed class ExposureCurveTests(ITestOutputHelper output)
         var after = Rms(corrected.Select((value, i) => value - scene[i]));
         var jumpBefore = MaxJump(brightness);
         var jumpAfter = MaxJump(corrected);
-        output.WriteLine($"Flicker: residual {before:F3} -> {after:F3} stops RMS, largest jump {jumpBefore:F3} -> {jumpAfter:F3} stops, change over the sequence {corrected[^1] - corrected[0]:F3} (scene {scene[^1] - scene[0]:F3}).");
+        var ends = Rms(new[] { 0, 1, 298, 299 }.Select(i => corrected[i] - scene[i]));
+        output.WriteLine($"Flicker: residual {before:F3} -> {after:F3} stops RMS ({ends:F3} at the two photos at either end), largest jump {jumpBefore:F3} -> {jumpAfter:F3} stops, change over the sequence {corrected[^1] - corrected[0]:F3} (scene {scene[^1] - scene[0]:F3}).");
 
         Assert.True(after < before / 3, $"Residual flicker {after:F3} is not a third of {before:F3}.");
         Assert.True(jumpAfter < Unnoticeable, $"A jump of {jumpAfter:F3} stops is left.");
@@ -129,23 +132,31 @@ public sealed class ExposureCurveTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void PhotosNotMeasuredYetAreLeftOutOfTheCurve()
+    public void APhotoNotMeasuredTakesItsCorrectionFromItsMeasuredNeighbours()
     {
-        var frames = Measured(-2, -2.3, -1.7).ToList();
-        frames.Insert(1, TestFrames.At(@"C:\Photos\Look\unmeasured.jpg"));
+        // Not measured yet, or it could not be (#45 review): between corrected photos it must not flash at no correction.
+        var frames = Measured(-2, -2.3, -1.7, -2.4, -1.8).ToList();
+        frames.Insert(2, TestFrames.At(@"C:\Photos\Look\unmeasured.jpg"));
+        frames.Insert(0, TestFrames.At(@"C:\Photos\Look\first.jpg"));
+        frames.Add(TestFrames.At(@"C:\Photos\Look\last.jpg"));
 
-        var withGap = ExposureCurve.Compute(frames, new LookSettings(true, 100));
-        var without = ExposureCurve.Compute(frames.Where(frame => frame.Exposure is not null).ToList(), new LookSettings(true, 100));
+        var withGaps = ExposureCurve.Compute(frames, new LookSettings(true, 100));
+        var measured = frames.Where(frame => frame.Exposure is not null).ToList();
+        var without = ExposureCurve.Compute(measured, new LookSettings(true, 100));
 
-        Assert.Equal(0, withGap.Correction(frames[1].Id));
-        Assert.Equal(without.Correction(frames[2].Id), withGap.Correction(frames[2].Id), 1e-12);
+        Assert.Equal(frames.Count, withGaps.Count);
+        Assert.All(measured, frame => Assert.Equal(without.Correction(frame.Id), withGaps.Correction(frame.Id), 1e-12));
+        Assert.Equal((without.Correction(frames[2].Id) + without.Correction(frames[4].Id)) / 2, withGaps.Correction(frames[3].Id), 1e-12);
+        Assert.Equal(without.Correction(frames[1].Id), withGaps.Correction(frames[0].Id), 1e-12);
+        Assert.Equal(without.Correction(frames[^2].Id), withGaps.Correction(frames[^1].Id), 1e-12);
+        Assert.NotEqual(0, withGaps.Correction(frames[3].Id));
     }
 
     [Fact]
-    public void AnExposureFactorCountsOnlyWhenEveryPhotoHasIt()
+    public void APhotoWithoutAFactorTakesItFromItsNeighbourAndTheRampStays()
     {
-        // One stop more shutter on the second half: a step the curve ramps. With a photo lacking its shutter time the
-        // factor is ignored and the same jump is eased as flicker instead.
+        // One stop more shutter on the second half: a step the curve ramps. A photo lacking its shutter time takes its
+        // neighbour's, so the factor still counts and the step is still a ramp (before the review it fell back to flicker).
         var frames = Enumerable.Range(0, 60)
             .Select(i => TestFrames.At($@"C:\Photos\Look\IMG_{i:D4}.jpg") with
             {
@@ -154,12 +165,96 @@ public sealed class ExposureCurveTests(ITestOutputHelper output)
             .ToList();
         var steps = ExposureCurve.Compute(frames, new LookSettings(true, 100));
         frames[0] = frames[0] with { Exposure = frames[0].Exposure! with { ExposureTime = null } };
-        var flicker = ExposureCurve.Compute(frames, new LookSettings(true, 100));
+        frames[30] = frames[30] with { Exposure = frames[30].Exposure! with { Iso = null } };
+        var gaps = ExposureCurve.Compute(frames, new LookSettings(true, 100));
 
         // The ramp spreads the step over the long window: ten photos before it, a photo is already lifted a good part of
         // the way, while the short window has not reached it yet.
         Assert.True(steps.Correction(frames[20].Id) > 0.2, $"Ramp: {steps.Correction(frames[20].Id):F3}");
-        Assert.True(flicker.Correction(frames[20].Id) < 0.05, $"Flicker: {flicker.Correction(frames[20].Id):F3}");
+        Assert.Equal(steps.Correction(frames[20].Id), gaps.Correction(frames[20].Id), 0.01);
+    }
+
+    [Fact]
+    public void AManualSunsetWithOnePhotoStrippedOfItsExifStaysSmooth()
+    {
+        // The review's case: 480 photos, +1 stop by hand every 80; one photo without its shutter time used to turn the
+        // ramp off for all of them (largest jump 0.080 stop). The worst place for the gap is the first photo of a step,
+        // whose neighbours disagree: the earlier one's value is a stop off, and the median takes that one photo out.
+        var (frames, _) = Sunset(480);
+        var whole = Jumps(frames);
+        foreach (var stripped in new[] { 200, 240 })
+        {
+            var gap = frames.ToArray();
+            gap[stripped] = gap[stripped] with { Exposure = gap[stripped].Exposure! with { ExposureTime = null } };
+            var jump = Jumps(gap);
+            output.WriteLine($"Manual sunset, photo {stripped} without a shutter time: largest jump {whole:F3} -> {jump:F3} stops.");
+            Assert.True(jump < Unnoticeable, $"A jump of {jump:F3} stops is left.");
+            Assert.Equal(whole, jump, 0.01);
+        }
+    }
+
+    [Fact]
+    public void ExposureSettingsOutOfRangeAreRejectedAndOneWildValueDoesNotSwellTheRamp()
+    {
+        // One photo's Exif misread (4294967295 s) or hand-edited (3,000 s, in range but 19 stops off): before the review the
+        // long fit spread it over ±60 photos (+0.59 stop next to it). The range check drops the first, the median the second.
+        var (frames, _) = Sunset(240);
+        var clean = ExposureCurve.Compute(frames, new LookSettings(true, 100));
+        foreach (var wild in new[] { 4294967295.0, 3000.0 })
+        {
+            var edited = frames.ToArray();
+            edited[120] = edited[120] with { Exposure = edited[120].Exposure! with { ExposureTime = wild } };
+            var curve = ExposureCurve.Compute(edited, new LookSettings(true, 100));
+            var swell = edited.Where((_, i) => i != 120).Max(frame => Math.Abs(curve.Correction(frame.Id) - clean.Correction(frame.Id)));
+            output.WriteLine($"Shutter time {wild} s on photo 120: largest change to another photo's correction {swell:F4} stops.");
+            Assert.True(swell < 0.01, $"The other photos move by up to {swell:F3} stops.");
+        }
+    }
+
+    [Fact]
+    public void MixedCamerasHalfWithoutExifStaySmooth()
+    {
+        // The first half from a camera shot by hand (+1 stop every 80), the second from one that writes no exposure (a
+        // phone, a manual lens) and follows the light itself. The second half takes the first half's last exposure: a flat
+        // staircase, so it is smoothed as flicker only, as a sequence without Exif is, with no jump where the cameras meet.
+        var (frames, brightness) = Sunset(320);
+        var mixed = frames.Select((frame, i) => i < 160 ? frame : frame with { Exposure = new PhotoExposure(brightness[159] - (0.02 * (i - 159))) }).ToArray();
+        var curve = ExposureCurve.Compute(mixed, new LookSettings(true, 100));
+        var corrected = mixed.Select(frame => frame.Exposure!.Luminance + curve.Correction(frame.Id)).ToArray();
+
+        var jump = MaxJump(corrected);
+        output.WriteLine($"Mixed cameras: largest jump {jump:F3} stops.");
+        Assert.True(jump < Unnoticeable, $"A jump of {jump:F3} stops is left.");
+    }
+
+    [Theory]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(6)]
+    [InlineData(7)]
+    [InlineData(12)]
+    public void AShortSequenceKeepsItsRealDarkening(int count)
+    {
+        // The review's case: 3 photos darkening half a stop each came out flat ([-0.5, 0, +0.5]), 5 lost half their
+        // darkening. Below seven photos there is no median, and from seven the median follows the trend to both ends.
+        var brightness = Enumerable.Range(0, count).Select(i => -2 - (0.5 * i)).ToArray();
+
+        var corrections = ExposureCurve.Corrections(brightness, Zeros(count), 1);
+
+        output.WriteLine($"{count} photos darkening 0.5 stop each: corrections [{string.Join(", ", corrections.Select(value => value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)))}].");
+        Assert.All(corrections, correction => Assert.Equal(0, correction, 1e-9));
+    }
+
+    [Fact]
+    public void SevenPhotosStillLoseAFlash()
+    {
+        // From seven photos on the median runs: one photo a stop too bright (a flash) is brought back to the others.
+        double[] brightness = [-2, -2, -2, -1, -2, -2, -2];
+
+        var corrections = ExposureCurve.Corrections(brightness, Zeros(7), 1);
+
+        Assert.Equal(-1, corrections[3], 0.05);
+        Assert.All(corrections.Where((_, i) => i != 3), correction => Assert.Equal(0, correction, 0.05));
     }
 
     [Fact]
@@ -181,6 +276,88 @@ public sealed class ExposureCurveTests(ITestOutputHelper output)
         var snapshot = project.Snapshot;
         Assert.Same(ExposureCurve.For(snapshot), ExposureCurve.For(snapshot));
         Assert.Equal(4, ExposureCurve.For(snapshot).Count);
+    }
+
+    [Fact]
+    public async Task TheCurveIsKeptForEditsThatChangeNeitherFramesNorLookAndTryGetNeverWaits()
+    {
+        var project = new Project();
+        project.AddFrames(Measured(-2, -2.5, -1.5, -2));
+        project.Look = new LookSettings(true, 100);
+        var first = project.Snapshot;
+
+        var ready = new TaskCompletionSource();
+        if (!ExposureCurve.TryGet(first, () => ready.TrySetResult(), out var curve))
+        {
+            Assert.Same(ExposureCurve.None, curve);
+            await ready.Task.WaitAsync(_patience, TestContext.Current.CancellationToken);
+            Assert.True(ExposureCurve.TryGet(first, null, out curve));
+        }
+
+        Assert.Equal(4, curve.Count);
+        Assert.Same(curve, ExposureCurve.For(first));
+
+        // A new name is a new snapshot with the same frames and look: the same curve, nothing computed.
+        project.Name = "Harbor";
+        Assert.NotSame(first, project.Snapshot);
+        Assert.Same(curve, ExposureCurve.For(project.Snapshot));
+
+        project.Look = new LookSettings(true, 50);
+        Assert.NotSame(curve, ExposureCurve.For(project.Snapshot));
+    }
+
+    [Fact]
+    public void AskingForANewCurveOf5000PhotosDoesNotHoldTheRenderThread()
+    {
+        // The preview's render thread used to compute the curve itself the first time it drew a snapshot (17 ms at 5,000
+        // photos on the dev PC, every 250 ms while measuring). It now asks with TryGet, which hands the work to the pool.
+        var project = new Project();
+        project.AddFrames(TestFrames.Folder("bench", 5000).Select((frame, i) => frame with { Exposure = new PhotoExposure(-3 + Math.Sin(i * 0.37)) }));
+        var inline = new List<double>();
+        var asked = new List<double>();
+        for (var strength = 60; strength < 70; strength++)
+        {
+            project.Look = new LookSettings(true, strength);
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            _ = ExposureCurve.Compute(project.Snapshot.Frames, project.Snapshot.Look);
+            inline.Add(clock.Elapsed.TotalMilliseconds);
+
+            clock.Restart();
+            var known = ExposureCurve.TryGet(project.Snapshot, null, out _);
+            asked.Add(clock.Elapsed.TotalMilliseconds);
+            Assert.False(known);
+            _ = ExposureCurve.For(project.Snapshot);
+        }
+
+        output.WriteLine($"5,000 photos, a new curve on the render thread: computed there {inline.Order().ElementAt(5):F2} ms (median of 10) -> asked with TryGet {asked.Order().ElementAt(5):F3} ms.");
+        Assert.True(asked.Order().ElementAt(5) < inline.Order().ElementAt(5), "TryGet took as long as computing the curve.");
+    }
+
+    // The hand-shot sunset as frames with Exif: the scene loses 0.02 stop a photo, the shutter time doubles every 80
+    // photos, a little noise. Returns the frames and their brightness.
+    private static (Frame[] Frames, double[] Brightness) Sunset(int count)
+    {
+        var random = new Random(55);
+        var brightness = new double[count];
+        var frames = new Frame[count];
+        for (var i = 0; i < count; i++)
+        {
+            var steps = i / 80;
+            brightness[i] = -1 - (0.02 * i) + steps + (0.02 * Normal(random));
+            frames[i] = TestFrames.At($@"C:\Photos\Look\Sunset_{i:D4}.jpg") with
+            {
+                Exposure = new PhotoExposure(brightness[i]) { ExposureTime = Math.Pow(2, steps) / 250, FNumber = 8, Iso = 100 },
+            };
+        }
+
+        return (frames, brightness);
+    }
+
+    // The largest frame-to-frame jump of the frames' brightness after their correction.
+    private static double Jumps(IReadOnlyList<Frame> frames)
+    {
+        var curve = ExposureCurve.Compute(frames, new LookSettings(true, 100));
+        return MaxJump([.. frames.Select(frame => frame.Exposure!.Luminance + curve.Correction(frame.Id))]);
     }
 
     private static Frame[] Measured(params double[] brightness) =>
