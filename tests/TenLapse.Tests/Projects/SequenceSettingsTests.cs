@@ -47,6 +47,9 @@ public sealed class SequenceSettingsTests
     [InlineData(30, 742)]
     [InlineData(60, 300)]
     [InlineData(95, 2000)]
+    [InlineData(10, 5)]
+    [InlineData(10, 2)]
+    [InlineData(20, 20)]
     public void LengthModeTargetsTheWholeVideoHoldsIncluded(int target, int photos)
     {
         foreach (var sequence in new[]
@@ -55,6 +58,12 @@ public sealed class SequenceSettingsTests
             SequenceSettings.Default with { Plays = 3 },
             SequenceSettings.Default with { HoldEnd = TimeSpan.FromSeconds(2.5) },
             new SequenceSettings(TimeSpan.FromSeconds(0.5), TimeSpan.FromSeconds(0.5), 5, boomerang: true),
+
+            // Short holds at a slow rate take a whole slow frame each (review of PR #134: 13.4 s for 10 s before).
+            new SequenceSettings(TimeSpan.FromSeconds(0.2), TimeSpan.FromSeconds(0.2), 1, boomerang: false),
+            new SequenceSettings(TimeSpan.FromSeconds(0.1), TimeSpan.FromSeconds(0.1), 1, boomerang: false),
+            new SequenceSettings(TimeSpan.FromSeconds(0.3), TimeSpan.FromSeconds(0.3), 1, boomerang: false),
+            new SequenceSettings(TimeSpan.FromSeconds(0.1), TimeSpan.FromSeconds(3), 1, boomerang: true),
         })
         {
             var snapshot = Snapshot(photos, TimingSettings.Length(new Fraction(target, 1)), sequence);
@@ -68,6 +77,29 @@ public sealed class SequenceSettingsTests
             var frame = FrameTiming.Duration(1, rate.Rate);
             var error = Math.Abs(snapshot.Duration - (target * FrameTiming.TicksPerSecond));
             Assert.True(error <= frame + 10_000, $"{photos} photos in {target} s as {sequence}: {snapshot.Duration} ticks at {rate.Rate}, {error} off.");
+        }
+    }
+
+    [Fact]
+    public void LengthModeLandsWithinAFrameOfEveryTargetItCanReach()
+    {
+        // Few photos, short and long holds, every direction: the whole video within one frame of the target, or clamped.
+        foreach (var photos in new[] { 1, 2, 3, 5, 8, 13, 20, 30 })
+        foreach (var target in new[] { 1, 2, 5, 10, 20, 60, 300 })
+        foreach (var (start, end) in new[] { (0.1, 0.1), (0.2, 0.0), (0.3, 0.3), (1.0, 0.1), (2.5, 2.5), (0.0, 9.9) })
+        foreach (var (plays, boomerang) in new[] { (1, false), (3, false), (1, true), (5, true) })
+        {
+            var sequence = new SequenceSettings(TimeSpan.FromSeconds(start), TimeSpan.FromSeconds(end), plays, boomerang);
+            var timing = TimingSettings.Length(new Fraction(target, 1));
+            var rate = timing.EffectiveRate(photos, sequence);
+            if (rate.IsClamped)
+            {
+                continue;
+            }
+
+            var duration = sequence.Resolve(photos, rate.Rate).Duration(rate.Rate);
+            var error = Math.Abs(duration - (target * FrameTiming.TicksPerSecond));
+            Assert.True(error <= FrameTiming.Duration(1, rate.Rate) + 10_000, $"{photos} photos in {target} s as {sequence}: {duration} ticks at {rate.Rate}, {error} off.");
         }
     }
 

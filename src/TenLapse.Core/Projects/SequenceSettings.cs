@@ -19,7 +19,8 @@ namespace TenLapse.Core.Projects;
 /// <b>Holds are seconds, shown as frames.</b> A hold is the nearest whole number of frames at the video's rate
 /// (<see cref="HoldFrames"/>: half a frame rounds up), and at least one frame when it is not zero, so a hold the user set
 /// always shows. The video's frames start where <see cref="FrameTiming.FrameStart"/> puts them, so the length is exact for
-/// that frame count; the hold itself is within half a frame of what was asked.
+/// that frame count. The hold itself is within half a frame of what was asked, except where one frame is longer than
+/// that: at 2 s per photo every hold up to 2.9 s lasts whole 2 s frames, and the Timing panel says so under its box.
 /// </para>
 /// <para>
 /// <b>A GIF plays once.</b> A GIF loops forever by itself, so repeating the photos inside it would only make the file
