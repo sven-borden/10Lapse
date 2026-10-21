@@ -635,21 +635,36 @@ photos and a human eye. Run: once, on the Store or a sideloaded 3.1 build.
   5.20.1 and 5.20.2 as MP4 and as GIF. Expect: the video looks like the preview
   on After, frame for frame, also right after changing the shape (the 400 ms
   reframe keeps the correction). An export started while photos are still being
-  measured stays on "Preparing" until they are, then exports the finished curve.
+  measured waits: the panel reads "Waiting for deflicker…" and "Deflicker is
+  measuring the photos first: … of …" with its own bar, Cancel export stops the
+  wait, and once measured it exports the finished curve.
 - [ ] **5.20.4 Reopen and edit** (#45). Do: save the project with Deflicker on,
   close, open it again. Expect: no measuring (the file keeps the measurements)
   and no unsaved-changes dot; edit one photo on disk (any change), open again:
   only that photo is measured, and the project stays clean.
-- [ ] **5.20.5 Cancel and failures** (#45). Do: on 5,000 photos, Cancel during
-  the measuring. Expect: it stops at once, Deflicker turns off; on again, it goes
-  on from where it stopped. A photo that cannot be read gets one Caution
-  InfoBar ("… couldn't be measured") with its name, and keeps its brightness.
+- [ ] **5.20.5 Cancel and failures** (#45). Do: on 5,000 photos, turn Deflicker
+  on and Cancel during the measuring. Expect: it stops at once, Deflicker turns
+  off; on again, it goes on from where it stopped. Then save with Deflicker on,
+  change a few hundred photos on disk (or import more), open the project and
+  Cancel the measuring that starts by itself. Expect: Deflicker stays on, no
+  unsaved-changes dot, the Look section reads "… photos not measured" with
+  Measure, and those photos do not flash in the preview or the export; Measure
+  measures them. A photo that cannot be read (rename it away mid-measuring) is
+  tried twice, then gets one Caution InfoBar ("… couldn't be measured, so
+  deflicker takes its correction from the photos beside it …") with its name;
+  it does not flash. Removing photos during the measuring lowers the count.
 - [ ] **5.20.6 Keyboard and Narrator** (#45). Do: Tab to the switch (Space
   toggles it), the strength slider (arrows step 5 %), Cancel, and Before and
   After under the preview (arrows). Expect: Narrator reads "Deflicker, toggle
   switch" with its line, "Deflicker strength, 80", the progress text, and
-  "Before or after deflicker"; after Cancel the focus lands on the switch. In a
-  narrow window the fourth tab is Look.
+  "Before or after deflicker"; after Cancel the focus lands on the switch (on
+  Measure when photos are left unmeasured). In a narrow window the fourth tab is
+  Look.
+- [ ] **5.20.7 Bright and dark frames** (#45). Do: a sequence whose corrected
+  frames are brightened (+0.5 stop or more) with a sun or a bright sky, and a
+  night sequence brightened toward +2 stops. Expect: the sky round the sun keeps
+  its gradation (no flat white patch that grows and shrinks), and a night sky
+  shows no stronger banding than the photos themselves have.
 
 ## 6. Per-machine measurements
 
