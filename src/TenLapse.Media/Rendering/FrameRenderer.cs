@@ -108,11 +108,12 @@ public static class FrameRenderer
     /// the same correction.
     /// </summary>
     /// <remarks>
-    /// The exposure is applied in linear light, exactly: each 8-bit sRGB code maps to sRGB(2^stops × linear(code)),
-    /// clipped at white, through a 256-entry <see cref="TableTransferEffect"/> whose entries fall on the codes. The photo
-    /// is placed first into a command list, so the effect works on the drawn pixels at the target's resolution and the
-    /// placement (and its DPI handling) is the same call as without a look. A neutral look draws the photo directly, as
-    /// before #45, so every existing frame is unchanged to the bit.
+    /// The exposure is applied in linear light: each 8-bit sRGB code maps to sRGB(2^stops × linear(code)) through a
+    /// 256-entry <see cref="TableTransferEffect"/> whose entries fall on the codes (<see cref="ExposureTable"/>, which also
+    /// rolls brightened highlights off into white and limits how far apart brightened shadows spread). The photo is placed
+    /// first into a command list, so the effect works on the drawn pixels at the target's resolution and the placement (and
+    /// its DPI handling) is the same call as without a look. A neutral look draws the photo directly, as before #45, so
+    /// every existing frame is unchanged to the bit.
     /// </remarks>
     public static void DrawPhoto(CanvasDrawingSession session, CanvasBitmap photo, Rect destination, Rect source, FrameLook look)
     {
@@ -144,8 +145,22 @@ public static class FrameRenderer
     }
 
     /// <summary>
+    /// The linear level from which a brightened photo rolls off into white instead of clipping (sRGB code 231).
+    /// </summary>
+    public const double ShoulderKnee = 0.8;
+
+    /// <summary>
+    /// The steepest a brightened table rises, in output levels per input level. An 8-bit photo has one level per step;
+    /// +2 stops would spread its darkest levels 4 apart (bands in a night sky). Binds only past +1.58 stops.
+    /// </summary>
+    public const double MaxShadowSlope = 3;
+
+    /// <summary>
     /// The transfer table for an exposure change of <paramref name="stops"/>: entry n is the 8-bit code n / 255 decoded
-    /// from sRGB, multiplied by 2^stops in linear light, clipped at 1 and encoded again.
+    /// from sRGB, multiplied by 2^stops in linear light and encoded again. Darkening is exact. Brightening keeps every
+    /// level below <see cref="ShoulderKnee"/> exact and rolls the levels above it off into white along a soft shoulder
+    /// (they stay apart instead of clipping into a flat patch), and rises at most <see cref="MaxShadowSlope"/> levels per
+    /// level in the shadows. Both fade in with the gain: at 0 stops the table is the identity.
     /// </summary>
     public static float[] ExposureTable(float stops)
     {
@@ -153,11 +168,28 @@ public static class FrameRenderer
         var table = new float[256];
         for (var code = 0; code < table.Length; code++)
         {
-            var linear = Math.Min(1, gain * LuminanceMeter.SrgbToLinear(code / 255.0));
-            table[code] = (float)Math.Clamp(LuminanceMeter.LinearToSrgb(linear), 0, 1);
+            var linear = gain * LuminanceMeter.SrgbToLinear(code / 255.0);
+            var encoded = gain > 1
+                ? Math.Min(LuminanceMeter.LinearToSrgb(Shoulder(linear, gain)), MaxShadowSlope * code / 255.0)
+                : LuminanceMeter.LinearToSrgb(linear);
+            table[code] = (float)Math.Clamp(encoded, 0, 1);
         }
 
         return table;
+    }
+
+    // The shoulder of a gain above 1: the identity up to the knee, then a rational curve from (knee, knee) with slope 1 to
+    // (gain, 1), so white stays white and nothing above the knee clips. At a gain of 1 it is the identity.
+    private static double Shoulder(double linear, double gain)
+    {
+        if (linear <= ShoulderKnee)
+        {
+            return linear;
+        }
+
+        var slope = (gain - ShoulderKnee) / (1 - ShoulderKnee);
+        var t = Math.Min(1, (linear - ShoulderKnee) / (gain - ShoulderKnee));
+        return ShoulderKnee + ((1 - ShoulderKnee) * (slope * t / (1 + ((slope - 1) * t))));
     }
 
     /// <summary>

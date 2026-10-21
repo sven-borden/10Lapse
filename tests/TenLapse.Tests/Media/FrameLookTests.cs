@@ -17,7 +17,7 @@ namespace TenLapse.Tests.Media;
 /// The look stage of <see cref="FrameRenderer"/> (#45): deflicker's exposure applied on the GPU in linear light, exactly
 /// as the curve aims, and nothing at all for a neutral look; and the exposure meter that measures the photos.
 /// </summary>
-public sealed class FrameLookTests
+public sealed class FrameLookTests(ITestOutputHelper output)
 {
     [Fact]
     public void TheTableIsTheExposureInLinearLightAndNoneIsTheIdentity()
@@ -25,12 +25,74 @@ public sealed class FrameLookTests
         var none = FrameRenderer.ExposureTable(0);
         Assert.All(Enumerable.Range(0, 256), code => Assert.Equal(code / 255.0, none[code], 1e-6));
 
-        // One stop on sRGB 118 (linear 0.1812): linear 0.3624, sRGB 0.6327 (161.3). Clipped at white.
+        // One stop on sRGB 118 (linear 0.1812): linear 0.3624, sRGB 0.6327 (161.3). White stays white.
         var stop = FrameRenderer.ExposureTable(1);
         Assert.Equal(LuminanceMeter.LinearToSrgb(2 * LuminanceMeter.SrgbToLinear(118 / 255.0)), stop[118], 1e-6);
-        Assert.Equal(1f, stop[255]);
-        Assert.Equal(1f, stop[240]);
+        Assert.Equal(1f, stop[255], 1e-6);
         Assert.True(FrameRenderer.ExposureTable(-1)[255] < 0.74);
+
+        // Darkening is exact.
+        var down = FrameRenderer.ExposureTable(-0.7f);
+        Assert.All(Enumerable.Range(0, 256), code => Assert.Equal(LuminanceMeter.LinearToSrgb(Math.Pow(2, -0.7f) * LuminanceMeter.SrgbToLinear(code / 255.0)), down[code], 1e-6));
+    }
+
+    [Fact]
+    public void BrighteningRollsHighlightsOffAndKeepsShadowLevelsCloser()
+    {
+        // #45 review: Math.Min(1, gain x linear) clipped every code above 215 to white at +0.5 stop (a flat sky round the
+        // sun that grew and shrank along the ramp), and +2 stops spread the darkest codes 4 levels apart.
+        static int[] Levels(float[] table) => [.. table.Select(value => (int)Math.Round(value * 255))];
+        static int[] Clipped(float stops) => [.. Enumerable.Range(0, 256).Select(code => (int)Math.Round(255 * LuminanceMeter.LinearToSrgb(Math.Min(1, Math.Pow(2, stops) * LuminanceMeter.SrgbToLinear(code / 255.0)))))];
+        static int FirstWhite(int[] levels) => Array.IndexOf(levels, 255);
+        static int Distinct(int[] levels) => levels[200..].Distinct().Count();
+        static int Steepest(int[] levels) => Enumerable.Range(1, 255).Max(code => levels[code] - levels[code - 1]);
+
+        foreach (var stops in new[] { 0.5f, 1f })
+        {
+            var before = Clipped(stops);
+            var after = Levels(FrameRenderer.ExposureTable(stops));
+            output.WriteLine($"+{stops} stop: first code drawn white {FirstWhite(before)} -> {FirstWhite(after)}; distinct levels from codes 200-255 {Distinct(before)} -> {Distinct(after)}.");
+            Assert.True(FirstWhite(after) > 245, $"Code {FirstWhite(after)} already reaches white.");
+            Assert.True(Distinct(after) > Distinct(before));
+
+            // Below the knee the gain is exact: the mid-tones still land where the curve aims.
+            Assert.Equal(before[128], after[128]);
+        }
+
+        var night = Levels(FrameRenderer.ExposureTable(2));
+        output.WriteLine($"+2 stops: largest step between neighbouring codes {Steepest(Clipped(2))} -> {Steepest(night)} levels; codes 0-8 [{string.Join(", ", Clipped(2)[..9])}] -> [{string.Join(", ", night[..9])}].");
+        Assert.True(Steepest(night) <= 3);
+
+        // The cost: a dark night frame (codes 2 to 30, evenly) lands a little short of the +2 stops asked.
+        static byte[] Frame(Func<int, int> level)
+        {
+            var pixels = new byte[29 * 8 * 4 * 8];
+            for (var i = 0; i < pixels.Length / 4; i++)
+            {
+                var value = (byte)level(2 + (i % (29 * 8) / 8));
+                pixels[i * 4] = pixels[(i * 4) + 1] = pixels[(i * 4) + 2] = value;
+                pixels[(i * 4) + 3] = 255;
+            }
+
+            return pixels;
+        }
+
+        double Measure(byte[] pixels) => LuminanceMeter.Measure(pixels, 29 * 8, 8, 29 * 8 * 4);
+        var dark = Measure(Frame(code => code));
+        var exact = Measure(Frame(code => Clipped(2)[code])) - dark;
+        var limited = Measure(Frame(code => night[code])) - dark;
+        output.WriteLine($"+2 stops on a dark frame (codes 2-30): it moves {exact:F2} -> {limited:F2} stops.");
+        Assert.True(limited > 1.9, $"The dark frame moves only {limited:F2} stops.");
+
+        // Monotonic, and the identity at zero: a correction that crosses zero changes nothing abruptly.
+        foreach (var stops in new[] { 0.01f, 0.3f, 1f, 2f })
+        {
+            var table = FrameRenderer.ExposureTable(stops);
+            Assert.All(Enumerable.Range(1, 255), code => Assert.True(table[code] >= table[code - 1]));
+        }
+
+        var almost = FrameRenderer.ExposureTable(0.001f);
+        Assert.All(Enumerable.Range(0, 256), code => Assert.Equal(code / 255.0, almost[code], 0.002));
     }
 
     [Theory]
