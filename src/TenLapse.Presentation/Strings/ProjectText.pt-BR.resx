@@ -160,6 +160,21 @@
   <data name="ExportFailedOutOfMemory" xml:space="preserve">
     <value>Não há memória suficiente para exportar. Feche alguns outros aplicativos ou escolha uma resolução menor e exporte novamente.</value>
   </data>
+  <data name="ExportFailedGifEncoderUnavailable" xml:space="preserve">
+    <value>O Windows não conseguiu carregar o codificador de GIF. Instale as atualizações mais recentes do Windows e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedGifSettingsRejected" xml:space="preserve">
+    <value>O codificador de GIF não aceita essas configurações. Escolha um tamanho menor ou menos quadros por segundo para o GIF e exporte novamente.</value>
+  </data>
+  <data name="ExportFailedGifEncoder" xml:space="preserve">
+    <value>O codificador de GIF parou com um erro. Exporte novamente e, se isso continuar acontecendo, escolha um formato MP4.</value>
+  </data>
+  <data name="ExportFailedGifEncoderStalled" xml:space="preserve">
+    <value>O codificador de GIF parou de responder. Exporte novamente e, se isso continuar acontecendo, escolha um formato MP4.</value>
+  </data>
+  <data name="ExportFailedGifOutOfMemory" xml:space="preserve">
+    <value>Não há memória suficiente para exportar. Feche alguns outros aplicativos ou escolha um tamanho de GIF menor e exporte novamente.</value>
+  </data>
   <data name="ExportFailedPhotoUnreadable" xml:space="preserve">
     <value>Não é possível ler uma foto do projeto. Remova-a ou corrija o arquivo e exporte novamente.</value>
   </data>

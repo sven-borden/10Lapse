@@ -204,6 +204,26 @@
     <value>There isn't enough memory to export. Close some other apps or choose a lower resolution, then export again.</value>
     <comment>A message bar after a failed export: not enough system or video memory.</comment>
   </data>
+  <data name="ExportFailedGifEncoderUnavailable" xml:space="preserve">
+    <value>Windows couldn't load its GIF encoder. Install the latest Windows updates, then export again.</value>
+    <comment>A message bar after a failed animated GIF export: Windows' own GIF encoder (WIC) does not load. No graphics driver: it runs on the processor.</comment>
+  </data>
+  <data name="ExportFailedGifSettingsRejected" xml:space="preserve">
+    <value>The GIF encoder doesn't accept these settings. Choose a smaller size or a lower frame rate for the GIF, then export again.</value>
+    <comment>A message bar after a failed animated GIF export: the encoder refused the size or frame rate. "Size" and "frame rate" are the GIF's two lists in the Output panel (OutputText GifSizeLabel and GifRateLabel).</comment>
+  </data>
+  <data name="ExportFailedGifEncoder" xml:space="preserve">
+    <value>The GIF encoder stopped with an error. Export again, or choose an MP4 format if it keeps happening.</value>
+    <comment>A message bar after a failed animated GIF export: the encoder failed for another reason. "An MP4 format": MP4 · H.264 or MP4 · HEVC in the Format list.</comment>
+  </data>
+  <data name="ExportFailedGifEncoderStalled" xml:space="preserve">
+    <value>The GIF encoder stopped responding. Export again, or choose an MP4 format if it keeps happening.</value>
+    <comment>A message bar after a failed animated GIF export: the encoder stopped taking frames.</comment>
+  </data>
+  <data name="ExportFailedGifOutOfMemory" xml:space="preserve">
+    <value>There isn't enough memory to export. Close some other apps or choose a smaller GIF size, then export again.</value>
+    <comment>A message bar after a failed animated GIF export: not enough memory. A GIF has a size (Small, Medium, Large), not a resolution.</comment>
+  </data>
   <data name="ExportFailedPhotoUnreadable" xml:space="preserve">
     <value>A photo in the project can't be read. Remove it or fix the file, then export again.</value>
     <comment>A message bar after a failed export: a photo could not be loaded, and the app does not know which.</comment>

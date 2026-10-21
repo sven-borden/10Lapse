@@ -279,7 +279,10 @@ public static class VideoExporter
                 throw new VideoExportException(
                     $"{ExportFailures.Summary(VideoExportFailure.EncoderStuck, _settings.Format)} ({StuckEncoderCalls} call(s)): {exception.Message}",
                     VideoExportFailure.EncoderStuck,
-                    exception);
+                    exception)
+                {
+                    Format = _settings.Format,
+                };
             }
             catch (Exception exception) when (ExportFailures.ShouldClassify(exception))
             {
@@ -365,6 +368,7 @@ public static class VideoExporter
                 {
                     FrameIndex = frame,
                     SourcePath = frame is int index ? _source.SourcePath(index) : null,
+                    Format = _settings.Format,
                 };
             }
         }
@@ -538,6 +542,7 @@ public static class VideoExporter
                 {
                     FrameIndex = photo.FrameIndex,
                     SourcePath = photo.Failure.Path,
+                    Format = _settings.Format,
                 };
             }
 
@@ -549,6 +554,7 @@ public static class VideoExporter
                 {
                     FrameIndex = index,
                     SourcePath = classified.SourcePath,
+                    Format = _settings.Format,
                 };
         }
 
@@ -569,6 +575,7 @@ public static class VideoExporter
                     FrameIndex = frame,
                     SourcePath = path,
                     DeviceRemovedReason = removed,
+                    Format = _settings.Format,
                 };
             }
 
@@ -577,6 +584,7 @@ public static class VideoExporter
             {
                 FrameIndex = frame,
                 SourcePath = path,
+                Format = _settings.Format,
             };
         }
 

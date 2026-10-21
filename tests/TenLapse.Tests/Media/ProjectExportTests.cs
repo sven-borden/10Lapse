@@ -452,6 +452,29 @@ public sealed class ProjectExportTests : IDisposable
     }
 
     [Fact]
+    public async Task AFullDiskDuringAGifWriteShowsTheDiskFullMessage()
+    {
+        // The disk fills up a few frames in, at the stream the WIC GIF encoder writes to (GifEncoder's open seam): WIC
+        // passes ERROR_DISK_FULL through, and the user reads "The disk is full", not "The GIF encoder stopped".
+        SkipWithoutGraphicsDevice();
+        var photos = ManyPhotos(30).ToList();
+        var snapshot = GoldenExport.Snapshot(photos.Select(path => GoldenExport.FrameOf(path)), TimingSettings.PerSecond(new Fraction(30, 1)), FrameAspect.Ratio16x9, FitMode.Fill, VideoFormat.Gif);
+        var output = _scratch.PathOf("full.gif");
+
+        var exception = await Assert.ThrowsAsync<VideoExportException>(() => ExportAsync(
+            snapshot,
+            output,
+            options: new ProjectExportOptions { CreateEncoder = (path, settings, _) => new GifEncoder(path, settings, open: file => new FullDiskStream(file, 150_000)) }));
+        await ExportCleanup.WhenDone(output);
+
+        Assert.Equal((VideoExportFailure.DiskFull, (VideoFormat?)VideoFormat.Gif), (exception.Failure, exception.Format));
+        Assert.Equal(FullDiskStream.DiskFull, exception.InnerException!.HResult);
+        Assert.Equal(ProjectText.ExportFailedDiskFull, new VideoExportErrorMapper().Map(exception)!.Text);
+        Assert.False(File.Exists(output));
+        Assert.Empty(ProjectExporter.PartialFilesOf(output));
+    }
+
+    [Fact]
     public void CoveredFramesCountsThePhotosBeforeTheNextExportedOne()
     {
         var counts = new List<int>();

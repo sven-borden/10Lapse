@@ -200,14 +200,17 @@ public static class ProjectExporter
                         return encoder;
                     }).ConfigureAwait(false);
             }
-            catch (VideoExportException exception) when (exception.FrameIndex is int index && index < frames.Length && frames[index] != index)
+            catch (VideoExportException exception) when (
+                (exception.FrameIndex is int index && index < frames.Length && frames[index] != index) || exception.Format is null)
             {
                 // The pipeline counts the GIF's frames; the message names the project's frame, the photo the user can find.
+                // And it says which format failed, for the advice (a GIF has no resolution and no graphics-driver encoder).
                 throw new VideoExportException(exception.Message, exception.Failure, exception.InnerException)
                 {
-                    FrameIndex = frames[index],
+                    FrameIndex = exception.FrameIndex is int at && at < frames.Length ? frames[at] : exception.FrameIndex,
                     SourcePath = exception.SourcePath,
                     DeviceRemovedReason = exception.DeviceRemovedReason,
+                    Format = settings.Format,
                 };
             }
 

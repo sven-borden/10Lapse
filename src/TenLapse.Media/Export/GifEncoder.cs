@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.Graphics.Canvas;
@@ -36,6 +37,13 @@ namespace TenLapse.Media.Export;
 /// Created on a thread pool (MTA) thread and then called from one thread at a time, like every encoder; the WIC objects
 /// are free-threaded. Creating it creates (or truncates) the file.
 /// </para>
+/// <para>
+/// <b>The file.</b> WIC writes through <see cref="ComStreamOutput"/> over a .NET <see cref="FileStream"/>, not a file it
+/// opens itself, so a failed write is thrown as the file's own exception: a full disk is ERROR_DISK_FULL and the export
+/// says the disk is full. WIC passes a failed frame write's HRESULT through but ignores a failed trailer write at
+/// Commit (both measured in <c>GifDiskFullTests</c>), so the stream's record is checked after every call. The CPU
+/// encodes, so no failure here is the graphics driver's.
+/// </para>
 /// </remarks>
 internal sealed class GifEncoder : IVideoEncoder
 {
@@ -47,14 +55,12 @@ internal sealed class GifEncoder : IVideoEncoder
     private static readonly byte[] _netscape = "NETSCAPE2.0"u8.ToArray();
     private static readonly byte[] _loopForever = [3, 1, 0, 0, 0];
 
-    // GENERIC_WRITE: IWICStream opens the file with CREATE_ALWAYS.
-    private const uint GenericWrite = 0x40000000;
-
     // The graphic control extension's disposal method 1: leave the frame in place (every frame covers the whole image).
     private const byte DisposalKeep = 1;
 
     private readonly IWICImagingFactory _factory;
-    private readonly IWICStream _stream;
+    private readonly Stream? _file;
+    private readonly ComStreamOutput? _output;
     private readonly IWICBitmapEncoder _encoder;
     private readonly string _path;
     private readonly int _width;
@@ -69,7 +75,15 @@ internal sealed class GifEncoder : IVideoEncoder
     }
 
     /// <summary>Opens the GIF; the device is not needed (the frames are read back on the CPU).</summary>
-    internal GifEncoder(string path, VideoExportSettings settings, WICBitmapDitherType dither = WICBitmapDitherType.WICBitmapDitherTypeErrorDiffusion)
+    /// <param name="open">
+    /// Opens the stream the GIF is written to, for a test that fills the disk; by default the file at
+    /// <paramref name="path"/>, created or truncated (CREATE_ALWAYS).
+    /// </param>
+    internal GifEncoder(
+        string path,
+        VideoExportSettings settings,
+        WICBitmapDitherType dither = WICBitmapDitherType.WICBitmapDitherTypeErrorDiffusion,
+        Func<string, Stream>? open = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
         ArgumentNullException.ThrowIfNull(settings);
@@ -87,16 +101,16 @@ internal sealed class GifEncoder : IVideoEncoder
         try
         {
             _factory = Wic.CreateFactory();
-            _factory.CreateStream(out _stream);
-            _stream.InitializeFromFilename(path, GenericWrite);
+            _file = open is null ? new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, 1 << 16) : open(path);
             opened = true;
+            _output = new ComStreamOutput(_file);
             unsafe
             {
                 var container = PInvoke.GUID_ContainerFormatGif;
                 _encoder = _factory.CreateEncoder(&container, null);
             }
 
-            _encoder.Initialize((IStream)_stream, WICBitmapEncoderCacheOption.WICBitmapEncoderNoCache);
+            _encoder.Initialize(_output, WICBitmapEncoderCacheOption.WICBitmapEncoderNoCache);
             IWICMetadataQueryWriter? metadata = null;
             try
             {
@@ -212,6 +226,12 @@ internal sealed class GifEncoder : IVideoEncoder
             }
 
             frame.Commit();
+            ThrowIfWriteFailed();
+        }
+        catch (COMException) when (_output?.Failure is { } failure)
+        {
+            // The file's own failure (a full disk), not what WIC made of it.
+            ExceptionDispatchInfo.Throw(failure);
         }
         finally
         {
@@ -227,10 +247,32 @@ internal sealed class GifEncoder : IVideoEncoder
     public void Finish()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        _encoder.Commit();
+        try
+        {
+            _encoder.Commit();
+        }
+        catch (COMException) when (_output?.Failure is { } failure)
+        {
+            ExceptionDispatchInfo.Throw(failure);
+        }
 
-        // The file closes with the stream; the export moves it into place right after.
+        // WIC reports success even when the trailer's write failed; the stream's own record says.
+        ThrowIfWriteFailed();
+
+        // The last buffered bytes reach the disk here, so a full disk fails the export, not the clean-up. The file closes
+        // with the stream; the export moves it into place right after.
+        _file?.Flush();
         Dispose();
+    }
+
+    // WIC does not report every failed write (it ignores the trailer's at Commit), so after each call the stream's own
+    // record decides, and its exception is the one thrown: a full disk is ERROR_DISK_FULL, never a generic encoder error.
+    private void ThrowIfWriteFailed()
+    {
+        if (_output?.Failure is { } failure)
+        {
+            ExceptionDispatchInfo.Throw(failure);
+        }
     }
 
     /// <inheritdoc />
@@ -243,8 +285,15 @@ internal sealed class GifEncoder : IVideoEncoder
 
         _disposed = true;
         Wic.Release(_encoder);
-        Wic.Release(_stream);
         Wic.Release(_factory);
+        try
+        {
+            _file?.Dispose();
+        }
+        catch (IOException)
+        {
+            // A failed export's last buffered bytes: the file is deleted anyway, and the failure was already thrown.
+        }
     }
 
     private static void TryDelete(string path)
