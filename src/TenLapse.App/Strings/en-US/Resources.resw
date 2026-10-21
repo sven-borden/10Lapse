@@ -25,4 +25,8 @@
     <value>Turn a folder of photos into a timelapse video.</value>
     <comment>The app's description in the package manifest (Start and the Store read it).</comment>
   </data>
+  <data name="ProjectFileTypeName" xml:space="preserve">
+    <value>10Lapse project</value>
+    <comment>The name of the .10lapse file type in File Explorer (the manifest's file type association, #52). 10Lapse never changes.</comment>
+  </data>
 </root>

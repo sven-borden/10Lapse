@@ -98,6 +98,8 @@ $AE = [System.Windows.Automation.AutomationElement]
 $Tree = [System.Windows.Automation.TreeScope]
 
 function Common([string]$name) {
+    # A fresh settings folder per launch: a killed earlier run leaves its recovery copy there (#52).
+    Remove-Item (Join-Path $base "settings-$name") -Recurse -Force -ErrorAction SilentlyContinue
     @(if (-not $Plain) { '--pseudo-loc' }) + @(
         "--settings-folder=$(Join-Path $base "settings-$name")",
         "--cache-folder=$(Join-Path $base "cache-$name")",

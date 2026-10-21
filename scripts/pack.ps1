@@ -251,6 +251,15 @@ function Get-ArchPackageProblem([System.IO.Compression.ZipArchive]$package, [str
     if (-not $built.SelectSingleNode("//m:PackageDependency[@Name='Microsoft.WindowsAppRuntime.2']", $ns)) {
         $problems.Add("the $arch package has no Microsoft.WindowsAppRuntime.2 dependency")
     }
+    # The project file association (#52): .10lapse, named from the resources, so double-clicking a project opens it.
+    $fileTypes = @($built.SelectNodes('//uap:Extension[@Category="windows.fileTypeAssociation"]//uap:FileType', $ns) | ForEach-Object { $_.InnerText.Trim() })
+    if (($fileTypes -join ',') -ne '.10lapse') {
+        $problems.Add("the $arch package associates the file types '$($fileTypes -join ', ')'; it must be exactly .10lapse")
+    }
+    $typeName = $built.SelectSingleNode('//uap:FileTypeAssociation/uap:DisplayName', $ns)
+    if (-not $typeName -or $typeName.InnerText.Trim() -ne 'ms-resource:ProjectFileTypeName') {
+        $problems.Add("the $arch package's .10lapse file type is not named ms-resource:ProjectFileTypeName")
+    }
     $description = $built.SelectSingleNode('//uap:VisualElements', $ns).GetAttribute('Description')
     if ($description -ne 'ms-resource:AppDescription') {
         $problems.Add("the $arch package Description is '$description', expected ms-resource:AppDescription")

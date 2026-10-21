@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="FileMenu" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Apri…</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Salva</value>
+  </data>
+  <data name="SaveAs" xml:space="preserve">
+    <value>Salva con nome…</value>
+  </data>
+  <data name="FileTypeName" xml:space="preserve">
+    <value>Progetto 10Lapse</value>
+  </data>
+  <data name="OpenNotAProjectFormat" xml:space="preserve">
+    <value>Impossibile aprire “{0}”: non è un progetto 10Lapse oppure è danneggiato.</value>
+  </data>
+  <data name="OpenUnreadableFormat" xml:space="preserve">
+    <value>Impossibile aprire “{0}”. Verifica che il file ci sia ancora e che tu possa leggerlo, poi riprova.</value>
+  </data>
+  <data name="OpenNewerVersionFormat" xml:space="preserve">
+    <value>“{0}” è stato salvato con una versione più recente di 10Lapse. Le impostazioni che questa versione non conosce sono state tralasciate.</value>
+  </data>
+  <data name="OpenSomeSettingsFormat" xml:space="preserve">
+    <value>Alcune impostazioni di “{0}” non sono leggibili e sono tornate ai valori predefiniti.</value>
+  </data>
+  <data name="MissingPhotos_one" xml:space="preserve">
+    <value>{0} foto di questo progetto non è stata trovata ed è stata esclusa. Riportala dov'era, poi riapri il progetto.</value>
+  </data>
+  <data name="MissingPhotos_many" xml:space="preserve">
+    <value>{0} di foto di questo progetto non sono state trovate e sono state escluse. Riportale dov'erano, poi riapri il progetto.</value>
+  </data>
+  <data name="MissingPhotos_other" xml:space="preserve">
+    <value>{0} foto di questo progetto non sono state trovate e sono state escluse. Riportale dov'erano, poi riapri il progetto.</value>
+  </data>
+  <data name="SaveFailedFormat" xml:space="preserve">
+    <value>Impossibile salvare “{0}”. Verifica che la cartella ci sia ancora e che tu possa salvarci, poi riprova.</value>
+  </data>
+  <data name="UnsavedTitleFormat" xml:space="preserve">
+    <value>Vuoi salvare le modifiche a “{0}”?</value>
+  </data>
+  <data name="UnsavedMessage" xml:space="preserve">
+    <value>Se non salvi, le modifiche a questo progetto andranno perse.</value>
+  </data>
+  <data name="UnsavedSave" xml:space="preserve">
+    <value>Salva</value>
+  </data>
+  <data name="UnsavedDontSave" xml:space="preserve">
+    <value>Non salvare</value>
+  </data>
+  <data name="RecoveryOfferFormat" xml:space="preserve">
+    <value>10Lapse si è chiuso prima che le modifiche a “{0}” fossero salvate. Ripristinale per riprendere da dove avevi lasciato.</value>
+  </data>
+  <data name="RecoveryRestore" xml:space="preserve">
+    <value>Ripristina</value>
+  </data>
+  <data name="RecentHeading" xml:space="preserve">
+    <value>Progetti recenti</value>
+  </data>
+  <data name="RecentClear" xml:space="preserve">
+    <value>Cancella elenco</value>
+  </data>
+  <data name="RecentClearName" xml:space="preserve">
+    <value>Cancella l'elenco dei progetti recenti</value>
+  </data>
+  <data name="RecentNotFound" xml:space="preserve">
+    <value>Non trovato</value>
+  </data>
+  <data name="RecentItemNameFormat" xml:space="preserve">
+    <value>{0}, in {1}</value>
+  </data>
+  <data name="RecentItemMissingNameFormat" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="RecentGoneFormat" xml:space="preserve">
+    <value>“{0}” non si trova più dove era stato salvato, quindi è stato tolto dall'elenco.</value>
+  </data>
+</root>

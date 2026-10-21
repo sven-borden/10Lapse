@@ -193,6 +193,9 @@ $sizeProblem = ''
 
 function Common([string]$theme) {
     $script:run++
+    # A fresh settings folder per launch: a killed earlier run leaves its recovery copy there (#52), and its Restore
+    # InfoBar must not reach a Store screenshot.
+    Remove-Item (Join-Path $base "settings-$script:run") -Recurse -Force -ErrorAction SilentlyContinue
     @(
         "--lang=$Language",
         "--region=$Region",

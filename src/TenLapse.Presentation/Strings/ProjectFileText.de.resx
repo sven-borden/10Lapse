@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="FileMenu" xml:space="preserve">
+    <value>Datei</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Öffnen…</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="SaveAs" xml:space="preserve">
+    <value>Speichern unter…</value>
+  </data>
+  <data name="FileTypeName" xml:space="preserve">
+    <value>10Lapse-Projekt</value>
+  </data>
+  <data name="OpenNotAProjectFormat" xml:space="preserve">
+    <value>„{0}“ ist kein 10Lapse-Projekt oder ist beschädigt und konnte deshalb nicht geöffnet werden.</value>
+  </data>
+  <data name="OpenUnreadableFormat" xml:space="preserve">
+    <value>„{0}“ konnte nicht geöffnet werden. Prüfen Sie, ob die Datei noch vorhanden ist und ob Sie sie lesen dürfen, und versuchen Sie es dann erneut.</value>
+  </data>
+  <data name="OpenNewerVersionFormat" xml:space="preserve">
+    <value>„{0}“ wurde mit einer neueren Version von 10Lapse gespeichert. Einstellungen, die diese Version nicht kennt, wurden ausgelassen.</value>
+  </data>
+  <data name="OpenSomeSettingsFormat" xml:space="preserve">
+    <value>Einige Einstellungen in „{0}“ konnten nicht gelesen werden und wurden auf ihre Standardwerte zurückgesetzt.</value>
+  </data>
+  <data name="MissingPhotos_one" xml:space="preserve">
+    <value>{0} Foto dieses Projekts wurde nicht gefunden und ausgelassen. Legen Sie es wieder an seinen Ort, und öffnen Sie das Projekt dann erneut.</value>
+  </data>
+  <data name="MissingPhotos_other" xml:space="preserve">
+    <value>{0} Fotos dieses Projekts wurden nicht gefunden und ausgelassen. Legen Sie sie wieder an ihren Ort, und öffnen Sie das Projekt dann erneut.</value>
+  </data>
+  <data name="SaveFailedFormat" xml:space="preserve">
+    <value>„{0}“ konnte nicht gespeichert werden. Prüfen Sie, ob der Ordner noch vorhanden ist und ob Sie darin speichern dürfen, und versuchen Sie es dann erneut.</value>
+  </data>
+  <data name="UnsavedTitleFormat" xml:space="preserve">
+    <value>Änderungen an „{0}“ speichern?</value>
+  </data>
+  <data name="UnsavedMessage" xml:space="preserve">
+    <value>Wenn Sie nicht speichern, gehen Ihre Änderungen an diesem Projekt verloren.</value>
+  </data>
+  <data name="UnsavedSave" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="UnsavedDontSave" xml:space="preserve">
+    <value>Nicht speichern</value>
+  </data>
+  <data name="RecoveryOfferFormat" xml:space="preserve">
+    <value>10Lapse wurde beendet, bevor Ihre Änderungen an „{0}“ gespeichert waren. Stellen Sie sie wieder her, um dort weiterzumachen, wo Sie aufgehört haben.</value>
+  </data>
+  <data name="RecoveryRestore" xml:space="preserve">
+    <value>Wiederherstellen</value>
+  </data>
+  <data name="RecentHeading" xml:space="preserve">
+    <value>Zuletzt verwendete Projekte</value>
+  </data>
+  <data name="RecentClear" xml:space="preserve">
+    <value>Liste leeren</value>
+  </data>
+  <data name="RecentClearName" xml:space="preserve">
+    <value>Liste der zuletzt verwendeten Projekte leeren</value>
+  </data>
+  <data name="RecentNotFound" xml:space="preserve">
+    <value>Nicht gefunden</value>
+  </data>
+  <data name="RecentItemNameFormat" xml:space="preserve">
+    <value>{0}, in {1}</value>
+  </data>
+  <data name="RecentItemMissingNameFormat" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="RecentGoneFormat" xml:space="preserve">
+    <value>„{0}“ ist nicht mehr dort, wo das Projekt gespeichert wurde, und wurde aus der Liste entfernt.</value>
+  </data>
+</root>
