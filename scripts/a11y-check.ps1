@@ -20,8 +20,8 @@
         finished, finished-narrow   the finished state
         new-project-question  New project's question on a project with changes (the shortcuts run)
 
-    The fourth run (shortcuts) proves the keyboard-only path without pressing a key: Debug --shortcut-after runs Ctrl+O,
-    Ctrl+N, Ctrl+E, Ctrl+N, Ctrl+E and Ctrl+O at fixed seconds through the method each keyboard accelerator calls, on
+    The fourth run (shortcuts) proves the keyboard-only path without pressing a key: Debug --shortcut-after runs Ctrl+I,
+    Ctrl+N, Ctrl+E, Ctrl+N, Ctrl+E and Ctrl+I at fixed seconds through the method each keyboard accelerator calls, on
     Editing (with "24" typed into the Timing box and not committed), the question, the finished state, the Empty screen
     and the Settings page; focus-keys.log says which applied. The fifth run (newproject) confirms New project with an
     InfoBar open; focus-newproject.log shows where focus landed.
@@ -273,18 +273,18 @@ if (Want 'export') {
 }
 
 # 4: the keyboard-only path through the shortcuts, run by Debug --shortcut-after at fixed seconds after launch, through
-# the same method each keyboard accelerator calls (no key is pressed): Ctrl+O opens the folder picker (closed again here
+# the same method each keyboard accelerator calls (no key is pressed): Ctrl+I opens the folder picker (closed again here
 # through UIA), Ctrl+N on a project with changes asks first (scanned, then Cancel), Ctrl+E exports (--export-to answers the
 # Save dialog, --export-wait keeps it from starting by itself), Ctrl+N after the export opens the Empty screen, Ctrl+E
-# there and Ctrl+O on the Settings page do nothing. focus-keys.log has each shortcut's result and every focus landing.
+# there and Ctrl+I on the Settings page do nothing. focus-keys.log has each shortcut's result and every focus landing.
 if (Want 'keys') {
     Write-Host 'Run: shortcuts'
     $export2 = Join-Path $base 'a11y-keys.mp4'
     Remove-Item $export2 -ErrorAction SilentlyContinue
-    $app = Start-App ((Common 'keys') + '--sample-frames=400' + '--output=2160' + "--export-to=$export2" + '--export-wait' + '--shortcut-after=ctrl+o@8,ctrl+n@14,ctrl+e@26,ctrl+n@40,ctrl+e@43,ctrl+o@52')
+    $app = Start-App ((Common 'keys') + '--sample-frames=400' + '--output=2160' + "--export-to=$export2" + '--export-wait' + '--shortcut-after=ctrl+i@8,ctrl+n@14,ctrl+e@26,ctrl+n@40,ctrl+e@43,ctrl+i@52')
     try {
         Resize $app 1280 800
-        # Ctrl+O at 8 s: the folder picker is a second window of the process.
+        # Ctrl+I at 8 s: the folder picker is a second window of the process.
         $picker = $null
         $until = (Get-Date).AddSeconds(20)
         while (-not $picker -and (Get-Date) -lt $until -and -not $app.Process.HasExited) {
@@ -300,11 +300,11 @@ if (Want 'keys') {
             }
         }
         if ($picker) {
-            $summary.Add("ctrl+o opened '$($picker.Current.Name)' ($($picker.Current.ClassName)); closed through UIA")
-            Write-Host "  Ctrl+O opened '$($picker.Current.Name)'"
+            $summary.Add("ctrl+i opened '$($picker.Current.Name)' ($($picker.Current.ClassName)); closed through UIA")
+            Write-Host "  Ctrl+I opened '$($picker.Current.Name)'"
             $picker.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
         }
-        else { Skip 'ctrl+o picker' 'no picker window appeared' }
+        else { Skip 'ctrl+i picker' 'no picker window appeared' }
         # Ctrl+N at 14 s: the project has changes, so it asks first.
         Wait-Until $app 14
         if (Find-Id $app 'PrimaryButton' 8) {
@@ -344,7 +344,7 @@ if (Want 'keys') {
         Wait-Until $app 45
         if (Find-Id $app 'ChooseFolderButton' 5) { $summary.Add('ctrl+n after the export: the Empty screen') }
         Invoke-Element (Find-Id $app 'SettingsButton' 2)
-        # Ctrl+O at 52 s on the Settings page.
+        # Ctrl+I at 52 s on the Settings page.
         Wait-Until $app 55
         Invoke-Element (Find-Id $app 'BackButton' 2)
         Start-Sleep -Seconds 2

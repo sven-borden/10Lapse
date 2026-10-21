@@ -509,6 +509,54 @@ walk import, Timing, Frame, Output, export, the finished state and Settings.
   while 10Lapse runs. Expect: nothing changes until 10Lapse starts again, then
   everything is in the new language.
 
+### 5.18 Projects: save, open, recent, recovery (#52, 3.1)
+
+The packaged parts could not be checked on the dev PC (no Developer Mode, no
+administrator, so no package can be registered), and real key presses and
+dialogs need a human. Run: once, packaged (the Store or a sideloaded 3.1
+package).
+
+- [ ] **5.18.1 Double-click a project** (#52). Do: save a project, close
+  10Lapse, double-click the `.10lapse` file in File Explorer. Expect: 10Lapse
+  starts with that project (frames, Timing, Frame, Output, order); the file's
+  type reads "10Lapse project" (in the app's language) with the 10Lapse icon,
+  and *Open with* lists 10Lapse.
+- [ ] **5.18.2 Double-click while 10Lapse runs** (#52). Expect: a second
+  10Lapse window opens with that project; the first keeps its own. Closing
+  either leaves the other as it was.
+- [ ] **5.18.3 Keys** (#52). Do: Ctrl+O, Ctrl+S, Ctrl+Shift+S on Editing, and
+  Ctrl+I / Ctrl+Shift+I (Add photos, which had Ctrl+O in 3.0). Expect: the Open
+  dialog (`.10lapse` only), Save (a dialog the first time only), Save as (always
+  a dialog), the folder and photo pickers; Ctrl+S and Ctrl+Shift+S do nothing on
+  the first-launch screen, and no shortcut works on Settings or under a dialog.
+  The File menu shows each key beside its item.
+- [ ] **5.18.4 Close with unsaved changes** (#52). Do: change a saved project,
+  close the window (X, Alt+F4, the taskbar's Close window). Expect: "Save
+  changes to ...?" with Save (default), Don't save and Cancel; Save writes the
+  file and closes, Don't save closes, Cancel keeps the window. During an export:
+  the save question first, then "Stop the export and close?".
+- [ ] **5.18.5 Crash recovery** (#52). Do: import photos, change the speed, wait
+  three seconds, end 10Lapse in Task Manager (End task), start it again.
+  Expect: an InfoBar "10Lapse closed before your changes to ... were saved"
+  with Restore; Restore brings the project back with the dot in the title bar,
+  and the user's own `.10lapse` file (if any) is unchanged until Save. A clean
+  close leaves nothing to offer at the next start. Packaged, the copy is in
+  `LocalState\Recovery`.
+- [ ] **5.18.6 Missing photos** (#52). Do: save a project, move two of its
+  photos to another folder, open the project. Expect: it opens with the others,
+  and one Caution InfoBar lists the two (*View list*). Move the folder together
+  with the project file to another drive: every photo is found.
+- [ ] **5.18.7 Recent projects** (#52). Expect: on the first-launch screen, up
+  to five projects, the last opened or saved first, each with its folder; a
+  moved or deleted one says "Not found", and a click says so and takes it off;
+  *Clear list* empties it and keeps the files. Short window (480 px high): the
+  column scrolls and nothing is cut off. Narrator reads "Recent projects,
+  heading level 2" and each item with its folder.
+- [ ] **5.18.8 OneDrive** (#52). Do: open a project whose photos are online-only
+  OneDrive files. Expect: the project opens; note whether the preview downloads
+  them without asking (import asks first; opening a project does not, a known
+  difference to decide on).
+
 ## 6. Per-machine measurements
 
 - [ ] **6.1 Bench on each machine** (#34, PR #89). Run: all, with the repo and
@@ -549,12 +597,12 @@ screens (`scripts/a11y-check.ps1`); these parts need a human with a keyboard,
 Narrator or real high contrast. Run: once on a clean PC, and 7.3 on each
 theme.
 
-- [ ] **7.1 Real key presses** (#38). Ctrl+O, Ctrl+Shift+O, Ctrl+N and Ctrl+E
-  work on Editing; none works on Settings or under a dialog. Space, the arrows,
+- [ ] **7.1 Real key presses** (#38, #52). Ctrl+I, Ctrl+Shift+I, Ctrl+N, Ctrl+E,
+  Ctrl+O, Ctrl+S and Ctrl+Shift+S work on Editing; none works on Settings or under a dialog. Space, the arrows,
   Delete and Ctrl+Z work in the strip and with nothing focused. Escape works on
   Settings and in each dialog. Type a rate in the Timing box and press Ctrl+E
   at once: the video uses the typed rate.
-- [ ] **7.2 The whole export with the keyboard alone** (#38). Ctrl+O, pick a
+- [ ] **7.2 The whole export with the keyboard alone** (#38). Ctrl+I, pick a
   folder in the picker, Tab to Timing and Output and change them, Ctrl+E, the
   Save dialog, Enter on *Play the video*, *Show in folder*, Ctrl+N.
 - [ ] **7.3 Visible focus everywhere** (#38). In light, dark and high contrast,
