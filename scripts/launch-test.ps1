@@ -11,7 +11,9 @@
 
     A launch that ends any other way than closing keeps its app log and the catcher's report: a non-zero exit, a
     window that never appears ("no-window"), and a window that has not closed 10 s after a second Close ("hung", whose
-    stacks the catcher takes before it is stopped).
+    stacks the catcher takes before it is stopped). With -SampleFrames the project has unsaved changes, so each Close
+    meets "Save changes to ...?" first (#52): the script answers Don't save through UIA before it counts a hang. Each
+    launch gets its own settings folder, so a stopped launch's recovery copy is never offered to the next.
 
     Everything the app writes is the test's own, through Debug switches: settings, sample photos, proxy cache, encoder
     cache (always: with -ColdProbe a new file per launch, otherwise one the launches share, which the first launch
@@ -82,6 +84,27 @@ function Close-Window([int] $id) {
     catch { return ($_.Exception.GetType().Name + ': ' + $_.Exception.Message) -replace '[,\r\n]', ' ' }
 }
 
+# A --sample-frames project has unsaved changes, so a close asks "Save changes to ...?" first (#52): answers Don't save
+# (the dialog's SecondaryButton) through UIA. Returns '' or what went wrong, for results.csv.
+function Answer-DontSave([int] $id) {
+    try {
+        $until = (Get-Date).AddSeconds(5)
+        $condition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'SecondaryButton')
+        while ((Get-Date) -lt $until) {
+            $window = Find-Window $id
+            if (-not $window) { return '' }
+            $button = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+            if ($button) {
+                $button.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+                return ''
+            }
+            Start-Sleep -Milliseconds 200
+        }
+        return 'no save question to answer'
+    }
+    catch { return ($_.Exception.GetType().Name + ': ' + $_.Exception.Message) -replace '[,\r\n]', ' ' }
+}
+
 # Stops a process this script started: only while it still runs and is the same process (its start time).
 function Stop-Own($process, [datetime] $started) {
     if ($null -eq $process) { return }
@@ -127,8 +150,10 @@ try {
             $runExe = Join-Path $fresh (Split-Path $Exe -Leaf)
         }
 
+        # A settings folder per launch: a launch that is stopped leaves its recovery copy there (#52), and the next one
+        # would offer it.
         $appArgs = @(
-            "--settings-folder=$(Join-Path $data 'settings')",
+            "--settings-folder=$(Join-Path $data "settings\$run-$i")",
             "--sample-folder=$(Join-Path $data 'samples')",
             "--cache-folder=$(Join-Path $data 'cache')",
             "--encoder-cache=$encoderCache",
@@ -176,10 +201,18 @@ try {
         }
         else {
             $closeError = Close-Window $appPid
+            if ($SampleFrames -gt 0 -and -not $p.WaitForExit(1000)) {
+                $answer = Answer-DontSave $appPid
+                if ($answer) { $closeError = ($closeError + ' / ' + $answer).Trim(' /') }
+            }
             if (-not $p.WaitForExit(10000)) {
                 # A first Close the window did not act on (reported under load); ask once more, and say why if it fails.
                 $second = Close-Window $appPid
                 if ($second) { $closeError = ($closeError + ' / ' + $second).Trim(' /') }
+                if ($SampleFrames -gt 0 -and -not $p.WaitForExit(1000)) {
+                    $answer = Answer-DontSave $appPid
+                    if ($answer) { $closeError = ($closeError + ' / ' + $answer).Trim(' /') }
+                }
                 $outcome = if ($p.WaitForExit(10000)) { 'closed-on-retry' } else { 'hung' }
             }
         }

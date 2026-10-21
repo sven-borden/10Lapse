@@ -226,7 +226,8 @@ try {
     Resize $app 640 480
     Shot $app '10-smallest-window'
 
-    # The New project question, its two buttons at the smallest window; Cancel (the dialog's close button) keeps the project.
+    # The New project question ("Save changes to ...?" since #52: Save, Don't save, Cancel) at the smallest window; Cancel
+    # (the dialog's close button) keeps the project.
     Invoke-Element (Find-Id $app 'NewProjectButton' 3)
     if (Find-Id $app 'PrimaryButton' 5) {
         Shot $app '15-new-project-question'
@@ -265,9 +266,22 @@ try {
     if (-not $app.Process.HasExited -and (Find-Id $app 'CancelButton' 0.5)) {
         $windowPattern = $app.Window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern)
         $windowPattern.Close()
+        # The sample project has unsaved changes, so the close asks "Save changes to ...?" first (#52): its own shot,
+        # then Don't save (SecondaryButton), and the export's "Stop the export and close?" follows.
+        $dontSave = Find-Id $app 'SecondaryButton' 5
+        if ($dontSave) {
+            Shot $app '12a-save-question'
+            Invoke-Element $dontSave
+            $until = (Get-Date).AddSeconds(5)
+            while ((Get-Date) -lt $until -and (Find-Id $app 'SecondaryButton' 0.2)) { Start-Sleep -Milliseconds 200 }
+        }
+        else { Skip '12a-save-question' 'the close did not ask to save' }
         $keep = Find-Id $app 'CloseButton' 5
-        Shot $app '12-close-question'
-        Invoke-Element $keep
+        if ($keep) {
+            Shot $app '12-close-question'
+            Invoke-Element $keep
+        }
+        else { Skip '12-close-question' 'the export had finished before the stop question' }
     }
     else { Skip '12-close-question' 'the export had finished before the close step' }
     $play = Find-Id $app 'PlayButton' 240
