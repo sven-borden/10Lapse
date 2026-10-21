@@ -27,6 +27,17 @@
       Stretch="Uniform"
       Visibility="Collapsed" />
 
+    <!--
+      The premiere of an animated GIF (#51): Media Foundation does not play GIF, so the file is shown by XAML's own GIF
+      decoder, looping as it will in a browser. With animations off in Windows it stays on its first frame.
+    -->
+    <Image
+      x:Name="Gif"
+      HorizontalAlignment="Left"
+      VerticalAlignment="Top"
+      Stretch="Uniform"
+      Visibility="Collapsed" />
+
     <Border
       x:Name="Pill"
       Height="28"

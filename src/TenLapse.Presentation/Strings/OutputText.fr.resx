@@ -77,4 +77,37 @@
   <data name="QualityMaximum" xml:space="preserve">
     <value>Maximale</value>
   </data>
+  <data name="GifFormatOption" xml:space="preserve">
+    <value>GIF animé</value>
+  </data>
+  <data name="GifSizeLabel" xml:space="preserve">
+    <value>Taille</value>
+  </data>
+  <data name="GifRateLabel" xml:space="preserve">
+    <value>Images par seconde</value>
+  </data>
+  <data name="GifSizeSmall" xml:space="preserve">
+    <value>Petite</value>
+  </data>
+  <data name="GifSizeMedium" xml:space="preserve">
+    <value>Moyenne</value>
+  </data>
+  <data name="GifSizeLarge" xml:space="preserve">
+    <value>Grande</value>
+  </data>
+  <data name="GifRateOptionFormat" xml:space="preserve">
+    <value>Jusqu’à {0}</value>
+  </data>
+  <data name="GifKeepsVideoSpeed" xml:space="preserve">
+    <value>Le GIF garde la vitesse de votre vidéo : {0}.</value>
+  </data>
+  <data name="EstimateRange" xml:space="preserve">
+    <value>De {0} à {1}</value>
+  </data>
+  <data name="EstimateUpTo" xml:space="preserve">
+    <value>Jusqu’à {0}</value>
+  </data>
+  <data name="PixelSizeFormat" xml:space="preserve">
+    <value>{0} × {1}</value>
+  </data>
 </root>

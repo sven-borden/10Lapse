@@ -49,7 +49,7 @@ public sealed class EncoderOutputCapabilitiesTests
         Assert.Equal(
             [OutputResolution.Hd720, OutputResolution.Hd1080, OutputResolution.Qhd1440],
             panel.Resolutions.Select(option => option.Value));
-        Assert.Equal(["MP4 · H.264"], panel.Formats.Select(option => option.Label));
+        Assert.Equal(["MP4 · H.264", "Animated GIF"], panel.Formats.Select(option => option.Label));
         Assert.Equal("This PC's graphics hardware exports up to 1440p.", panel.Note);
         Assert.Equal("720p · 720 × 1280", panel.Resolutions[0].Label);
     }

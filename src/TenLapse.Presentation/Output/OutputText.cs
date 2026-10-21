@@ -87,6 +87,94 @@ public static class OutputText
     /// <summary>The quality list's highest bitrate.</summary>
     public static string QualityMaximum => _strings.Get();
 
+    /// <summary>The Format list's entry for an animated GIF (#51), and the Save dialog's file type for one.</summary>
+    public static string GifFormatOption => _strings.Get();
+
+    /// <summary>The GIF size list's label, in place of the resolution's while GIF is chosen.</summary>
+    public static string GifSizeLabel => _strings.Get();
+
+    /// <summary>The GIF frame rate list's label, in place of the quality's while GIF is chosen.</summary>
+    public static string GifRateLabel => _strings.Get();
+
+    /// <summary>The smallest GIF size's name.</summary>
+    public static string GifSizeSmall => _strings.Get();
+
+    /// <summary>The middle GIF size's name.</summary>
+    public static string GifSizeMedium => _strings.Get();
+
+    /// <summary>The largest GIF size's name.</summary>
+    public static string GifSizeLarge => _strings.Get();
+
+    /// <summary>The list entry for a GIF frame rate. {0} the rate ("10 fps").</summary>
+    public static string GifRateOptionFormat => _strings.Get();
+
+    /// <summary>The note when the video plays slower than the GIF preset, so the GIF keeps the video's speed. {0} that speed.</summary>
+    public static string GifKeepsVideoSpeed => _strings.Get();
+
+    /// <summary>A GIF's estimate as a range. {0} the low end, {1} the high end, each from <see cref="Size(long, CultureInfo?)"/>.</summary>
+    public static string EstimateRange => _strings.Get();
+
+    /// <summary>A GIF's estimate when its low end is under a megabyte. {0} the high end.</summary>
+    public static string EstimateUpTo => _strings.Get();
+
+    /// <summary>A pixel size, "480 × 270". {0} the width, {1} the height.</summary>
+    public static string PixelSizeFormat => _strings.Get();
+
+    /// <summary>A GIF size's name: Small, Medium or Large.</summary>
+    public static string GifSizeName(GifSize size) => size switch
+    {
+        GifSize.Small => GifSizeSmall,
+        GifSize.Medium => GifSizeMedium,
+        GifSize.Large => GifSizeLarge,
+        _ => throw new ArgumentOutOfRangeException(nameof(size), size, "Unknown GIF size."),
+    };
+
+    /// <summary>
+    /// The list entry for a GIF size: "Medium · 480 × 270" (the size follows the frame shape). Invariant on purpose: a
+    /// pixel size is written without grouping, as <see cref="ResolutionOption"/> writes it.
+    /// </summary>
+    public static string GifSizeOption(GifSize size, PixelSize pixels) =>
+        string.Format(CultureInfo.InvariantCulture, ResolutionOptionFormat, GifSizeName(size), pixels.Width, pixels.Height);
+
+    /// <summary>The list entry for a GIF frame rate: "Up to 10 fps".</summary>
+    public static string GifRateOption(GifFrameRate rate, CultureInfo? culture = null)
+    {
+        culture ??= CultureInfo.CurrentCulture;
+        return string.Format(culture, GifRateOptionFormat, Core.Timing.TimingFormat.FrameRate(GifOutput.Rate(rate), culture));
+    }
+
+    /// <summary>"480 × 270". Invariant on purpose: a pixel size is written without grouping in every language.</summary>
+    public static string PixelSizeText(PixelSize size) =>
+        string.Format(CultureInfo.InvariantCulture, PixelSizeFormat, size.Width, size.Height);
+
+    /// <summary>
+    /// A GIF's estimate as a range around <paramref name="bytes"/> (<see cref="GifOutput.EstimateLowShare"/> to
+    /// <see cref="GifOutput.EstimateHighShare"/>), because a GIF's size depends far more on the photos than a video's:
+    /// "3.1 MB to 6.2 MB", "Up to 1.4 MB" when the low end is under a megabyte, "Less than 1 MB" when all of it is.
+    /// </summary>
+    public static string GifEstimate(long bytes, CultureInfo? culture = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(bytes);
+        culture ??= CultureInfo.CurrentCulture;
+        var low = (long)Math.Round(bytes * GifOutput.EstimateLowShare);
+        var high = (long)Math.Round(bytes * GifOutput.EstimateHighShare);
+        if (high < Megabyte)
+        {
+            return UnderOneMegabyte;
+        }
+
+        return low < Megabyte
+            ? string.Format(culture, EstimateUpTo, Size(high, culture))
+            : string.Format(culture, EstimateRange, Size(low, culture), Size(high, culture));
+    }
+
+    /// <summary>The note when the GIF keeps the video's slower speed: "The GIF keeps your video's speed: 8 fps."</summary>
+    public static string GifKeepsSpeed(Core.Timing.Fraction videoRate, CultureInfo? culture = null)
+    {
+        culture ??= CultureInfo.CurrentCulture;
+        return string.Format(culture, GifKeepsVideoSpeed, Core.Timing.TimingFormat.FrameRate(videoRate, culture));
+    }
+
     /// <summary>The resolution's usual name: 720p, 1080p, 1440p or 4K, the same in every language (not in the resource file).</summary>
     public static string ResolutionName(OutputResolution resolution) => resolution switch
     {
@@ -104,16 +192,18 @@ public static class OutputText
     public static string ResolutionOption(OutputResolution resolution, PixelSize size) =>
         string.Format(CultureInfo.InvariantCulture, ResolutionOptionFormat, ResolutionName(resolution), size.Width, size.Height);
 
-    /// <summary>The codec's name: H.264 or HEVC, the same in every language (not in the resource file).</summary>
+    /// <summary>The codec's name: H.264, HEVC or GIF, the same in every language (not in the resource file).</summary>
     public static string CodecName(VideoFormat format) => format switch
     {
         VideoFormat.Mp4H264 => "H.264",
         VideoFormat.Mp4Hevc => "HEVC",
+        VideoFormat.Gif => "GIF",
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Unknown video format."),
     };
 
-    /// <summary>The list entry for a format: "MP4 · H.264".</summary>
-    public static string FormatOption(VideoFormat format) => string.Format(CultureInfo.CurrentCulture, FormatOptionFormat, CodecName(format));
+    /// <summary>The list entry for a format: "MP4 · H.264", or "Animated GIF".</summary>
+    public static string FormatOption(VideoFormat format) =>
+        format == VideoFormat.Gif ? GifFormatOption : string.Format(CultureInfo.CurrentCulture, FormatOptionFormat, CodecName(format));
 
     /// <summary>The list entry for a quality.</summary>
     public static string QualityOption(OutputQuality quality) => quality switch

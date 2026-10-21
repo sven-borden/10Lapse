@@ -99,4 +99,48 @@
     <value>Maximum</value>
     <comment>The highest quality level in the Quality list (the largest file). An adjective agreeing with your word for "quality". Keep it to about 14 characters.</comment>
   </data>
+  <data name="GifFormatOption" xml:space="preserve">
+    <value>Animated GIF</value>
+    <comment>An item of the Format list, after the MP4 items: an animated GIF, a short looping picture for chat and the web. Also the file type in the Save dialog. GIF is the file type's name; keep it.</comment>
+  </data>
+  <data name="GifSizeLabel" xml:space="preserve">
+    <value>Size</value>
+    <comment>The label over the list of GIF sizes (Small, Medium, Large), shown in place of Resolution while Animated GIF is chosen. A noun. Keep it to about 14 characters.</comment>
+  </data>
+  <data name="GifRateLabel" xml:space="preserve">
+    <value>Frame rate</value>
+    <comment>The label over the list of GIF frame rates (Up to 10 fps, ...), shown in place of Quality while Animated GIF is chosen. Keep it to about 18 characters.</comment>
+  </data>
+  <data name="GifSizeSmall" xml:space="preserve">
+    <value>Small</value>
+    <comment>The smallest GIF size (320 pixels on the long side), as a list item followed by its pixel size. An adjective agreeing with your word for size (GifSizeLabel). Keep it to about 10 characters.</comment>
+  </data>
+  <data name="GifSizeMedium" xml:space="preserve">
+    <value>Medium</value>
+    <comment>The middle GIF size (480 pixels on the long side, the default). An adjective agreeing with your word for size. Keep it to about 10 characters.</comment>
+  </data>
+  <data name="GifSizeLarge" xml:space="preserve">
+    <value>Large</value>
+    <comment>The largest GIF size (640 pixels on the long side). An adjective agreeing with your word for size. Keep it to about 10 characters.</comment>
+  </data>
+  <data name="GifRateOptionFormat" xml:space="preserve">
+    <value>Up to {0}</value>
+    <comment>An item of the GIF frame rate list: the most frames per second the GIF plays (a slower video keeps its own speed). {0} the rate with its unit ("10 fps").</comment>
+  </data>
+  <data name="GifKeepsVideoSpeed" xml:space="preserve">
+    <value>The GIF keeps your video's speed: {0}.</value>
+    <comment>The note under the GIF lists when the video plays slower than the chosen GIF frame rate, so the GIF plays at the video's speed. {0} the video's speed ("8 fps", or "2 s per photo").</comment>
+  </data>
+  <data name="EstimateRange" xml:space="preserve">
+    <value>{0} to {1}</value>
+    <comment>The Output panel's estimate of a GIF's file size, as a range: GIF files vary a lot with the photos (a clear sky is small, foliage is large). {0} the low end ("3.1 MB"), {1} the high end ("6.2 MB").</comment>
+  </data>
+  <data name="EstimateUpTo" xml:space="preserve">
+    <value>Up to {0}</value>
+    <comment>The Output panel's estimate of a GIF's file size when its low end is under a megabyte. {0} the high end ("1.4 MB").</comment>
+  </data>
+  <data name="PixelSizeFormat" xml:space="preserve">
+    <value>{0} × {1}</value>
+    <comment>A picture's size in pixels, as the export panel and the finished state show a GIF's size ("480 × 270"). {0} the width, {1} the height, written without grouping.</comment>
+  </data>
 </root>

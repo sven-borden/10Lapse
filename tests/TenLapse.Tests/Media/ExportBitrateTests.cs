@@ -38,7 +38,8 @@ public sealed class ExportBitrateTests
     {
         var sizes = new[] { new PixelSize(1280, 720), _hd, new PixelSize(2560, 1440), _uhd };
         var rates = new[] { new Fraction(1, 10), new Fraction(1, 1), new Fraction(12, 1), new Fraction(24, 1), _thirty, new Fraction(60, 1) };
-        foreach (var format in Enum.GetValues<VideoFormat>())
+        // A GIF has no bitrate (#51): only the video formats.
+        foreach (var format in Enum.GetValues<VideoFormat>().Where(format => format != VideoFormat.Gif))
         {
             foreach (var size in sizes)
             {
