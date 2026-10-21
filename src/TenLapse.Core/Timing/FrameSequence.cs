@@ -203,15 +203,20 @@ public readonly record struct FrameSequence
     }
 
     /// <summary>
-    /// How many photos have been shown once the first <paramref name="positions"/> frames are done, counting a photo only
-    /// once its frame has passed: always the photos 0 to k − 1, since the first pass goes forward. The export's strip dims
-    /// the photos from this index on. All of them once the first forward pass is over.
+    /// How many photos the first <paramref name="positions"/> frames show at least once: always the photos 0 to k − 1, since
+    /// the first pass goes forward. The export's strip dims the photos from this index on; all of them are done once the
+    /// first forward pass is. For a plain sequence this is <paramref name="positions"/> itself.
     /// </summary>
     public int PhotosCovered(int positions)
     {
-        if (positions <= HoldStartFrames || PhotoCount == 0)
+        if (positions <= 0 || PhotoCount == 0)
         {
-            return positions >= Length ? PhotoCount : 0;
+            return 0;
+        }
+
+        if (positions <= HoldStartFrames)
+        {
+            return 1;
         }
 
         return positions >= FirstPassEnd ? PhotoCount : positions - HoldStartFrames;

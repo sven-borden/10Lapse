@@ -311,6 +311,77 @@ public sealed class PlayerViewModelTests
         }
     }
 
+    [Fact]
+    public void PlaysTheVideosFramesWithTheirHoldsAndTheWayBack()
+    {
+        // #49: 10 photos at 10 fps as a boomerang with 0.5 s held first: 5 frames of photo 0, then 0 to 9 and back to 0.
+        var (shell, player) = Player(10);
+        var project = shell.CurrentProject.Model;
+        project.Timing = TimingSettings.PerSecond(new Fraction(10, 1));
+        project.Sequence = new SequenceSettings(TimeSpan.FromSeconds(0.5), TimeSpan.Zero, 1, boomerang: true);
+
+        Assert.Equal((10, 24, 23), (player.FrameCount, player.PositionCount, player.LastPosition));
+        player.Play();
+        _now += 300;
+        player.Tick();
+        Assert.Equal((3, 0), (player.Position, player.CurrentFrame));
+        Assert.Equal("0001 / 0010", player.CounterText);
+
+        _now += 700;
+        player.Tick();
+        Assert.Equal((10, 5), (player.Position, player.CurrentFrame));
+
+        // On the way back: frame 15 shows photo 8; the time code runs on the video's timeline.
+        _now += 500;
+        player.Pause();
+        Assert.Equal((15, 8), (player.Position, player.CurrentFrame));
+        Assert.Equal("00:01.50 / 00:02.40", player.TimecodeText);
+        Assert.Equal(8, player.State.FrameAt(_now));
+        Assert.Equal(8, player.State.PhotoAt(player.State.Position));
+
+        // A photo picked in the strip goes to its showing nearest the playhead: photo 3 on the way back, not the way out.
+        player.Seek(3);
+        Assert.Equal((20, 3), (player.Position, player.CurrentFrame));
+
+        // The scrubber and the ends are on the video's timeline: the boomerang ends on the first photo.
+        player.SeekPosition(7);
+        Assert.Equal((7, 2), (player.Position, player.CurrentFrame));
+        Assert.True(player.Handle(TransportAction.Last));
+        Assert.Equal((23, 0), (player.Position, player.CurrentFrame));
+        Assert.True(player.Handle(TransportAction.First));
+        Assert.Equal((0, 0), (player.Position, player.CurrentFrame));
+
+        // The arrows walk the photos: one step on from the hold is photo 1.
+        player.Step(1);
+        Assert.Equal((6, 1), (player.Position, player.CurrentFrame));
+
+        // A new hold keeps the playhead on its photo, in the same pass.
+        player.Seek(3);
+        project.Sequence = project.Sequence with { HoldStart = TimeSpan.Zero };
+        Assert.Equal((3, 3), (player.Position, player.CurrentFrame));
+        Assert.Equal(19, player.PositionCount);
+    }
+
+    [Fact]
+    public void PlaybackLoopsOverTheWholeVideo()
+    {
+        // 4 photos played 3 times at 10 fps with 0.3 s held at the end: 12 + 3 frames, 1.5 s, then it starts over.
+        var (shell, player) = Player(4);
+        var project = shell.CurrentProject.Model;
+        project.Timing = TimingSettings.PerSecond(new Fraction(10, 1));
+        project.Sequence = new SequenceSettings(TimeSpan.Zero, TimeSpan.FromSeconds(0.3), 3, boomerang: false);
+
+        player.Play();
+        var shown = new List<int>();
+        for (var step = 0; step < 30; step++)
+        {
+            shown.Add(player.State.FrameAt(_now));
+            _now += 100;
+        }
+
+        Assert.Equal([0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 3, 3, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 3, 3, 3], shown);
+    }
+
     private (ShellViewModel Shell, PlayerViewModel Player) Player(int frames)
     {
         var shell = new ShellViewModel(new FakeDialogService(), new FakeErrorSink());

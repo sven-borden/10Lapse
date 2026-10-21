@@ -432,6 +432,49 @@ public sealed class ProjectExportTests : IDisposable
     }
 
     [Fact]
+    public void TheExportedFramesFollowTheSequenceForAVideoAndAGif()
+    {
+        // #49: 10 photos at 30 fps as a boomerang played twice, 0.2 s held first and 0.1 s last: 6 + 37 + 3 frames.
+        var photos = ManyPhotos(10).Select(path => GoldenExport.FrameOf(path)).ToList();
+        var sequence = new SequenceSettings(TimeSpan.FromSeconds(0.2), TimeSpan.FromSeconds(0.1), 2, boomerang: true);
+        var video = GoldenExport.Snapshot(photos, TimingSettings.PerSecond(new Fraction(30, 1)), FrameAspect.Ratio16x9, FitMode.Fill, sequence: sequence);
+
+        var frames = ProjectExporter.FramesFor(video, ProjectExporter.SettingsFor(video));
+        Assert.Equal(46, frames.Length);
+        Assert.Equal([0, 0, 0, 0, 0, 0, 0, 1, 2], frames[..9]);
+        Assert.Equal([2, 1, 0, 0, 0, 0], frames[^6..]);
+        Assert.Equal(Enumerable.Range(0, 46).Select(video.Playback.PhotoAt), frames);
+
+        // A GIF plays the photos once (it loops by itself) and shows, at each of its 10 fps frames, the photo the video shows.
+        var gif = GoldenExport.Snapshot(photos, TimingSettings.PerSecond(new Fraction(30, 1)), FrameAspect.Ratio16x9, FitMode.Fill, VideoFormat.Gif, sequence: sequence);
+        var gifSettings = ProjectExporter.SettingsFor(gif);
+        Assert.Equal(6 + 19 + 3, gif.Playback.Length);
+        Assert.Equal(GifOutput.SourceFrames(28, new Fraction(30, 1), new Fraction(10, 1)).Select(gif.Playback.PhotoAt), ProjectExporter.FramesFor(gif, gifSettings));
+        Assert.Equal([0, 0, 0, 3, 6, 9, 6, 3, 0, 0], ProjectExporter.FramesFor(gif, gifSettings));
+    }
+
+    [Fact]
+    public async Task ASequenceExportCountsItsProgressInVideoFramesAndLastsAsLong()
+    {
+        // 12 photos at 30 fps as a boomerang with 0.5 s held at both ends: 15 + 23 + 15 = 53 frames, 1.77 s.
+        var photos = ManyPhotos(12).Select(path => GoldenExport.FrameOf(path)).ToList();
+        var sequence = new SequenceSettings(TimeSpan.FromSeconds(0.5), TimeSpan.FromSeconds(0.5), 1, boomerang: true);
+        var snapshot = GoldenExport.Snapshot(photos, TimingSettings.PerSecond(new Fraction(30, 1)), FrameAspect.Ratio16x9, FitMode.Fill, sequence: sequence);
+        var reports = new List<ExportProgress>();
+        var output = _scratch.PathOf("sequence.mp4");
+
+        var result = await ExportOrSkipAsync(snapshot, output, new Synchronous(reports.Add));
+
+        Assert.Equal(53, result.FrameCount);
+        Assert.Equal(FrameTiming.Duration(53, new Fraction(30, 1)), result.Duration);
+        Assert.Equal(snapshot.Duration, result.Duration);
+        Assert.Equal(53, VideoFileReader.Read(output).FrameCount);
+        Assert.All(reports, report => Assert.Equal(53, report.FrameCount));
+        Assert.Equal((ExportStage.Finishing, 53), (reports[^1].Stage, reports[^1].Frame));
+        Assert.True(reports.Zip(reports.Skip(1)).All(pair => pair.First.Frame <= pair.Second.Frame));
+    }
+
+    [Fact]
     public async Task ABrokenPhotoInAGifIsNamedByItsPhotoNumberNotItsGifFrame()
     {
         // At 30 fps as a 10 fps GIF the GIF's frame 2 shows photo 6: the message must name photo 7 (frame 6).

@@ -811,4 +811,106 @@ public sealed class TimingPanelViewModelTests
             ],
             said);
     }
+    [Fact]
+    public void TheSequenceControlsEditTheProjectAndTheReadoutIsTheWholeVideo()
+    {
+        // #49: 742 photos at 30 fps. A boomerang is 1,483 frames; played twice 2,965; 1.5 s held first adds 45.
+        var shell = Shell();
+        var panel = Panel(shell);
+        var said = new List<string>();
+        panel.Announced += (_, text) => said.Add(text);
+
+        Assert.Equal(["Forward", "Boomerang"], panel.DirectionLabels);
+        Assert.Equal(["1", "2", "3", "4", "5"], panel.PlaysLabels);
+        Assert.Equal((0, 0, "0", "0"), (panel.SelectedDirectionIndex, panel.SelectedPlaysIndex, panel.HoldStartText, panel.HoldEndText));
+        Assert.True(panel.ShowsPlays);
+
+        panel.SelectedDirectionIndex = 1;
+        Assert.True(shell.CurrentProject.Model.Sequence.Boomerang);
+        Assert.Equal("742 photos → 49.4 s", panel.Headline);
+
+        panel.SelectedPlaysIndex = 1;
+        Assert.Equal(2, shell.CurrentProject.Model.Sequence.Plays);
+        Assert.Equal("742 photos → 1 min 39 s", panel.Headline);
+
+        panel.CommitHoldStart("1,5");
+        Assert.Equal(TimeSpan.FromSeconds(1.5), shell.CurrentProject.Model.Sequence.HoldStart);
+        Assert.Equal("1.5", panel.HoldStartText);
+        Assert.Equal("742 photos → 1 min 40 s", panel.Headline);
+        Assert.False(panel.HasSequenceMessage);
+
+        panel.CommitHoldEnd("12 s");
+        Assert.Equal(TimeSpan.FromSeconds(10), shell.CurrentProject.Model.Sequence.HoldEnd);
+        Assert.Equal("A hold can be from 0 s to 10 s, so 12 s is now 10 s.", panel.SequenceMessage);
+        Assert.Equal("10", panel.HoldEndText);
+
+        Assert.Equal(
+            [
+                "742 photos → 49.4 s at 30 fps",
+                "742 photos → 1 min 39 s at 30 fps",
+                "742 photos → 1 min 40 s at 30 fps",
+                "A hold can be from 0 s to 10 s, so 12 s is now 10 s. 742 photos → 1 min 50 s at 30 fps",
+            ],
+            said);
+    }
+
+    [Fact]
+    public void AHoldTakesEitherDecimalPointRoundsToATenthAndRefusesWhatIsNotANumber()
+    {
+        var shell = Shell();
+        var panel = Panel(shell, culture: _de);
+
+        panel.CommitHoldStart("2.25");
+        Assert.Equal(TimeSpan.FromSeconds(2.3), shell.CurrentProject.Model.Sequence.HoldStart);
+        Assert.Equal("2,3", panel.HoldStartText);
+        Assert.Equal(string.Format(_de, TimingText.Rounded, "2,3 s"), panel.SequenceMessage);
+
+        panel.CommitHoldStart("lang");
+        Assert.Equal(TimeSpan.FromSeconds(2.3), shell.CurrentProject.Model.Sequence.HoldStart);
+        Assert.Equal(string.Format(_de, TimingText.NotANumberHold, "0 s", "10 s", "1,5"), panel.SequenceMessage);
+
+        panel.CommitHoldStart("1,000");
+        Assert.Equal(TimeSpan.FromSeconds(2.3), shell.CurrentProject.Model.Sequence.HoldStart);
+
+        // An empty box is no hold.
+        panel.CommitHoldStart(string.Empty);
+        Assert.Equal(TimeSpan.Zero, shell.CurrentProject.Model.Sequence.HoldStart);
+        Assert.Equal("0", panel.HoldStartText);
+        Assert.False(panel.HasSequenceMessage);
+    }
+
+    [Fact]
+    public void AGifHasNoPlayCountsAndPlaysThePhotosOnce()
+    {
+        var shell = Shell();
+        var panel = Panel(shell);
+        panel.SelectedPlaysIndex = 2;
+        var project = shell.CurrentProject.Model;
+
+        project.Output = project.Output with { Format = VideoFormat.Gif };
+
+        Assert.False(panel.ShowsPlays);
+        Assert.True(panel.ShowsPlaysGifNote);
+        Assert.Equal(3, project.Sequence.Plays);
+        Assert.Equal("742 photos → 24.7 s", panel.Headline);
+
+        project.Output = project.Output with { Format = VideoFormat.Mp4H264 };
+        Assert.True(panel.ShowsPlays);
+        Assert.Equal(2, panel.SelectedPlaysIndex);
+        Assert.Equal("742 photos → 1 min 14 s", panel.Headline);
+    }
+
+    [Fact]
+    public void LengthModeKeepsTheWholeVideoAtTheTarget()
+    {
+        var shell = Shell();
+        var panel = Panel(shell);
+        panel.SelectedModeIndex = 1;
+        panel.SelectedDirectionIndex = 1;
+        panel.CommitHoldEnd("2");
+
+        // 30 s in all: the photos out and back fill 28 s, the hold the last 2.
+        Assert.Equal("742 photos → 30.0 s", panel.Headline);
+        Assert.False(panel.HasNotice);
+    }
 }

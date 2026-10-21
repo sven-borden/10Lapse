@@ -26,6 +26,10 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
 {
     private const double BarSeconds = 60;
 
+    // The direction switch's segments (#49).
+    private const int ForwardIndex = 0;
+    private const int BoomerangIndex = 1;
+
     private static readonly SpeedMode[] _modes = [SpeedMode.PerSecond, SpeedMode.Length, SpeedMode.PerPhoto];
 
     private static readonly string[] _modeLabels = [TimingText.ModePerSecond, TimingText.ModeLength, TimingText.ModePerPhoto];
@@ -217,12 +221,12 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
     /// <summary>0 forward, 1 boomerang. Setting it edits the project.</summary>
     public int SelectedDirectionIndex
     {
-        get => _sequence.Boomerang ? 1 : 0;
+        get => _sequence.Boomerang ? BoomerangIndex : ForwardIndex;
         set
         {
-            if (value is 0 or 1 && (value == 1) != _sequence.Boomerang)
+            if (value is ForwardIndex or BoomerangIndex && (value == BoomerangIndex) != _sequence.Boomerang)
             {
-                EditSequence(sequence => sequence with { Boomerang = value == 1 });
+                EditSequence(sequence => sequence with { Boomerang = value == BoomerangIndex });
             }
         }
     }
