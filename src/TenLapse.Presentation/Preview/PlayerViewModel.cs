@@ -10,25 +10,39 @@ using TenLapse.Presentation.Services;
 namespace TenLapse.Presentation.Preview;
 
 /// <summary>
-/// What the player shows, for the render thread: the project as one snapshot, the frame while paused, and the clock
-/// while playing. Immutable; <see cref="PlayerViewModel.State"/> swaps in a new one on every change.
+/// What the player shows, for the render thread: the project as one snapshot, the photo and the video frame while paused,
+/// and the clock while playing. Immutable; <see cref="PlayerViewModel.State"/> swaps in a new one on every change.
 /// </summary>
-/// <param name="Snapshot">The project: frames, timing and frame settings, all from one moment.</param>
-/// <param name="Frame">The frame on screen while paused (and where playback started).</param>
-/// <param name="Clock">The playback clock while playing; null while paused.</param>
+/// <param name="Snapshot">The project: frames, timing, sequence and frame settings, all from one moment.</param>
+/// <param name="Frame">The photo (project frame) on screen while paused (and where playback started).</param>
+/// <param name="Position">The video frame on screen while paused: a position in <see cref="Sequence"/> (#49).</param>
+/// <param name="Clock">The playback clock while playing, over the video's frames; null while paused.</param>
 /// <param name="Version">Grows by one with each new state, so the render thread can tell that something changed.</param>
-public sealed record PlayerState(ProjectSnapshot Snapshot, int Frame, PlaybackClock? Clock, long Version)
+public sealed record PlayerState(ProjectSnapshot Snapshot, int Frame, int Position, PlaybackClock? Clock, long Version)
 {
+    /// <summary>The video's frames (#49): which photo each one shows, holds, plays and boomerang included.</summary>
+    public FrameSequence Sequence { get; } = Snapshot.Playback;
+
     /// <summary>True while playing.</summary>
     public bool IsPlaying => Clock is not null;
 
-    /// <summary>The frame that belongs on screen at <paramref name="timestamp"/>.</summary>
-    public int FrameAt(long timestamp) => Clock?.FrameAt(timestamp) ?? Frame;
+    /// <summary>The photo (project frame) that belongs on screen at <paramref name="timestamp"/>.</summary>
+    public int FrameAt(long timestamp) => Clock is { } clock ? PhotoAt(clock.FrameAt(timestamp)) : Frame;
+
+    /// <summary>The photo video frame <paramref name="position"/> shows (the clock's <see cref="PlaybackReading.Frame"/> is a video frame).</summary>
+    public int PhotoAt(int position) =>
+        Sequence.Length == 0 ? 0 : Sequence.PhotoAt(Math.Clamp(position, 0, Sequence.Length - 1));
+
+    /// <summary>Which way the photos run at video frame <paramref name="position"/>: 1 forward, -1 on a boomerang's way back.</summary>
+    public int DirectionAt(int position) => Sequence.DirectionAt(position);
 }
 
 /// <summary>
 /// The preview's transport (#19): play and pause at the project's rate, looping; seek, step and the ends; the frame
-/// counter and the time code. Lives on the UI thread and follows the shell's current project through its snapshots,
+/// counter and the time code. It plays the video's frames (#49, <see cref="ProjectSnapshot.Playback"/>: holds, plays,
+/// boomerang), so the clock, the time code and the scrubber are on the video's timeline (<see cref="Position"/>), while
+/// the photo on screen (<see cref="CurrentFrame"/>), the counter, the filmstrip's playhead and the arrow keys stay in
+/// photos. Lives on the UI thread and follows the shell's current project through its snapshots,
 /// so frames added, removed or reordered and a New project reach the player in one piece. The render thread reads
 /// <see cref="State"/> and draws; this view model never waits on it.
 /// </summary>
@@ -70,7 +84,7 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
         _now = timestamp ?? Stopwatch.GetTimestamp;
         _frequency = frequency > 0 ? frequency : Stopwatch.Frequency;
         _project = shell.CurrentProject.Model;
-        _state = new PlayerState(_project.Snapshot, 0, null, 0);
+        _state = new PlayerState(_project.Snapshot, 0, 0, null, 0);
         CounterText = string.Empty;
         TimecodeText = string.Empty;
         CounterName = string.Empty;
@@ -80,7 +94,7 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
         _project.Changed += OnProjectChanged;
         shell.ProjectReplaced += OnProjectReplaced;
         shell.PropertyChanged += OnShellPropertyChanged;
-        Load(_project.Snapshot, frame: 0, playing: false);
+        Load(_project.Snapshot, frame: 0, position: 0);
     }
 
     /// <summary>A new <see cref="State"/>: the render thread draws again. Raised on the UI thread.</summary>
@@ -91,9 +105,18 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(LastFrame), nameof(HasFrames))]
     public partial int FrameCount { get; private set; }
 
-    /// <summary>The frame on screen (0-based). Follows the clock while playing.</summary>
+    /// <summary>The photo (project frame) on screen, 0-based. Follows the clock while playing.</summary>
     [ObservableProperty]
     public partial int CurrentFrame { get; private set; }
+
+    /// <summary>The video frame on screen (#49), 0-based: where the scrubber and the time code are. Follows the clock while playing.</summary>
+    [ObservableProperty]
+    public partial int Position { get; private set; }
+
+    /// <summary>Frames in the video (#49): the photos with their holds, plays and way back. Equal to <see cref="FrameCount"/> when there are none.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LastPosition))]
+    public partial int PositionCount { get; private set; }
 
     /// <summary>True while playing.</summary>
     [ObservableProperty]
@@ -119,8 +142,11 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
     /// <summary>True when there is something to play.</summary>
     public bool HasFrames => FrameCount > 0;
 
-    /// <summary>The last frame's index, the scrubber's maximum (0 without frames).</summary>
+    /// <summary>The last photo's index (0 without frames).</summary>
     public int LastFrame => Math.Max(0, FrameCount - 1);
+
+    /// <summary>The video's last frame, the scrubber's maximum (0 without frames).</summary>
+    public int LastPosition => Math.Max(0, PositionCount - 1);
 
     /// <summary>The play button's name: "Play" or "Pause".</summary>
     public string PlayPauseName => IsPlaying ? ProjectText.PreviewPause : ProjectText.PreviewPlay;
@@ -145,7 +171,7 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
             return;
         }
 
-        _clock = NewClock(State.Snapshot, CurrentFrame, _now());
+        _clock = NewClock(State, Position, _now());
         IsPlaying = true;
         UpdateTexts();
         Publish();
@@ -160,10 +186,10 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var frame = _clock!.FrameAt(_now());
+        var position = _clock!.FrameAt(_now());
         _clock = null;
         IsPlaying = false;
-        CurrentFrame = frame;
+        Show(position);
         UpdateTexts();
         Publish();
     }
@@ -181,7 +207,11 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>Shows frame <paramref name="frame"/> (clamped to the project); playback goes on from there.</summary>
+    /// <summary>
+    /// Shows photo <paramref name="frame"/> (clamped to the project): its showing nearest to the video frame on screen (#49:
+    /// a held, repeated or boomeranged photo shows more than once), so a click in the strip stays in the same play.
+    /// Playback goes on from there. Nothing moves when that photo is already on screen and the player is paused.
+    /// </summary>
     public void Seek(int frame)
     {
         if (_disposed || FrameCount == 0)
@@ -190,16 +220,33 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
         }
 
         frame = Math.Clamp(frame, 0, FrameCount - 1);
-        if (IsPlaying)
-        {
-            _clock = NewClock(State.Snapshot, frame, _now());
-        }
-        else if (frame == CurrentFrame)
+        if (!IsPlaying && frame == CurrentFrame)
         {
             return;
         }
 
-        CurrentFrame = frame;
+        SeekPosition(State.Sequence.NearestPositionOf(frame, IsPlaying ? _clock!.FrameAt(_now()) : Position));
+    }
+
+    /// <summary>Shows video frame <paramref name="position"/> (clamped to the video): the scrubber's seek. Playback goes on from there.</summary>
+    public void SeekPosition(int position)
+    {
+        if (_disposed || FrameCount == 0)
+        {
+            return;
+        }
+
+        position = Math.Clamp(position, 0, Math.Max(0, PositionCount - 1));
+        if (IsPlaying)
+        {
+            _clock = NewClock(State, position, _now());
+        }
+        else if (position == Position)
+        {
+            return;
+        }
+
+        Show(position);
         UpdateTexts();
         Publish();
     }
@@ -235,7 +282,7 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>Pauses and moves <paramref name="frames"/> frames (negative is back), stopping at the ends.</summary>
+    /// <summary>Pauses and moves <paramref name="frames"/> photos (negative is back), stopping at the first and last photo.</summary>
     public void Step(int frames)
     {
         Pause();
@@ -263,10 +310,10 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
                 Step(10);
                 return true;
             case TransportAction.First:
-                Seek(0);
+                SeekPosition(0);
                 return true;
             case TransportAction.Last:
-                Seek(FrameCount - 1);
+                SeekPosition(PositionCount - 1);
                 return true;
             default:
                 return false;
@@ -281,15 +328,15 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var frame = _clock.FrameAt(_now());
-        if (frame != CurrentFrame)
+        var position = _clock.FrameAt(_now());
+        if (position != Position)
         {
-            CurrentFrame = frame;
+            Show(position);
             UpdateTexts();
         }
     }
 
-    /// <summary>The frame at <paramref name="fraction"/> of the scrubber's width (0 to 1), as a drag or a click places it.</summary>
+    /// <summary>The frame (a video frame for the scrubber) at <paramref name="fraction"/> of the scrubber's width (0 to 1), as a drag or a click places it.</summary>
     public static int FrameAtFraction(double fraction, int frameCount)
     {
         if (frameCount <= 1 || double.IsNaN(fraction))
@@ -331,7 +378,7 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
                 _project.Changed += OnProjectChanged;
                 _clock = null;
                 IsPlaying = false;
-                Load(_project.Snapshot, frame: 0, playing: false);
+                Load(_project.Snapshot, frame: 0, position: 0);
             },
             ProjectText.PreviewProjectFailed);
 
@@ -346,7 +393,8 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
 
     // A change of the project: playing on from the frame on screen, at its pace. The playhead stays on the same photo
     // when it is still in the clip (frames before it removed, added or moved, review m7); when it left, the index
-    // stays, clamped to the clip.
+    // stays, clamped to the clip. On the video's timeline (#49) it goes to that photo's showing nearest to where it was,
+    // so a change of the holds or the plays keeps it in the same pass; an unchanged sequence keeps the very frame.
     private void Follow(ProjectSnapshot snapshot)
     {
         if (_disposed)
@@ -354,18 +402,42 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var before = State.Snapshot.Frames;
+        var previous = State;
+        var before = previous.Snapshot.Frames;
         if (_clock is { } clock)
         {
             var now = _now();
             var reading = clock.Read(now);
-            var frame = Place(before, reading.Frame, snapshot);
-            Load(snapshot, frame, playing: true, frameBegan: clock.TimestampAt(reading.OccurrenceStart), moved: frame != reading.Frame);
+            var photo = previous.PhotoAt(reading.Frame);
+            var frame = Place(before, photo, snapshot);
+            var (position, moved) = PlaceOnTimeline(previous.Sequence, reading.Frame, frame, frame != photo, snapshot);
+            Load(snapshot, frame, position, playing: true, frameBegan: clock.TimestampAt(reading.OccurrenceStart), moved: moved);
         }
         else
         {
-            Load(snapshot, Place(before, CurrentFrame, snapshot), playing: false);
+            var frame = Place(before, CurrentFrame, snapshot);
+            var (position, _) = PlaceOnTimeline(previous.Sequence, Position, frame, frame != CurrentFrame, snapshot);
+            Load(snapshot, frame, position);
         }
+    }
+
+    // Where photo `frame` goes on the new snapshot's timeline, coming from `position` on the old one; and whether the
+    // playhead moved (a new clock then starts where the frame on screen began).
+    private static (int Position, bool Moved) PlaceOnTimeline(FrameSequence before, int position, int frame, bool photoMoved, ProjectSnapshot snapshot)
+    {
+        var after = snapshot.Playback;
+        if (after.Length == 0)
+        {
+            return (0, true);
+        }
+
+        frame = Math.Clamp(frame, 0, after.PhotoCount - 1);
+        if (!photoMoved && after == before && position >= 0 && position < after.Length)
+        {
+            return (position, false);
+        }
+
+        return (after.NearestPositionOf(frame, position), true);
     }
 
     // Where the photo at index in before sits in snapshot; the index itself when it is not there.
@@ -394,11 +466,15 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
         return index;
     }
 
-    private void Load(ProjectSnapshot snapshot, int frame, bool playing, long? frameBegan = null, bool moved = false)
+    // frame: the photo on screen; position: the video frame, on snapshot's timeline (the photo's first frame when not given).
+    private void Load(ProjectSnapshot snapshot, int frame, int? position = null, bool playing = false, long? frameBegan = null, bool moved = false)
     {
         var count = snapshot.Frames.Length;
+        var sequence = snapshot.Playback;
         FrameCount = count;
+        PositionCount = sequence.Length;
         frame = count == 0 ? 0 : Math.Clamp(frame, 0, count - 1);
+        var at = count == 0 ? 0 : Math.Clamp(position ?? sequence.FirstPositionOf(frame), 0, sequence.Length - 1);
         if (count == 0 || !playing)
         {
             _clock = null;
@@ -411,20 +487,28 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
 
             // The same clip at the same rate keeps its clock (an import filling in sizes, a rename); anything else is
             // anchored where the frame on screen began, so the change does not stretch or shorten that frame.
-            if (previous is null || moved || previous.Rate != rate || previous.FrameCount != count)
+            if (previous is null || moved || previous.Rate != rate || previous.FrameCount != sequence.Length)
             {
-                _clock = new PlaybackClock(rate, count, frame, frameBegan ?? _now(), _frequency);
+                _clock = new PlaybackClock(rate, sequence.Length, at, frameBegan ?? _now(), _frequency);
             }
         }
 
         CurrentFrame = frame;
-        _state = new PlayerState(snapshot, frame, _clock, _version);
+        Position = at;
+        _state = new PlayerState(snapshot, frame, at, _clock, _version);
         UpdateTexts();
         Publish(snapshot);
     }
 
-    private PlaybackClock NewClock(ProjectSnapshot snapshot, int frame, long now) =>
-        new(snapshot.EffectiveRate.Rate, snapshot.Frames.Length, frame, now, _frequency);
+    private PlaybackClock NewClock(PlayerState state, int position, long now) =>
+        new(state.Snapshot.EffectiveRate.Rate, state.Sequence.Length, position, now, _frequency);
+
+    // The video frame on screen, and the photo it shows.
+    private void Show(int position)
+    {
+        Position = position;
+        CurrentFrame = State.PhotoAt(position);
+    }
 
     private void UpdateTexts()
     {
@@ -435,9 +519,10 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
             return;
         }
 
+        // The counter is in photos ("0312 / 0742", as the strip's caption); the time code on the video's timeline.
         var rate = _clock?.Rate ?? State.Snapshot.EffectiveRate.Rate;
-        var start = FrameTiming.FrameStart(CurrentFrame, rate);
-        var length = FrameTiming.Duration(count, rate);
+        var start = FrameTiming.FrameStart(Position, rate);
+        var length = FrameTiming.Duration(PositionCount, rate);
         CounterText = ProjectText.PreviewCounter(CurrentFrame + 1, count);
         TimecodeText = ProjectText.TimecodeCaption(start, length);
 
@@ -455,7 +540,7 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
     private void Publish(ProjectSnapshot? snapshot = null)
     {
         _version++;
-        Volatile.Write(ref _state, new PlayerState(snapshot ?? State.Snapshot, CurrentFrame, _clock, _version));
+        Volatile.Write(ref _state, new PlayerState(snapshot ?? State.Snapshot, CurrentFrame, Position, _clock, _version));
         StateChanged?.Invoke(this, EventArgs.Empty);
     }
 }

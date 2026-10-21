@@ -86,4 +86,31 @@
   <data name="LengthTooLong" xml:space="preserve">
     <value>Le tue foto non bastano per {0}: la velocità minima è {1}, quindi il video dura {2}.</value>
   </data>
+  <data name="DirectionName" xml:space="preserve">
+    <value>Direzione</value>
+  </data>
+  <data name="DirectionForward" xml:space="preserve">
+    <value>Avanti</value>
+  </data>
+  <data name="DirectionBoomerang" xml:space="preserve">
+    <value>Boomerang</value>
+  </data>
+  <data name="PlaysName" xml:space="preserve">
+    <value>Riproduzioni</value>
+  </data>
+  <data name="PlaysGif" xml:space="preserve">
+    <value>Una GIF si ripete da sola, quindi riproduce le tue foto una volta sola.</value>
+  </data>
+  <data name="HoldStart" xml:space="preserve">
+    <value>Pausa all'inizio</value>
+  </data>
+  <data name="HoldEnd" xml:space="preserve">
+    <value>Pausa alla fine</value>
+  </data>
+  <data name="NotANumberHold" xml:space="preserve">
+    <value>Digita una pausa in secondi, ad esempio {2}. Può andare da {0} a {1}.</value>
+  </data>
+  <data name="ClampedHold" xml:space="preserve">
+    <value>Una pausa può durare da {2} a {3}, quindi {0} ora è {1}.</value>
+  </data>
 </root>

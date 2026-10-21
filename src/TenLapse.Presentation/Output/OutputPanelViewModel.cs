@@ -306,7 +306,7 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
     private void OnProjectChanged(object? sender, ProjectChangedEventArgs e)
     {
         // Only what the lists and the estimate depend on; renaming the project or marking it dirty changes neither.
-        if ((e.Changes & (ProjectChanges.Frames | ProjectChanges.Timing | ProjectChanges.FrameSettings | ProjectChanges.Output)) != 0)
+        if ((e.Changes & (ProjectChanges.Frames | ProjectChanges.Timing | ProjectChanges.Sequence | ProjectChanges.FrameSettings | ProjectChanges.Output)) != 0)
         {
             Refresh();
         }
@@ -449,8 +449,9 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
             var videoRate = shape.Rate;
             var gifRate = GifOutput.EffectiveRate(videoRate, output.Gif.Rate);
             Note = gifRate < GifOutput.Rate(output.Gif.Rate) ? OutputText.GifKeepsSpeed(videoRate) : string.Empty;
+            // The GIF covers the video's frames (#49: holds and the way back included).
             EstimatedSize = snapshot.Frames.Length > 0
-                ? OutputText.GifEstimate(GifOutput.EstimateBytes(GifOutput.FrameCount(snapshot.Frames.Length, videoRate, gifRate), GifOutput.Size(output.Gif.Size, shape.Aspect, shape.PhotoSize)))
+                ? OutputText.GifEstimate(GifOutput.EstimateBytes(GifOutput.FrameCount(snapshot.Playback.Length, videoRate, gifRate), GifOutput.Size(output.Gif.Size, shape.Aspect, shape.PhotoSize)))
                 : string.Empty;
             return;
         }
@@ -459,9 +460,9 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
         var allFast = resolutions.All(resolution => capabilities.UsesHardware(output.Format, resolution, shape.Aspect, shape.Rate, shape.PhotoSize));
         Note = offersEverything && allFast ? string.Empty : capabilities.Summary(output.Format, shape.Aspect, shape.Rate, shape.PhotoSize);
 
-        // The estimate is for the video the effective settings make, not the stored ones.
+        // The estimate is for the video the effective settings make, not the stored ones, as long as it plays (#49).
         EstimatedSize = snapshot.Frames.Length > 0 && plan.Effective is { } effective
-            ? OutputText.Estimate(ExportBitrate.EstimateBytes(snapshot.Frames.Length, shape.Rate, OutputSize.For(effective.Resolution, shape.Aspect, shape.PhotoSize), effective.Format, effective.Quality))
+            ? OutputText.Estimate(ExportBitrate.EstimateBytes(snapshot.Playback.Length, shape.Rate, OutputSize.For(effective.Resolution, shape.Aspect, shape.PhotoSize), effective.Format, effective.Quality))
             : string.Empty;
     }
 

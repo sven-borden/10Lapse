@@ -149,9 +149,9 @@ public sealed partial class ExportPanel : UserControl
             return;
         }
 
-        if (e.PropertyName is nameof(ExportViewModel.Fraction) or nameof(ExportViewModel.ExportFrames) or nameof(ExportViewModel.FramesText))
+        if (e.PropertyName is nameof(ExportViewModel.GateFraction) or nameof(ExportViewModel.ExportFrames) or nameof(ExportViewModel.FramesText))
         {
-            log.RunLogged(() => Gate.Show(viewModel.ExportFrames, viewModel.Fraction), ExportText.ProgressFailed);
+            log.RunLogged(() => Gate.Show(viewModel.ExportFrames, viewModel.GateFraction), ExportText.ProgressFailed);
         }
     }
 
