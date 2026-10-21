@@ -29,7 +29,6 @@ a time.
 
 Nothing blocks the build loop.
 
-- The `v3.0.0` tag on the released commit, with Sven's OK.
 - Watch Partner Center Health for start-up crashes (#90); traces are not
   symbolicated, so a count is all it gives.
 - The live listing text (all six languages) still has the sentence that
@@ -154,7 +153,9 @@ Nothing blocks the build loop.
   `docs/store/showreel/`. `flight.md` stays as the recipe for a later flight.
 - 2026-10-21 (Sven): 3.0 went live at full rollout, not 10/50/100 %; Sven
   answered the five existing reviews; #44 closed with Health not yet watched
-  for a week (#90 carries that watch).
+  for a week (#90 carries that watch). Tag `v3.0.0` (annotated) is on
+  `7c63de5`, the code the 3.0.0.0 package was packed from (PR #128; only
+  STATUS changed in between). Later commits change Debug code and scripts.
 - 2026-10-21 (Sven): Windows 10 is not supported. The 2.1.1 packages were
   removed from submission 4, so a Windows 10 PC that has 2.1.1 keeps it with no
   updates and a new Windows 10 customer cannot get the app. Accepted
