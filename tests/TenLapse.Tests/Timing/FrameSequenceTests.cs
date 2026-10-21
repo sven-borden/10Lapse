@@ -10,7 +10,8 @@ namespace TenLapse.Tests.Timing;
 public sealed class FrameSequenceTests
 {
     // The sequence written out frame by frame, as the issue describes it: the first photo held, the plays (out and back
-    // for a boomerang, never showing a turning photo twice in a row), the last frame held.
+    // for a boomerang, 0 … P−1 … 1, never showing a turning photo twice in a row), then the end hold: the last frame held
+    // forward, photo 0 for a boomerang (it comes home and waits; review of PR #134).
     private static List<int> Reference(int photos, int holdStart, int holdEnd, int plays, bool boomerang)
     {
         var core = new List<int>();
@@ -19,19 +20,17 @@ public sealed class FrameSequenceTests
             return core;
         }
 
+        var turns = boomerang && photos >= 2;
         for (var play = 0; play < plays; play++)
         {
             for (var photo = 0; photo < photos; photo++)
             {
-                if (play == 0 || photo > 0 || !boomerang || photos < 2)
-                {
-                    core.Add(photo);
-                }
+                core.Add(photo);
             }
 
-            if (boomerang && photos >= 2)
+            if (turns)
             {
-                for (var photo = photos - 2; photo >= 0; photo--)
+                for (var photo = photos - 2; photo >= 1; photo--)
                 {
                     core.Add(photo);
                 }
@@ -40,7 +39,7 @@ public sealed class FrameSequenceTests
 
         var frames = Enumerable.Repeat(core[0], holdStart).ToList();
         frames.AddRange(core);
-        frames.AddRange(Enumerable.Repeat(core[^1], holdEnd));
+        frames.AddRange(Enumerable.Repeat(turns ? 0 : core[^1], holdEnd));
         return frames;
     }
 
@@ -73,6 +72,10 @@ public sealed class FrameSequenceTests
         if (photos > 0)
         {
             Assert.Equal(reference[^1], sequence.LastPhoto);
+            if (holdEnd > 0)
+            {
+                Assert.Equal(reference[^1], sequence.HoldEndPhoto);
+            }
         }
     }
 
@@ -125,9 +128,47 @@ public sealed class FrameSequenceTests
             var frames = Enumerable.Range(0, sequence.Length).Select(sequence.PhotoAt).ToList();
             Assert.All(frames.Zip(frames.Skip(1)), pair => Assert.Equal(1, Math.Abs(pair.First - pair.Second)));
             Assert.Equal(0, frames[0]);
-            Assert.Equal(0, frames[^1]);
+            Assert.Equal(1, frames[^1]);
             Assert.Equal(plays, frames.Count(photo => photo == photos - 1));
-            Assert.Equal((plays * ((2 * photos) - 2)) + 1, sequence.Length);
+            Assert.Equal(plays, frames.Count(photo => photo == 0));
+            Assert.Equal(plays * ((2 * photos) - 2), sequence.Length);
+        }
+
+        // With an end hold, it comes home to photo 0 and waits there.
+        var held = new FrameSequence(5, 0, 3, 2, boomerang: true);
+        Assert.Equal(new[] { 0, 1, 2, 3, 4, 3, 2, 1, 0, 1, 2, 3, 4, 3, 2, 1, 0, 0, 0 }, Enumerable.Range(0, held.Length).Select(held.PhotoAt));
+        Assert.Equal(new[] { 0, 8, 16 }, held.ShowingsOf(0));
+        Assert.Equal(0, held.LastPhoto);
+
+        // Two photos alternate as forward; the end hold shows photo 0. One photo is just its plays.
+        var two = new FrameSequence(2, 0, 2, 3, boomerang: true);
+        Assert.Equal(new[] { 0, 1, 0, 1, 0, 1, 0, 0 }, Enumerable.Range(0, two.Length).Select(two.PhotoAt));
+        Assert.Equal(1, new FrameSequence(2, 0, 0, 3, boomerang: true).LastPhoto);
+        Assert.Equal(3, new FrameSequence(1, 0, 0, 3, boomerang: true).Length);
+    }
+
+    [Fact]
+    public void AVideoLoopedOnItselfShowsNoPhotoTwiceInARowAtTheSeam()
+    {
+        // Every looping player (a GIF, the preview, a chat app) goes from the last frame back to the first: without holds
+        // no photo shows twice in a row there, for the video's frames and for a GIF's resampled ones (a GIF plays once).
+        foreach (var photos in new[] { 2, 3, 10, 60, 61, 742 })
+        foreach (var plays in new[] { 1, 2, 5 })
+        foreach (var boomerang in new[] { false, true })
+        {
+            var sequence = new FrameSequence(photos, 0, 0, plays, boomerang);
+            var frames = Enumerable.Range(0, sequence.Length).Select(sequence.PhotoAt).ToList();
+            var looped = frames.Concat(frames).ToList();
+            Assert.All(looped.Zip(looped.Skip(1)), pair => Assert.NotEqual(pair.First, pair.Second));
+
+            foreach (var (video, gif) in new[] { (new Fraction(30, 1), new Fraction(10, 1)), (new Fraction(30000, 1001), new Fraction(25, 1)), (new Fraction(60, 1), new Fraction(15, 1)), (new Fraction(24, 1), new Fraction(20, 1)) })
+            {
+                var shown = GifOutput.SourceFrames(sequence.Length, video, gif).Select(sequence.PhotoAt).ToList();
+                if (plays == 1 && shown.Count > 1)
+                {
+                    Assert.True(shown[^1] != shown[0], $"{photos} photos, {plays} plays, boomerang {boomerang}, {video} as {gif}: the GIF ends on photo {shown[^1]} and loops to {shown[0]}.");
+                }
+            }
         }
     }
 

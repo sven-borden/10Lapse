@@ -10,15 +10,18 @@ namespace TenLapse.Core.Timing;
 /// <remarks>
 /// <para>
 /// <b>The core.</b> Forward, the photos 0 to P−1 play once per play: <c>Plays × P</c> frames. A boomerang runs
-/// 0 … P−1 … 1 per play and ends on photo 0 once all plays are done: <c>Plays × (2P − 2) + 1</c> frames. No photo shows
-/// twice in a row at a turn: the last photo is the turning point of the way out and back, and photo 0 is shared by
-/// the end of one play and the start of the next. With one photo there is nothing to turn on, so a boomerang is
-/// <c>Plays</c> frames of it.
+/// 0 … P−1 … 1 per play: <c>Plays × (2P − 2)</c> frames, with no closing photo 0 (review of PR #134). A play is then the
+/// loop's unit: the next play, or a player looping the video (a GIF always does, the preview does, chat apps do), goes
+/// on from photo 1 to photo 0 with no photo shown twice in a row at the seam. The last photo is the turning point and
+/// shows once. Two photos alternate (0, 1, 0, 1, …), as forward. With one photo there is nothing to turn on, so a
+/// boomerang is <c>Plays</c> frames of it.
 /// </para>
 /// <para>
-/// <b>The holds</b> come before and after the core, once: the video's first frame stays on screen for
-/// <see cref="HoldStartFrames"/> more frames, and its last for <see cref="HoldEndFrames"/> more. With no photos there is
-/// no video, so no holds either.
+/// <b>The holds</b> come before and after the core, once: the video's first frame (photo 0) stays on screen for
+/// <see cref="HoldStartFrames"/> more frames. After the core, <see cref="HoldEndFrames"/> frames show
+/// <see cref="HoldEndPhoto"/>: the last photo forward (the last frame held), photo 0 for a boomerang, which comes home
+/// there and waits. Without an end hold a boomerang ends on photo 1. With no photos there is no video, so no holds
+/// either.
 /// </para>
 /// <para>
 /// In every sequence the photos shown in the first n frames are 0 to some k (the first pass goes forward), which is what
@@ -83,14 +86,14 @@ public readonly record struct FrameSequence
         }
 
         return boomerang && photoCount >= 2
-            ? checked((plays * ((2 * photoCount) - 2)) + 1)
+            ? checked(plays * ((2 * photoCount) - 2))
             : checked(plays * photoCount);
     }
 
     /// <summary>The length of the video in 100 ns ticks at <paramref name="rate"/>: <see cref="FrameTiming.Duration"/> of <see cref="Length"/>.</summary>
     public long Duration(Fraction rate) => FrameTiming.Duration(Length, rate);
 
-    // Frames in one play of the core: P forward, 2P − 2 for a boomerang (its closing photo 0 is the next play's first).
+    // Frames in one play of the core: P forward, 2P − 2 for a boomerang (0 … P−1 … 1; photo 0 opens the next play).
     private int Cycle => Boomerang && PhotoCount >= 2 ? (2 * PhotoCount) - 2 : PhotoCount;
 
     // The position of the first frame after the first forward pass: every photo has shown by then.
@@ -113,7 +116,7 @@ public readonly record struct FrameSequence
 
         if (core >= CoreLength)
         {
-            return LastPhoto;
+            return HoldEndPhoto;
         }
 
         var within = core % Cycle;
@@ -136,13 +139,19 @@ public readonly record struct FrameSequence
         return core % Cycle >= PhotoCount - 1 ? -1 : 1;
     }
 
-    /// <summary>The photo the video ends on: the last for a forward sequence, the first for a boomerang (none without photos).</summary>
-    public int LastPhoto => PhotoCount == 0 ? 0 : Boomerang && PhotoCount >= 2 ? 0 : PhotoCount - 1;
+    /// <summary>
+    /// The photo the video ends on (0 without photos): the last forward; for a boomerang photo 0 when it holds at the end,
+    /// else photo 1 (the way back's last, which a looping player follows with photo 0).
+    /// </summary>
+    public int LastPhoto => Length == 0 ? 0 : PhotoAt(Length - 1);
+
+    /// <summary>The photo the end hold shows: the last photo forward, photo 0 for a boomerang (it comes home and waits).</summary>
+    public int HoldEndPhoto => PhotoCount == 0 ? 0 : Boomerang && PhotoCount >= 2 ? 0 : PhotoCount - 1;
 
     /// <summary>
     /// The first frame of every showing of <paramref name="photo"/>, in order: a showing is a run of frames of it (a hold
     /// included). Photo 0's first showing starts at frame 0, its hold included; a boomerang shows the photos between the
-    /// ends twice a play. At most <c>2 × Plays + 1</c> positions.
+    /// ends twice a play, and photo 0 once more in its end hold. At most <c>2 × Plays + 1</c> positions.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The photo is not in the sequence.</exception>
     public IReadOnlyList<int> ShowingsOf(int photo)
@@ -172,10 +181,10 @@ public readonly record struct FrameSequence
             }
         }
 
-        if (turns && photo == 0)
+        if (turns && photo == 0 && HoldEndFrames > 0)
         {
-            // The boomerang's last frame (and the hold after it).
-            starts.Add(HoldStartFrames + CoreLength - 1);
+            // A boomerang's end hold: photo 0, home again, after photo 1.
+            starts.Add(HoldStartFrames + CoreLength);
         }
 
         return starts;

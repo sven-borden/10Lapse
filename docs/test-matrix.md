@@ -639,8 +639,10 @@ real key presses, Narrator and other players need a human. Run: once, packaged.
   the same as MP4, open it in Photos, Media Player and a browser, and send it in
   a chat app. Expect: the length the readout gave (Explorer may show a second
   less, 8.x), the holds and the way back as in the preview, no frame twice in a
-  row at the turn. As a GIF: Times played is gone with its caption, and the GIF
-  plays the photos once, out and back, with both holds, looping forever.
+  row at the turn. Without holds, set the player to repeat: the first photo
+  does not stay twice as long where the video starts over (a play ends on
+  photo 1). As a GIF: Times played is gone with its caption, and the GIF plays
+  the photos once, out and back, with both holds, looping forever.
 - [ ] **5.20.5 Export panel** (#49). Expect: the percent and time left run over
   the whole video (a boomerang takes about twice as long as forward), "Frame ...
   of ..." counts the video's frames, the film gate walks the photos the first time

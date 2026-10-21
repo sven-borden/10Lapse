@@ -18,12 +18,12 @@ public sealed class SequenceSettingsTests
     [Fact]
     public void TheSnapshotsVideoIsTheResolvedSequenceAndItsLength()
     {
-        // 100 photos at 30 fps, a boomerang played twice, 1 s held before and 2 s after: 30 + 2 × 198 + 1 + 60 frames.
+        // 100 photos at 30 fps, a boomerang played twice, 1 s held before and 2 s after: 30 + 2 × 198 + 60 frames.
         var snapshot = Snapshot(100, TimingSettings.PerSecond(new Fraction(30, 1)), _boomerang);
 
         Assert.Equal(new FrameSequence(100, 30, 60, 2, true), snapshot.Playback);
-        Assert.Equal(30 + 397 + 60, snapshot.Playback.Length);
-        Assert.Equal(FrameTiming.Duration(487, new Fraction(30, 1)), snapshot.Duration);
+        Assert.Equal(30 + 396 + 60, snapshot.Playback.Length);
+        Assert.Equal(FrameTiming.Duration(486, new Fraction(30, 1)), snapshot.Duration);
         Assert.Equal(snapshot.Playback.Duration(snapshot.EffectiveRate.Rate), snapshot.Duration);
     }
 

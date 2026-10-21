@@ -11,8 +11,9 @@ namespace TenLapse.Core.Projects;
 /// <remarks>
 /// <para>
 /// <b>How they combine.</b> One play is the photos forward, or out and back for a boomerang; the plays follow each other;
-/// the holds come once, before the first frame and after the last (<see cref="FrameSequence"/>). A boomerang ends on the
-/// first photo, so its end hold holds the first photo.
+/// the holds come once, before the first frame and after the last (<see cref="FrameSequence"/>). A boomerang's play is
+/// 0 … P−1 … 1, so a looping player goes on to photo 0 without showing it twice; its end hold shows the first photo,
+/// home again.
 /// </para>
 /// <para>
 /// <b>Holds are seconds, shown as frames.</b> A hold is the nearest whole number of frames at the video's rate
