@@ -273,7 +273,8 @@ try {
             Shot $app '12a-save-question'
             Invoke-Element $dontSave
             $until = (Get-Date).AddSeconds(5)
-            while ((Get-Date) -lt $until -and (Find-Id $app 'SecondaryButton' 0.2)) { Start-Sleep -Milliseconds 200 }
+            $secondary = New-Object System.Windows.Automation.PropertyCondition($AE::AutomationIdProperty, 'SecondaryButton')
+            while ((Get-Date) -lt $until -and -not $app.Process.HasExited -and $app.Window.FindFirst($Tree::Descendants, $secondary)) { Start-Sleep -Milliseconds 200 }
         }
         else { Skip '12a-save-question' 'the close did not ask to save' }
         $keep = Find-Id $app 'CloseButton' 5
