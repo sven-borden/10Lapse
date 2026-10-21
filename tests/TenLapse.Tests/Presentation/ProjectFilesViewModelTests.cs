@@ -85,7 +85,32 @@ public sealed class ProjectFilesViewModelTests : IDisposable
         var bar = Assert.Single(_infoBars.Shown);
         Assert.Equal(InfoBarSeverity.Critical, bar.Severity);
         Assert.Equal(ProjectFileText.SaveFailed(@"C:\ReadOnly\Harbor.10lapse"), bar.Message);
+        Assert.Equal(ProjectFileText.SaveAs, bar.ActionLabel);
         Assert.Single(_errors.Reported);
+    }
+
+    [Fact]
+    public async Task SavingToAFolderThatIsGoneSaysSoAndOffersSaveAs()
+    {
+        var (shell, files) = Create();
+        _ui.Run(() => shell.CurrentProject.Model.AddFrames(Photos(1)));
+        _picker.SavePath = @"E:\Shoots\Harbor.10lapse";
+        await _ui.RunAsync(() => files.SaveCommand.ExecuteAsync(null));
+        _ui.Run(() => shell.CurrentProject.Model.Timing = TimingSettings.PerSecond(new Fraction(24, 1)));
+        _disk.FolderGone = true;
+
+        await _ui.RunAsync(() => files.SaveCommand.ExecuteAsync(null));
+
+        var bar = Assert.Single(_infoBars.Shown);
+        Assert.Equal(ProjectFileText.SaveFolderGone(@"E:\Shoots\Harbor.10lapse"), bar.Message);
+        Assert.True(shell.CurrentProject.Model.IsDirty);
+
+        _disk.FolderGone = false;
+        _picker.SavePath = @"D:\Elsewhere\Harbor.10lapse";
+        await _ui.RunAsync(bar.Action!);
+
+        Assert.Equal(@"D:\Elsewhere\Harbor.10lapse", shell.CurrentProject.Model.FilePath);
+        Assert.False(shell.CurrentProject.Model.IsDirty);
     }
 
     [Fact]
@@ -337,6 +362,8 @@ public sealed class ProjectFilesViewModelTests : IDisposable
 
         public bool FailWrites { get; set; }
 
+        public bool FolderGone { get; set; }
+
         public string ReadText(string path) =>
             Texts.TryGetValue(path, out var text) ? text : throw new FileNotFoundException("Not there.", path);
 
@@ -345,6 +372,11 @@ public sealed class ProjectFilesViewModelTests : IDisposable
             if (FailWrites)
             {
                 throw new UnauthorizedAccessException("Read only.");
+            }
+
+            if (FolderGone)
+            {
+                throw new DirectoryNotFoundException("No folder.");
             }
 
             Texts[path] = text;

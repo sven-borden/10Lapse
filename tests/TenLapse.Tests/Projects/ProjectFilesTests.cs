@@ -66,6 +66,16 @@ public sealed class ProjectFilesTests
     }
 
     [Fact]
+    public void AProjectFileIsNeverWrittenIntoAFolderThatIsGone()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "claude", "feat-52-save-projects", "folder-gone", Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(folder, "Shoots", "Harbor.10lapse");
+
+        Assert.Throws<DirectoryNotFoundException>(() => ProjectFileSystem.Instance.WriteText(path, "{}"));
+        Assert.False(Directory.Exists(folder));
+    }
+
+    [Fact]
     public void SetFileNamesTheProjectAfterItsFileWithoutMakingItDirty()
     {
         var project = new Project();

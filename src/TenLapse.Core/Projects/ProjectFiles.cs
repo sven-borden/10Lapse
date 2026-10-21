@@ -18,7 +18,10 @@ public interface IProjectFileSystem
     /// </summary>
     string ReadText(string path);
 
-    /// <summary>Writes a project file atomically (<see cref="IO.AtomicFile"/>). Throws when the write fails; the old file is then unchanged.</summary>
+    /// <summary>
+    /// Writes a project file atomically (<see cref="IO.AtomicFile"/>). Throws when the write fails; the old file is then
+    /// unchanged. A folder that is not there is never made: <see cref="DirectoryNotFoundException"/>.
+    /// </summary>
     void WriteText(string path, string text);
 
     /// <summary>The file's facts, or null when there is no readable file at <paramref name="path"/>. Never throws.</summary>
@@ -49,7 +52,7 @@ public sealed class ProjectFileSystem : IProjectFileSystem
     }
 
     /// <inheritdoc />
-    public void WriteText(string path, string text) => IO.AtomicFile.WriteAllText(path, text);
+    public void WriteText(string path, string text) => IO.AtomicFile.WriteAllText(path, text, createFolder: false);
 
     /// <inheritdoc />
     public FileFacts? Probe(string path)

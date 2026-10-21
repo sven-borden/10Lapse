@@ -44,13 +44,25 @@ public static class ProjectFileText
     /// <summary>The Caution InfoBar after opening a file with settings this build could not read. {0} the file's name.</summary>
     public static string OpenSomeSettingsFormat => _strings.Get();
 
-    /// <summary>The Caution InfoBar listing the photos an opened project could not find. {0} the count.</summary>
+    /// <summary>The Caution InfoBar listing the photos an opened project could not find; they stay in its file. {0} the count.</summary>
     public static PluralText MissingPhotos => _strings.Plural();
+
+    /// <summary>The Caution InfoBar when none of a project's photos were found, so it did not open. {0} the count, {1} the project's name.</summary>
+    public static PluralText NoPhotosFound => _strings.Plural();
+
+    /// <summary>The Caution InfoBar after opening a project whose photos are online-only in OneDrive. {0} the count, {1} their size.</summary>
+    public static PluralText CloudOnlyPhotos => _strings.Plural();
 
     // ---- Saving
 
     /// <summary>The Critical InfoBar when a save fails. {0} the file's name.</summary>
     public static string SaveFailedFormat => _strings.Get();
+
+    /// <summary>The Critical InfoBar when the project file's folder is gone. {0} the file's name.</summary>
+    public static string SaveFolderGoneFormat => _strings.Get();
+
+    /// <summary>The Caution InfoBar when Save asks where because a newer 10Lapse wrote the file. {0} the file's name.</summary>
+    public static string NewerSaveAsFormat => _strings.Get();
 
     /// <summary>The question before unsaved changes would be lost (Open, Close). {0} the project's name.</summary>
     public static string UnsavedTitleFormat => _strings.Get();
@@ -113,8 +125,22 @@ public static class ProjectFileText
     public static string Missing(int count) =>
         MissingPhotos.Format(CultureInfo.CurrentCulture, count, count.ToString("N0", CultureInfo.CurrentCulture));
 
+    /// <summary>"None of the 1,240 photos of “Alps” were found, so the project wasn't opened…"</summary>
+    public static string NoneFound(int count, string name) =>
+        NoPhotosFound.Format(CultureInfo.CurrentCulture, count, count.ToString("N0", CultureInfo.CurrentCulture), name);
+
+    /// <summary>"40 photos of this project are only in OneDrive, about 2.4 GB in all…" (at least 1 MB, as the import's question says).</summary>
+    public static string CloudOnly(int count, long bytes) =>
+        CloudOnlyPhotos.Format(CultureInfo.CurrentCulture, count, count.ToString("N0", CultureInfo.CurrentCulture), OutputText.Size(Math.Max(bytes, 1L << 20)));
+
     /// <summary>"“Harbor.10lapse” couldn't be saved…"</summary>
     public static string SaveFailed(string path) => Format(SaveFailedFormat, FileName(path));
+
+    /// <summary>"“Harbor.10lapse” couldn't be saved because its folder isn't there any more…"</summary>
+    public static string SaveFolderGone(string path) => Format(SaveFolderGoneFormat, FileName(path));
+
+    /// <summary>"“Harbor.10lapse” was saved by a newer version of 10Lapse. Saving over it would drop…"</summary>
+    public static string NewerSaveAs(string path) => Format(NewerSaveAsFormat, FileName(path));
 
     /// <summary>The save-first question for the project named <paramref name="name"/> (Primary saves, Secondary does not).</summary>
     public static Choice UnsavedQuestion(string name) =>
@@ -158,6 +184,9 @@ public static class ProjectFileText
 
     /// <summary>Error context: the question before closing with unsaved changes failed.</summary>
     public static string CloseQuestionFailedContext => "Asking about unsaved changes before closing failed.";
+
+    /// <summary>Error context: reading the size and capture time of an opened project's photos again failed.</summary>
+    public static string DetailsReadFailedContext => "Reading the details of an opened project's photos failed.";
 
     /// <summary>Error context: writing the recovery copy failed (the first time it is shown, then logged).</summary>
     public static string AutosaveFailedContext => "Writing the recovery copy of the project failed.";

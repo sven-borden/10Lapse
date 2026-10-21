@@ -34,19 +34,19 @@
     <value>Impossibile aprire “{0}”. Verifica che il file ci sia ancora e che tu possa leggerlo, poi riprova.</value>
   </data>
   <data name="OpenNewerVersionFormat" xml:space="preserve">
-    <value>“{0}” è stato salvato con una versione più recente di 10Lapse. Le impostazioni che questa versione non conosce sono state tralasciate.</value>
+    <value>“{0}” è stato salvato con una versione più recente di 10Lapse. Le impostazioni che questa versione non conosce sono state tralasciate, quindi Salva chiederà un nuovo file e lascerà questo com'è.</value>
   </data>
   <data name="OpenSomeSettingsFormat" xml:space="preserve">
     <value>Alcune impostazioni di “{0}” non sono leggibili e sono tornate ai valori predefiniti.</value>
   </data>
   <data name="MissingPhotos_one" xml:space="preserve">
-    <value>{0} foto di questo progetto non è stata trovata ed è stata esclusa. Riportala dov'era, poi riapri il progetto.</value>
+    <value>{0} foto di questo progetto non è stata trovata. Resta nel file del progetto: riportala dov'era, poi riapri il progetto.</value>
   </data>
   <data name="MissingPhotos_many" xml:space="preserve">
-    <value>{0} di foto di questo progetto non sono state trovate e sono state escluse. Riportale dov'erano, poi riapri il progetto.</value>
+    <value>{0} di foto di questo progetto non sono state trovate. Restano nel file del progetto: riportale dov'erano, poi riapri il progetto.</value>
   </data>
   <data name="MissingPhotos_other" xml:space="preserve">
-    <value>{0} foto di questo progetto non sono state trovate e sono state escluse. Riportale dov'erano, poi riapri il progetto.</value>
+    <value>{0} foto di questo progetto non sono state trovate. Restano nel file del progetto: riportale dov'erano, poi riapri il progetto.</value>
   </data>
   <data name="SaveFailedFormat" xml:space="preserve">
     <value>Impossibile salvare “{0}”. Verifica che la cartella ci sia ancora e che tu possa salvarci, poi riprova.</value>
@@ -89,5 +89,29 @@
   </data>
   <data name="RecentGoneFormat" xml:space="preserve">
     <value>“{0}” non si trova più dove era stato salvato, quindi è stato tolto dall'elenco.</value>
+  </data>
+  <data name="SaveFolderGoneFormat" xml:space="preserve">
+    <value>Impossibile salvare “{0}” perché la sua cartella non c'è più. Ricollega l'unità in cui si trovava, oppure scegli Salva con nome per salvarlo altrove.</value>
+  </data>
+  <data name="NoPhotosFound_one" xml:space="preserve">
+    <value>La foto di “{1}” non è stata trovata, quindi il progetto non è stato aperto. Collega l'unità su cui si trova o riportala dov'era, poi riapri il progetto.</value>
+  </data>
+  <data name="NoPhotosFound_many" xml:space="preserve">
+    <value>Nessuna delle {0} di foto di “{1}” è stata trovata, quindi il progetto non è stato aperto. Collega l'unità su cui si trovano o riportale dov'erano, poi riapri il progetto.</value>
+  </data>
+  <data name="NoPhotosFound_other" xml:space="preserve">
+    <value>Nessuna delle {0} foto di “{1}” è stata trovata, quindi il progetto non è stato aperto. Collega l'unità su cui si trovano o riportale dov'erano, poi riapri il progetto.</value>
+  </data>
+  <data name="NewerSaveAsFormat" xml:space="preserve">
+    <value>“{0}” è stato salvato con una versione più recente di 10Lapse. Sovrascriverlo eliminerebbe ciò che questa versione non conosce, quindi scegli dove salvare questo progetto.</value>
+  </data>
+  <data name="CloudOnlyPhotos_one" xml:space="preserve">
+    <value>{0} foto di questo progetto è solo su OneDrive, circa {1}. Viene scaricata quando l'anteprima o l'esportazione ne hanno bisogno.</value>
+  </data>
+  <data name="CloudOnlyPhotos_many" xml:space="preserve">
+    <value>{0} di foto di questo progetto sono solo su OneDrive, circa {1} in tutto. Vengono scaricate man mano che l'anteprima e l'esportazione ne hanno bisogno.</value>
+  </data>
+  <data name="CloudOnlyPhotos_other" xml:space="preserve">
+    <value>{0} foto di questo progetto sono solo su OneDrive, circa {1} in tutto. Vengono scaricate man mano che l'anteprima e l'esportazione ne hanno bisogno.</value>
   </data>
 </root>

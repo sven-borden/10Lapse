@@ -34,16 +34,16 @@
     <value>„{0}“ konnte nicht geöffnet werden. Prüfen Sie, ob die Datei noch vorhanden ist und ob Sie sie lesen dürfen, und versuchen Sie es dann erneut.</value>
   </data>
   <data name="OpenNewerVersionFormat" xml:space="preserve">
-    <value>„{0}“ wurde mit einer neueren Version von 10Lapse gespeichert. Einstellungen, die diese Version nicht kennt, wurden ausgelassen.</value>
+    <value>„{0}“ wurde mit einer neueren Version von 10Lapse gespeichert. Einstellungen, die diese Version nicht kennt, wurden ausgelassen. Speichern fragt deshalb nach einer neuen Datei und lässt diese unverändert.</value>
   </data>
   <data name="OpenSomeSettingsFormat" xml:space="preserve">
     <value>Einige Einstellungen in „{0}“ konnten nicht gelesen werden und wurden auf ihre Standardwerte zurückgesetzt.</value>
   </data>
   <data name="MissingPhotos_one" xml:space="preserve">
-    <value>{0} Foto dieses Projekts wurde nicht gefunden und ausgelassen. Legen Sie es wieder an seinen Ort, und öffnen Sie das Projekt dann erneut.</value>
+    <value>{0} Foto dieses Projekts wurde nicht gefunden. Es bleibt in der Projektdatei: Legen Sie es wieder an seinen Ort, und öffnen Sie das Projekt dann erneut.</value>
   </data>
   <data name="MissingPhotos_other" xml:space="preserve">
-    <value>{0} Fotos dieses Projekts wurden nicht gefunden und ausgelassen. Legen Sie sie wieder an ihren Ort, und öffnen Sie das Projekt dann erneut.</value>
+    <value>{0} Fotos dieses Projekts wurden nicht gefunden. Sie bleiben in der Projektdatei: Legen Sie sie wieder an ihren Ort, und öffnen Sie das Projekt dann erneut.</value>
   </data>
   <data name="SaveFailedFormat" xml:space="preserve">
     <value>„{0}“ konnte nicht gespeichert werden. Prüfen Sie, ob der Ordner noch vorhanden ist und ob Sie darin speichern dürfen, und versuchen Sie es dann erneut.</value>
@@ -86,5 +86,23 @@
   </data>
   <data name="RecentGoneFormat" xml:space="preserve">
     <value>„{0}“ ist nicht mehr dort, wo das Projekt gespeichert wurde, und wurde aus der Liste entfernt.</value>
+  </data>
+  <data name="SaveFolderGoneFormat" xml:space="preserve">
+    <value>„{0}“ konnte nicht gespeichert werden, weil sein Ordner nicht mehr vorhanden ist. Schließen Sie das Laufwerk wieder an, oder wählen Sie „Speichern unter“, um es an einem anderen Ort zu speichern.</value>
+  </data>
+  <data name="NoPhotosFound_one" xml:space="preserve">
+    <value>Das Foto von „{1}“ wurde nicht gefunden, deshalb wurde das Projekt nicht geöffnet. Schließen Sie das Laufwerk an, auf dem es liegt, oder legen Sie es wieder an seinen Ort, und öffnen Sie das Projekt dann erneut.</value>
+  </data>
+  <data name="NoPhotosFound_other" xml:space="preserve">
+    <value>Keines der {0} Fotos von „{1}“ wurde gefunden, deshalb wurde das Projekt nicht geöffnet. Schließen Sie das Laufwerk an, auf dem sie liegen, oder legen Sie sie wieder an ihren Ort, und öffnen Sie das Projekt dann erneut.</value>
+  </data>
+  <data name="NewerSaveAsFormat" xml:space="preserve">
+    <value>„{0}“ wurde mit einer neueren Version von 10Lapse gespeichert. Beim Überschreiben ginge verloren, was diese Version nicht kennt. Wählen Sie deshalb, wo das Projekt gespeichert werden soll.</value>
+  </data>
+  <data name="CloudOnlyPhotos_one" xml:space="preserve">
+    <value>{0} Foto dieses Projekts ist nur in OneDrive gespeichert, ca. {1}. Es wird heruntergeladen, sobald die Vorschau oder der Export es braucht.</value>
+  </data>
+  <data name="CloudOnlyPhotos_other" xml:space="preserve">
+    <value>{0} Fotos dieses Projekts sind nur in OneDrive gespeichert, insgesamt ca. {1}. Sie werden heruntergeladen, sobald die Vorschau oder der Export sie braucht.</value>
   </data>
 </root>

@@ -12,16 +12,23 @@ public static class AtomicFile
     private static readonly UTF8Encoding _utf8 = new(encoderShouldEmitUTF8Identifier: false);
 
     /// <summary>
-    /// Writes <paramref name="text"/> as UTF-8 (no byte order mark) to <paramref name="path"/>, creating its folder when it
-    /// is missing. Throws when the write fails (a locked file, a full or read-only disk); the target is then unchanged and
-    /// no temporary file is left behind.
+    /// Writes <paramref name="text"/> as UTF-8 (no byte order mark) to <paramref name="path"/>. Throws when the write fails
+    /// (a locked file, a full or read-only disk, a missing folder when <paramref name="createFolder"/> is false); the target
+    /// is then unchanged and no temporary file is left behind.
     /// </summary>
-    public static void WriteAllText(string path, string text)
+    /// <param name="path">The file.</param>
+    /// <param name="text">Its new text.</param>
+    /// <param name="createFolder">
+    /// True for the app's own files (settings, recovery copies), whose folder is the app's to make. False for a file the
+    /// user chose (a project, #52): a folder that is gone (an unplugged drive, another drive under the same letter) is a
+    /// failure (<see cref="DirectoryNotFoundException"/>), never a new folder made somewhere the user did not pick.
+    /// </param>
+    public static void WriteAllText(string path, string text, bool createFolder = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(text);
         var folder = Path.GetDirectoryName(path);
-        if (!string.IsNullOrEmpty(folder))
+        if (createFolder && !string.IsNullOrEmpty(folder))
         {
             Directory.CreateDirectory(folder);
         }

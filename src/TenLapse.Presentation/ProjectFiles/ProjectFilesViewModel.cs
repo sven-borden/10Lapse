@@ -362,8 +362,13 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
+            // A folder that is gone is never made again (another drive may have its letter now): say so, and offer Save as.
             _errors.Report(exception, ProjectFileText.SaveWriteFailedContext);
-            _infoBars.Show(InfoBarSeverity.Critical, ProjectFileText.SaveFailed(path));
+            _infoBars.Show(new InfoBarRequest(
+                InfoBarSeverity.Critical,
+                exception is DirectoryNotFoundException ? ProjectFileText.SaveFolderGone(path) : ProjectFileText.SaveFailed(path),
+                ProjectFileText.SaveAs,
+                () => SaveAsCommand.ExecuteAsync(null)));
             return false;
         }
 
