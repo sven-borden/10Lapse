@@ -30,7 +30,9 @@ exception).
 
 - Wave 25: done. #51 GIF export (PR #132), #52 save and reopen (PR #133).
 - Wave 26: #45 deflicker (O, the canvas's Look section) and #49 hold, loop,
-  boomerang (O, timing and the frame sequence). **In flight.**
+  boomerang (O, timing and the frame sequence). #49 merged (PR #134).
+  **In flight:** PR #135 (#45), review fixes; it merges master in (shared
+  `Project` constructor, `.10lapse` groups, test-matrix 5.20 becomes 5.21).
 - Wave 27: #46 crop and pan (O) and #50 music (O, after #49 so the music
   fits the final length).
 - Wave 28: #47 frame blending (O). Wave 29: #48 stamp and title (O). #45 to
