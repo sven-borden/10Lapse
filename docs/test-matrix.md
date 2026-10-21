@@ -540,8 +540,12 @@ Windows' own wallpaper photos and the Debug sample sunsets).
   Explorer shows a thumbnail and the preview pane animates it.
 - [ ] **5.18.8 Premiere** (#51). Expect: the finished GIF loops over the gate
   1.1 s after the finish (an Image, not the video player); with animations off
-  in Windows it shows its first frame and stays still (by design); a second
-  export to the same name replaces it (the premiere holds no file).
+  in Windows it shows its first frame and stays still (by design), and turning
+  the setting off or on while it shows stops or restarts it within a second; a
+  GIF saved under a `.mp4` name still premieres as a GIF; a second export to
+  the same name replaces it, and Explorer can move or delete the file while it
+  shows (the premiere holds no file); a GIF over 256 MB shows only its first
+  frame with a neutral InfoBar that says why.
 - [ ] **5.18.9 Estimate on real photos** (#51). Do: export three real
   sequences (a clear sky, trees in wind, a night city) as Medium GIFs and
   compare the file with the panel's range; then run
@@ -549,8 +553,9 @@ Windows' own wallpaper photos and the Debug sample sunsets).
   folder of each set's JPEGs. Expect: every file inside its range; report the
   bytes per pixel so `GifOutput.BytesPerPixel` can follow real photos.
 - [ ] **5.18.10 Long GIF on a tight PC** (#51, #34). Run: 8 GB or iGPU. Do:
-  1,000 photos at 30 fps, Large, up to 25 fps. Expect: peak private bytes
-  under 1 GB (712 MB and 11.6 s for 834 frames, 67 MB, on the NVIDIA PC).
+  1,000 photos at 30 fps, Large, up to 25 fps, and let the premiere loop for a
+  minute. Expect: peak private bytes under 1 GB through the export and the
+  premiere (712 MB and 11.6 s for 834 frames, 67 MB, on the NVIDIA PC).
 
 ## 6. Per-machine measurements
 
