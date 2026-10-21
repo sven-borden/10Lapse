@@ -99,7 +99,7 @@
     <value>Jusqu’à {0}</value>
   </data>
   <data name="GifKeepsVideoSpeed" xml:space="preserve">
-    <value>Le GIF garde la vitesse de votre vidéo : {0}.</value>
+    <value>Le GIF garde la vitesse de votre vidéo : {0}.</value>
   </data>
   <data name="EstimateRange" xml:space="preserve">
     <value>De {0} à {1}</value>
