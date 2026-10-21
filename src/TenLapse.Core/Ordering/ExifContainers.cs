@@ -90,6 +90,8 @@ internal sealed class ExifContainers : IDisposable
     private long _copyBudget = MaxCopiedBytes;
     private CaptureTimeReading? _original;
     private CaptureTimeReading? _digitized;
+    private ExposureSettings? _exposure;
+    private bool _forExposure;
 
     private ExifContainers()
     {
@@ -119,8 +121,8 @@ internal sealed class ExifContainers : IDisposable
     private static ReadOnlySpan<byte> CanonUuid =>
         [0x85, 0xC0, 0xB6, 0x87, 0x82, 0x0F, 0x11, 0xE0, 0x81, 0x11, 0xF4, 0xCE, 0x46, 0x2B, 0x6A, 0x48];
 
-    /// <summary>True once an original time is found or <see cref="MaxExifBlocks"/> blocks were tried.</summary>
-    private bool Done => _original is not null || _blocks >= MaxExifBlocks;
+    /// <summary>True once what the read is for (an original time, or exposure settings) is found or <see cref="MaxExifBlocks"/> blocks were tried.</summary>
+    private bool Done => (_forExposure ? _exposure is not null : _original is not null) || _blocks >= MaxExifBlocks;
 
     /// <summary>The pooled block buffer, rented on first use and returned when the read ends.</summary>
     private byte[] Block => _block ??= ArrayPool<byte>.Shared.Rent(MaxBlockBytes);
@@ -134,6 +136,17 @@ internal sealed class ExifContainers : IDisposable
         using var search = new ExifContainers();
         search.Walk(file);
         return search._original ?? search._digitized;
+    }
+
+    /// <summary>
+    /// The exposure settings of the file (#45): those of the first of its first <see cref="MaxExifBlocks"/> Exif blocks that
+    /// has any of shutter time, f-number or ISO; null when none has. The same bounded walk as <see cref="Read"/>.
+    /// </summary>
+    public static ExposureSettings? ReadExposure(ByteWindow file)
+    {
+        using var search = new ExifContainers { _forExposure = true };
+        search.Walk(file);
+        return search._exposure;
     }
 
     public void Dispose()
@@ -379,6 +392,11 @@ internal sealed class ExifContainers : IDisposable
     private void Offer(ExifTimeTags? tags)
     {
         _blocks++;
+        if (_exposure is null && tags is { } exposureTags && (exposureTags.ExposureTime ?? exposureTags.FNumber ?? exposureTags.Iso) is not null)
+        {
+            _exposure = new ExposureSettings(exposureTags.ExposureTime, exposureTags.FNumber, exposureTags.Iso);
+        }
+
         if (tags is { } t && CaptureTimeReader.FromTags(t) is { } reading)
         {
             if (reading.Source == CaptureTimeSource.DateTimeOriginal)

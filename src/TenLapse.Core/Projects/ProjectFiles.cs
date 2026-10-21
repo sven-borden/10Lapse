@@ -154,7 +154,7 @@ public static class SavedFrames
                 foundBeside = facts is not null;
             }
 
-            if (facts is not { } found || path is null || Create(path, found, saved) is not { } frame)
+            if (facts is not { } found || path is null || Create(path, found, saved, Changed(saved, found)) is not { } frame)
             {
                 var lookedFor = saved.Path ?? besideProject;
                 missing.Add(lookedFor ?? saved.RelativePath!);
@@ -162,7 +162,7 @@ public static class SavedFrames
                 continue;
             }
 
-            var isChanged = saved.FileSize != found.Size || saved.LastWriteTimeUtc != found.LastWriteTimeUtc;
+            var isChanged = Changed(saved, found);
             if (isChanged)
             {
                 changed++;
@@ -211,7 +211,12 @@ public static class SavedFrames
         }
     }
 
-    private static Frame? Create(string path, FileFacts facts, SavedFrame saved)
+    private static bool Changed(SavedFrame saved, FileFacts found) =>
+        saved.FileSize != found.Size || saved.LastWriteTimeUtc != found.LastWriteTimeUtc;
+
+    // A photo changed since the save keeps its size and time until they are read again, but not its exposure (#45): that
+    // is measured again from the new pixels.
+    private static Frame? Create(string path, FileFacts facts, SavedFrame saved, bool changed)
     {
         try
         {
@@ -220,6 +225,7 @@ public static class SavedFrames
                 PixelSize = saved.PixelSize,
                 CaptureTime = saved.CaptureTime,
                 CaptureUtcOffset = saved.CaptureUtcOffset,
+                Exposure = changed ? null : saved.Exposure,
             };
         }
         catch (ArgumentException)

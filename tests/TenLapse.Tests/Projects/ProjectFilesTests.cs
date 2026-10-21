@@ -105,6 +105,31 @@ public sealed class ProjectFilesTests
     }
 
     [Fact]
+    public void AnUnchangedPhotoKeepsItsExposureAndAChangedOneIsMeasuredAgain()
+    {
+        // #45: the measurement is the photo's pixels'; a photo edited since the save has new ones.
+        var disk = new FakeDisk
+        {
+            [@"C:\Shoot\same.jpg"] = new(10, _written),
+            [@"C:\Shoot\edited.jpg"] = new(12, _written),
+        };
+        var exposure = new PhotoExposure(-2.5) { ExposureTime = 0.5, FNumber = 11, Iso = 100 };
+        var content = new ProjectFileContent
+        {
+            Frames =
+            [
+                new(@"C:\Shoot\same.jpg") { FileSize = 10, LastWriteTimeUtc = _written, Exposure = exposure },
+                new(@"C:\Shoot\edited.jpg") { FileSize = 10, LastWriteTimeUtc = _written, Exposure = exposure },
+            ],
+        };
+
+        var frames = SavedFrames.Resolve(content, null, disk).Frames;
+
+        Assert.Equal(exposure, frames[0].Exposure);
+        Assert.Null(frames[1].Exposure);
+    }
+
+    [Fact]
     public void MissingPhotosAreKeptWithTheirPlaceAndWrittenBackThere()
     {
         var disk = new FakeDisk { [@"C:\Shoot\1.jpg"] = new(10, _written), [@"C:\Shoot\3.jpg"] = new(10, _written) };

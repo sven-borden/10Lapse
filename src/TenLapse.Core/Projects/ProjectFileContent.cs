@@ -28,6 +28,9 @@ public sealed record SavedFrame(string? Path)
     /// <summary>The camera's offset from UTC (<see cref="Frame.CaptureUtcOffset"/>).</summary>
     public TimeSpan? CaptureUtcOffset { get; init; }
 
+    /// <summary>The exposure pass's measurement (<see cref="Frame.Exposure"/>, #45), kept so a reopened project is not measured again.</summary>
+    public PhotoExposure? Exposure { get; init; }
+
     /// <summary>
     /// <paramref name="frame"/> as a project file in <paramref name="projectFolder"/> stores it: its full path, and the
     /// path relative to that folder when both are on the same drive (a share counts as a drive).
@@ -43,6 +46,7 @@ public sealed record SavedFrame(string? Path)
             PixelSize = frame.PixelSize,
             CaptureTime = frame.CaptureTime,
             CaptureUtcOffset = frame.CaptureUtcOffset,
+            Exposure = frame.Exposure,
         };
     }
 
@@ -93,6 +97,9 @@ public sealed record ProjectFileContent
     /// <summary>The order the user chose (<see cref="ProjectSnapshot.SortMode"/>). The frames are stored in that order already.</summary>
     public SortMode SortMode { get; init; } = SortMode.CaptureTime;
 
+    /// <summary>The look group (<see cref="ProjectSnapshot.Look"/>, #45). A file from before #45 has none: deflicker off.</summary>
+    public LookSettings Look { get; init; } = LookSettings.Default;
+
     /// <summary>A recovery copy only: the project's name, which a project that was never saved has no file to take it from.</summary>
     public string? RecoveredName { get; init; }
 
@@ -114,6 +121,7 @@ public sealed record ProjectFileContent
             Frame = snapshot.FrameSettings,
             Output = snapshot.Output,
             SortMode = snapshot.SortMode,
+            Look = snapshot.Look,
         };
     }
 
@@ -176,5 +184,5 @@ public sealed record ProjectFileContent
     }
 
     /// <summary>A new, empty, clean project with these settings, owned by the calling thread; the caller adds the frames.</summary>
-    public Project CreateEmptyProject() => new(Timing, Frame, Output, SortMode);
+    public Project CreateEmptyProject() => new(Timing, Frame, Output, SortMode, Look);
 }

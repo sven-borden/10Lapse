@@ -36,6 +36,9 @@ public enum ProjectChanges
 
     /// <summary><see cref="Project.FilePath"/> changed (#52: the project was opened from, saved to or restored for a file).</summary>
     File = 1 << 8,
+
+    /// <summary><see cref="Project.Look"/> changed (#45: deflicker and its strength).</summary>
+    Look = 1 << 9,
 }
 
 /// <summary>The kind of a <see cref="FrameChange"/>.</summary>
@@ -166,6 +169,9 @@ public sealed record ProjectSnapshot
     /// <summary>The order the user chose.</summary>
     public SortMode SortMode { get; internal init; } = SortMode.CaptureTime;
 
+    /// <summary>The Look section (#45): deflicker and its strength. The correction it gives each photo is <see cref="Look.ExposureCurve.For"/>.</summary>
+    public LookSettings Look { get; internal init; } = LookSettings.Default;
+
     /// <summary>True after any change since the project was created, opened, saved or (while it has no file) exported.</summary>
     public bool IsDirty { get; internal init; }
 
@@ -242,16 +248,26 @@ public sealed class Project
     /// makes the project dirty; this constructor does not.
     /// </summary>
     public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode)
+        : this(timing, frameSettings, output, sortMode, LookSettings.Default)
+    {
+    }
+
+    /// <summary>
+    /// Creates an empty, clean project that starts with these settings and this look (#45; a project file opens with its
+    /// own), owned by the calling thread.
+    /// </summary>
+    public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode, LookSettings look)
     {
         ArgumentNullException.ThrowIfNull(timing);
         ArgumentNullException.ThrowIfNull(frameSettings);
         ArgumentNullException.ThrowIfNull(output);
+        ArgumentNullException.ThrowIfNull(look);
         if (!Enum.IsDefined(sortMode))
         {
             throw new ArgumentOutOfRangeException(nameof(sortMode), sortMode, "Unknown sort mode.");
         }
 
-        _state = ProjectSnapshot.Empty with { Timing = timing, FrameSettings = frameSettings, Output = output, SortMode = sortMode };
+        _state = ProjectSnapshot.Empty with { Timing = timing, FrameSettings = frameSettings, Output = output, SortMode = sortMode, Look = look };
     }
 
     /// <summary>Raised after every mutation, once per call, on the owner thread.</summary>
@@ -325,6 +341,19 @@ public sealed class Project
             if (Changes(_state.Output, value))
             {
                 Commit(_state with { Output = value }, ProjectChanges.Output);
+            }
+        }
+    }
+
+    /// <summary>The Look section (#45): deflicker and its strength.</summary>
+    public LookSettings Look
+    {
+        get => _state.Look;
+        set
+        {
+            if (Changes(_state.Look, value))
+            {
+                Commit(_state with { Look = value }, ProjectChanges.Look);
             }
         }
     }

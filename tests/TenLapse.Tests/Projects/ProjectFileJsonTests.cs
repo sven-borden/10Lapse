@@ -65,6 +65,58 @@ public sealed class ProjectFileJsonTests
     }
 
     [Fact]
+    public void TheLookGroupSurvivesAWriteAndARead()
+    {
+        // #45: deflicker on at 60 %.
+        var look = new LookSettings(true, 60);
+
+        Assert.Equal(look, RoundTrip(new ProjectFileContent { Look = look }).Look);
+        Assert.Equal(LookSettings.Default, RoundTrip(new ProjectFileContent()).Look);
+    }
+
+    [Fact]
+    public void AStrengthOutsideItsRangeTakesTheDefaultAndSaysSo()
+    {
+        var result = ProjectFileJson.Read("""
+            { "format": "10Lapse project", "version": 1, "look": { "deflicker": true, "strength": 250 } }
+            """);
+
+        Assert.True(result.Content!.Look.Deflicker);
+        Assert.Equal(LookSettings.MaxStrength, result.Content.Look.Strength);
+        Assert.Contains(result.Problems, problem => problem.Contains("look.strength", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void AFrameKeepsItsExposureMeasurement()
+    {
+        // #45: the measurement travels with the photo, so a reopened project is not measured again.
+        var measured = new SavedFrame(@"C:\Shoot\IMG_0003.jpg")
+        {
+            Exposure = new PhotoExposure(-3.2512) { ExposureTime = 1.0 / 250, FNumber = 8, Iso = 400 },
+        };
+        var withoutExif = new SavedFrame(@"C:\Shoot\IMG_0004.jpg") { Exposure = new PhotoExposure(-1.5) };
+
+        Assert.Equal([measured, withoutExif], RoundTrip(new ProjectFileContent { Frames = [measured, withoutExif] }).Frames);
+    }
+
+    [Fact]
+    public void AnUnusableExposureIsNoMeasurement()
+    {
+        // A damaged luminance means the photo is measured again; a damaged Exif value is unknown.
+        var result = ProjectFileJson.Read("""
+            { "format": "10Lapse project", "version": 1, "frames": [
+              { "path": "C:\\Shoot\\A.jpg", "exposure": { "luminance": 5 } },
+              { "path": "C:\\Shoot\\B.jpg", "exposure": { "luminance": -2, "fNumber": -4, "iso": "x" } },
+              { "path": "C:\\Shoot\\C.jpg", "exposure": [1, 2] } ] }
+            """);
+
+        var frames = result.Content!.Frames;
+        Assert.Null(frames[0].Exposure);
+        Assert.Equal(new PhotoExposure(-2), frames[1].Exposure);
+        Assert.Null(frames[2].Exposure);
+    }
+
+    [Fact]
     public void EveryFrameDetailSurvivesInOrder()
     {
         var first = new SavedFrame(@"C:\Shoot\IMG_0002.jpg")
@@ -247,6 +299,7 @@ public sealed class ProjectFileJsonTests
             (TimingSettings.Default, value => new ProjectFileContent { Timing = (TimingSettings)value }, content => content.Timing),
             (FrameSettings.Default, value => new ProjectFileContent { Frame = (FrameSettings)value }, content => content.Frame),
             (OutputSettings.Default, value => new ProjectFileContent { Output = (OutputSettings)value }, content => content.Output),
+            (LookSettings.Default, value => new ProjectFileContent { Look = (LookSettings)value }, content => content.Look),
         ];
         var walked = new List<string>();
         foreach (var (defaults, make, take) in groups)
@@ -264,6 +317,8 @@ public sealed class ProjectFileJsonTests
 
         Assert.Contains("OutputSettings.Gif.Size", walked);
         Assert.Contains("OutputSettings.Gif.Rate", walked);
+        Assert.Contains("LookSettings.Deflicker", walked);
+        Assert.Contains("LookSettings.Strength", walked);
     }
 
     // Every settable property of a settings record, recursing into the records it holds.
@@ -309,6 +364,17 @@ public sealed class ProjectFileJsonTests
         if (type == typeof(Fraction))
         {
             return [new Fraction(7, 2)];
+        }
+
+        if (type == typeof(bool))
+        {
+            return [!(bool)current!];
+        }
+
+        if (type == typeof(int) && current is int number)
+        {
+            // An int setting with a range (#45's strength, 0 to 100): its ends and a value between, other than the current one.
+            return new object[] { 0, 40, 100 }.Where(value => !value.Equals(number));
         }
 
         throw new InvalidOperationException($"No test values for a setting of type {type.Name}: add some here.");

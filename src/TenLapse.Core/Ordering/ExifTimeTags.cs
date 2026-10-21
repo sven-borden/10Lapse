@@ -3,7 +3,10 @@ using System.Text;
 
 namespace TenLapse.Core.Ordering;
 
-/// <summary>The six Exif SubIFD tags a capture time is made of, as raw text; null where a tag is absent or unusable.</summary>
+/// <summary>
+/// The six Exif SubIFD tags a capture time is made of, as raw text; null where a tag is absent or unusable. Read in the same
+/// pass: the exposure settings deflicker uses (#45), <see cref="ExposureTime"/>, <see cref="FNumber"/> and <see cref="Iso"/>.
+/// </summary>
 internal readonly record struct ExifTimeTags(
     string? Original,
     string? SubSecOriginal,
@@ -12,6 +15,15 @@ internal readonly record struct ExifTimeTags(
     string? SubSecDigitized,
     string? OffsetDigitized)
 {
+    /// <summary>The shutter time in seconds (<c>ExposureTime</c>, a RATIONAL), or null.</summary>
+    public double? ExposureTime { get; init; }
+
+    /// <summary>The f-number (<c>FNumber</c>, a RATIONAL), or null.</summary>
+    public double? FNumber { get; init; }
+
+    /// <summary>The ISO (<c>PhotographicSensitivity</c>; <c>ISOSpeed</c> when that is missing or saturated at 65,535), or null.</summary>
+    public double? Iso { get; init; }
+
     // Exif tag numbers.
     private const ushort ExifIfdPointerTag = 0x8769;
     private const ushort DateTimeOriginalTag = 0x9003;
@@ -20,6 +32,19 @@ internal readonly record struct ExifTimeTags(
     private const ushort OffsetTimeDigitizedTag = 0x9012;
     private const ushort SubSecTimeOriginalTag = 0x9291;
     private const ushort SubSecTimeDigitizedTag = 0x9292;
+    private const ushort ExposureTimeTag = 0x829A;
+    private const ushort FNumberTag = 0x829D;
+    private const ushort PhotographicSensitivityTag = 0x8827;
+    private const ushort IsoSpeedTag = 0x8833;
+
+    // The six text slots, then the four exposure slots, in SlotOf's order.
+    private const int Slots = 10;
+
+    // TIFF numeric types the exposure tags use.
+    private const ushort ShortType = 3;
+    private const ushort LongType = 4;
+    private const ushort RationalType = 5;
+    private const ushort SignedRationalType = 10;
 
     // TIFF field types that can carry text: BYTE, ASCII, UNDEFINED. All are one byte per value.
     private const ushort ByteType = 1;
@@ -149,10 +174,10 @@ internal readonly record struct ExifTimeTags(
             return null;
         }
 
-        // The last entry of each of the six tags, by SlotOf (a later duplicate replaces an earlier one, as
+        // The last entry of each of the ten tags, by SlotOf (a later duplicate replaces an earlier one, as
         // MetadataExtractor did). Values are read once the table is done, so duplicates cost no reads.
-        Span<byte> last = stackalloc byte[6 * EntryBytes];
-        Span<bool> seen = stackalloc bool[6];
+        Span<byte> last = stackalloc byte[Slots * EntryBytes];
+        Span<bool> seen = stackalloc bool[Slots];
         Span<byte> entries = stackalloc byte[EntriesPerRead * EntryBytes];
         var count = EntryCount(tiff, ifd, bigEndian);
         for (var first = 0; first < count; first += EntriesPerRead)
@@ -181,14 +206,67 @@ internal readonly record struct ExifTimeTags(
             ValueOf(2, tiff, last, seen, bigEndian, text),
             ValueOf(3, tiff, last, seen, bigEndian, text),
             ValueOf(4, tiff, last, seen, bigEndian, text),
-            ValueOf(5, tiff, last, seen, bigEndian, text));
+            ValueOf(5, tiff, last, seen, bigEndian, text))
+        {
+            ExposureTime = NumberOf(6, tiff, last, seen, bigEndian),
+            FNumber = NumberOf(7, tiff, last, seen, bigEndian),
+            Iso = NumberOf(8, tiff, last, seen, bigEndian) is { } iso and < 65535d ? iso : NumberOf(9, tiff, last, seen, bigEndian) ?? NumberOf(8, tiff, last, seen, bigEndian),
+        };
+    }
+
+    /// <summary>The remembered entry's first value as a positive number, or null when the tag is absent, of another type, zero or out of the window.</summary>
+    private static double? NumberOf(int slot, ByteWindow tiff, ReadOnlySpan<byte> last, ReadOnlySpan<bool> seen, bool bigEndian)
+    {
+        if (!seen[slot])
+        {
+            return null;
+        }
+
+        var entry = last.Slice(slot * EntryBytes, EntryBytes);
+        var type = Read16(entry, 2, bigEndian);
+        if (Read32(entry, 4, bigEndian) == 0)
+        {
+            return null;
+        }
+
+        double value;
+        switch (type)
+        {
+            case ShortType:
+                value = Read16(entry, 8, bigEndian);
+                break;
+            case LongType:
+                value = Read32(entry, 8, bigEndian);
+                break;
+            case RationalType or SignedRationalType:
+                // Eight bytes do not fit in the entry: they are at its offset, bounds-checked.
+                Span<byte> pair = stackalloc byte[8];
+                if (!tiff.TryRead(Read32(entry, 8, bigEndian), pair))
+                {
+                    return null;
+                }
+
+                var numerator = type == RationalType ? Read32(pair, 0, bigEndian) : (double)(int)Read32(pair, 0, bigEndian);
+                var denominator = type == RationalType ? Read32(pair, 4, bigEndian) : (double)(int)Read32(pair, 4, bigEndian);
+                if (denominator == 0)
+                {
+                    return null;
+                }
+
+                value = numerator / denominator;
+                break;
+            default:
+                return null;
+        }
+
+        return double.IsFinite(value) && value > 0 ? value : null;
     }
 
     /// <summary>The text of the remembered entry in <paramref name="slot"/>, or null when the tag was not in the IFD.</summary>
     private static string? ValueOf(int slot, ByteWindow tiff, ReadOnlySpan<byte> last, ReadOnlySpan<bool> seen, bool bigEndian, Span<byte> text) =>
         seen[slot] ? ReadText(tiff, last.Slice(slot * EntryBytes, EntryBytes), bigEndian, text) : null;
 
-    /// <summary>The slot of one of the six tags, in the order of the record's parameters; -1 for any other tag.</summary>
+    /// <summary>The slot of one of the ten tags: the six text tags in the order of the record's parameters, then the exposure tags; -1 for any other tag.</summary>
     private static int SlotOf(ushort tag) => tag switch
     {
         DateTimeOriginalTag => 0,
@@ -197,6 +275,10 @@ internal readonly record struct ExifTimeTags(
         DateTimeDigitizedTag => 3,
         SubSecTimeDigitizedTag => 4,
         OffsetTimeDigitizedTag => 5,
+        ExposureTimeTag => 6,
+        FNumberTag => 7,
+        PhotographicSensitivityTag => 8,
+        IsoSpeedTag => 9,
         _ => -1,
     };
 

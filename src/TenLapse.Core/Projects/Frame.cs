@@ -56,6 +56,12 @@ public sealed record Frame
     /// </summary>
     public TimeSpan? CaptureUtcOffset { get; init; }
 
+    /// <summary>
+    /// The photo's measured brightness and Exif exposure settings (#45), once the exposure pass has measured it; null
+    /// before that, or when it could not be measured. Deflicker corrects from these.
+    /// </summary>
+    public PhotoExposure? Exposure { get; init; }
+
     /// <summary>The file name with its extension, for the name sort and the filmstrip.</summary>
     public string FileName => Path.GetFileName(SourcePath);
 

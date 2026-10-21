@@ -27,7 +27,11 @@ internal static class ExifFiles
         string? OffsetOriginal = null,
         string? Digitized = null,
         string? SubSecDigitized = null,
-        string? OffsetDigitized = null);
+        string? OffsetDigitized = null,
+        (uint Numerator, uint Denominator)? ExposureTime = null,
+        (uint Numerator, uint Denominator)? FNumber = null,
+        ushort? Iso = null,
+        uint? IsoSpeed = null);
 
     /// <summary>"2026:05:01 18:30:00" for a time, the way cameras write it.</summary>
     public static string Stamp(DateTime time) => time.ToString("yyyy:MM:dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
@@ -502,12 +506,48 @@ internal static class ExifFiles
 
     private static byte[] Tiff(Tags tags, bool bigEndian, int ifd0Offset, byte[] prefix, bool timesInIfd0 = false, ushort pointerType = 4)
     {
-        var entries = new SortedDictionary<ushort, string>();
+        // Each entry: its TIFF type, its value count and its value bytes (in the file's byte order).
+        var entries = new SortedDictionary<ushort, (ushort Type, uint Count, byte[] Value)>();
         void Add(ushort tag, string? text)
         {
             if (text is not null)
             {
-                entries[tag] = text;
+                var bytes = Encoding.ASCII.GetBytes(text + "\0");
+                entries[tag] = (2, (uint)bytes.Length, bytes);
+            }
+        }
+
+        byte[] Number(uint value, int size)
+        {
+            var bytes = new byte[size];
+            if (size == 2)
+            {
+                if (bigEndian)
+                {
+                    BinaryPrimitives.WriteUInt16BigEndian(bytes, (ushort)value);
+                }
+                else
+                {
+                    BinaryPrimitives.WriteUInt16LittleEndian(bytes, (ushort)value);
+                }
+            }
+            else if (bigEndian)
+            {
+                BinaryPrimitives.WriteUInt32BigEndian(bytes, value);
+            }
+            else
+            {
+                BinaryPrimitives.WriteUInt32LittleEndian(bytes, value);
+            }
+
+            return bytes;
+        }
+
+        void AddRational(ushort tag, (uint Numerator, uint Denominator)? value)
+        {
+            if (value is { } pair)
+            {
+                entries[tag] = (5, 1, [.. Number(pair.Numerator, 4), .. Number(pair.Denominator, 4)]);
             }
         }
 
@@ -517,6 +557,17 @@ internal static class ExifFiles
         Add(OffsetTimeDigitized, tags.OffsetDigitized);
         Add(SubSecTimeOriginal, tags.SubSecOriginal);
         Add(SubSecTimeDigitized, tags.SubSecDigitized);
+        AddRational(0x829A, tags.ExposureTime);
+        AddRational(0x829D, tags.FNumber);
+        if (tags.Iso is { } iso)
+        {
+            entries[0x8827] = (3, 1, Number(iso, 2));
+        }
+
+        if (tags.IsoSpeed is { } speed)
+        {
+            entries[0x8833] = (4, 1, Number(speed, 4));
+        }
 
         using var output = new MemoryStream();
         void Write16(ushort value)
@@ -577,12 +628,11 @@ internal static class ExifFiles
         var dataOffset = exifIfdOffset + exifIfdSize;
         var data = new MemoryStream();
         Write16((ushort)entries.Count);
-        foreach (var (tag, text) in entries)
+        foreach (var (tag, (type, count, bytes)) in entries)
         {
-            var bytes = Encoding.ASCII.GetBytes(text + "\0");
             Write16(tag);
-            Write16(2);
-            Write32((uint)bytes.Length);
+            Write16(type);
+            Write32(count);
             if (bytes.Length <= 4)
             {
                 output.Write(bytes);
