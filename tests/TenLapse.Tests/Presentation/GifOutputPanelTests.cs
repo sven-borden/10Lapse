@@ -220,4 +220,58 @@ public sealed class GifOutputPanelTests
         Assert.Equal(VideoFormat.Mp4Hevc, snapshot.Output.Format);
         Assert.Empty(app.InfoBars.Shown);
     }
+
+    [Theory]
+    [InlineData(VideoFormat.Gif, @"C:\Videos\Harbor.gif", PremiereKind.AnimatedGif)]
+    [InlineData(VideoFormat.Gif, @"C:\Videos\Harbor.mp4", PremiereKind.AnimatedGif)]
+    [InlineData(VideoFormat.Mp4H264, @"C:\Videos\Harbor.gif", PremiereKind.Video)]
+    [InlineData(VideoFormat.Mp4Hevc, @"C:\Videos\Harbor.GIF", PremiereKind.Video)]
+    [InlineData(VideoFormat.Mp4H264, @"C:\Videos\Harbor", PremiereKind.Video)]
+    public void ThePremiereFollowsTheFormatWrittenNotTheExtension(VideoFormat format, string path, PremiereKind expected) =>
+        Assert.Equal(expected, PremierePlan.For(Written(path, format, 5L << 20)));
+
+    [Fact]
+    public void AGifOverThePlayLimitPremieresItsFirstFrame()
+    {
+        Assert.Equal(256L << 20, PremierePlan.GifPlayLimit);
+        Assert.Equal(PremiereKind.AnimatedGif, PremierePlan.For(Written(@"C:\Videos\Long.gif", VideoFormat.Gif, PremierePlan.GifPlayLimit)));
+        Assert.Equal(PremiereKind.GifFirstFrame, PremierePlan.For(Written(@"C:\Videos\Long.gif", VideoFormat.Gif, PremierePlan.GifPlayLimit + 1)));
+
+        // A video streams from the file, so its size never matters.
+        Assert.Equal(PremiereKind.Video, PremierePlan.For(Written(@"C:\Videos\Long.mp4", VideoFormat.Mp4H264, 4L << 30)));
+    }
+
+    [Fact]
+    public void AGifSavedUnderAnMp4NamePremieresAsAGif()
+    {
+        // The user typed Harbor sunset.mp4 over the suggested .gif name: Windows keeps it, and the file is still a GIF.
+        using var app = new ExportHarness(
+            capabilities: new FakeOutputCapabilities(),
+            setup: project => project.Output = OutputSettings.Default with { Format = VideoFormat.Gif });
+        app.Picker.Answer = @"C:\Videos\10Lapse\Harbor sunset.mp4";
+        app.StartExport();
+
+        app.Exporter.Finish(Written(app.Picker.Answer, VideoFormat.Gif, 4_410_000));
+        app.Settle();
+        app.On(() => app.Export.PlayCommand.Execute(null));
+
+        Assert.Equal(2, app.PremieredVideos.Count);
+        Assert.All(app.PremieredVideos, video => Assert.Equal(PremiereKind.AnimatedGif, PremierePlan.For(video)));
+    }
+
+    [Fact]
+    public void AnMp4SavedUnderAGifNamePremieresAsAVideo()
+    {
+        using var app = new ExportHarness(capabilities: new FakeOutputCapabilities());
+        app.Picker.Answer = @"C:\Videos\10Lapse\Harbor sunset.gif";
+        app.StartExport();
+
+        app.Exporter.Finish(app.Video());
+        app.Settle();
+
+        Assert.Equal(PremiereKind.Video, PremierePlan.For(Assert.Single(app.PremieredVideos)));
+    }
+
+    private static ExportedVideo Written(string path, VideoFormat format, long bytes) =>
+        new(path, 100, FrameTiming.Duration(100, new Fraction(10, 1)), new PixelSize(480, 270), new Fraction(10, 1), format, bytes);
 }

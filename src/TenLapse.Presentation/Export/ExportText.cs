@@ -153,6 +153,15 @@ public static class ExportText
     /// <summary><see cref="PremiereCantPlayFormat"/> with the button it names.</summary>
     public static string PremiereCantPlay => string.Format(CultureInfo.CurrentCulture, PremiereCantPlayFormat, ShowInFolder);
 
+    /// <summary>
+    /// The finished GIF saved, but it is too large to play in the preview (<see cref="PremierePlan.GifPlayLimit"/>), so the
+    /// preview shows its first frame. {0} the button's label (<see cref="ShowInFolder"/>).
+    /// </summary>
+    public static string PremiereGifFirstFrameFormat => _strings.Get();
+
+    /// <summary><see cref="PremiereGifFirstFrameFormat"/> with the button it names.</summary>
+    public static string PremiereGifFirstFrame => string.Format(CultureInfo.CurrentCulture, PremiereGifFirstFrameFormat, ShowInFolder);
+
     /// <summary>The question when the window closes during an export.</summary>
     public static string CloseTitle => _strings.Get();
 

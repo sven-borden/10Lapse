@@ -79,6 +79,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
 
     // The running export, counted so a progress report posted before it ended is ignored after.
     private int _run;
+    private ExportedVideo? _video;
     private ExportStatus? _applied;
     private TimeSpan _appliedAt;
     private int _announcedTenth;
@@ -164,9 +165,10 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// The preview should play the finished video from its first frame: once the export ends (the view waits the motion
-    /// spec's 1.1 s) and on Play. The argument is the video's path.
+    /// spec's 1.1 s) and on Play. The argument is the file that was written, with its format: the premiere picks GIF or
+    /// MP4 by <see cref="ExportedVideo.Format"/> (<see cref="PremierePlan"/>), never by the file's extension.
     /// </summary>
-    public event EventHandler<string>? PremiereRequested;
+    public event EventHandler<ExportedVideo>? PremiereRequested;
 
     /// <summary>Export video (the amber button, Ctrl+E): the Save dialog, then the export. Its <c>Cancel()</c> stops a running export.</summary>
     public IAsyncRelayCommand ExportCommand { get; }
@@ -598,6 +600,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         }
 
         var name = Path.GetFileName(video.Path);
+        _video = video;
         VideoPath = video.Path;
         FinishedTitle = ExportText.Ready(name);
         FinishedSummary = ExportText.ReadySummary(video, output);
@@ -609,7 +612,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         Announced?.Invoke(this, FinishedTitle);
         _services.Window.NotifyIfInBackground(FinishedTitle);
         RaiseEnded(ExportOutcome.Succeeded, video);
-        PremiereRequested?.Invoke(this, video.Path);
+        PremiereRequested?.Invoke(this, video);
     }
 
     // However the export ended: the project may change again, nothing is dimmed, the taskbar shows no progress (or the failure).
@@ -708,9 +711,9 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
 
     private void Premiere()
     {
-        if (IsFinished && VideoPath.Length > 0)
+        if (IsFinished && _video is { } video)
         {
-            PremiereRequested?.Invoke(this, VideoPath);
+            PremiereRequested?.Invoke(this, video);
         }
     }
 

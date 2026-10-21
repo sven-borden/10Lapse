@@ -1,8 +1,8 @@
 using System.ComponentModel;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using TenLapse.Presentation.Export;
 using TenLapse.Presentation.Motion;
@@ -10,10 +10,10 @@ using TenLapse.Presentation.Preview;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using Windows.Foundation;
+using Windows.Graphics.Imaging;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage;
-using Windows.Storage.Streams;
 
 namespace TenLapse.Shell;
 
@@ -131,18 +131,20 @@ public sealed partial class ExportPreviewOverlay : UserControl
     }
 
     // The first request after the export ends waits the motion spec's 1.1 s (the check draws first); Play starts at once.
-    private void OnPremiereRequested(object? sender, string path)
+    private void OnPremiereRequested(object? sender, ExportedVideo video)
     {
         var wait = _arrived;
         _arrived = false;
         if (_errors is { } errors)
         {
-            _ = errors.GuardAsync(() => PremiereAsync(path, wait), ExportText.PremiereFailed);
+            _ = errors.GuardAsync(() => PremiereAsync(video, wait), ExportText.PremiereFailed);
         }
     }
 
-    private async Task PremiereAsync(string path, bool wait)
+    // GIF or MP4 by the format that was written (PremierePlan), never by the name: a GIF saved as .mp4 is still a GIF.
+    private async Task PremiereAsync(ExportedVideo video, bool wait)
     {
+        var path = video.Path;
         var ticket = ++_premiere;
         if (wait)
         {
@@ -157,10 +159,14 @@ public sealed partial class ExportPreviewOverlay : UserControl
         StopPremiere();
         ticket = ++_premiere;
         player.Pause();
-        if (string.Equals(Path.GetExtension(path), ".gif", StringComparison.OrdinalIgnoreCase))
+        switch (PremierePlan.For(video))
         {
-            await PremiereGifAsync(path, ticket);
-            return;
+            case PremiereKind.AnimatedGif:
+                await PremiereGifAsync(path, ticket);
+                return;
+            case PremiereKind.GifFirstFrame:
+                await PremiereGifFirstFrameAsync(path, ticket);
+                return;
         }
 
         var file = await StorageFile.GetFileFromPathAsync(path);
@@ -184,29 +190,58 @@ public sealed partial class ExportPreviewOverlay : UserControl
         _media.Play();
     }
 
-    // An animated GIF (#51) plays through XAML's own decoder, from a copy in memory, so the file is not held open (an
-    // export to the same name must be able to replace it). A GIF that will not decode falls back as a video does.
+    // An animated GIF (#51) plays through XAML's own decoder. XAML reads the whole encoded file into its own memory as the
+    // source is set (it decodes the frames again on every loop), so the file is open only for that read, from a stream
+    // straight off the disk: no copy of ours on top of XAML's, and the premiere holds no file afterwards, so an export to
+    // the same name can replace it. While it is open it shares reading, writing and deleting, so the user can still move
+    // or delete the file. A GIF that will not decode falls back as a video does.
     private async Task PremiereGifAsync(string path, int ticket)
     {
-        var bytes = await File.ReadAllBytesAsync(path);
-        if (ticket != _premiere || _export is not { IsFinished: true })
-        {
-            return;
-        }
-
-        using var stream = new InMemoryRandomAccessStream();
-        await stream.WriteAsync(bytes.AsBuffer());
-        stream.Seek(0);
         var image = new BitmapImage { AutoPlay = true };
         image.ImageFailed += OnGifFailed;
-        await image.SetSourceAsync(stream);
+        await using (var file = OpenShared(path))
+        {
+            await image.SetSourceAsync(file.AsRandomAccessStream());
+        }
+
         if (ticket != _premiere || _export is not { IsFinished: true })
         {
             image.ImageFailed -= OnGifFailed;
             return;
         }
 
-        Gif.Source = image;
+        ShowGif(image);
+    }
+
+    // A GIF over PremierePlan.GifPlayLimit would put that much in memory to play: its first frame is decoded alone from
+    // the file instead, and a Neutral InfoBar says why it stands still (never silent: the user would take it for a GIF
+    // that does not move).
+    private async Task PremiereGifFirstFrameAsync(string path, int ticket)
+    {
+        var still = new SoftwareBitmapSource();
+        await using (var file = OpenShared(path))
+        {
+            var decoder = await BitmapDecoder.CreateAsync(BitmapDecoder.GifDecoderId, file.AsRandomAccessStream());
+            using var frame = await decoder.GetSoftwareBitmapAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
+            await still.SetBitmapAsync(frame);
+        }
+
+        if (ticket != _premiere || _export is not { IsFinished: true })
+        {
+            still.Dispose();
+            return;
+        }
+
+        ShowGif(still);
+        _infoBars?.Show(Presentation.Services.InfoBarSeverity.Neutral, ExportText.PremiereGifFirstFrame);
+    }
+
+    private static FileStream OpenShared(string path) =>
+        new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1 << 16, FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+    private void ShowGif(ImageSource source)
+    {
+        Gif.Source = source;
         Place();
         Gif.Visibility = Visibility.Visible;
         _playing = true;
@@ -225,13 +260,18 @@ public sealed partial class ExportPreviewOverlay : UserControl
         }
 
         _playing = false;
-        if (Gif.Source is BitmapImage gif)
+        var shown = Gif.Source;
+        Gif.Source = null;
+        if (shown is BitmapImage gif)
         {
             gif.ImageFailed -= OnGifFailed;
             gif.Stop();
         }
+        else if (shown is SoftwareBitmapSource still)
+        {
+            still.Dispose();
+        }
 
-        Gif.Source = null;
         Gif.Visibility = Visibility.Collapsed;
         Video.Visibility = Visibility.Collapsed;
         if (_media is { } media)

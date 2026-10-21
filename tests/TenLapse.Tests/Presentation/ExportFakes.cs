@@ -236,7 +236,11 @@ internal sealed class ExportHarness : IDisposable
             Export.Announced += (_, message) => Announced.Add(message);
             Export.Started += (_, _) => Lifecycle.Add("started");
             Export.Ended += (_, e) => Lifecycle.Add("ended " + e.Outcome);
-            Export.PremiereRequested += (_, path) => Premieres.Add(path);
+            Export.PremiereRequested += (_, video) =>
+            {
+                Premieres.Add(video.Path);
+                PremieredVideos.Add(video);
+            };
             return true;
         });
     }
@@ -268,6 +272,9 @@ internal sealed class ExportHarness : IDisposable
     public List<string> Lifecycle { get; } = [];
 
     public List<string> Premieres { get; } = [];
+
+    /// <summary>What each premiere was asked to show, with its format.</summary>
+    public List<ExportedVideo> PremieredVideos { get; } = [];
 
     public ShellViewModel Shell { get; private set; } = null!;
 

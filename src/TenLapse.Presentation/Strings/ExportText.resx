@@ -173,6 +173,10 @@
     <value>The video was saved, but 10Lapse couldn't play it here. Open it with {0} to check it.</value>
     <comment>A message bar: the video saved, but the preview cannot play it (a codec Windows lacks). {0} the button's label (ShowInFolder, "Show in folder").</comment>
   </data>
+  <data name="PremiereGifFirstFrameFormat" xml:space="preserve">
+    <value>The GIF was saved, but it's too large to play here, so the preview shows its first frame. Open it with {0} to watch it play.</value>
+    <comment>A message bar (neutral): an animated GIF over 256 MB saved, and the preview shows its first frame instead of playing it, to save memory. {0} the button's label (ShowInFolder, "Show in folder").</comment>
+  </data>
   <data name="CloseTitle" xml:space="preserve">
     <value>Stop the export and close?</value>
     <comment>The title of the dialog when the window is closed during an export.</comment>
