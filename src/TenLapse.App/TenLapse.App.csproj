@@ -14,7 +14,7 @@
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'ARM64'">win-arm64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
-    <!-- The Store installs the Windows App Runtime 2 framework package with the app (docs/STATUS.md, Decisions). -->
+    <!-- The Store installs the Windows App Runtime 2 framework package with the app. -->
     <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
     <!-- Copy diagnostics reads the graphics adapters through DXGI's vtable (Services/GraphicsDiagnostics.cs). -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

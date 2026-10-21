@@ -5,7 +5,7 @@
     Debug with warnings as errors, run every test, build x64 Release the same way.
 
 .DESCRIPTION
-    Replaces CI (docs/STATUS.md, Decisions). Run it from anywhere:
+    Replaces CI (CLAUDE.md, Build process). Run it from anywhere:
 
         pwsh -File scripts/gate.ps1
 

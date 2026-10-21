@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    View models and the service interfaces they need. Plain net10.0 like Core (docs/STATUS.md, Decisions): no
+    View models and the service interfaces they need. Plain net10.0 like Core: no
     WinUI types, so the tests can reference it without the App exe. The App implements the services.
   -->
   <PropertyGroup>

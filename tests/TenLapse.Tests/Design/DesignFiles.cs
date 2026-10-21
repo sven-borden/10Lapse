@@ -5,7 +5,7 @@ namespace TenLapse.Tests.Design;
 
 /// <summary>
 /// Reads the repository's design sources from disk: the XAML token dictionaries and the DESIGN.md front
-/// matter. The tests project cannot reference the App exe (docs/STATUS.md, Decisions), so everything here
+/// matter. The tests project cannot reference the App exe, so everything here
 /// works on files, found by walking up to TenLapse.slnx.
 /// </summary>
 internal static class DesignFiles

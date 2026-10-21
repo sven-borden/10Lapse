@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <!--
-    The tests cannot reference the App exe (docs/STATUS.md, Decisions). The export failure sentences, the encoder
+    The tests cannot reference the App exe (NETSDK1151 against the self-contained Release App, PR #61). The export failure sentences, the encoder
     section of Copy diagnostics and the Output panel's view of the probe live in App files that need only Media and Presentation, so they are compiled in here
     to be tested.
   -->

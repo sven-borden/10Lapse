@@ -51,7 +51,7 @@ table is covered by at least one.
   from the Store flight on a PC that never had 10Lapse. Expect: it installs
   and starts, the first-launch screen shows (5.1), the icon and tile are the
   Five frames icon (5.16). The Store installs the Windows App Runtime 2
-  framework package with it (STATUS, 2026-10-18); no extra install step. The
+  framework package with it; no extra install step. The
   flight is the install path for testers (Developer Mode is off on the dev
   PC and a tester's PC usually has it off too; see 2.5).
 - [ ] **2.2 Update in place from 2.1.1** (#2, #62). Run: once, on a PC with
