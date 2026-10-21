@@ -880,6 +880,32 @@ public sealed class TimingPanelViewModelTests
     }
 
     [Fact]
+    public void AHoldThatLastsWholeSlowFramesSaysWhatItLasts()
+    {
+        // At 2 s per photo a hold is whole 2 s frames: 0.3 s lasts 2.0 s, 3 s lasts 4.0 s, and the boxes keep what was typed.
+        var shell = Shell();
+        var panel = Panel(shell);
+        var said = new List<string>();
+        panel.Announced += (_, text) => said.Add(text);
+        shell.CurrentProject.Model.Timing = TimingSettings.PerPhoto(new Fraction(2, 1));
+
+        panel.CommitHoldStart("0.3");
+        Assert.Equal(("0.3", "Lasts 2.0 s in whole frames.", true), (panel.HoldStartText, panel.HoldStartLasts, panel.HasHoldStartLasts));
+        Assert.StartsWith("Lasts 2.0 s in whole frames. 742 photos", said[^1]);
+        panel.CommitHoldEnd("3");
+        Assert.Equal("Lasts 4.0 s in whole frames.", panel.HoldEndLasts);
+
+        // At 30 fps they last what they read (1 s is 30 frames), and the sentences go.
+        shell.CurrentProject.Model.Timing = TimingSettings.PerSecond(new Fraction(30, 1));
+        Assert.Equal((false, false), (panel.HasHoldStartLasts, panel.HasHoldEndLasts));
+
+        // At 29.97 fps 1 s is 30 frames, 1.001 s: it still reads 1.0 s.
+        shell.CurrentProject.Model.Timing = TimingSettings.PerSecond(new Fraction(30000, 1001));
+        panel.CommitHoldStart("1");
+        Assert.False(panel.HasHoldStartLasts);
+    }
+
+    [Fact]
     public void AGifHasNoPlayCountsAndPlaysThePhotosOnce()
     {
         var shell = Shell();

@@ -122,6 +122,12 @@ public static class TimingText
     /// <summary>A hold past the range was typed. {0}: what was typed, {1}: the hold now set ("10 s"), {2}: the shortest, {3}: the longest.</summary>
     public static string ClampedHold => _strings.Get();
 
+    /// <summary>
+    /// Under a hold box when the hold, as whole frames at the video's speed, lasts another length than the box shows
+    /// (review of PR #134). {0}: the length it lasts ("2.0 s").
+    /// </summary>
+    public static string HoldLasts => _strings.Get();
+
     /// <summary>Log context: holds, plays or the direction could not be written to the project.</summary>
     public static string SequenceChangeFailed => "Changing the holds, plays or direction failed.";
 

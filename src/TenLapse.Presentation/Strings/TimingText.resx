@@ -148,4 +148,8 @@
     <value>A hold can be from {2} to {3}, so {0} is now {1}.</value>
     <comment>Under the hold boxes when a hold past the range was typed. {0} what was typed, as typed, {1} the hold now set ("10 s"), {2} the shortest ("0 s"), {3} the longest ("10 s").</comment>
   </data>
+  <data name="HoldLasts" xml:space="preserve">
+    <value>Lasts {0} in whole frames.</value>
+    <comment>Under a hold box when, at the video's speed, the hold lasts another length than the box shows: a hold is a whole number of the video's frames, at least one (at 2 s per photo, 0.3 s lasts one 2 s frame). {0} the length it lasts ("2.0 s"). Half a row wide; it may wrap.</comment>
+  </data>
 </root>

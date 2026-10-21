@@ -112,4 +112,7 @@
   <data name="ClampedHold" xml:space="preserve">
     <value>Ein Standbild kann {2} bis {3} lang sein, deshalb wird aus {0} jetzt {1}.</value>
   </data>
+  <data name="HoldLasts" xml:space="preserve">
+    <value>Dauert in ganzen Bildern {0}.</value>
+  </data>
 </root>

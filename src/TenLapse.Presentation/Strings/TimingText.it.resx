@@ -113,4 +113,7 @@
   <data name="ClampedHold" xml:space="preserve">
     <value>Una pausa può durare da {2} a {3}, quindi {0} ora è {1}.</value>
   </data>
+  <data name="HoldLasts" xml:space="preserve">
+    <value>Dura {0} in fotogrammi interi.</value>
+  </data>
 </root>

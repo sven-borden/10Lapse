@@ -54,6 +54,8 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
     private string _sequenceMessage = string.Empty;
     private string _holdStartText = string.Empty;
     private string _holdEndText = string.Empty;
+    private string _holdStartLasts = string.Empty;
+    private string _holdEndLasts = string.Empty;
     private string[] _playsLabels = [];
     private SequenceSettings _sequence = SequenceSettings.Default;
     private bool _isGif;
@@ -266,6 +268,22 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
     /// <summary>The hold after the photos played, as its box shows it.</summary>
     public string HoldEndText => _holdEndText;
 
+    /// <summary>
+    /// "Lasts 2.0 s in whole frames." under the hold-at-start box when the hold, as the whole frames it takes at the video's
+    /// speed (at least one), lasts another length than the box shows to a tenth; empty otherwise. At 2 s per photo a 0.3 s
+    /// hold lasts one 2 s frame (review of PR #134), and the box keeps what was typed for when the speed changes.
+    /// </summary>
+    public string HoldStartLasts => _holdStartLasts;
+
+    /// <summary>True when <see cref="HoldStartLasts"/> has something to show.</summary>
+    public bool HasHoldStartLasts => _holdStartLasts.Length > 0;
+
+    /// <summary>The same as <see cref="HoldStartLasts"/>, for the hold-at-end box.</summary>
+    public string HoldEndLasts => _holdEndLasts;
+
+    /// <summary>True when <see cref="HoldEndLasts"/> has something to show.</summary>
+    public bool HasHoldEndLasts => _holdEndLasts.Length > 0;
+
     /// <summary>What the hold boxes did with the last entry (refused, held to the range, rounded); empty otherwise.</summary>
     public string SequenceMessage
     {
@@ -283,10 +301,10 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
     public bool HasSequenceMessage => _sequenceMessage.Length > 0;
 
     /// <summary>Takes what was typed in the hold-at-start box (Enter, or the box lost focus).</summary>
-    public void CommitHoldStart(string? text) => CommitHold(text, _holdStartText, nameof(HoldStartText), (sequence, hold) => sequence with { HoldStart = hold });
+    public void CommitHoldStart(string? text) => CommitHold(text, _holdStartText, nameof(HoldStartText), (sequence, hold) => sequence with { HoldStart = hold }, () => _holdStartLasts);
 
     /// <summary>Takes what was typed in the hold-at-end box.</summary>
-    public void CommitHoldEnd(string? text) => CommitHold(text, _holdEndText, nameof(HoldEndText), (sequence, hold) => sequence with { HoldEnd = hold });
+    public void CommitHoldEnd(string? text) => CommitHold(text, _holdEndText, nameof(HoldEndText), (sequence, hold) => sequence with { HoldEnd = hold }, () => _holdEndLasts);
 
     /// <summary>
     /// Takes entries still in the hold boxes before a shortcut acts (#38), as <see cref="CommitPending"/> does for the speed
@@ -402,7 +420,7 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void CommitHold(string? text, string shown, string property, Func<SequenceSettings, TimeSpan, SequenceSettings> change)
+    private void CommitHold(string? text, string shown, string property, Func<SequenceSettings, TimeSpan, SequenceSettings> change, Func<string> lasts)
     {
         if (string.Equals(text?.Trim(), shown, StringComparison.Ordinal))
         {
@@ -422,7 +440,8 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
         OnPropertyChanged(property);
         if (entry.Message.Length > 0 || _project.Sequence != before)
         {
-            Announced?.Invoke(this, ProjectText.Sentences(_sequenceMessage, Readout, _noticeAppeared ? _notice : null));
+            // What the hold came to at this speed, when that is not what the box shows, after what became of the entry.
+            Announced?.Invoke(this, ProjectText.Sentences(_sequenceMessage, lasts(), Readout, _noticeAppeared ? _notice : null));
             _noticeAppeared = false;
         }
     }
@@ -628,6 +647,19 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
 
         SetProperty(ref _holdStartText, HoldInput.Number(sequence.HoldStart, culture), nameof(HoldStartText));
         SetProperty(ref _holdEndText, HoldInput.Number(sequence.HoldEnd, culture), nameof(HoldEndText));
+
+        // What each hold lasts as whole frames at the video's rate, when that reads differently from the box.
+        var video = snapshot.Playback;
+        var rate = snapshot.EffectiveRate.Rate;
+        if (SetProperty(ref _holdStartLasts, HoldLasts(sequence.HoldStart, video.HoldStartFrames, rate, culture), nameof(HoldStartLasts)))
+        {
+            OnPropertyChanged(nameof(HasHoldStartLasts));
+        }
+
+        if (SetProperty(ref _holdEndLasts, HoldLasts(sequence.HoldEnd, video.HoldEndFrames, rate, culture), nameof(HoldEndLasts)))
+        {
+            OnPropertyChanged(nameof(HasHoldEndLasts));
+        }
         var isGif = snapshot.Output.Format == VideoFormat.Gif;
         if (isGif != _isGif)
         {
@@ -635,6 +667,19 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(ShowsPlays));
             OnPropertyChanged(nameof(ShowsPlaysGifNote));
         }
+    }
+
+    // "Lasts 2.0 s in whole frames." when the hold's frames last another length than the hold reads to a tenth; empty when
+    // they do not, when there is no hold, or no photos to hold.
+    private static string HoldLasts(TimeSpan hold, int frames, Fraction rate, CultureInfo culture)
+    {
+        if (hold <= TimeSpan.Zero || frames == 0)
+        {
+            return string.Empty;
+        }
+
+        var lasts = TimingFormat.Duration(FrameTiming.Duration(frames, rate), culture);
+        return lasts == TimingFormat.Duration(hold.Ticks, culture) ? string.Empty : TimingText.Format(culture, TimingText.HoldLasts, lasts);
     }
 
     private static string NoticeFor(PlaybackRate rate, TimingSettings timing, long duration, CultureInfo culture)

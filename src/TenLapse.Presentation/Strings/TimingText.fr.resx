@@ -113,4 +113,7 @@
   <data name="ClampedHold" xml:space="preserve">
     <value>Une pause peut durer de {2} à {3} : {0} devient donc {1}.</value>
   </data>
+  <data name="HoldLasts" xml:space="preserve">
+    <value>Dure {0} en images entières.</value>
+  </data>
 </root>

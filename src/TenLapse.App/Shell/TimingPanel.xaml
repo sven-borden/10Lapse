@@ -147,6 +147,14 @@
                 Style="{StaticResource CaptionTextStyle}"
                 Text="{x:Bind core:TimingWords.Second}" />
             </StackPanel>
+            <!-- What the hold lasts as whole frames when that is not what the box shows ("Lasts 2.0 s in whole frames."). -->
+            <TextBlock
+              x:Name="HoldStartLastsText"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind ViewModel.HoldStartLasts, Mode=OneWay}"
+              TextWrapping="Wrap"
+              Visibility="{x:Bind ViewModel.HasHoldStartLasts, Mode=OneWay}" />
           </StackPanel>
           <StackPanel Grid.Column="1" Spacing="6">
             <TextBlock
@@ -171,6 +179,13 @@
                 Style="{StaticResource CaptionTextStyle}"
                 Text="{x:Bind core:TimingWords.Second}" />
             </StackPanel>
+            <TextBlock
+              x:Name="HoldEndLastsText"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind ViewModel.HoldEndLasts, Mode=OneWay}"
+              TextWrapping="Wrap"
+              Visibility="{x:Bind ViewModel.HasHoldEndLasts, Mode=OneWay}" />
           </StackPanel>
         </Grid>
 
