@@ -349,9 +349,11 @@ internal sealed class PreviewRenderLoop : IDisposable
             return;
         }
 
-        var index = Math.Clamp(reading?.Frame ?? state.Frame, 0, frames.Length - 1);
+        // The clock counts the video's frames (#49); the photo is what the sequence shows there, and loading runs ahead the
+        // way the photos go (back on a boomerang's way back).
+        var index = Math.Clamp(reading is { } at ? state.PhotoAt(at.Frame) : state.Frame, 0, frames.Length - 1);
         var frame = frames[index];
-        _images.SetFocus(index, state.IsPlaying, Lookahead(state.Clock?.Rate ?? state.Snapshot.EffectiveRate.Rate));
+        _images.SetFocus(index, state.IsPlaying, Lookahead(state.Clock?.Rate ?? state.Snapshot.EffectiveRate.Rate), reading is { } ahead ? state.DirectionAt(ahead.Frame) : 1);
 
         var lease = _images.Acquire(frame.Id);
 

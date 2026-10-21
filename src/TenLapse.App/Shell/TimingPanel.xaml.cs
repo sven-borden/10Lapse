@@ -150,9 +150,57 @@ public sealed partial class TimingPanel : UserControl
     /// Takes an entry still in the value box (#38), before a shortcut acts: a keyboard accelerator does not move the focus,
     /// so LostFocus has not committed it yet. A click on the shortcut's button would have.
     /// </summary>
-    internal void CommitPendingEntry() => ViewModel?.CommitPending(ValueBox.Text);
+    internal void CommitPendingEntry()
+    {
+        ViewModel?.CommitPending(ValueBox.Text);
+        ViewModel?.CommitPendingHolds(HoldStartBox.Text, HoldEndBox.Text);
+    }
 
     private void OnValueGotFocus(object sender, RoutedEventArgs e) => ValueBox.SelectAll();
+
+    // The hold boxes (#49) work as the speed box does: Enter or leaving takes the entry, Escape shows the stored value again.
+    private void OnHoldKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (ViewModel is not { } viewModel || sender is not TextBox box)
+        {
+            return;
+        }
+
+        if (e.Key == VirtualKey.Enter)
+        {
+            e.Handled = true;
+            CommitHold(viewModel, box);
+            box.SelectAll();
+        }
+        else if (e.Key == VirtualKey.Escape)
+        {
+            e.Handled = true;
+            box.Text = box == HoldStartBox ? viewModel.HoldStartText : viewModel.HoldEndText;
+            box.SelectAll();
+        }
+    }
+
+    private void OnHoldLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is { } viewModel && sender is TextBox box)
+        {
+            CommitHold(viewModel, box);
+        }
+    }
+
+    private void OnHoldGotFocus(object sender, RoutedEventArgs e) => (sender as TextBox)?.SelectAll();
+
+    private void CommitHold(TimingPanelViewModel viewModel, TextBox box)
+    {
+        if (box == HoldStartBox)
+        {
+            viewModel.CommitHoldStart(box.Text);
+        }
+        else
+        {
+            viewModel.CommitHoldEnd(box.Text);
+        }
+    }
 
     // Narrator does not reliably hear a text that changes under it, so what a change came to is raised as a notification:
     // the sentence about a refused or corrected entry, then the readout.

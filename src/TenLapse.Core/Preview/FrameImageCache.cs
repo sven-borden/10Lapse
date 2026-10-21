@@ -91,6 +91,7 @@ public sealed class FrameImageCache<TImage> : IDisposable
     private int _focus;
     private bool _playing;
     private int _lookahead;
+    private int _direction = 1;
     private long _bytes;
     private long _useClock;
     private bool _disposed;
@@ -225,15 +226,19 @@ public sealed class FrameImageCache<TImage> : IDisposable
         Wake();
     }
 
-    /// <summary>Where the player is: the frame on screen, whether it plays, and how many frames ahead to keep ready while it does.</summary>
-    public void SetFocus(int index, bool playing, int lookahead)
+    /// <summary>
+    /// Where the player is: the frame on screen, whether it plays, how many frames ahead to keep ready while it does, and
+    /// which way "ahead" is (-1 on a boomerang's way back, #49).
+    /// </summary>
+    public void SetFocus(int index, bool playing, int lookahead, int direction = 1)
     {
         lock (_gate)
         {
             // Before the frames arrive the index is kept as given; SetFrames clamps it.
             index = _frames.IsEmpty ? Math.Max(0, index) : Math.Clamp(index, 0, _frames.Length - 1);
             lookahead = Math.Max(0, lookahead);
-            if (_disposed || (index == _focus && playing == _playing && lookahead == _lookahead))
+            direction = direction < 0 ? -1 : 1;
+            if (_disposed || (index == _focus && playing == _playing && lookahead == _lookahead && direction == _direction))
             {
                 return;
             }
@@ -241,6 +246,7 @@ public sealed class FrameImageCache<TImage> : IDisposable
             _focus = index;
             _playing = playing;
             _lookahead = lookahead;
+            _direction = direction;
         }
 
         Wake();
@@ -607,9 +613,10 @@ public sealed class FrameImageCache<TImage> : IDisposable
         yield return _focus;
         if (_playing)
         {
+            // The way playback goes: forward, or back on a boomerang's way back (#49), wrapping.
             for (var ahead = 1; ahead <= _lookahead && ahead < count; ahead++)
             {
-                yield return (_focus + ahead) % count;
+                yield return (((_focus + (_direction * ahead)) % count) + count) % count;
             }
 
             yield break;
