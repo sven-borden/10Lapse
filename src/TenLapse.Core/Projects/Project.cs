@@ -38,7 +38,8 @@ public enum ProjectChanges
     File = 1 << 8,
 
     /// <summary><see cref="Project.Look"/> changed (#45: deflicker and its strength).</summary>
-    Look = 1 << 9,
+    /// <remarks>Bit 10: #49 takes bit 9 for its sequence settings.</remarks>
+    Look = 1 << 10,
 }
 
 /// <summary>The kind of a <see cref="FrameChange"/>.</summary>

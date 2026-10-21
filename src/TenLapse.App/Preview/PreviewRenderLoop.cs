@@ -32,7 +32,8 @@ internal readonly record struct PreviewLook(Color Ground, Color Gate, Color Text
 /// <summary>
 /// The preview's render thread (#19): draws the frame the player says belongs on screen into a swap chain, through
 /// <see cref="FrameRenderer.Draw(CanvasDrawingSession, CanvasBitmap, FrameSettings, PixelSize)"/> with the snapshot's
-/// frame settings and video size, the exact call the export makes; the gate only places and rounds it.
+/// frame settings and video size, the exact call the export makes; the gate only places and rounds it. Each photo is drawn
+/// with its own <see cref="FrameLook"/> (#45, deflicker's exposure), as the export draws it, also during a reframe.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -128,6 +129,9 @@ internal sealed class PreviewRenderLoop : IDisposable
     // The snapshot the last pass drew for: a project with no photos or another project forgets what was shown.
     private ProjectSnapshot? _drawnSnapshot;
 
+    // #45: the Look panel's Before (true), set on the UI thread: the photos are drawn without their look.
+    private volatile bool _showOriginals;
+
     public PreviewRenderLoop(CanvasSwapChainPanel panel, PlayerViewModel player, FrameImageCache<CanvasBitmap> images, IErrorPresenter errors, IErrorSink log)
     {
         _panel = panel;
@@ -172,6 +176,26 @@ internal sealed class PreviewRenderLoop : IDisposable
         if (created is not null)
         {
             _panel.SwapChain = created;
+        }
+
+        _wake.Set();
+    }
+
+    /// <summary>
+    /// The Look panel's Before and After (#45; UI thread): true draws the photos as they are, without deflicker, to compare;
+    /// the export never sees it.
+    /// </summary>
+    public void ShowOriginals(bool originals)
+    {
+        if (_showOriginals == originals)
+        {
+            return;
+        }
+
+        _showOriginals = originals;
+        lock (_gate)
+        {
+            _changes++;
         }
 
         _wake.Set();
@@ -475,6 +499,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         var photo = image is null ? gate : PhotoRect(gate, video, fit, image);
         var (shownGate, shownPhoto) = Reframing(gate, photo, image is not null, video, fit, size, now);
         var (opacity, blur, grow) = Developing(current, now);
+        var photoLook = LookOf(snapshot, current ? frame.Id : _shownId);
         _shownGate = shownGate;
         _shownPhoto = shownPhoto;
         _aimedGate = gate;
@@ -508,7 +533,7 @@ internal sealed class PreviewRenderLoop : IDisposable
 
         if (blur <= 0)
         {
-            DrawPicture(session, snapshot, image, gate, shownGate, shownPhoto, develop);
+            DrawPicture(session, snapshot, image, gate, shownGate, shownPhoto, develop, photoLook);
             return;
         }
 
@@ -516,7 +541,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         using var picture = new CanvasCommandList(session);
         using (var inner = picture.CreateDrawingSession())
         {
-            DrawPicture(inner, snapshot, image, gate, shownGate, shownPhoto, Matrix3x2.Identity);
+            DrawPicture(inner, snapshot, image, gate, shownGate, shownPhoto, Matrix3x2.Identity, photoLook);
         }
 
         using var effect = new GaussianBlurEffect { Source = picture, BlurAmount = blur, BorderMode = EffectBorderMode.Hard };
@@ -525,15 +550,16 @@ internal sealed class PreviewRenderLoop : IDisposable
 
     // At rest the frame is FrameRenderer's, the export's own drawing. Only while the gate reshapes is the photo placed by
     // hand: the whole photo at its moving rectangle on the gate's black, inside the moving clip; the reframe's end is
-    // FrameRenderer's picture again.
-    private void DrawPicture(CanvasDrawingSession session, ProjectSnapshot snapshot, CanvasBitmap image, Rect gate, Rect shownGate, Rect shownPhoto, Matrix3x2 develop)
+    // FrameRenderer's picture again. Both draw the photo through FrameRenderer.DrawPhoto with its look (#45), so the
+    // 400 ms of a reframe show the same correction as the frames either side of it (STATUS, the reframe exception).
+    private void DrawPicture(CanvasDrawingSession session, ProjectSnapshot snapshot, CanvasBitmap image, Rect gate, Rect shownGate, Rect shownPhoto, Matrix3x2 develop, FrameLook look)
     {
         var video = snapshot.VideoSize;
         if (_reframe is not null)
         {
             session.Transform = develop;
             session.FillRectangle(shownGate, FrameRenderer.Background);
-            session.DrawImage(image, shownPhoto, new Rect(0, 0, image.Size.Width, image.Size.Height), 1f, CanvasImageInterpolation.HighQualityCubic);
+            FrameRenderer.DrawPhoto(session, image, shownPhoto, new Rect(0, 0, image.Size.Width, image.Size.Height), look);
             return;
         }
 
@@ -541,8 +567,13 @@ internal sealed class PreviewRenderLoop : IDisposable
         var frameDips = session.ConvertPixelsToDips(video.Width);
         var scale = (float)(gate.Width / frameDips);
         session.Transform = Matrix3x2.CreateScale(scale) * Matrix3x2.CreateTranslation((float)gate.X, (float)gate.Y) * develop;
-        FrameRenderer.Draw(session, image, snapshot.FrameSettings, video);
+        FrameRenderer.Draw(session, image, snapshot.FrameSettings, video, look);
     }
+
+    // The look the photo is drawn with (#45): its deflicker correction from the snapshot's curve, keyed by the photo, or none
+    // while the Look panel shows Before.
+    private FrameLook LookOf(ProjectSnapshot snapshot, Guid frameId) =>
+        _showOriginals || frameId == Guid.Empty ? FrameLook.None : FrameLook.For(snapshot, frameId);
 
     // The reframe (motion spec, Reframe): a new shape or fit at the same panel size moves the gate's clip and the photo's
     // rectangle from where they are on screen to their new places, 400 ms Move; with animations off, at once. A resize ends

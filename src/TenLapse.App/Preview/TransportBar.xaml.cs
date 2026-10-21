@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using TenLapse.Presentation;
+using TenLapse.Presentation.Look;
 using TenLapse.Presentation.Preview;
 using TenLapse.Presentation.Services;
 
@@ -27,6 +28,19 @@ public sealed partial class TransportBar : UserControl
 
     /// <summary>The player, for x:Bind; null until <see cref="Attach"/>.</summary>
     public PlayerViewModel? Player { get; private set; }
+
+    /// <summary>The Look panel (#45), for the Before and After switch; null until <see cref="AttachLook"/>.</summary>
+    public LookPanelViewModel? Look { get; private set; }
+
+    /// <summary>Before, After.</summary>
+    public static IReadOnlyList<string> CompareLabels { get; } = [LookText.CompareBefore, LookText.CompareAfter];
+
+    /// <summary>Binds the Before and After switch to <paramref name="look"/>.</summary>
+    internal void AttachLook(LookPanelViewModel look)
+    {
+        Look = look;
+        Bindings.Update();
+    }
 
     /// <summary>Binds to <paramref name="player"/>.</summary>
     internal void Attach(PlayerViewModel player, IErrorPresenter errors)

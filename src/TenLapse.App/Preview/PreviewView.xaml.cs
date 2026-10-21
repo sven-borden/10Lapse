@@ -23,6 +23,7 @@ public sealed partial class PreviewView : UserControl
     private readonly UISettings _uiSettings = new();
     private PreviewSession? _session;
     private PreviewRenderLoop? _loop;
+    private Presentation.Look.LookPanelViewModel? _lookPanel;
 
     public PreviewView()
     {
@@ -45,6 +46,17 @@ public sealed partial class PreviewView : UserControl
             Stop();
             Start();
         }
+    }
+
+    /// <summary>
+    /// Follows the Look panel's Before and After switch (#45): on Before the preview draws the photos without deflicker.
+    /// Set once, with the session.
+    /// </summary>
+    internal void AttachLook(Presentation.Look.LookPanelViewModel look)
+    {
+        _lookPanel = look;
+        look.ShowsOriginalChanged += (_, _) => _loop?.ShowOriginals(look.ShowsOriginal);
+        _loop?.ShowOriginals(look.ShowsOriginal);
     }
 
     /// <summary>The photos landed: the first frame develops (motion spec, Arrival). Nothing when the preview is not running.</summary>
@@ -103,6 +115,7 @@ public sealed partial class PreviewView : UserControl
         }
 
         _loop = new PreviewRenderLoop(Panel, session.Player, session.Images, session.Errors, session.Log);
+        _loop.ShowOriginals(_lookPanel?.ShowsOriginal ?? false);
         session.Loop = _loop;
         RefreshColors();
         Resize();
