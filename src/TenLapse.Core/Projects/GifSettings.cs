@@ -234,10 +234,11 @@ public static class GifOutput
     public const double BytesPerPixel = 0.5;
 
     /// <summary>
-    /// The share of <see cref="EstimateBytes"/> the Output panel gives as the low end: the quietest photos measured
-    /// (0.39 bytes per pixel) and below, as fog or a clear sky goes.
+    /// The share of <see cref="EstimateBytes"/> the Output panel gives as the low end: 0.35 bytes per pixel, below the
+    /// quietest photograph measured (0.39) and the Debug sample sunsets (a smooth sky over dark water, 0.37 in a 100-frame
+    /// and an 834-frame export), as fog or a clear sky goes.
     /// </summary>
-    public const double EstimateLowShare = 0.75;
+    public const double EstimateLowShare = 0.7;
 
     /// <summary>
     /// The share of <see cref="EstimateBytes"/> the Output panel gives as the high end: the busiest photos measured (0.59)

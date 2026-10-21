@@ -109,7 +109,7 @@ public sealed class GifOutputPanelTests
         // 300 photos at 30 fps are 10 s; at up to 10 fps the GIF shows 100 of them.
         var bytes = GifOutput.EstimateBytes(100, new PixelSize(480, 270));
         Assert.Equal(OutputText.GifEstimate(bytes), panel.EstimatedSize);
-        Assert.Equal("4.7 MB to 9.4 MB", OutputText.GifEstimate(bytes, CultureInfo.GetCultureInfo("en-US")));
+        Assert.Equal("4.4 MB to 9.4 MB", OutputText.GifEstimate(bytes, CultureInfo.GetCultureInfo("en-US")));
         Assert.Empty(panel.Note);
     }
 
@@ -131,14 +131,14 @@ public sealed class GifOutputPanelTests
     [InlineData(0, "Less than 1 MB")]
     [InlineData(600_000, "Less than 1 MB")]
     [InlineData(1_000_000, "Up to 1.4 MB")]
-    [InlineData(10L << 20, "7.5 MB to 15 MB")]
+    [InlineData(10L << 20, "7 MB to 15 MB")]
     public void TheGifEstimateSaysWhatItCan(long bytes, string expected) =>
         Assert.Equal(expected, OutputText.GifEstimate(bytes, CultureInfo.GetCultureInfo("en-US")));
 
     [Fact]
     public void TheGifEstimatesNumbersAreWrittenInTheUsersCulture() =>
         // The words follow the app's language (English in the tests), the numbers the regional format.
-        Assert.Equal("7,5 MB to 15 MB", OutputText.GifEstimate(10L << 20, CultureInfo.GetCultureInfo("de-DE")));
+        Assert.Equal("4,4 MB to 9,4 MB", OutputText.GifEstimate(6_560_064, CultureInfo.GetCultureInfo("de-DE")));
 
     [Fact]
     public void TheExportWordsNameTheGifsSizeAndRate()

@@ -193,8 +193,9 @@ public sealed class GifExportTests : IDisposable
                     encoder.Dispose();
                 }
 
-                // One frame: the file less the header and the frame's palette and headers is the picture.
-                var picture = new FileInfo(path).Length - GifOutput.EstimateBytes(1, new PixelSize(1, 1)) + Math.Round(GifOutput.BytesPerPixel);
+                // One frame: the file less the header and the frame's palette and headers (the estimate of a one-pixel
+                // frame, whose own byte rounds away) is the picture.
+                var picture = new FileInfo(path).Length - GifOutput.EstimateBytes(1, new PixelSize(1, 1));
                 samples.Add((Path.GetFileName(photo), size, picture / ((double)pixels.Width * pixels.Height)));
             }
         }
