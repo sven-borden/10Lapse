@@ -138,6 +138,81 @@ public sealed class GifExportTests : IDisposable
     }
 
     [Fact]
+    public void IdenticalFramesInARowAreStoredAsOneFrameLastingTheRun()
+    {
+        // A 3 s hold at 15 fps (6⅔ cs a frame): one frame, then 45 identical ones, then another. The file stores three
+        // frames, and the held one lasts from its rounded start to the next frame's rounded start, so the whole GIF is as
+        // long as the 47 frames' rounded end (review of PR #134).
+        const int width = 64;
+        const int height = 36;
+        var rate = new Fraction(15, 1);
+        var path = Path.Combine(_folder, "held.gif");
+        var first = Solid(width, height, 40);
+        var held = Solid(width, height, 120);
+        var last = Solid(width, height, 200);
+        var encoder = new GifEncoder(path, new VideoExportSettings(width, height, rate) { Format = VideoFormat.Gif });
+        try
+        {
+            var frames = new[] { first }.Concat(Enumerable.Repeat(held, 45)).Append(last).ToArray();
+            for (var i = 0; i < frames.Length; i++)
+            {
+                // A fresh copy each time: the encoder compares the pixels, not the arrays.
+                encoder.Accept([.. frames[i]], FrameTiming.FrameStart(i, rate), FrameTiming.FrameStart(i + 1, rate));
+            }
+
+            encoder.Finish();
+        }
+        finally
+        {
+            encoder.Dispose();
+        }
+
+        var info = GifFileReader.Read(path);
+        Assert.Equal(3, info.FrameCount);
+        Assert.Equal(
+            new[] { GifTiming.Delay(0, rate), (int)(GifTiming.Centiseconds(FrameTiming.FrameStart(46, rate)) - GifTiming.Centiseconds(FrameTiming.FrameStart(1, rate))), GifTiming.Delay(46, rate) },
+            info.Delays);
+        Assert.Equal(300, info.Delays[1]);
+        Assert.Equal(GifTiming.Centiseconds(FrameTiming.Duration(47, rate)), info.TotalCentiseconds);
+
+        // A run longer than a GIF delay can hold (655.35 s) is split, still adding up to its length.
+        var longPath = Path.Combine(_folder, "long.gif");
+        var slow = new Fraction(1, 10);
+        var longEncoder = new GifEncoder(longPath, new VideoExportSettings(width, height, slow) { Format = VideoFormat.Gif });
+        try
+        {
+            for (var i = 0; i < 70; i++)
+            {
+                longEncoder.Accept(held, FrameTiming.FrameStart(i, slow), FrameTiming.FrameStart(i + 1, slow));
+            }
+
+            longEncoder.Finish();
+        }
+        finally
+        {
+            longEncoder.Dispose();
+        }
+
+        var longInfo = GifFileReader.Read(longPath);
+        Assert.Equal(2, longInfo.FrameCount);
+        Assert.All(longInfo.Delays, delay => Assert.InRange(delay, 1, GifTiming.MaxDelay));
+        Assert.Equal(70_000, longInfo.TotalCentiseconds);
+    }
+
+    // Top-down BGRX pixels of one grey.
+    private static byte[] Solid(int width, int height, byte grey)
+    {
+        var pixels = new byte[width * height * 4];
+        for (var i = 0; i < pixels.Length; i += 4)
+        {
+            pixels[i] = pixels[i + 1] = pixels[i + 2] = grey;
+            pixels[i + 3] = 255;
+        }
+
+        return pixels;
+    }
+
+    [Fact]
     public void TheEncoderRefusesASizeAGifCannotHold()
     {
         var settings = new VideoExportSettings(70_000, 2, new Fraction(10, 1)) { Format = VideoFormat.Gif };

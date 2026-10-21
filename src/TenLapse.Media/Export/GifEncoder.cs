@@ -25,6 +25,16 @@ namespace TenLapse.Media.Export;
 /// GIF's length never drifts.
 /// </para>
 /// <para>
+/// <b>Repeated frames.</b> A hold (#49), or any run of frames that come out the same, is written as one frame lasting the
+/// whole run: each frame waits until the next one arrives, and a next frame whose pixels are byte for byte the same only
+/// moves the waiting frame's end. Its delay is still the rounded end minus the rounded start, so the summed delays equal
+/// the difference of the rounded starts and the timing stays exact; a 3 s hold at 10 fps is one frame, not 30. The
+/// rendered pixels are compared, not the photos they show, so a later per-frame effect cannot be merged away. The
+/// comparison is a vectorised byte compare that stops at the first difference: the waiting frame's pixels are kept
+/// anyway, so a hash would only add a full pass over every frame. A run longer than <see cref="GifTiming.MaxDelay"/>
+/// (655 s) is split.
+/// </para>
+/// <para>
 /// <b>Palette and dithering.</b> A palette per frame (<c>IWICPalette.InitializeFromBitmap</c>, 256 colours, no
 /// transparent one) follows the light as a timelapse goes from day to dusk; one palette for the whole clip would have
 /// to share 256 colours between noon and night. Error diffusion (<see cref="WICBitmapDitherType.WICBitmapDitherTypeErrorDiffusion"/>)
@@ -66,6 +76,12 @@ internal sealed class GifEncoder : IVideoEncoder
     private readonly int _width;
     private readonly int _height;
     private readonly byte[] _pixels;
+
+    // The frame that waits for the next one (a run of identical frames grows here), and its start and end in ticks.
+    private readonly byte[] _pending;
+    private bool _hasPending;
+    private long _pendingStart;
+    private long _pendingEnd;
     private bool _disposed;
 
     public GifEncoder(string path, VideoExportSettings settings, VideoDevice device)
@@ -97,6 +113,7 @@ internal sealed class GifEncoder : IVideoEncoder
         _height = settings.Height;
         Dither = dither;
         _pixels = new byte[checked(_width * _height * 4)];
+        _pending = new byte[_pixels.Length];
         var opened = false;
         try
         {
@@ -148,12 +165,50 @@ internal sealed class GifEncoder : IVideoEncoder
     {
         ArgumentNullException.ThrowIfNull(target);
         ObjectDisposedException.ThrowIf(_disposed, this);
-        var delay = GifTiming.Delay(time, time + duration);
 
         // Win2D's B8G8R8A8 premultiplied, read back from the GPU. The frames are opaque (FrameRenderer fills the frame), so
         // the bytes are plain BGR with alpha 255.
         target.GetPixelBytes(_pixels.AsBuffer());
-        WriteFrame(_pixels, delay);
+        Accept(_pixels, time, time + duration);
+    }
+
+    /// <summary>
+    /// Takes one frame of top-down BGRX pixels lasting from <paramref name="start"/> to <paramref name="end"/> (ticks): a
+    /// frame identical to the waiting one extends it; any other writes the waiting one and waits in its place. The last
+    /// one is written by <see cref="Finish"/>.
+    /// </summary>
+    internal void Accept(byte[] pixels, long start, long end)
+    {
+        ArgumentNullException.ThrowIfNull(pixels);
+        ArgumentOutOfRangeException.ThrowIfNotEqual(pixels.Length, _pending.Length, nameof(pixels));
+        ArgumentOutOfRangeException.ThrowIfLessThan(end, start);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (_hasPending
+            && start == _pendingEnd
+            && GifTiming.Centiseconds(end) - GifTiming.Centiseconds(_pendingStart) <= GifTiming.MaxDelay
+            && pixels.AsSpan().SequenceEqual(_pending))
+        {
+            _pendingEnd = end;
+            return;
+        }
+
+        WritePending();
+        pixels.AsSpan().CopyTo(_pending);
+        _pendingStart = start;
+        _pendingEnd = end;
+        _hasPending = true;
+    }
+
+    // The waiting frame, with the delay of its whole run.
+    private void WritePending()
+    {
+        if (!_hasPending)
+        {
+            return;
+        }
+
+        _hasPending = false;
+        WriteFrame(_pending, GifTiming.Delay(_pendingStart, _pendingEnd));
     }
 
     /// <summary>Writes one frame of top-down BGRX pixels, <c>width × height × 4</c> bytes, lasting <paramref name="delay"/> cs.</summary>
@@ -247,6 +302,7 @@ internal sealed class GifEncoder : IVideoEncoder
     public void Finish()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        WritePending();
         try
         {
             _encoder.Commit();

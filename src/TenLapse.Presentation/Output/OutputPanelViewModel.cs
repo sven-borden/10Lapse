@@ -449,9 +449,9 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
             var videoRate = shape.Rate;
             var gifRate = GifOutput.EffectiveRate(videoRate, output.Gif.Rate);
             Note = gifRate < GifOutput.Rate(output.Gif.Rate) ? OutputText.GifKeepsSpeed(videoRate) : string.Empty;
-            // The GIF covers the video's frames (#49: holds and the way back included).
+            // The GIF covers the video's frames (#49: holds and the way back included); a hold is stored as one frame.
             EstimatedSize = snapshot.Frames.Length > 0
-                ? OutputText.GifEstimate(GifOutput.EstimateBytes(GifOutput.FrameCount(snapshot.Playback.Length, videoRate, gifRate), GifOutput.Size(output.Gif.Size, shape.Aspect, shape.PhotoSize)))
+                ? OutputText.GifEstimate(GifOutput.EstimateBytes(GifOutput.StoredFrames(snapshot.Playback, videoRate, gifRate), GifOutput.Size(output.Gif.Size, shape.Aspect, shape.PhotoSize)))
                 : string.Empty;
             return;
         }

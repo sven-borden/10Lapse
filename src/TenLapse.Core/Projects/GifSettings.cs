@@ -207,6 +207,29 @@ public static class GifOutput
     }
 
     /// <summary>
+    /// The frames a GIF of <paramref name="sequence"/> holds in its file: one per run of GIF frames showing the same photo,
+    /// since the encoder writes a run of identical frames (a hold, #49) as one frame lasting the run. What
+    /// <see cref="EstimateBytes"/> counts.
+    /// </summary>
+    public static int StoredFrames(FrameSequence sequence, Fraction videoRate, Fraction gifRate)
+    {
+        var count = FrameCount(sequence.Length, videoRate, gifRate);
+        var stored = 0;
+        var previous = -1;
+        for (var i = 0; i < count; i++)
+        {
+            var photo = sequence.PhotoAt(SourceFrame(i, videoRate, gifRate));
+            if (photo != previous)
+            {
+                stored++;
+                previous = photo;
+            }
+        }
+
+        return stored;
+    }
+
+    /// <summary>
     /// The expected size in bytes of a GIF of <paramref name="gifFrames"/> frames at <paramref name="size"/>: a measured
     /// cost per pixel of each frame plus the file's own header and each frame's palette and headers. An estimate: GIF
     /// compresses smooth sky far better than foliage or water, so a real file lands within
@@ -216,7 +239,8 @@ public static class GifOutput
     /// Measured (#51, <c>GifExportTests.MeasureBytesPerPixel</c>) by writing nine landscape photographs (the ones
     /// Windows ships as lock screen and wallpaper pictures) filled into 16:9 at each size, as one GIF frame each with the
     /// export's per-frame palette and error diffusion: 0.39 to 0.59 bytes per pixel, 0.49 on average, the same at every
-    /// size within 0.02. Every frame is written whole (no frame reuses the one before), so the size is linear in frames.
+    /// size within 0.02. Every frame is written whole (no frame reuses the one before), so the size is linear in the
+    /// frames stored (<see cref="StoredFrames"/>: a run of identical frames is stored once).
     /// </remarks>
     public static long EstimateBytes(int gifFrames, PixelSize size)
     {

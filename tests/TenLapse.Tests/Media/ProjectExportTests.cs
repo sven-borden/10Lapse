@@ -411,7 +411,8 @@ public sealed class ProjectExportTests : IDisposable
     public async Task AGifCountsItsProgressInPhotosAndWritesTheFramesItShows()
     {
         // 30 photos at 30 fps as a GIF of up to 10 fps: 10 GIF frames, photos 0, 3, 6 and so on; progress in photos.
-        var photos = ManyPhotos(30).ToList();
+        // Two pictures in turn, so no two GIF frames in a row are the same (the encoder would store them as one).
+        var photos = AlternatingPhotos(30).ToList();
         var snapshot = GoldenExport.Snapshot(photos.Select(path => GoldenExport.FrameOf(path)), TimingSettings.PerSecond(new Fraction(30, 1)), FrameAspect.Ratio16x9, FitMode.Fill, VideoFormat.Gif);
         var settings = ProjectExporter.SettingsFor(snapshot);
         Assert.Equal((480, 270, new Fraction(10, 1), VideoFormat.Gif, (uint?)null), (settings.Width, settings.Height, settings.FrameRate, settings.Format, settings.Bitrate));
@@ -501,7 +502,7 @@ public sealed class ProjectExportTests : IDisposable
         // The disk fills up a few frames in, at the stream the WIC GIF encoder writes to (GifEncoder's open seam): WIC
         // passes ERROR_DISK_FULL through, and the user reads "The disk is full", not "The GIF encoder stopped".
         SkipWithoutGraphicsDevice();
-        var photos = ManyPhotos(30).ToList();
+        var photos = AlternatingPhotos(30).ToList();
         var snapshot = GoldenExport.Snapshot(photos.Select(path => GoldenExport.FrameOf(path)), TimingSettings.PerSecond(new Fraction(30, 1)), FrameAspect.Ratio16x9, FitMode.Fill, VideoFormat.Gif);
         var output = _scratch.PathOf("full.gif");
 
@@ -568,6 +569,22 @@ public sealed class ProjectExportTests : IDisposable
             if (!File.Exists(path))
             {
                 File.Copy(source, path);
+            }
+
+            yield return path;
+        }
+    }
+
+    // Two different pictures in turn (the scene and a grey one): what a GIF test needs where identical frames in a row
+    // would be stored as one.
+    private IEnumerable<string> AlternatingPhotos(int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            var path = _scratch.PathOf($"alternating-{i:D4}.jpg");
+            if (!File.Exists(path))
+            {
+                File.Copy(PhotoFixtureCatalogue.Get(i % 2 == 0 ? "orientation-1.jpg" : "gray.jpg").Path, path);
             }
 
             yield return path;
