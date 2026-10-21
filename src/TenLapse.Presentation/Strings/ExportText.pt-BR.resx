@@ -131,6 +131,9 @@
   <data name="PremiereCantPlayFormat" xml:space="preserve">
     <value>O vídeo foi salvo, mas o 10Lapse não conseguiu reproduzi-lo aqui. Selecione “{0}” e abra o vídeo em outro aplicativo para conferi-lo.</value>
   </data>
+  <data name="PremiereGifFirstFrameFormat" xml:space="preserve">
+    <value>O GIF foi salvo, mas é grande demais para ser reproduzido aqui, então a visualização mostra o primeiro quadro. Selecione “{0}” e abra o GIF em outro aplicativo para vê-lo animado.</value>
+  </data>
   <data name="CloseTitle" xml:space="preserve">
     <value>Parar a exportação e fechar?</value>
   </data>

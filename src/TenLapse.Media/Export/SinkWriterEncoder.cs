@@ -20,6 +20,10 @@ namespace TenLapse.Media.Export;
 /// <see cref="Write"/> blocks while the encoder is behind (the sink writer
 /// throttles), which is the pipeline's backpressure. The container is MP4
 /// whatever the file extension, so a <c>.mp4.partial</c> path works (#22).
+/// <para>
+/// Not <c>MediaTranscoder</c>: on D3D surfaces it dropped frames, and on CPU
+/// buffers one 4K run took 8 GB (benchmark in PR #65).
+/// </para>
 /// </remarks>
 internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
 {

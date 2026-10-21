@@ -50,6 +50,14 @@ public sealed class ProjectFileJsonTests
             Assert.Equal(output, RoundTrip(new ProjectFileContent { Output = output }).Output);
         }
 
+        // #51's GIF size and frame rate are part of the output group.
+        foreach (var size in Enum.GetValues<GifSize>())
+        foreach (var rate in Enum.GetValues<GifFrameRate>())
+        {
+            var gif = OutputSettings.Default with { Format = VideoFormat.Gif, Gif = new GifSettings(size, rate) };
+            Assert.Equal(gif, RoundTrip(new ProjectFileContent { Output = gif }).Output);
+        }
+
         foreach (var sort in Enum.GetValues<SortMode>())
         {
             Assert.Equal(sort, RoundTrip(new ProjectFileContent { SortMode = sort }).SortMode);
@@ -125,10 +133,10 @@ public sealed class ProjectFileJsonTests
     [Fact]
     public void AnUnknownEnumValueTakesTheDefaultAndSaysSo()
     {
-        // A value a newer build added (#51's GIF, say) reads as the default here.
+        // A value a newer build added reads as the default here (a name no build will ever use).
         var result = ProjectFileJson.Read("""
             { "format": "10Lapse project", "version": 1,
-              "output": { "resolution": "Uhd2160", "format": "Gif", "quality": "Maximum" } }
+              "output": { "resolution": "Uhd2160", "format": "Format9000", "quality": "Maximum" } }
             """);
 
         Assert.Equal(new OutputSettings(OutputResolution.Uhd2160, VideoFormat.Mp4H264, OutputQuality.Maximum), result.Content!.Output);
@@ -230,5 +238,79 @@ public sealed class ProjectFileJsonTests
             .ToList();
 
         Assert.True(unknown.Count == 0, "Not in the project file: " + string.Join(", ", unknown));
+
+        // And inside each stored group, every setting, however deep (Output.Gif.Size): each is set to another value on
+        // its own, written and read back. A field added to a group (or to a record in it) without a writer and a reader in
+        // JsonFields comes back as its default and fails here.
+        (object Default, Func<object, ProjectFileContent> Make, Func<ProjectFileContent, object> Take)[] groups =
+        [
+            (TimingSettings.Default, value => new ProjectFileContent { Timing = (TimingSettings)value }, content => content.Timing),
+            (FrameSettings.Default, value => new ProjectFileContent { Frame = (FrameSettings)value }, content => content.Frame),
+            (OutputSettings.Default, value => new ProjectFileContent { Output = (OutputSettings)value }, content => content.Output),
+        ];
+        var walked = new List<string>();
+        foreach (var (defaults, make, take) in groups)
+        {
+            foreach (var leaf in Leaves(defaults.GetType(), defaults.GetType().Name + "."))
+            {
+                walked.Add(leaf.Path);
+                foreach (var value in OtherValues(leaf.Type, leaf.Get(defaults)))
+                {
+                    var changed = leaf.With(defaults, value);
+                    Assert.True(Equals(value, leaf.Get(take(RoundTrip(make(changed))))), $"{leaf.Path} = {value} did not survive a write and a read.");
+                }
+            }
+        }
+
+        Assert.Contains("OutputSettings.Gif.Size", walked);
+        Assert.Contains("OutputSettings.Gif.Rate", walked);
+    }
+
+    // Every settable property of a settings record, recursing into the records it holds.
+    private static IEnumerable<(string Path, Type Type, Func<object, object?> Get, Func<object, object?, object> With)> Leaves(Type type, string prefix)
+    {
+        foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(property => property.SetMethod is not null))
+        {
+            if (IsRecord(property.PropertyType))
+            {
+                foreach (var inner in Leaves(property.PropertyType, prefix + property.Name + "."))
+                {
+                    yield return (
+                        inner.Path,
+                        inner.Type,
+                        root => inner.Get(property.GetValue(root)!),
+                        (root, value) => WithProperty(root, property, inner.With(property.GetValue(root)!, value)));
+                }
+            }
+            else
+            {
+                yield return (prefix + property.Name, property.PropertyType, property.GetValue, (root, value) => WithProperty(root, property, value));
+            }
+        }
+    }
+
+    private static bool IsRecord(Type type) => type.IsClass && type.GetMethod("<Clone>$") is not null;
+
+    private static object WithProperty(object record, PropertyInfo property, object? value)
+    {
+        var clone = record.GetType().GetMethod("<Clone>$")!.Invoke(record, null)!;
+        property.SetValue(clone, value);
+        return clone;
+    }
+
+    // Values other than the default for a setting: every other enum value, or another fraction.
+    private static IEnumerable<object> OtherValues(Type type, object? current)
+    {
+        if (type.IsEnum)
+        {
+            return Enum.GetValues(type).Cast<object>().Where(value => !value.Equals(current));
+        }
+
+        if (type == typeof(Fraction))
+        {
+            return [new Fraction(7, 2)];
+        }
+
+        throw new InvalidOperationException($"No test values for a setting of type {type.Name}: add some here.");
     }
 }

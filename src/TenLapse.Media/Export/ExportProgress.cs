@@ -71,6 +71,9 @@ internal sealed class ExportProgressTracker : IProgress<int>
         _clock = clock;
     }
 
+    /// <summary>The frame count the reports go up to.</summary>
+    public int Count => _count;
+
     /// <summary>The last report made, for the result and the tests.</summary>
     public ExportProgress? Last { get; private set; }
 

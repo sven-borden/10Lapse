@@ -1,3 +1,4 @@
+using TenLapse.Core.Projects;
 using TenLapse.Media.Decoding;
 using TenLapse.Media.Export;
 using TenLapse.Presentation;
@@ -19,7 +20,7 @@ public sealed class VideoExportErrorMapper : IErrorMessageMapper
     {
         VideoExportException { Failure: VideoExportFailure.FrameUnreadable, FrameIndex: int index, SourcePath: { } path } export =>
             Critical(ProjectText.ExportFailedPhoto(index, path, (export.InnerException as PhotoDecodeException)?.Failure.Reason)),
-        VideoExportException export => For(export.Failure),
+        VideoExportException export => For(export.Failure, export.Format),
         _ => null,
     };
 
@@ -27,7 +28,17 @@ public sealed class VideoExportErrorMapper : IErrorMessageMapper
     /// The message for a category. The ones the user cannot fix alone (an encoder or driver failure) offer
     /// Copy diagnostics.
     /// </summary>
-    public static ErrorMessage For(VideoExportFailure failure) => failure switch
+    public static ErrorMessage For(VideoExportFailure failure) => For(failure, format: null);
+
+    /// <summary>
+    /// The message for a category while writing <paramref name="format"/>. A GIF (#51) gets its own advice where the
+    /// video's would mislead: it has no resolution to lower (its Size and Frame rate lists stand in for it), and WIC
+    /// encodes it on the CPU, so the graphics driver is not to blame.
+    /// </summary>
+    public static ErrorMessage For(VideoExportFailure failure, VideoFormat? format) =>
+        (format == VideoFormat.Gif ? ForGif(failure) : null) ?? ForVideo(failure);
+
+    private static ErrorMessage ForVideo(VideoExportFailure failure) => failure switch
     {
         VideoExportFailure.EncoderUnavailable => Critical(ProjectText.ExportFailedEncoderUnavailable, diagnostics: true),
         VideoExportFailure.SettingsRejected => Critical(ProjectText.ExportFailedSettingsRejected),
@@ -43,6 +54,17 @@ public sealed class VideoExportErrorMapper : IErrorMessageMapper
         VideoExportFailure.FrameUnreadable => Critical(ProjectText.ExportFailedPhotoUnreadable),
         VideoExportFailure.DrawingFailed => Critical(ProjectText.ExportFailedDrawing, diagnostics: true),
         _ => Critical(ProjectText.ExportFailedEncoder, diagnostics: true),
+    };
+
+    // The GIF's own sentences; null where the video's say the right thing (a full disk, a photo, the drawing on the GPU).
+    private static ErrorMessage? ForGif(VideoExportFailure failure) => failure switch
+    {
+        VideoExportFailure.EncoderUnavailable => Critical(ProjectText.ExportFailedGifEncoderUnavailable, diagnostics: true),
+        VideoExportFailure.SettingsRejected => Critical(ProjectText.ExportFailedGifSettingsRejected),
+        VideoExportFailure.EncoderFailed => Critical(ProjectText.ExportFailedGifEncoder, diagnostics: true),
+        VideoExportFailure.EncoderStalled => Critical(ProjectText.ExportFailedGifEncoderStalled, diagnostics: true),
+        VideoExportFailure.OutOfMemory => Critical(ProjectText.ExportFailedGifOutOfMemory),
+        _ => null,
     };
 
     private static ErrorMessage Critical(string text, bool diagnostics = false) => new(InfoBarSeverity.Critical, text, diagnostics);

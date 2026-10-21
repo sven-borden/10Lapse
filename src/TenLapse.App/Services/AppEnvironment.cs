@@ -5,7 +5,7 @@ namespace TenLapse.Services;
 
 /// <summary>
 /// Where the app runs: whether it has package identity, and where its log goes. Debug runs unpackaged, where
-/// <c>ApplicationData.Current</c> and <c>Package.Current</c> throw (docs/STATUS.md, Decisions), so everything here
+/// <c>ApplicationData.Current</c> and <c>Package.Current</c> throw, so everything here
 /// asks <see cref="HasPackageIdentity"/> first and has an unpackaged path.
 /// </summary>
 internal static class AppEnvironment

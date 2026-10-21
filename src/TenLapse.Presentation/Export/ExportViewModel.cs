@@ -79,6 +79,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
 
     // The running export, counted so a progress report posted before it ended is ignored after.
     private int _run;
+    private ExportedVideo? _video;
     private ExportStatus? _applied;
     private TimeSpan _appliedAt;
     private int _announcedTenth;
@@ -164,9 +165,10 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// The preview should play the finished video from its first frame: once the export ends (the view waits the motion
-    /// spec's 1.1 s) and on Play. The argument is the video's path.
+    /// spec's 1.1 s) and on Play. The argument is the file that was written, with its format: the premiere picks GIF or
+    /// MP4 by <see cref="ExportedVideo.Format"/> (<see cref="PremierePlan"/>), never by the file's extension.
     /// </summary>
-    public event EventHandler<string>? PremiereRequested;
+    public event EventHandler<ExportedVideo>? PremiereRequested;
 
     /// <summary>Export video (the amber button, Ctrl+E): the Save dialog, then the export. Its <c>Cancel()</c> stops a running export.</summary>
     public IAsyncRelayCommand ExportCommand { get; }
@@ -384,7 +386,10 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         }
 
         var project = _shell.CurrentProject;
-        var path = await _services.Picker.PickVideoAsync(ExportText.SuggestedFileName(project.Name), _services.Folders.ExportFolder);
+
+        // The dialog suggests the format's extension (.gif for an animated GIF, #51), so the file and its name agree.
+        var format = _output.EffectiveOutput?.Format ?? VideoFormat.Mp4H264;
+        var path = await _services.Picker.PickVideoAsync(ExportText.SuggestedFileName(project.Name, format), _services.Folders.ExportFolder);
         if (string.IsNullOrEmpty(path))
         {
             return;
@@ -397,7 +402,13 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (!CanStartExport || !ReferenceEquals(project, _shell.CurrentProject) || _output.EffectiveOutput is not { } output)
+        // Only a change of file type (GIF against MP4) stops it: the name the user picked has the other extension. A codec
+        // change alone (the probe's late answer turned H.264 into HEVC) keeps the .mp4 name right, so the export goes
+        // ahead with the output as it is now.
+        if (!CanStartExport
+            || !ReferenceEquals(project, _shell.CurrentProject)
+            || _output.EffectiveOutput is not { } output
+            || ExportText.FileExtension(output.Format) != ExportText.FileExtension(format))
         {
             _services.InfoBars.Show(InfoBarSeverity.Caution, ExportText.ChangedDuringDialog);
             return;
@@ -470,7 +481,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         _announcedTenth = 0;
         _announcedAt = _clock();
         FileName = fileName;
-        OutputSummary = ExportText.OutputSummary(output);
+        OutputSummary = ExportText.OutputSummary(snapshot);
         // The numbers first, so the film gate starts the new export at 0 rather than where the last one ended.
         Show(new ExportStatus(ExportPhase.Preparing, 0, snapshot.Frames.Length, null, null));
         ExportFrames = snapshot.Frames;
@@ -589,9 +600,10 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         }
 
         var name = Path.GetFileName(video.Path);
+        _video = video;
         VideoPath = video.Path;
         FinishedTitle = ExportText.Ready(name);
-        FinishedSummary = ExportText.ReadySummary(video, output.Resolution);
+        FinishedSummary = ExportText.ReadySummary(video, output);
         ExportedInText = Core.Timing.TimingFormat.Duration(Math.Max(0, took.Ticks), System.Globalization.CultureInfo.CurrentCulture);
         SavedToText = ExportText.SavedTo(video.Path);
         SavedBesideText = video.TargetInUse is { } held ? ProjectText.ExportSavedBeside(held, video.Path) : string.Empty;
@@ -600,7 +612,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         Announced?.Invoke(this, FinishedTitle);
         _services.Window.NotifyIfInBackground(FinishedTitle);
         RaiseEnded(ExportOutcome.Succeeded, video);
-        PremiereRequested?.Invoke(this, video.Path);
+        PremiereRequested?.Invoke(this, video);
     }
 
     // However the export ended: the project may change again, nothing is dimmed, the taskbar shows no progress (or the failure).
@@ -699,9 +711,9 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
 
     private void Premiere()
     {
-        if (IsFinished && VideoPath.Length > 0)
+        if (IsFinished && _video is { } video)
         {
-            PremiereRequested?.Invoke(this, VideoPath);
+            PremiereRequested?.Invoke(this, video);
         }
     }
 

@@ -81,6 +81,13 @@ public sealed class UserSettingsJsonTests
             var settings = new UserSettings { Output = new OutputSettings(resolution, format, quality) };
             Assert.Equal(settings, UserSettingsJson.Read(UserSettingsJson.Write(settings)).Settings);
         }
+
+        foreach (var size in Enum.GetValues<GifSize>())
+        foreach (var rate in Enum.GetValues<GifFrameRate>())
+        {
+            var settings = new UserSettings { Output = OutputSettings.Default with { Format = VideoFormat.Gif, Gif = new GifSettings(size, rate) } };
+            Assert.Equal(settings, UserSettingsJson.Read(UserSettingsJson.Write(settings)).Settings);
+        }
     }
 
     [Fact]

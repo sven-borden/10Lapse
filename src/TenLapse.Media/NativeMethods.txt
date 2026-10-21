@@ -99,3 +99,20 @@ GUID_WICPixelFormat32bppBGRA
 CreateStreamOverRandomAccessStream
 IMemoryBufferByteAccess
 D3D11_FEATURE_DATA_D3D11_OPTIONS2
+// WIC, through CsWin32: the animated GIF encoder (#51), its per-frame palette and dithering, and the read-back of a GIF.
+IWICBitmapEncoder
+IWICBitmapFrameEncode
+IWICPalette
+IWICFormatConverter
+IWICStream
+IWICMetadataQueryWriter
+IWICMetadataQueryReader
+IWICBitmapSource
+GUID_ContainerFormatGif
+GUID_WICPixelFormat8bppIndexed
+GUID_WICPixelFormat32bppBGR
+WICBitmapDitherType
+WICBitmapPaletteType
+WICBitmapEncoderCacheOption
+PROPVARIANT
+GENERIC_ACCESS_RIGHTS

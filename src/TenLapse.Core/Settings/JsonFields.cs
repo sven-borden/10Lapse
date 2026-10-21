@@ -55,6 +55,8 @@ internal static class JsonFields
         ["resolution"] = output.Resolution.ToString(),
         ["format"] = output.Format.ToString(),
         ["quality"] = output.Quality.ToString(),
+        ["gifSize"] = output.Gif.Size.ToString(),
+        ["gifRate"] = output.Gif.Rate.ToString(),
     };
 
     /// <summary>Reads the output group named <paramref name="name"/>, field by field.</summary>
@@ -64,7 +66,14 @@ internal static class JsonFields
         return new OutputSettings(
             Field(section, $"{name}.resolution", fallback.Resolution, ReadEnum<OutputResolution>, problems),
             Field(section, $"{name}.format", fallback.Format, ReadEnum<VideoFormat>, problems),
-            Field(section, $"{name}.quality", fallback.Quality, ReadEnum<OutputQuality>, problems));
+            Field(section, $"{name}.quality", fallback.Quality, ReadEnum<OutputQuality>, problems))
+        {
+            // Added by #51 without a version change: a file from 3.0 (or a project file from before #51) has neither field
+            // and gets the defaults.
+            Gif = new GifSettings(
+                Field(section, $"{name}.gifSize", fallback.Gif.Size, ReadEnum<GifSize>, problems),
+                Field(section, $"{name}.gifRate", fallback.Gif.Rate, ReadEnum<GifFrameRate>, problems)),
+        };
     }
 
     /// <summary>The object named <paramref name="name"/>, or null when it is missing (quietly) or not an object (a problem).</summary>

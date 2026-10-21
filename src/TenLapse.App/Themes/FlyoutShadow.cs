@@ -9,7 +9,7 @@ namespace TenLapse.Themes;
 /// <summary>
 /// The Flyout shadow of DESIGN.md (Elevation) for anything that floats over content: InfoBars over the stage
 /// (#28), the export panel's overlays (#24), the first-launch sample frame (#29). ThemeShadow throws on Windows
-/// App SDK 2.5.1 (docs/STATUS.md, Decisions), so this draws the spec's two layers, ambient then key, as
+/// App SDK 2.5.1 (see Layout.xaml), so this draws the spec's two layers, ambient then key, as
 /// Composition drop shadows from the ShadowFlyout* color tokens and the ElevationFlyout* numbers.
 /// </summary>
 /// <remarks>

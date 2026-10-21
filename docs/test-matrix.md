@@ -25,9 +25,9 @@ Sections: 1 Machines, 2 Install paths, 3 Extensions, 4 Photo sets,
 
 ## 1. Machines
 
-3.0 needs Windows 11 (minimum 10.0.22000.0), x64 or ARM64, English only
-(Sven, 2026-10-19, #2, #96, #97). Pick machines so that every row of the
-table is covered by at least one.
+3.0 needs Windows 11 (minimum 10.0.22000.0), x64 or ARM64, and speaks en-US,
+fr, de, es, it and pt-BR (Sven, 2026-10-19, #2, #96, #97, #113). Pick machines
+so that every row of the table is covered by at least one.
 
 | Machine | Why | Rows to run |
 |---|---|---|
@@ -51,7 +51,7 @@ table is covered by at least one.
   from the Store flight on a PC that never had 10Lapse. Expect: it installs
   and starts, the first-launch screen shows (5.1), the icon and tile are the
   Five frames icon (5.16). The Store installs the Windows App Runtime 2
-  framework package with it (STATUS, 2026-10-18); no extra install step. The
+  framework package with it; no extra install step. The
   flight is the install path for testers (Developer Mode is off on the dev
   PC and a tester's PC usually has it off too; see 2.5).
 - [ ] **2.2 Update in place from 2.1.1** (#2, #62). Run: once, on a PC with
@@ -509,53 +509,109 @@ walk import, Timing, Frame, Output, export, the finished state and Settings.
   while 10Lapse runs. Expect: nothing changes until 10Lapse starts again, then
   everything is in the new language.
 
-### 5.18 Projects: save, open, recent, recovery (#52, 3.1)
+### 5.18 Animated GIF (#51, 3.1)
+
+Not checked on the dev PC: anything a person sees in another app, the narrow
+layout, Narrator, and real timelapse photos (the size estimate was measured on
+Windows' own wallpaper photos and the Debug sample sunsets).
+
+- [ ] **5.18.1 Output panel** (#51). Do: Format -> Animated GIF. Expect:
+  Size ("Medium . 480 x 270") and Frame rate ("Up to 10 fps") take the places
+  of Resolution and Quality, which are gone (not disabled); the estimate is a
+  range ("4.4 MB to 9.4 MB"); back to MP4, the resolution and quality are as
+  they were. With a video slower than the preset (Per photo 0.5 s), the note
+  says "The GIF keeps your video's speed: 2 fps."
+- [ ] **5.18.2 Narrow layout** (#51, #36). Run: narrow window. Expect: Size,
+  Format and Frame rate in one row, the labels whole in every language (es
+  "Fotogramas por segundo" and it "Fotogrammi al secondo" are the longest).
+- [ ] **5.18.3 Narrator** (#51, #38). Expect: the two GIF lists are read with
+  their labels, and the range estimate is read as text.
+- [ ] **5.18.4 Save dialog** (#51). Expect: "<name>.gif" suggested, file type
+  "Animated GIF"; the export writes a GIF even if the name is changed.
+- [ ] **5.18.5 Browsers** (#51). Do: open the GIF in Edge, Chrome and
+  Firefox. Expect: it loops forever; ten loops last ten times the video's
+  length (a stopwatch, within a second); a 29.97 fps project at up to 25 fps
+  plays without visible stutter.
+- [ ] **5.18.6 Chat apps** (#51). Do: send a Medium, up-to-10-fps GIF of about
+  10 s in Teams, Discord, Slack and WhatsApp desktop. Expect: it animates and
+  loops in the conversation; note any app that refuses the size or re-encodes
+  it (Discord's free upload limit is 10 MB).
+- [ ] **5.18.7 Photos and Explorer** (#51). Expect: the Photos app plays it;
+  Explorer shows a thumbnail and the preview pane animates it.
+- [ ] **5.18.8 Premiere** (#51). Expect: the finished GIF loops over the gate
+  1.1 s after the finish (an Image, not the video player); with animations off
+  in Windows it shows its first frame and stays still (by design), and turning
+  the setting off or on while it shows stops or restarts it within a second; a
+  GIF saved under a `.mp4` name still premieres as a GIF; a second export to
+  the same name replaces it, and Explorer can move or delete the file while it
+  shows (the premiere holds no file); a GIF over 256 MB shows only its first
+  frame with a neutral InfoBar that says why.
+- [ ] **5.18.9 Estimate on real photos** (#51). Do: export three real
+  sequences (a clear sky, trees in wind, a night city) as Medium GIFs and
+  compare the file with the panel's range; then run
+  `GifExportTests.MeasureBytesPerPixel` with `TENLAPSE_GIF_MEASURE` set to a
+  folder of each set's JPEGs. Expect: every file inside its range; report the
+  bytes per pixel so `GifOutput.BytesPerPixel` can follow real photos.
+- [ ] **5.18.10 Long GIF on a tight PC** (#51, #34). Run: 8 GB or iGPU. Do:
+  1,000 photos at 30 fps, Large, up to 25 fps, and let the premiere loop for a
+  minute. Expect: peak private bytes under 1 GB through the export and the
+  premiere (712 MB and 11.6 s for 834 frames, 67 MB, on the NVIDIA PC).
+
+### 5.19 Projects: save, open, recent, recovery (#52, 3.1)
 
 The packaged parts could not be checked on the dev PC (no Developer Mode, no
 administrator, so no package can be registered), and real key presses and
 dialogs need a human. Run: once, packaged (the Store or a sideloaded 3.1
 package).
 
-- [ ] **5.18.1 Double-click a project** (#52). Do: save a project, close
+- [ ] **5.19.1 Double-click a project** (#52). Do: save a project, close
   10Lapse, double-click the `.10lapse` file in File Explorer. Expect: 10Lapse
   starts with that project (frames, Timing, Frame, Output, order); the file's
   type reads "10Lapse project" (in the app's language) with the 10Lapse icon,
   and *Open with* lists 10Lapse.
-- [ ] **5.18.2 Double-click while 10Lapse runs** (#52). Expect: a second
+- [ ] **5.19.2 Double-click while 10Lapse runs** (#52). Expect: a second
   10Lapse window opens with that project; the first keeps its own. Closing
   either leaves the other as it was.
-- [ ] **5.18.3 Keys** (#52). Do: Ctrl+O, Ctrl+S, Ctrl+Shift+S on Editing, and
+- [ ] **5.19.3 Keys** (#52). Do: Ctrl+O, Ctrl+S, Ctrl+Shift+S on Editing, and
   Ctrl+I / Ctrl+Shift+I (Add photos, which had Ctrl+O in 3.0). Expect: the Open
   dialog (`.10lapse` only), Save (a dialog the first time only), Save as (always
   a dialog), the folder and photo pickers; Ctrl+S and Ctrl+Shift+S do nothing on
   the first-launch screen, and no shortcut works on Settings or under a dialog.
   The File menu shows each key beside its item.
-- [ ] **5.18.4 Close with unsaved changes** (#52). Do: change a saved project,
+- [ ] **5.19.4 Close with unsaved changes** (#52). Do: change a saved project,
   close the window (X, Alt+F4, the taskbar's Close window). Expect: "Save
   changes to ...?" with Save (default), Don't save and Cancel; Save writes the
   file and closes, Don't save closes, Cancel keeps the window. During an export:
   the save question first, then "Stop the export and close?".
-- [ ] **5.18.5 Crash recovery** (#52). Do: import photos, change the speed, wait
+- [ ] **5.19.5 Crash recovery** (#52). Do: import photos, change the speed, wait
   three seconds, end 10Lapse in Task Manager (End task), start it again.
   Expect: an InfoBar "10Lapse closed before your changes to ... were saved"
   with Restore; Restore brings the project back with the dot in the title bar,
   and the user's own `.10lapse` file (if any) is unchanged until Save. A clean
   close leaves nothing to offer at the next start. Packaged, the copy is in
   `LocalState\Recovery`.
-- [ ] **5.18.6 Missing photos** (#52). Do: save a project, move two of its
+- [ ] **5.19.6 Missing photos** (#52). Do: save a project, move two of its
   photos to another folder, open the project. Expect: it opens with the others,
-  and one Caution InfoBar lists the two (*View list*). Move the folder together
-  with the project file to another drive: every photo is found.
-- [ ] **5.18.7 Recent projects** (#52). Expect: on the first-launch screen, up
+  and one Caution InfoBar lists the two (*View list*) and says they stay in the
+  file; change the speed, Save, move the two back, open again: all are there, in
+  their places. Move the folder together with the project file to another
+  drive: every photo is found. Open a project whose drive is not connected:
+  it does not open, the current project stays, and the InfoBar lists where the
+  photos were expected.
+- [ ] **5.19.7 Recent projects** (#52). Expect: on the first-launch screen, up
   to five projects, the last opened or saved first, each with its folder; a
   moved or deleted one says "Not found", and a click says so and takes it off;
   *Clear list* empties it and keeps the files. Short window (480 px high): the
   column scrolls and nothing is cut off. Narrator reads "Recent projects,
   heading level 2" and each item with its folder.
-- [ ] **5.18.8 OneDrive** (#52). Do: open a project whose photos are online-only
-  OneDrive files. Expect: the project opens; note whether the preview downloads
-  them without asking (import asks first; opening a project does not, a known
-  difference to decide on).
+- [ ] **5.19.8 OneDrive** (#52). Do: open a project whose photos are online-only
+  OneDrive files. Expect: the project opens with all of them, and one Caution
+  InfoBar gives their number and size and says they download as the preview and
+  the export need them (none is skipped; import asks first instead).
+- [ ] **5.19.9 Two windows** (#52). Do: with two 10Lapse windows open, open or
+  save a different project in each, and change the frame rate in one. Expect:
+  the first-launch screen of either lists both projects, the latest first, and
+  neither window's change is lost when the other closes.
 
 ## 6. Per-machine measurements
 
@@ -665,6 +721,7 @@ Not bugs unless they change. Keep these out of the failure list.
   export and finished screens use two columns and hide the tabs.
 - **8.8 No *Try a sample* button** (#29, #30). Deferred until a sample set
   exists.
-- **8.9 English only** (#2, #39). Translations come later.
+- **8.9 Six languages** (#2, #39, #113). en-US, fr, de, es, it and pt-BR; any
+  other Windows language shows English.
 - **8.10 No thumbnail-to-preview flight** (#35). A thumbnail click is an instant
   seek by design.

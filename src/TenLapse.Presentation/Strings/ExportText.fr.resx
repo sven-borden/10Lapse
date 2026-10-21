@@ -131,6 +131,9 @@
   <data name="PremiereCantPlayFormat" xml:space="preserve">
     <value>La vidéo a été enregistrée, mais 10Lapse ne peut pas la lire ici. Utilisez « {0} » pour l’ouvrir et la vérifier.</value>
   </data>
+  <data name="PremiereGifFirstFrameFormat" xml:space="preserve">
+    <value>Le GIF a été enregistré, mais il est trop volumineux pour être lu ici : l’aperçu montre sa première image. Utilisez « {0} » pour l’ouvrir et le voir s’animer.</value>
+  </data>
   <data name="CloseTitle" xml:space="preserve">
     <value>Arrêter l’exportation et fermer ?</value>
   </data>

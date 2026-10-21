@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using TenLapse.Core.Diagnostics;
+using TenLapse.Core.Projects;
 using TenLapse.Media.Export;
 using TenLapse.Presentation;
 using TenLapse.Presentation.Services;
@@ -227,6 +228,37 @@ public sealed class ErrorPathTests
         });
         Assert.Equal(failures.Length, messages.Select(message => message.Text).Distinct().Count());
         Assert.Null(new VideoExportErrorMapper().Map(new InvalidOperationException()));
+    }
+
+    [Fact]
+    public void AGifFailureNeverAdvisesAResolutionOrBlamesTheGraphicsDriverForItsEncoder()
+    {
+        // A GIF has a size and a frame rate, not a resolution (#51), and WIC encodes it on the CPU. Drawing still runs on
+        // the graphics device, so those three keep the driver advice.
+        var gpu = new[] { VideoExportFailure.NoGraphicsDevice, VideoExportFailure.GraphicsDeviceLost, VideoExportFailure.DrawingFailed };
+        foreach (var failure in Enum.GetValues<VideoExportFailure>())
+        {
+            var text = VideoExportErrorMapper.For(failure, VideoFormat.Gif).Text;
+            Assert.DoesNotContain("resolution", text, StringComparison.OrdinalIgnoreCase);
+            if (!gpu.Contains(failure))
+            {
+                Assert.DoesNotContain("graphics driver", text, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        Assert.Equal(ProjectText.ExportFailedGifOutOfMemory, VideoExportErrorMapper.For(VideoExportFailure.OutOfMemory, VideoFormat.Gif).Text);
+        Assert.Equal(ProjectText.ExportFailedGifSettingsRejected, VideoExportErrorMapper.For(VideoExportFailure.SettingsRejected, VideoFormat.Gif).Text);
+        Assert.Equal(ProjectText.ExportFailedGifEncoder, VideoExportErrorMapper.For(VideoExportFailure.EncoderFailed, VideoFormat.Gif).Text);
+        Assert.Equal(ProjectText.ExportFailedGifEncoderStalled, VideoExportErrorMapper.For(VideoExportFailure.EncoderStalled, VideoFormat.Gif).Text);
+        Assert.Equal(ProjectText.ExportFailedGifEncoderUnavailable, VideoExportErrorMapper.For(VideoExportFailure.EncoderUnavailable, VideoFormat.Gif).Text);
+        Assert.Equal(ProjectText.ExportFailedDiskFull, VideoExportErrorMapper.For(VideoExportFailure.DiskFull, VideoFormat.Gif).Text);
+
+        // A video keeps its own advice, and the mapper reads the format off the failure.
+        Assert.Equal(ProjectText.ExportFailedOutOfMemory, VideoExportErrorMapper.For(VideoExportFailure.OutOfMemory, VideoFormat.Mp4Hevc).Text);
+        Assert.Equal(ProjectText.ExportFailedOutOfMemory, new VideoExportErrorMapper().Map(new VideoExportException("Out of memory.", VideoExportFailure.OutOfMemory))!.Text);
+        Assert.Equal(
+            ProjectText.ExportFailedGifOutOfMemory,
+            new VideoExportErrorMapper().Map(new VideoExportException("Out of memory.", VideoExportFailure.OutOfMemory) { Format = VideoFormat.Gif })!.Text);
     }
 
     [Fact]

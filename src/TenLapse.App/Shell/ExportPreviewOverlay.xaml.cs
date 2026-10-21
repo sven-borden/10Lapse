@@ -2,12 +2,15 @@ using System.ComponentModel;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using TenLapse.Presentation.Export;
 using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.Preview;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
 using Windows.Foundation;
+using Windows.Graphics.Imaging;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage;
@@ -37,6 +40,7 @@ public sealed partial class ExportPreviewOverlay : UserControl
     private IInfoBarService? _infoBars;
     private MediaPlayer? _media;
     private MediaSource? _source;
+    private readonly DispatcherQueueTimer _motionCheck;
     private int _premiere;
     private bool _playing;
     private bool _arrived;
@@ -45,6 +49,13 @@ public sealed partial class ExportPreviewOverlay : UserControl
     {
         InitializeComponent();
         SizeChanged += (_, _) => Guarded(Place);
+
+        // Windows has no change event for its animation setting: while a GIF premiere loops, it is polled, as Daybreak
+        // polls it on its ticks, and the GIF stops on its first frame or plays again when it changes.
+        _motionCheck = DispatcherQueue.CreateTimer();
+        _motionCheck.Interval = TimeSpan.FromSeconds(1);
+        _motionCheck.IsRepeating = true;
+        _motionCheck.Tick += (_, _) => Guarded(FollowAnimationSetting);
     }
 
     /// <summary>Follows the export and the preview's player; <paramref name="infoBars"/> says when the video can't play here.</summary>
@@ -63,10 +74,13 @@ public sealed partial class ExportPreviewOverlay : UserControl
 
     /// <summary>Stops the video and lets go of everything (the window closes).</summary>
     /// <summary>Where the premiere's video is, while it plays (the theme crossfade leaves it out of its picture); else null.</summary>
-    internal PhotoArea? PhotoOnScreen() =>
-        _playing && Video.Visibility == Visibility.Visible && Video.ActualWidth > 0 && Video.ActualHeight > 0
-            ? new PhotoArea(Video, new Rect(0, 0, Video.ActualWidth, Video.ActualHeight), 0f)
+    internal PhotoArea? PhotoOnScreen()
+    {
+        FrameworkElement shown = Gif.Visibility == Visibility.Visible ? Gif : Video;
+        return _playing && shown.Visibility == Visibility.Visible && shown.ActualWidth > 0 && shown.ActualHeight > 0
+            ? new PhotoArea(shown, new Rect(0, 0, shown.ActualWidth, shown.ActualHeight), 0f)
             : null;
+    }
 
     internal void Detach()
     {
@@ -125,18 +139,20 @@ public sealed partial class ExportPreviewOverlay : UserControl
     }
 
     // The first request after the export ends waits the motion spec's 1.1 s (the check draws first); Play starts at once.
-    private void OnPremiereRequested(object? sender, string path)
+    private void OnPremiereRequested(object? sender, ExportedVideo video)
     {
         var wait = _arrived;
         _arrived = false;
         if (_errors is { } errors)
         {
-            _ = errors.GuardAsync(() => PremiereAsync(path, wait), ExportText.PremiereFailed);
+            _ = errors.GuardAsync(() => PremiereAsync(video, wait), ExportText.PremiereFailed);
         }
     }
 
-    private async Task PremiereAsync(string path, bool wait)
+    // GIF or MP4 by the format that was written (PremierePlan), never by the name: a GIF saved as .mp4 is still a GIF.
+    private async Task PremiereAsync(ExportedVideo video, bool wait)
     {
+        var path = video.Path;
         var ticket = ++_premiere;
         if (wait)
         {
@@ -151,6 +167,16 @@ public sealed partial class ExportPreviewOverlay : UserControl
         StopPremiere();
         ticket = ++_premiere;
         player.Pause();
+        switch (PremierePlan.For(video))
+        {
+            case PremiereKind.AnimatedGif:
+                await PremiereGifAsync(path, ticket);
+                return;
+            case PremiereKind.GifFirstFrame:
+                await PremiereGifFirstFrameAsync(path, ticket);
+                return;
+        }
+
         var file = await StorageFile.GetFileFromPathAsync(path);
         if (ticket != _premiere || _export is not { IsFinished: true })
         {
@@ -172,6 +198,95 @@ public sealed partial class ExportPreviewOverlay : UserControl
         _media.Play();
     }
 
+    // An animated GIF (#51) plays through XAML's own decoder. XAML reads the whole encoded file into its own memory as the
+    // source is set (it decodes the frames again on every loop), so the file is open only for that read, from a stream
+    // straight off the disk: no copy of ours on top of XAML's, and the premiere holds no file afterwards, so an export to
+    // the same name can replace it. While it is open it shares reading, writing and deleting, so the user can still move
+    // or delete the file. A GIF that will not decode falls back as a video does.
+    //
+    // It loops only while animations are on (Windows' setting, or Debug --reduce-motion, through MotionTokens); with them
+    // off it stands on its first frame, as Microsoft recommends for BitmapImage.AutoPlay.
+    private async Task PremiereGifAsync(string path, int ticket)
+    {
+        var image = new BitmapImage { AutoPlay = Themes.MotionTokens.AnimationsEnabled };
+        image.ImageFailed += OnGifFailed;
+        await using (var file = OpenShared(path))
+        {
+            await image.SetSourceAsync(file.AsRandomAccessStream());
+        }
+
+        if (ticket != _premiere || _export is not { IsFinished: true })
+        {
+            image.ImageFailed -= OnGifFailed;
+            return;
+        }
+
+        ShowGif(image);
+        _motionCheck.Start();
+    }
+
+    // The animation setting changed while the GIF is on screen: it stops on its first frame, or loops again.
+    private void FollowAnimationSetting()
+    {
+        if (Gif.Source is not BitmapImage { IsAnimatedBitmap: true } gif)
+        {
+            _motionCheck.Stop();
+            return;
+        }
+
+        var animate = Themes.MotionTokens.AnimationsEnabled;
+        if (animate == gif.IsPlaying)
+        {
+            return;
+        }
+
+        if (animate)
+        {
+            gif.Play();
+        }
+        else
+        {
+            gif.Stop();
+        }
+    }
+
+    // A GIF over PremierePlan.GifPlayLimit would put that much in memory to play: its first frame is decoded alone from
+    // the file instead, and a Neutral InfoBar says why it stands still (never silent: the user would take it for a GIF
+    // that does not move).
+    private async Task PremiereGifFirstFrameAsync(string path, int ticket)
+    {
+        var still = new SoftwareBitmapSource();
+        await using (var file = OpenShared(path))
+        {
+            var decoder = await BitmapDecoder.CreateAsync(BitmapDecoder.GifDecoderId, file.AsRandomAccessStream());
+            using var frame = await decoder.GetSoftwareBitmapAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
+            await still.SetBitmapAsync(frame);
+        }
+
+        if (ticket != _premiere || _export is not { IsFinished: true })
+        {
+            still.Dispose();
+            return;
+        }
+
+        ShowGif(still);
+        _infoBars?.Show(Presentation.Services.InfoBarSeverity.Neutral, ExportText.PremiereGifFirstFrame);
+    }
+
+    private static FileStream OpenShared(string path) =>
+        new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1 << 16, FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+    private void ShowGif(ImageSource source)
+    {
+        Gif.Source = source;
+        Place();
+        Gif.Visibility = Visibility.Visible;
+        _playing = true;
+    }
+
+    private void OnGifFailed(object sender, ExceptionRoutedEventArgs e) =>
+        Guarded(() => FallBackToFrames(new InvalidOperationException($"The exported GIF can't be shown in the preview: {e.ErrorMessage}")));
+
     // The video goes and the file is let go of.
     private void StopPremiere()
     {
@@ -182,6 +297,20 @@ public sealed partial class ExportPreviewOverlay : UserControl
         }
 
         _playing = false;
+        _motionCheck.Stop();
+        var shown = Gif.Source;
+        Gif.Source = null;
+        if (shown is BitmapImage gif)
+        {
+            gif.ImageFailed -= OnGifFailed;
+            gif.Stop();
+        }
+        else if (shown is SoftwareBitmapSource still)
+        {
+            still.Dispose();
+        }
+
+        Gif.Visibility = Visibility.Collapsed;
         Video.Visibility = Visibility.Collapsed;
         if (_media is { } media)
         {
@@ -216,21 +345,28 @@ public sealed partial class ExportPreviewOverlay : UserControl
         }
 
         log.Report(new InvalidOperationException($"The exported video can't be played in the preview: {args.Error} {args.ErrorMessage}", args.ExtendedErrorCode), ExportText.PremiereFailed);
-        DispatcherQueue.TryEnqueueGuarded(
-            log,
-            () =>
-            {
-                if (!_playing || _player is not { } player)
-                {
-                    return;
-                }
+        DispatcherQueue.TryEnqueueGuarded(log, FallBackToFrames, ExportText.PremiereFailed);
+    }
 
-                StopPremiere();
-                player.Seek(0);
-                player.Play();
-                _infoBars?.Show(Presentation.Services.InfoBarSeverity.Caution, ExportText.PremiereCantPlay);
-            },
-            ExportText.PremiereFailed);
+    // On the UI thread: the preview plays the frames instead of the file, and a Caution InfoBar says the file is saved but
+    // did not play here.
+    private void FallBackToFrames(Exception reason)
+    {
+        _log?.Report(reason, ExportText.PremiereFailed);
+        FallBackToFrames();
+    }
+
+    private void FallBackToFrames()
+    {
+        if (!_playing || _player is not { } player)
+        {
+            return;
+        }
+
+        StopPremiere();
+        player.Seek(0);
+        player.Play();
+        _infoBars?.Show(Presentation.Services.InfoBarSeverity.Caution, ExportText.PremiereCantPlay);
     }
 
     // The pill sits 12 px inside the gate's top-left corner; the video covers the gate exactly.
@@ -251,5 +387,8 @@ public sealed partial class ExportPreviewOverlay : UserControl
         Video.Margin = new Thickness(gate.X, gate.Y, 0, 0);
         Video.Width = gate.Width;
         Video.Height = gate.Height;
+        Gif.Margin = Video.Margin;
+        Gif.Width = gate.Width;
+        Gif.Height = gate.Height;
     }
 }

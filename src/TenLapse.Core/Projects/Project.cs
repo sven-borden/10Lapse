@@ -178,8 +178,11 @@ public sealed record ProjectSnapshot
     /// <summary>
     /// The video's width and height in pixels, which the export writes and the preview draws: the resolution
     /// (short side) and shape, with Match photos taking the most common photo size (<see cref="OutputSize.For(OutputResolution, FrameAspect, IEnumerable{Frame})"/>).
+    /// A GIF (#51) takes its own size preset instead (<see cref="GifOutput.Size(GifSize, FrameAspect, IEnumerable{Frame})"/>).
     /// </summary>
-    public PixelSize VideoSize => OutputSize.For(Output.Resolution, FrameSettings.Aspect, Frames);
+    public PixelSize VideoSize => Output.Format == VideoFormat.Gif
+        ? GifOutput.Size(Output.Gif.Size, FrameSettings.Aspect, Frames)
+        : OutputSize.For(Output.Resolution, FrameSettings.Aspect, Frames);
 
     /// <summary>
     /// This snapshot with <paramref name="output"/> in place of <see cref="Output"/>, and nothing else changed (the same
