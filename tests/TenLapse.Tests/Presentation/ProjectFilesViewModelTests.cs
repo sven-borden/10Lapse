@@ -469,6 +469,8 @@ public sealed class ProjectFilesViewModelTests : IDisposable
         Assert.True(recent.Items[1].IsMissing);
         Assert.Equal(ProjectFileText.RecentNotFound, recent.Items[1].Detail);
 
+        var focus = new List<int?>();
+        recent.FocusRequested += (_, index) => focus.Add(index);
         await _ui.RunAsync(() => recent.Items[1].OpenCommand.ExecuteAsync(null));
 
         Assert.Equal([@"D:\Here.10lapse"], _recent.RecentProjects);
@@ -477,7 +479,18 @@ public sealed class ProjectFilesViewModelTests : IDisposable
 
         _ui.Run(() => { recent.ClearCommand.Execute(null); return 0; });
         Assert.False(recent.HasItems);
+
+        // The last item gone: the one before it; Clear list: Choose folder (null).
+        Assert.Equal([0, null], focus);
     }
+
+    [Theory]
+    [InlineData(0, 3, 0)]
+    [InlineData(2, 2, 1)]
+    [InlineData(1, 3, 1)]
+    [InlineData(0, 0, null)]
+    public void FocusAfterARecentProjectLeftGoesToItsNeighbourOrChooseFolder(int removed, int remaining, int? expected) =>
+        Assert.Equal(expected, RecentProjectsViewModel.FocusAfterRemoval(removed, remaining));
 
     [Theory]
     [InlineData(new[] { "10Lapse.exe", @"C:\Projects\Harbor.10lapse" }, @"C:\Projects\Harbor.10lapse")]

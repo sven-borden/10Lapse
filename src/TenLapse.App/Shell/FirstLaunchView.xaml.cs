@@ -3,6 +3,7 @@ using Microsoft.Graphics.Canvas.UI.Xaml;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using TenLapse.Presentation;
 using TenLapse.Presentation.FirstLaunch;
@@ -83,6 +84,34 @@ public sealed partial class FirstLaunchView : UserControl
         Recent = recent;
         _errors = errors;
         _sink = sink;
+        recent.FocusRequested += OnRecentFocusRequested;
+    }
+
+    // Clear list, or a missing project taken off: the focused button left with the list. Focus goes to the item now in
+    // its place, or to Choose folder, once the list has laid out its new buttons (#52, DESIGN.md: focus moves with the work).
+    private void OnRecentFocusRequested(object? sender, int? index)
+    {
+        if (_sink is not { } sink)
+        {
+            return;
+        }
+
+        DispatcherQueue.TryEnqueueGuarded(
+            sink,
+            () =>
+            {
+                if (index is { } at
+                    && RecentList.ContainerFromIndex(at) is DependencyObject container
+                    && VisualTreeHelper.GetChildrenCount(container) > 0
+                    && VisualTreeHelper.GetChild(container, 0) is Control item
+                    && item.Focus(FocusState.Programmatic))
+                {
+                    return;
+                }
+
+                FocusChooseFolder();
+            },
+            ProjectFileText.RecentClearFailedContext);
     }
 
     /// <summary>
@@ -140,6 +169,11 @@ public sealed partial class FirstLaunchView : UserControl
     {
         _timer.Stop();
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        if (Recent is { } recent)
+        {
+            recent.FocusRequested -= OnRecentFocusRequested;
+        }
+
         TitleText.UnregisterPropertyChangedCallback(TextBlock.TextProperty, _titleTextToken);
         _shadow?.Dispose();
         _shadow = null;

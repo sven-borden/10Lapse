@@ -75,7 +75,7 @@ public sealed partial class RecentProjectsViewModel : ObservableObject, IDisposa
         _disk = disk;
         _infoBars = infoBars;
         _errors = errors;
-        ClearCommand = errors.Command(_recent.ClearRecentProjects, ProjectFileText.RecentClearFailedContext);
+        ClearCommand = errors.Command(Clear, ProjectFileText.RecentClearFailedContext);
         _recent.RecentProjectsChanged += OnRecentProjectsChanged;
         Rebuild();
     }
@@ -89,6 +89,22 @@ public sealed partial class RecentProjectsViewModel : ObservableObject, IDisposa
 
     /// <summary>Clear list: empties the list; the files stay where they are.</summary>
     public IRelayCommand ClearCommand { get; }
+
+    /// <summary>
+    /// Raised when the control that had the focus left with the list (Clear list, or a missing project taken off): the
+    /// index of the item to focus next, or null for the screen's Choose folder (DESIGN.md: focus moves with the work).
+    /// </summary>
+    public event EventHandler<int?>? FocusRequested;
+
+    /// <summary>Where the focus goes after the item at <paramref name="removedIndex"/> left a list that now has <paramref name="remaining"/> items: the item now in its place, else the last one, else Choose folder (null).</summary>
+    public static int? FocusAfterRemoval(int removedIndex, int remaining) =>
+        remaining == 0 ? null : Math.Min(Math.Max(removedIndex, 0), remaining - 1);
+
+    private void Clear()
+    {
+        _recent.ClearRecentProjects();
+        FocusRequested?.Invoke(this, null);
+    }
 
     /// <summary>
     /// Looks again whether each file is there (the first-launch screen calls it when it shows). The answer arrives on the
@@ -154,9 +170,11 @@ public sealed partial class RecentProjectsViewModel : ObservableObject, IDisposa
     {
         if (await Task.Run(() => _disk.Probe(item.Path)) is null)
         {
-            // Nobody else would find it again: say so and take it off the list.
+            // Nobody else would find it again: say so and take it off the list, and the focus to its neighbour.
+            var index = Items.IndexOf(item);
             _recent.RemoveRecentProject(item.Path);
             _infoBars.Show(InfoBarSeverity.Caution, ProjectFileText.RecentGone(item.Name));
+            FocusRequested?.Invoke(this, FocusAfterRemoval(index, Items.Count));
             return;
         }
 
