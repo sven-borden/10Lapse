@@ -123,21 +123,6 @@ public readonly record struct FrameSequence
         return within < PhotoCount ? within : Cycle - within;
     }
 
-    /// <summary>
-    /// Which way the photos run at <paramref name="position"/>: 1 forward (and in the holds), -1 on a boomerang's way back.
-    /// The preview loads ahead in this direction.
-    /// </summary>
-    public int DirectionAt(int position)
-    {
-        var core = position - HoldStartFrames;
-        if (!Boomerang || PhotoCount < 2 || core < 0 || core >= CoreLength)
-        {
-            return 1;
-        }
-
-        // The turning photo (P − 1) faces back: what comes after it is P − 2.
-        return core % Cycle >= PhotoCount - 1 ? -1 : 1;
-    }
 
     /// <summary>
     /// The photo the video ends on (0 without photos): the last forward; for a boomerang photo 0 when it holds at the end,
@@ -297,6 +282,38 @@ public readonly record struct FrameSequence
         }
 
         return at;
+    }
+
+    /// <summary>
+    /// The next <paramref name="count"/> photos the video shows after frame <paramref name="position"/>, in the order it
+    /// shows them, each once and without the photo on screen: what the preview loads ahead while playing (review of PR
+    /// #134). It follows the sequence through a boomerang's turn and wraps from the last frame to the first, as the preview
+    /// loops. Fewer when the video shows fewer other photos.
+    /// </summary>
+    public int[] UpcomingPhotos(int position, int count)
+    {
+        if (Length == 0 || count <= 0)
+        {
+            return [];
+        }
+
+        var at = Math.Clamp(position, 0, Length - 1);
+        var current = PhotoAt(at);
+        var photos = new List<int>(Math.Min(count, PhotoCount));
+        for (var passed = 0; passed < Length && photos.Count < count;)
+        {
+            // A showing at a time, so a hold costs one step.
+            var end = ShowingEnd(at);
+            passed += end - at + 1;
+            at = end + 1 < Length ? end + 1 : 0;
+            var photo = PhotoAt(at);
+            if (photo != current && !photos.Contains(photo))
+            {
+                photos.Add(photo);
+            }
+        }
+
+        return [.. photos];
     }
 
     /// <summary>

@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using TenLapse.Core.Preview;
 using TenLapse.Core.Projects;
+using TenLapse.Core.Timing;
 using TenLapse.Tests.Projects;
 
 namespace TenLapse.Tests.Preview;
@@ -76,6 +77,30 @@ public sealed class FrameImageCacheTests
         Assert.Equal([8, 9, 0, 1, 2], order);
 
         // While playing, a frame with a small image waits for the background pass: nothing more to do here.
+        Assert.True(source.Quiet());
+    }
+
+    [Fact]
+    public void WhilePlayingASequenceItLoadsThePhotosItShowsNext()
+    {
+        // A boomerang near its turn (#49): photo 8 on the way out, then 9 and back down; not 0 and 1 of the next loop.
+        var source = new FakeFrameImageSource();
+        using var cache = new FrameImageCache<FakeImage>(source, _one);
+        var frames = Frames("a", 10);
+        var sequence = new FrameSequence(10, 0, 0, 1, boomerang: true);
+
+        cache.SetFocus(8, playing: true, sequence.UpcomingPhotos(8, 4));
+        cache.SetFrames(frames);
+
+        var order = new List<int>();
+        for (var i = 0; i < 5; i++)
+        {
+            var call = source.Next();
+            order.Add(frames.IndexOf(call.Frame));
+            call.Succeed();
+        }
+
+        Assert.Equal([8, 9, 7, 6, 5], order);
         Assert.True(source.Quiet());
     }
 

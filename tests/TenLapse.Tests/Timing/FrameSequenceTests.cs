@@ -81,7 +81,7 @@ public sealed class FrameSequenceTests
 
     [Theory]
     [MemberData(nameof(SmallCases))]
-    public void ShowingsDirectionsAndCoverageAgreeWithTheFrames(int photos, int holdStart, int holdEnd, int plays, bool boomerang)
+    public void ShowingsLookAheadAndCoverageAgreeWithTheFrames(int photos, int holdStart, int holdEnd, int plays, bool boomerang)
     {
         var sequence = new FrameSequence(photos, holdStart, holdEnd, plays, boomerang);
         var frames = Reference(photos, holdStart, holdEnd, plays, boomerang);
@@ -105,17 +105,21 @@ public sealed class FrameSequenceTests
             Assert.Equal(shown, sequence.PhotosCovered(done));
         }
 
-        // Direction: back exactly where a boomerang's next frame shows the photo before (a forward play's wrap to photo 0
-        // is still forward).
-        for (var i = holdStart; i + 1 < holdStart + sequence.CoreLength; i++)
+        // Look-ahead: the other photos the frames after each one show, in order, each once, wrapping as the preview loops.
+        for (var at = 0; at < frames.Count; at++)
         {
-            if (frames[i + 1] != frames[i] && (boomerang || frames[i + 1] > frames[i]))
+            var upcoming = new List<int>();
+            for (var k = 1; k <= frames.Count; k++)
             {
-                Assert.Equal(frames[i + 1] > frames[i] ? 1 : -1, sequence.DirectionAt(i));
+                var photo = frames[(at + k) % frames.Count];
+                if (photo != frames[at] && !upcoming.Contains(photo) && upcoming.Count < 4)
+                {
+                    upcoming.Add(photo);
+                }
             }
-        }
 
-        Assert.All(Enumerable.Range(0, holdStart), i => Assert.Equal(1, sequence.DirectionAt(i)));
+            Assert.Equal(upcoming, sequence.UpcomingPhotos(at, 4));
+        }
     }
 
     [Theory]

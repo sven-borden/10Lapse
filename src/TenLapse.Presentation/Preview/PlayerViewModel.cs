@@ -33,8 +33,11 @@ public sealed record PlayerState(ProjectSnapshot Snapshot, int Frame, int Positi
     public int PhotoAt(int position) =>
         Sequence.Length == 0 ? 0 : Sequence.PhotoAt(Math.Clamp(position, 0, Sequence.Length - 1));
 
-    /// <summary>Which way the photos run at video frame <paramref name="position"/>: 1 forward, -1 on a boomerang's way back.</summary>
-    public int DirectionAt(int position) => Sequence.DirectionAt(position);
+    /// <summary>
+    /// The next <paramref name="count"/> photos the video shows after video frame <paramref name="position"/>, in order:
+    /// what the preview loads ahead while playing (<see cref="FrameSequence.UpcomingPhotos"/>).
+    /// </summary>
+    public int[] UpcomingPhotos(int position, int count) => Sequence.UpcomingPhotos(position, count);
 }
 
 /// <summary>
