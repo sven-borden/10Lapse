@@ -25,9 +25,9 @@ Sections: 1 Machines, 2 Install paths, 3 Extensions, 4 Photo sets,
 
 ## 1. Machines
 
-3.0 needs Windows 11 (minimum 10.0.22000.0), x64 or ARM64, English only
-(Sven, 2026-10-19, #2, #96, #97). Pick machines so that every row of the
-table is covered by at least one.
+3.0 needs Windows 11 (minimum 10.0.22000.0), x64 or ARM64, and speaks en-US,
+fr, de, es, it and pt-BR (Sven, 2026-10-19, #2, #96, #97, #113). Pick machines
+so that every row of the table is covered by at least one.
 
 | Machine | Why | Rows to run |
 |---|---|---|
@@ -617,6 +617,7 @@ Not bugs unless they change. Keep these out of the failure list.
   export and finished screens use two columns and hide the tabs.
 - **8.8 No *Try a sample* button** (#29, #30). Deferred until a sample set
   exists.
-- **8.9 English only** (#2, #39). Translations come later.
+- **8.9 Six languages** (#2, #39, #113). en-US, fr, de, es, it and pt-BR; any
+  other Windows language shows English.
 - **8.10 No thumbnail-to-preview flight** (#35). A thumbnail click is an instant
   seek by design.
