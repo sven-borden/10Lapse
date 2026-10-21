@@ -118,4 +118,5 @@ conventions live next to the code; do not duplicate them here.
 
 - Update `docs/STATUS.md` at every merge and whenever the order, the owner
   items or the decisions change. It is the memory of this repo; keep it under
-  about 20 kB.
+  about 8 kB, holding only what is recorded nowhere else (details go in PR
+  bodies, code comments and tests).
