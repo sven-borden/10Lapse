@@ -613,6 +613,43 @@ package).
   the first-launch screen of either lists both projects, the latest first, and
   neither window's change is lost when the other closes.
 
+### 5.20 Hold, loop, boomerang (#49, 3.1)
+
+The Debug app played and exported these on the dev PC through `--sequence=`;
+real key presses, Narrator and other players need a human. Run: once, packaged.
+
+- [ ] **5.20.1 The controls with the keyboard** (#49). Do: Tab through the
+  Timing panel. Expect: after the speed box come Direction (Forward, Boomerang;
+  the arrows move the pill), Times played (1 to 5), Hold at start and Hold at
+  end; each box takes Enter, Escape and leaving it as the speed box does, and a
+  sentence under the boxes says when 12 became 10 s or 1.55 became 1.6 s. Type
+  "1,5" with an English keyboard and "1.5" with a German one: both are 1.5 s.
+  Ctrl+E right after typing a hold exports with it.
+- [ ] **5.20.2 Narrator** (#49). Expect: "Direction", "Times played", "Hold at
+  start" and "Hold at end" as names; after each change the readout ("742 photos →
+  49.4 s at 30 fps") is heard once, after the sentence about a corrected hold.
+- [ ] **5.20.3 Preview and strip** (#49). Do: a boomerang played twice with 1 s
+  held at each end; play. Expect: the first photo rests 1 s, the photos run out
+  and back twice with no stutter at the turn, the first photo rests 1 s, and it
+  starts over; the strip's playhead walks out and back with it; the scrubber
+  spans the whole video (its knob moves during the holds while the strip's ring
+  rests); the time code reads the whole video's length, the counter the photo.
+  ←/→ step photos; Home and End go to the video's first and last frame.
+- [ ] **5.20.4 The exported video loops in other players** (#49). Do: export
+  the same as MP4, open it in Photos, Media Player and a browser, and send it in
+  a chat app. Expect: the length the readout gave (Explorer may show a second
+  less, 8.x), the holds and the way back as in the preview, no frame twice in a
+  row at the turn. As a GIF: Times played is gone with its caption, and the GIF
+  plays the photos once, out and back, with both holds, looping forever.
+- [ ] **5.20.5 Export panel** (#49). Expect: the percent and time left run over
+  the whole video (a boomerang takes about twice as long as forward), "Frame ...
+  of ..." counts the video's frames, the film gate walks the photos the first time
+  through and then waits at the end, and the strip's dimmed photos light up
+  during that first pass.
+- [ ] **5.20.6 Saved with the project** (#49). Do: save a project with a
+  boomerang, three plays and holds, close, open it. Expect: all four come back;
+  a new project starts plain (forward, once, no holds) whatever the last one had.
+
 ## 6. Per-machine measurements
 
 - [ ] **6.1 Bench on each machine** (#34, PR #89). Run: all, with the repo and

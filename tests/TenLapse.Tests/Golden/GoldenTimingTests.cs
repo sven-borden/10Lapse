@@ -274,14 +274,15 @@ public sealed class GoldenTimingTests(GoldenTimingTests.NumberedPhotos photos) :
     /// sequence puts there (<see cref="FrameSequence.PhotoAt"/>), which is what the preview shows at that moment.
     /// </summary>
     [Theory]
-    [InlineData("29.97 fps, boomerang, 0.5 s and 1 s held", 30000, 1001, false, 1, true, 5, 10)]
-    [InlineData("25 fps, twice, 1 s held last", 25, 1, false, 2, false, 0, 10)]
-    [InlineData("60 fps, boomerang twice, 0.3 s held first", 60, 1, false, 2, true, 3, 0)]
-    [InlineData("2 s per photo, boomerang, 0.5 s held at both ends", 2, 1, true, 1, true, 5, 5)]
+    [InlineData("29.97 fps boomerang", 30000, 1001, false, 1, true, 5, 10)]
+    [InlineData("25 fps twice", 25, 1, false, 2, false, 0, 10)]
+    [InlineData("60 fps boomerang twice", 60, 1, false, 2, true, 3, 0)]
+    [InlineData("2 s per photo boomerang", 2, 1, true, 1, true, 5, 5)]
     public async Task EveryVideoFrameShowsThePhotoTheSequencePutsThere(string speed, long numerator, long denominator, bool perPhoto, int plays, bool boomerang, int holdStartTenths, int holdEndTenths)
     {
         SkipWithoutH264Encoder();
-        var label = $"sequence, {speed}";
+        // Short: the file's path (and its partial file's) must stay under MAX_PATH for the sink writer.
+        var label = $"seq {speed} {holdStartTenths}-{holdEndTenths}";
         var evidence = GoldenExport.EvidenceFolder(ClassName, Slug(label));
         var input = new Fraction(numerator, denominator);
         var timing = perPhoto ? TimingSettings.PerPhoto(input) : TimingSettings.PerSecond(input);
@@ -365,16 +366,19 @@ public sealed class GoldenTimingTests(GoldenTimingTests.NumberedPhotos photos) :
     public async Task EveryGifFrameShowsThePhotoTheSequenceShowsAtItsStart(string speed, long numerator, long denominator, GifFrameRate preset)
     {
         SkipWithoutGraphicsDevice();
-        var label = $"GIF sequence, {speed}";
+        var label = $"GIF seq {speed}";
         var evidence = GoldenExport.EvidenceFolder(ClassName, Slug(label));
         var sequence = new SequenceSettings(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(0.5), 3, boomerang: true);
+
+        // The photos first: the project is changed on the thread that made it, and an await may move the test to another.
+        var frames = (await photos.GetAsync()).Select(photo => GoldenExport.FrameOf(photo.Path, photo.Size)).ToList();
         var project = new Project(
             TimingSettings.PerSecond(new Fraction(numerator, denominator)),
             new FrameSettings(FrameAspect.Ratio16x9, FitMode.Fill),
             OutputSettings.Default with { Format = VideoFormat.Gif, Gif = GifSettings.Default with { Rate = preset } },
             SortMode.Manual,
             sequence);
-        project.AddFrames((await photos.GetAsync()).Select(photo => GoldenExport.FrameOf(photo.Path, photo.Size)));
+        project.AddFrames(frames);
         var snapshot = project.Snapshot;
         var videoRate = snapshot.EffectiveRate.Rate;
         var gifRate = GifOutput.EffectiveRate(videoRate, preset);
