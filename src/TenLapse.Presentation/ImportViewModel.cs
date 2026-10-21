@@ -34,7 +34,7 @@ namespace TenLapse.Presentation;
 /// <see cref="ProjectOrdering.Resort"/>. At the end one InfoBar lists the skipped files, if any.
 /// </para>
 /// </remarks>
-public sealed partial class ImportViewModel : ObservableObject
+public sealed partial class ImportViewModel : ObservableObject, ProjectFiles.IFrameDetailsReader
 {
     private readonly ShellViewModel _shell;
     private readonly IPhotoImportSource _source;
@@ -173,6 +173,12 @@ public sealed partial class ImportViewModel : ObservableObject
                 case ChoiceResult.Primary:
                     break;
                 case ChoiceResult.Secondary:
+                    // Starting over with unsaved changes asks "Save changes to …?" first, as New project does (#52).
+                    if (_shell.UnsavedWorkQuestion is { } question && !await question())
+                    {
+                        return;
+                    }
+
                     if (!_shell.ReplaceWithoutAsking())
                     {
                         return;
@@ -185,6 +191,87 @@ public sealed partial class ImportViewModel : ObservableObject
         }
 
         _ = Start(_shell.CurrentProject, usable);
+    }
+
+    /// <summary>
+    /// An opened project's photos (#52), read again through the import's reading phase (<see cref="IPhotoImportSource.ReadAsync"/>):
+    /// their size and capture time are written back in place, in batches, with no progress shown and no sort (the order
+    /// is the user's, from the file). A photo that cannot be read stays: it is the project's, and its file keeps it. A
+    /// project that was clean before a batch stays clean after it. The project closing (replaced) ends the reading.
+    /// </summary>
+    public async Task ReadDetailsAsync(ProjectViewModel project, IReadOnlyList<Frame> frames)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(frames);
+        if (frames.Count == 0)
+        {
+            return;
+        }
+
+        var stop = new DetailsRun();
+        project.AddResource(stop);
+        var target = project.Model;
+        try
+        {
+            await _errors.GuardCancellableAsync(
+                async () =>
+                {
+                    // Off the UI thread from here; the project changes only inside _ui calls.
+                    await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+                    try
+                    {
+                        await foreach (var readings in _source.ReadAsync(frames, stop.Token).ConfigureAwait(false))
+                        {
+                            await _ui.RunAsync(() => ApplyDetails(target, readings)).ConfigureAwait(false);
+                        }
+                    }
+                    catch (ObjectDisposedException) when (target.IsClosed)
+                    {
+                        // Replaced while a batch was on its way: nothing more to read for it.
+                        stop.Dispose();
+                        throw new OperationCanceledException(ProjectFiles.ProjectFileText.DetailsReadFailedContext, stop.Token);
+                    }
+                },
+                ProjectFiles.ProjectFileText.DetailsReadFailedContext,
+                stop.Token).ConfigureAwait(false);
+        }
+        finally
+        {
+            project.RemoveResource(stop);
+        }
+    }
+
+    // UI thread. The frames still in the project with the same path take their details; a clean project stays clean.
+    private static void ApplyDetails(Project target, IReadOnlyList<FrameReading> readings)
+    {
+        if (target.IsClosed)
+        {
+            return;
+        }
+
+        var present = new Dictionary<Guid, string>(target.Frames.Length);
+        foreach (var frame in target.Frames)
+        {
+            present[frame.Id] = frame.SourcePath;
+        }
+
+        var updates = readings
+            .Where(reading => reading.Skipped is null
+                && present.TryGetValue(reading.Frame.Id, out var path)
+                && string.Equals(path, reading.Frame.SourcePath, StringComparison.Ordinal))
+            .Select(reading => reading.Frame)
+            .ToList();
+        if (updates.Count == 0)
+        {
+            return;
+        }
+
+        var wasClean = !target.IsDirty;
+        target.UpdateFrames(updates);
+        if (wasClean)
+        {
+            target.MarkSaved(target.Version);
+        }
     }
 
     /// <summary>Completes when every import started so far has finished (tests, and a clean shutdown).</summary>
@@ -652,6 +739,17 @@ public sealed partial class ImportViewModel : ObservableObject
     }
 
     private sealed record Applied(int Kept, List<SkippedFile> Skipped);
+
+    /// <summary>A reading of an opened project's details (#52), registered with the project: disposed with it, it stops.</summary>
+    private sealed class DetailsRun : IDisposable
+    {
+        // Never disposed, as ImportRun's: Cancel can never race a dispose.
+        private readonly CancellationTokenSource _cancellation = new();
+
+        public CancellationToken Token => _cancellation.Token;
+
+        public void Dispose() => _cancellation.Cancel();
+    }
 
     /// <summary>
     /// One import: its target project, its request and its cancellation. Registered with the project, which disposes

@@ -156,6 +156,132 @@ public sealed class ProjectFilesViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task AProjectNoneOfWhosePhotosAreThereDoesNotOpenAndItsFileStaysAsItIs()
+    {
+        var (shell, files) = Create();
+        var text = ProjectFileJson.Write(new ProjectFileContent
+        {
+            Frames = [new(@"E:\Alps\1.jpg"), new(@"E:\Alps\2.jpg")],
+            SortMode = SortMode.Manual,
+        });
+        _disk.Texts[@"D:\Alps.10lapse"] = text;
+        var before = shell.CurrentProject;
+
+        Assert.False(await OnUi(() => files.OpenPathAsync(@"D:\Alps.10lapse")));
+
+        Assert.Same(before, shell.CurrentProject);
+        Assert.Null(shell.CurrentProject.Model.FilePath);
+        Assert.Empty(_recent.RecentProjects);
+        Assert.Empty(_dialogs.Chosen);
+        var bar = Assert.Single(_infoBars.Shown);
+        Assert.Equal(InfoBarSeverity.Caution, bar.Severity);
+        Assert.Equal(ProjectFileText.NoneFound(2, "Alps"), bar.Message);
+        Assert.Equal([(@"1.jpg", @"E:\Alps"), (@"2.jpg", @"E:\Alps")], bar.Details.Select(detail => (detail.Text, detail.Note)));
+        Assert.Equal(text, _disk.Texts[@"D:\Alps.10lapse"]);
+    }
+
+    [Fact]
+    public async Task PhotosThatWereNotFoundStayInTheFileWhenItIsSavedAgain()
+    {
+        var (shell, files) = Create();
+        _disk.Facts[@"D:\Shoot\1.jpg"] = new FileFacts(10, _written);
+        _disk.Texts[@"D:\Shoot.10lapse"] = ProjectFileJson.Write(new ProjectFileContent
+        {
+            Frames = [new(@"D:\Shoot\1.jpg"), new(@"E:\Card\2.jpg"), new(@"D:\Shoot\3.jpg")],
+        });
+        Assert.True(await OnUi(() => files.OpenPathAsync(@"D:\Shoot.10lapse")));
+        _ui.Run(() => shell.CurrentProject.Model.Timing = TimingSettings.PerSecond(new Fraction(24, 1)));
+
+        await _ui.RunAsync(() => files.SaveCommand.ExecuteAsync(null));
+
+        var saved = ProjectFileJson.Read(_disk.Texts[@"D:\Shoot.10lapse"]).Content!;
+        Assert.Equal([@"D:\Shoot\1.jpg", @"E:\Card\2.jpg", @"D:\Shoot\3.jpg"], saved.Frames.Select(frame => frame.Path));
+        Assert.Equal(new Fraction(24, 1), saved.Timing.FramesPerSecond);
+        Assert.Equal(0, _picker.SaveAsks);
+
+        // The recovery copy carries them too.
+        var copy = _ui.Run(() => files.RecoveryContent(shell.CurrentProject.Model, shell.CurrentProject.Model.Snapshot));
+        Assert.Equal(3, copy.Frames.Length);
+    }
+
+    [Fact]
+    public async Task SaveNeverOverwritesAFileFromANewerVersion()
+    {
+        var (shell, files) = Create();
+        _disk.Facts[@"D:\Shoot\1.jpg"] = new FileFacts(10, _written);
+        var newer = """{ "format": "10Lapse project", "version": 9, "deflicker": { "strength": 3 }, "frames": [ { "path": "D:\\Shoot\\1.jpg" } ] }""";
+        _disk.Texts[@"D:\Newer.10lapse"] = newer;
+        Assert.True(await OnUi(() => files.OpenPathAsync(@"D:\Newer.10lapse")));
+        _infoBars.Shown.Clear();
+        _ui.Run(() => shell.CurrentProject.Model.Timing = TimingSettings.PerSecond(new Fraction(24, 1)));
+        _picker.SavePath = @"D:\Copy.10lapse";
+
+        await _ui.RunAsync(() => files.SaveCommand.ExecuteAsync(null));
+
+        Assert.Equal(1, _picker.SaveAsks);
+        Assert.Equal(newer, _disk.Texts[@"D:\Newer.10lapse"]);
+        Assert.True(_disk.Texts.ContainsKey(@"D:\Copy.10lapse"));
+        Assert.Equal(ProjectFileText.NewerSaveAs(@"D:\Newer.10lapse"), Assert.Single(_infoBars.Shown).Message);
+
+        // Tied to the copy now, its own file: Save writes it without asking.
+        _ui.Run(() => shell.CurrentProject.Model.Timing = TimingSettings.PerSecond(new Fraction(25, 1)));
+        await _ui.RunAsync(() => files.SaveCommand.ExecuteAsync(null));
+        Assert.Equal(1, _picker.SaveAsks);
+    }
+
+    [Fact]
+    public async Task OnlineOnlyPhotosOpenAndSaySoOnce()
+    {
+        var (shell, files) = Create();
+        _disk.Facts[@"D:\Shoot\1.jpg"] = new FileFacts(4_000_000, _written, IsCloudOnly: true);
+        _disk.Facts[@"D:\Shoot\2.jpg"] = new FileFacts(6_000_000, _written, IsCloudOnly: true);
+        _disk.Texts[@"D:\Shoot.10lapse"] = ProjectFileJson.Write(new ProjectFileContent { Frames = [new(@"D:\Shoot\1.jpg"), new(@"D:\Shoot\2.jpg")] });
+
+        Assert.True(await OnUi(() => files.OpenPathAsync(@"D:\Shoot.10lapse")));
+
+        Assert.Equal(2, shell.CurrentProject.Model.Frames.Length);
+        Assert.Equal(ProjectFileText.CloudOnly(2, 10_000_000), Assert.Single(_infoBars.Shown).Message);
+    }
+
+    [Fact]
+    public async Task DuringAnExportOpenAndRestoreAskNothing()
+    {
+        var (shell, files) = Create();
+        _ui.Run(() => shell.CurrentProject.Model.AddFrames(Photos(2)));
+        _disk.Texts[@"D:\Other.10lapse"] = ProjectFileJson.Write(new ProjectFileContent());
+        _picker.OpenPath = @"D:\Other.10lapse";
+        _ui.Run(() => { shell.Edits.Close(); return 0; });
+
+        await _ui.RunAsync(() => files.OpenCommand.ExecuteAsync(null));
+        Assert.False(await OnUi(() => files.OpenPathAsync(@"D:\Other.10lapse")));
+
+        Assert.Equal(0, _picker.OpenAsks);
+        Assert.Empty(_dialogs.Chosen);
+    }
+
+    [Theory]
+    [InlineData(ChoiceResult.Primary, true)]
+    [InlineData(ChoiceResult.Secondary, true)]
+    [InlineData(ChoiceResult.Cancel, false)]
+    public async Task NewProjectWithUnsavedChangesAsksToSaveFirst(ChoiceResult answer, bool replaced)
+    {
+        var (shell, files) = Create();
+        _ui.Run(() => shell.CurrentProject.Model.AddFrames(Photos(2)));
+        var before = shell.CurrentProject;
+        var name = before.Name;
+        _dialogs.Choice = answer;
+        _picker.SavePath = @"C:\Projects\Harbor.10lapse";
+
+        await _ui.RunAsync(() => shell.NewProjectCommand.ExecuteAsync(null));
+
+        Assert.Equal(ProjectFileText.UnsavedQuestion(name).Title, Assert.Single(_dialogs.Chosen).Title);
+        Assert.Empty(_dialogs.Asked);
+        Assert.Equal(replaced, !ReferenceEquals(before, shell.CurrentProject));
+        Assert.Equal(answer == ChoiceResult.Primary, _disk.Texts.ContainsKey(@"C:\Projects\Harbor.10lapse"));
+        GC.KeepAlive(files);
+    }
+
+    [Fact]
     public async Task OpeningOverUnsavedChangesAsksAndCancelKeepsThem()
     {
         var (shell, files) = Create();
@@ -393,7 +519,13 @@ public sealed class ProjectFilesViewModelTests : IDisposable
 
         public int SaveAsks { get; private set; }
 
-        public Task<string?> PickOpenAsync(string? startFolder) => Task.FromResult(OpenPath);
+        public int OpenAsks { get; private set; }
+
+        public Task<string?> PickOpenAsync(string? startFolder)
+        {
+            OpenAsks++;
+            return Task.FromResult(OpenPath);
+        }
 
         public Task<string?> PickSaveAsync(string suggestedName, string? startFolder)
         {

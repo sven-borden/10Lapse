@@ -26,6 +26,7 @@ public sealed class ProjectAutosave : IDisposable
     private readonly IErrorPresenter _errors;
     private readonly ITimer _timer;
     private readonly TimeSpan _debounce;
+    private readonly Func<Project, ProjectSnapshot, ProjectFileContent> _content;
     private readonly Lock _gate = new();
     private volatile Project? _project;
     private bool _failureShown;
@@ -36,7 +37,12 @@ public sealed class ProjectAutosave : IDisposable
     /// <param name="errors">Takes a failed write: the first is shown, repeats are logged.</param>
     /// <param name="time">The clock the pause runs on; tests pass a fake.</param>
     /// <param name="debounce">The pause after the last change; <see cref="DefaultDebounce"/> when null.</param>
-    public ProjectAutosave(ShellViewModel shell, IRecoveryStore store, IErrorPresenter errors, TimeProvider? time = null, TimeSpan? debounce = null)
+    /// <param name="content">
+    /// What the copy of a project's snapshot holds (<see cref="ProjectFilesViewModel.RecoveryContent"/>: with the photos its
+    /// file could not find, so a restored project still writes them back); <see cref="ProjectFileContent.Recovery"/> when
+    /// null. Called on the timer's thread.
+    /// </param>
+    public ProjectAutosave(ShellViewModel shell, IRecoveryStore store, IErrorPresenter errors, TimeProvider? time = null, TimeSpan? debounce = null, Func<Project, ProjectSnapshot, ProjectFileContent>? content = null)
     {
         ArgumentNullException.ThrowIfNull(shell);
         ArgumentNullException.ThrowIfNull(store);
@@ -45,6 +51,7 @@ public sealed class ProjectAutosave : IDisposable
         _store = store;
         _errors = errors;
         _debounce = debounce ?? DefaultDebounce;
+        _content = content ?? ((_, snapshot) => ProjectFileContent.Recovery(snapshot));
         _timer = (time ?? TimeProvider.System).CreateTimer(OnTimer, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
     }
 
@@ -141,7 +148,7 @@ public sealed class ProjectAutosave : IDisposable
 
             try
             {
-                _store.Save(ProjectFileJson.Write(ProjectFileContent.Recovery(snapshot)));
+                _store.Save(ProjectFileJson.Write(_content(project, snapshot)));
                 _failureShown = false;
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)

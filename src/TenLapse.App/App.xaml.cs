@@ -228,9 +228,10 @@ public partial class App : Application
             dialogs,
             infoBars,
             errors,
-            _log);
+            _log,
+            import);
         var recent = new Presentation.ProjectFiles.RecentProjectsViewModel(remembered, files, Core.Projects.ProjectFileSystem.Instance, infoBars, errors);
-        var autosave = new Presentation.ProjectFiles.ProjectAutosave(shell, recovery, errors);
+        var autosave = new Presentation.ProjectFiles.ProjectAutosave(shell, recovery, errors, content: files.RecoveryContent);
 
         // The Output panel (#23) offers only what the probe confirms; until then it says it is checking. A probe
         // that is slow or fails leaves it with H.264 up to 1080p (OutputCapabilitiesDelivery).

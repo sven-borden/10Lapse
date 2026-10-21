@@ -88,6 +88,14 @@ public sealed partial class ShellViewModel : ObservableObject
     /// </summary>
     public IAsyncRelayCommand NewProjectCommand { get; }
 
+    /// <summary>
+    /// The question before the current project is replaced with unsaved work (#52): <c>ProjectFilesViewModel</c> sets it to
+    /// its "Save changes to …?" (Save, Don't save, Cancel), the question Open and Close ask too, so <c>New project</c> and
+    /// the drop's "Start new project" ask it as well. True to go on (saved, or not to be saved; also when there is nothing
+    /// to ask), false to keep the project. Null (tests, before #52) keeps 3.0's confirmation for <c>New project</c>.
+    /// </summary>
+    public Func<Task<bool>>? UnsavedWorkQuestion { get; set; }
+
     /// <summary>Opens the Settings page (the command bar's Settings button).</summary>
     public IRelayCommand OpenSettingsCommand { get; }
 
@@ -169,7 +177,14 @@ public sealed partial class ShellViewModel : ObservableObject
         // Only this method and ReplaceWithoutAsking replace CurrentProject, and _replacing keeps them from running
         // while the question is open, so it is the same after the await.
         var previous = CurrentProject;
-        if (askFirst
+        if (askFirst && UnsavedWorkQuestion is { } question)
+        {
+            if (!await question())
+            {
+                return;
+            }
+        }
+        else if (askFirst
             && previous.Model.HasWorkToLose
             && !await _dialogs.ConfirmAsync(ProjectText.NewProjectConfirmation(previous.FrameCount)))
         {

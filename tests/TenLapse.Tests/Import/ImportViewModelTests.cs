@@ -260,6 +260,57 @@ public sealed class ImportViewModelTests
         Assert.Empty(harness.RealFailures());
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task StartingANewProjectFromADropAsksTheUnsavedWorkQuestionFirst(bool goOn)
+    {
+        using var harness = ImportHarness.WithPhotoImporter();
+        harness.Ui.Run(() => harness.Project.AddFrames([ScriptedImportSource.Photo("old.jpg")]));
+        var old = harness.Shell.CurrentProject;
+        var asked = 0;
+        harness.Shell.UnsavedWorkQuestion = () =>
+        {
+            asked++;
+            return Task.FromResult(goOn);
+        };
+        harness.Dialogs.Choice = ChoiceResult.Secondary;
+
+        await harness.DropAsync(PhotoFixtureCatalogue.Directory);
+
+        Assert.Equal(1, asked);
+        Assert.Equal(goOn, old.IsDisposed);
+        Assert.Equal(goOn ? 16 : 1, harness.Project.Frames.Length);
+    }
+
+    [Fact]
+    public async Task AnOpenedProjectsDetailsAreReadAgainInPlaceAndItStaysClean()
+    {
+        var source = new ScriptedImportSource();
+        source.Read = frame => frame.SourcePath.EndsWith("bad.jpg", StringComparison.Ordinal)
+            ? FrameReading.Failed(frame, new SkippedFile(frame.SourcePath, SkipReason.DecodeFailed, "Broken."))
+            : FrameReading.Read(frame with { PixelSize = new PixelSize(6000, 4000) });
+        using var harness = ImportHarness.With(source);
+        Frame[] photos = [ScriptedImportSource.Photo("b.jpg"), ScriptedImportSource.Photo("bad.jpg"), ScriptedImportSource.Photo("a.jpg")];
+        harness.Ui.Run(() =>
+        {
+            harness.Project.SortMode = SortMode.Manual;
+            harness.Project.AddFrames(photos);
+            return harness.Project.MarkSaved(harness.Project.Version);
+        });
+
+        await harness.Ui.InvokeAsync(() => harness.Import.ReadDetailsAsync(harness.Shell.CurrentProject, photos)).Unwrap();
+
+        var project = harness.Project;
+        Assert.Equal(["b.jpg", "bad.jpg", "a.jpg"], project.Frames.Select(frame => Path.GetFileName(frame.SourcePath)));
+        Assert.Equal(new PixelSize(6000, 4000), project.Frames[0].PixelSize);
+        Assert.Null(project.Frames[1].PixelSize);
+        Assert.Empty(project.SkippedFiles);
+        Assert.False(project.IsDirty);
+        Assert.False(harness.Import.IsImporting);
+        Assert.Empty(harness.RealFailures());
+    }
+
     [Fact]
     public async Task DroppingAndChoosingAddToProjectAddsToTheProjectThatIsOpen()
     {

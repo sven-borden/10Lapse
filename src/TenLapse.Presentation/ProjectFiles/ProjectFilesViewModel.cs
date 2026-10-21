@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -35,10 +36,18 @@ public interface IRecentProjects
 /// ended. Everything runs on the UI thread; the file work runs off it.
 /// </summary>
 /// <remarks>
+/// <para>
 /// An opened project is made empty with the file's settings and replaces the current one (<see cref="ShellViewModel.ReplaceWithoutAsking(Func{Project})"/>),
 /// then gets its frames in one change, as an import's first batch, so every view follows as it does for an import; then it
-/// is tied to its file and marked saved. Photos that are not there are left out and listed in one InfoBar; the project
-/// opens with what exists. Removing a frame never touches the disk, so a saved project simply has no entry for it.
+/// is tied to its file and marked saved. Removing a frame never touches the disk, so a saved project simply has no entry for it.
+/// </para>
+/// <para>
+/// Photos that are not there are listed in one InfoBar and the project opens with what exists, but they stay in its file:
+/// the open project carries them (<see cref="OpenedFile"/>) and every save of it, and its recovery copy, writes them back
+/// in their places (<see cref="ProjectFileContent.Carrying"/>). A file none of whose photos are there does not open at all
+/// (it would open empty and tied to its file, so the next Save would overwrite it with whatever the user did next). A file
+/// from a newer 10Lapse opens, but Save never overwrites it: it asks where, as Save as does.
+/// </para>
 /// </remarks>
 public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposable
 {
@@ -51,8 +60,13 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
     private readonly IInfoBarService _infoBars;
     private readonly IErrorPresenter _errors;
     private readonly ILog _log;
+    private readonly IFrameDetailsReader? _details;
+    private readonly Func<Task<bool>> _question;
     private ProjectViewModel? _watched;
     private bool _busy;
+
+    // What the open project brought from its file: written on the UI thread, read by the autosave's thread (immutable).
+    private volatile OpenedFile? _opened;
 
     /// <param name="shell">The window's project.</param>
     /// <param name="picker">The Open and Save dialogs.</param>
@@ -63,6 +77,7 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
     /// <param name="infoBars">Says what went wrong, and what was left out.</param>
     /// <param name="errors">The commands go through it.</param>
     /// <param name="log">Takes what each open and save did.</param>
+    /// <param name="details">Reads an opened project's photos' size and capture time again (the import); none when null.</param>
     public ProjectFilesViewModel(
         ShellViewModel shell,
         IProjectFilePicker picker,
@@ -72,7 +87,8 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
         IDialogService dialogs,
         IInfoBarService infoBars,
         IErrorPresenter errors,
-        ILog log)
+        ILog log,
+        IFrameDetailsReader? details = null)
     {
         ArgumentNullException.ThrowIfNull(shell);
         ArgumentNullException.ThrowIfNull(picker);
@@ -92,11 +108,16 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
         _infoBars = infoBars;
         _errors = errors;
         _log = log;
+        _details = details;
         OpenCommand = errors.AsyncCommand(OpenAsync, ProjectFileText.OpenFailedContext);
         SaveCommand = errors.AsyncCommand(() => SaveAsync(saveAs: false), ProjectFileText.SaveFailedContext);
         SaveAsCommand = errors.AsyncCommand(() => SaveAsync(saveAs: true), ProjectFileText.SaveFailedContext);
         _shell.PropertyChanged += OnShellPropertyChanged;
         Watch(_shell.CurrentProject);
+
+        // New project and the drop's "Start new project" ask the same question as Open and Close.
+        _question = AskToSaveFirstAsync;
+        _shell.UnsavedWorkQuestion = _question;
     }
 
     /// <summary>File, Open… (Ctrl+O): asks for a project file and opens it.</summary>
@@ -123,7 +144,9 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
     public async Task<bool> OpenPathAsync(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        if (_busy)
+
+        // During an export nothing is read or asked: the export's own InfoBar says why.
+        if (_busy || !_shell.Edits.Allow())
         {
             return false;
         }
@@ -193,16 +216,42 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
             () => _errors.GuardAsync(() => RestoreAsync(content), ProjectFileText.RecoveryRestoreFailedContext)));
     }
 
+    /// <summary>
+    /// What a recovery copy of <paramref name="project"/> holds (#52): its <paramref name="snapshot"/>, its name and file,
+    /// and the frames its file could not find when it was opened. Any thread (the autosave's).
+    /// </summary>
+    public ProjectFileContent RecoveryContent(Project project, ProjectSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(snapshot);
+        return ContentFor(project, snapshot, snapshot.FilePath) with { RecoveredName = snapshot.Name, RecoveredFilePath = snapshot.FilePath };
+    }
+
     /// <summary>Stops following the shell.</summary>
     public void Dispose()
     {
         _shell.PropertyChanged -= OnShellPropertyChanged;
+        if (ReferenceEquals(_shell.UnsavedWorkQuestion, _question))
+        {
+            _shell.UnsavedWorkQuestion = null;
+        }
+
         Watch(null);
+    }
+
+    // The file's content for the project's snapshot, with the frames its file could not find written back in their places.
+    private ProjectFileContent ContentFor(Project project, ProjectSnapshot snapshot, string? path)
+    {
+        var content = ProjectFileContent.From(snapshot, path);
+        return _opened is { } opened && ReferenceEquals(opened.Project, project) && opened.Unresolved.Length > 0
+            ? content.Carrying(opened.Unresolved, snapshot.Frames, path)
+            : content;
     }
 
     private async Task OpenAsync()
     {
-        if (_busy)
+        // During an export the picker does not even open: the export's own InfoBar says why.
+        if (_busy || !_shell.Edits.Allow())
         {
             return;
         }
@@ -248,28 +297,42 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
             return false;
         }
 
+        var frames = opening.Frames!;
+        if (content.Frames.Length > 0 && frames.Frames.Length == 0)
+        {
+            // Not one photo is there (a drive not connected): opening it empty and tied to its file would let the next
+            // Save overwrite it. The current project stays; the file stays as it is, and off the recent list.
+            _log.Warning(ProjectFileText.Opened(0, frames.Missing.Length, 0, 0, opening.Read.Version, opening.Read.Problems) + " Not opened: none of its photos were found.");
+            ShowNoneFound(Path.GetFileNameWithoutExtension(path), frames.Missing);
+            return false;
+        }
+
         if (!await AskToSaveFirstAsync())
         {
             return false;
         }
 
-        if (!Replace(content, opening.Frames!))
+        if (!Replace(content, frames))
         {
             return false;
         }
 
-        var project = _shell.CurrentProject.Model;
+        var current = _shell.CurrentProject;
+        var project = current.Model;
         project.SetFile(path);
         project.MarkSaved(project.Version);
+        _opened = new OpenedFile(project, path, frames.Unresolved, opening.Read.IsNewerVersion);
         _recent.AddRecentProject(path);
-        Report(path, opening.Read, opening.Frames!);
+        Report(path, opening.Read, frames);
+        ReadDetails(current, frames);
         return true;
     }
 
     // The restore of a recovery copy: the project as it was, with its file (if it had one) but unsaved.
     private async Task RestoreAsync(ProjectFileContent content)
     {
-        if (_busy)
+        // During an export nothing is asked: the export's own InfoBar says why.
+        if (_busy || !_shell.Edits.Allow())
         {
             return;
         }
@@ -278,23 +341,36 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
         try
         {
             var frames = await Task.Run(() => SavedFrames.Resolve(content, content.RecoveredFilePath, _disk));
+            var name = content.RecoveredName
+                ?? (content.RecoveredFilePath is { } named ? Path.GetFileNameWithoutExtension(named) : Project.DefaultName);
+            if (frames.Frames.Length == 0)
+            {
+                // As for Open: nothing to restore until the photos are back; the copy stays offered until this run closes.
+                ShowNoneFound(name, frames.Missing);
+                return;
+            }
+
             if (!await AskToSaveFirstAsync() || !Replace(content, frames))
             {
                 return;
             }
 
-            var project = _shell.CurrentProject.Model;
+            var current = _shell.CurrentProject;
+            var project = current.Model;
             if (content.RecoveredFilePath is { } file)
             {
                 project.SetFile(file);
             }
-            else if (content.RecoveredName is { } name)
+            else if (content.RecoveredName is not null)
             {
                 project.Name = name;
             }
 
+            _opened = new OpenedFile(project, content.RecoveredFilePath, frames.Unresolved, IsNewer: false);
             _recovery.MarkOfferRestored();
             ShowMissing(frames.Missing);
+            ShowCloudOnly(frames);
+            ReadDetails(current, frames);
         }
         finally
         {
@@ -312,6 +388,15 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
 
         _shell.CurrentProject.Model.AddFrames(frames.Frames);
         return true;
+    }
+
+    // The photos the file knew nothing about, or that changed since the save, are read again in the background.
+    private void ReadDetails(ProjectViewModel project, ResolvedFrames frames)
+    {
+        if (_details is { } details && frames.ToRead.Length > 0)
+        {
+            _ = _errors.GuardAsync(() => details.ReadDetailsAsync(project, frames.ToRead), ProjectFileText.DetailsReadFailedContext);
+        }
     }
 
     private async Task<bool> SaveAsync(bool saveAs)
@@ -342,6 +427,14 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
 
         var model = current.Model;
         var path = model.FilePath;
+        if (!saveAs && path is not null && _opened is { IsNewer: true } opened && ReferenceEquals(opened.Project, model)
+            && string.Equals(opened.Path, path, StringComparison.OrdinalIgnoreCase))
+        {
+            // A newer 10Lapse wrote it: saving over it would drop what this version does not know. Ask where instead.
+            _infoBars.Show(InfoBarSeverity.Caution, ProjectFileText.NewerSaveAs(path));
+            saveAs = true;
+        }
+
         if (saveAs || path is null)
         {
             path = await _picker.PickSaveAsync(model.Name, StartFolder());
@@ -353,12 +446,14 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
             path = Path.GetFullPath(path);
         }
 
-        // The snapshot is immutable: written off the UI thread while the user carries on.
+        // The snapshot is immutable: written off the UI thread while the user carries on. The photos the file could not
+        // find when it was opened go back in with it.
         var snapshot = model.Snapshot;
+        var content = ContentFor(model, snapshot, path);
         var started = Stopwatch.GetTimestamp();
         try
         {
-            await Task.Run(() => _disk.WriteText(path, ProjectFileJson.Write(ProjectFileContent.From(snapshot, path))));
+            await Task.Run(() => _disk.WriteText(path, ProjectFileJson.Write(content)));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
@@ -372,8 +467,14 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
             return false;
         }
 
-        _log.Info(ProjectFileText.Saved(snapshot.Frames.Length, Stopwatch.GetElapsedTime(started).TotalMilliseconds));
+        _log.Info(ProjectFileText.Saved(content.Frames.Length, Stopwatch.GetElapsedTime(started).TotalMilliseconds));
         _recent.AddRecentProject(path);
+        if (_opened is { IsNewer: true } written && ReferenceEquals(written.Project, model))
+        {
+            // The file it is tied to from now on is this version's own.
+            _opened = written with { IsNewer = false };
+        }
+
         if (!model.IsClosed)
         {
             model.SetFile(path);
@@ -413,21 +514,35 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
         }
 
         ShowMissing(frames.Missing);
+        ShowCloudOnly(frames);
     }
 
     // One InfoBar for every photo not found, with a line each: the file name, and the folder it was looked for in.
     private void ShowMissing(IReadOnlyList<string> missing)
     {
-        if (missing.Count == 0)
+        if (missing.Count > 0)
         {
-            return;
+            _infoBars.ShowWithDetails(InfoBarSeverity.Caution, ProjectFileText.Missing(missing.Count), Where(missing));
         }
-
-        var details = missing.Select(path => new InfoBarDetail(
-            Path.GetFileName(path) is { Length: > 0 } name ? name : path,
-            Path.GetFileName(Path.GetDirectoryName(path) ?? string.Empty)));
-        _infoBars.ShowWithDetails(InfoBarSeverity.Caution, ProjectFileText.Missing(missing.Count), details);
     }
+
+    // The project did not open: none of its photos were found. The same list, so the user sees which drive to connect.
+    private void ShowNoneFound(string name, IReadOnlyList<string> missing) =>
+        _infoBars.ShowWithDetails(InfoBarSeverity.Caution, ProjectFileText.NoneFound(missing.Count, name), Where(missing));
+
+    // Online-only OneDrive photos are not skipped (they are the project's), but the user hears they will download.
+    private void ShowCloudOnly(ResolvedFrames frames)
+    {
+        if (frames.CloudOnly > 0)
+        {
+            _infoBars.Show(InfoBarSeverity.Caution, ProjectFileText.CloudOnly(frames.CloudOnly, frames.CloudOnlyBytes));
+        }
+    }
+
+    private static IEnumerable<InfoBarDetail> Where(IReadOnlyList<string> missing) =>
+        missing.Select(path => new InfoBarDetail(
+            Path.GetFileName(path) is { Length: > 0 } name ? name : path,
+            Path.GetDirectoryName(path)));
 
     // The dialogs open where the project is, else where the last project was, else in Documents.
     private string? StartFolder() =>
@@ -439,6 +554,11 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
     {
         if (e.PropertyName == nameof(ShellViewModel.CurrentProject))
         {
+            if (_opened is { } opened && !ReferenceEquals(opened.Project, _shell.CurrentProject.Model))
+            {
+                _opened = null;
+            }
+
             Watch(_shell.CurrentProject);
             OnPropertyChanged(nameof(CanSave));
         }
@@ -467,4 +587,11 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
     }
 
     private sealed record Opening(ProjectFileReadResult Read, ResolvedFrames? Frames);
+
+    /// <summary>What the open project brought from its file (#52).</summary>
+    /// <param name="Project">The project it belongs to; it lapses when another replaces it.</param>
+    /// <param name="Path">The file it was opened from (or a restored copy belonged to); null for none.</param>
+    /// <param name="Unresolved">The file's frames whose photo was not found: every save writes them back.</param>
+    /// <param name="IsNewer">A newer 10Lapse wrote <paramref name="Path"/>: Save asks where instead of overwriting it.</param>
+    private sealed record OpenedFile(Project Project, string? Path, ImmutableArray<UnresolvedFrame> Unresolved, bool IsNewer);
 }
