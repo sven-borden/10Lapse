@@ -357,6 +357,12 @@ public enum VideoFormat
 
     /// <summary>MP4 with HEVC, when the codec is installed.</summary>
     Mp4Hevc,
+
+    /// <summary>
+    /// An animated GIF that loops forever (#51), through the WIC GIF encoder every Windows has. Its size and frame rate
+    /// come from <see cref="OutputSettings.Gif"/>; resolution and quality do not apply.
+    /// </summary>
+    Gif,
 }
 
 /// <summary>Quality level, mapped to a bitrate per resolution and rate (#23).</summary>
@@ -406,6 +412,13 @@ public sealed record OutputSettings
         get;
         init => field = Enum.IsDefined(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown quality.");
     }
+
+    /// <summary>The GIF's size and frame rate (#51), used when <see cref="Format"/> is <see cref="VideoFormat.Gif"/>; kept while a video format is chosen.</summary>
+    public GifSettings Gif
+    {
+        get;
+        init => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = GifSettings.Default;
 }
 
 /// <summary>How the frames are ordered (#15). The project stores the choice; #15 computes the order.</summary>

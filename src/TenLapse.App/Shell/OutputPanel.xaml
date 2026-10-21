@@ -5,7 +5,8 @@
   32 px), and the estimated file size in Caption Secondary, between 16 px of padding above and below and a divider
   at the bottom. Inspector sections stack in a column inside ShellView's InspectorRegion.
 
-  The lists hold only what this PC confirmed it can encode (OutputPanelViewModel): a size it cannot export is left
+  With Animated GIF chosen (#51), Size and Frame rate stand where Resolution and Quality stand for a video, and the
+  estimate is a range. The lists hold only what this PC confirmed it can encode (OutputPanelViewModel): a size it cannot export is left
   out, never disabled, and one line under the lists says why. Until the startup probe has answered, a quiet line
   replaces the lists in a block as tall as they are, so nothing moves while the lists are still empty (the note and
   the notice add lines when they appear). The code-behind raises screen reader notifications for the pending state,
@@ -52,6 +53,10 @@
             <Setter Target="QualityBlock.(Grid.ColumnSpan)" Value="1" />
             <Setter Target="QualityBlock.(Grid.Row)" Value="0" />
             <Setter Target="QualityBlock.(Grid.Column)" Value="2" />
+            <Setter Target="GifSizeBlock.(Grid.ColumnSpan)" Value="1" />
+            <Setter Target="GifRateBlock.(Grid.ColumnSpan)" Value="1" />
+            <Setter Target="GifRateBlock.(Grid.Row)" Value="0" />
+            <Setter Target="GifRateBlock.(Grid.Column)" Value="2" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -90,7 +95,11 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
           </Grid.RowDefinitions>
-          <StackPanel x:Name="ResolutionBlock" Grid.ColumnSpan="3" Spacing="6">
+          <StackPanel
+            x:Name="ResolutionBlock"
+            Grid.ColumnSpan="3"
+            Spacing="6"
+            Visibility="{x:Bind ViewModel.ShowsVideoOptions, Mode=OneWay}">
             <TextBlock
               x:Name="ResolutionLabel"
               Foreground="{ThemeResource InkSecondaryBrush}"
@@ -116,7 +125,12 @@
               SelectedItem="{x:Bind ViewModel.SelectedFormat, Mode=TwoWay}"
               Style="{StaticResource OutputSelectStyle}" />
           </StackPanel>
-          <StackPanel x:Name="QualityBlock" Grid.Row="2" Grid.ColumnSpan="3" Spacing="6">
+          <StackPanel
+            x:Name="QualityBlock"
+            Grid.Row="2"
+            Grid.ColumnSpan="3"
+            Spacing="6"
+            Visibility="{x:Bind ViewModel.ShowsVideoOptions, Mode=OneWay}">
             <TextBlock
               x:Name="QualityLabel"
               Foreground="{ThemeResource InkSecondaryBrush}"
@@ -127,6 +141,46 @@
               AutomationProperties.Name="{x:Bind presentation:OutputText.QualityLabel}"
               ItemsSource="{x:Bind ViewModel.Qualities}"
               SelectedItem="{x:Bind ViewModel.SelectedQuality, Mode=TwoWay}"
+              Style="{StaticResource OutputSelectStyle}" />
+          </StackPanel>
+
+          <!--
+            Animated GIF (#51): its own size and frame rate lists take the places of Resolution and Quality, which do not
+            apply to a GIF and are absent (not disabled) while it is chosen. Format stays in the middle.
+          -->
+          <StackPanel
+            x:Name="GifSizeBlock"
+            Grid.ColumnSpan="3"
+            Spacing="6"
+            Visibility="{x:Bind ViewModel.ShowsGifOptions, Mode=OneWay}">
+            <TextBlock
+              x:Name="GifSizeLabel"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind presentation:OutputText.GifSizeLabel}" />
+            <ComboBox
+              x:Name="GifSizeList"
+              AutomationProperties.Name="{x:Bind presentation:OutputText.GifSizeLabel}"
+              ItemsSource="{x:Bind ViewModel.GifSizes, Mode=OneWay}"
+              SelectedItem="{x:Bind ViewModel.SelectedGifSize, Mode=TwoWay}"
+              Style="{StaticResource OutputSelectStyle}" />
+          </StackPanel>
+          <StackPanel
+            x:Name="GifRateBlock"
+            Grid.Row="2"
+            Grid.ColumnSpan="3"
+            Spacing="6"
+            Visibility="{x:Bind ViewModel.ShowsGifOptions, Mode=OneWay}">
+            <TextBlock
+              x:Name="GifRateLabel"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind presentation:OutputText.GifRateLabel}" />
+            <ComboBox
+              x:Name="GifRateList"
+              AutomationProperties.Name="{x:Bind presentation:OutputText.GifRateLabel}"
+              ItemsSource="{x:Bind ViewModel.GifRates}"
+              SelectedItem="{x:Bind ViewModel.SelectedGifRate, Mode=TwoWay}"
               Style="{StaticResource OutputSelectStyle}" />
           </StackPanel>
         </Grid>

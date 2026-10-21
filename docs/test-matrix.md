@@ -509,6 +509,54 @@ walk import, Timing, Frame, Output, export, the finished state and Settings.
   while 10Lapse runs. Expect: nothing changes until 10Lapse starts again, then
   everything is in the new language.
 
+### 5.18 Animated GIF (#51, 3.1)
+
+Not checked on the dev PC: anything a person sees in another app, the narrow
+layout, Narrator, and real timelapse photos (the size estimate was measured on
+Windows' own wallpaper photos and the Debug sample sunsets).
+
+- [ ] **5.18.1 Output panel** (#51). Do: Format -> Animated GIF. Expect:
+  Size ("Medium . 480 x 270") and Frame rate ("Up to 10 fps") take the places
+  of Resolution and Quality, which are gone (not disabled); the estimate is a
+  range ("4.4 MB to 9.4 MB"); back to MP4, the resolution and quality are as
+  they were. With a video slower than the preset (Per photo 0.5 s), the note
+  says "The GIF keeps your video's speed: 2 fps."
+- [ ] **5.18.2 Narrow layout** (#51, #36). Run: narrow window. Expect: Size,
+  Format and Frame rate in one row, the labels whole in every language (es
+  "Fotogramas por segundo" and it "Fotogrammi al secondo" are the longest).
+- [ ] **5.18.3 Narrator** (#51, #38). Expect: the two GIF lists are read with
+  their labels, and the range estimate is read as text.
+- [ ] **5.18.4 Save dialog** (#51). Expect: "<name>.gif" suggested, file type
+  "Animated GIF"; the export writes a GIF even if the name is changed.
+- [ ] **5.18.5 Browsers** (#51). Do: open the GIF in Edge, Chrome and
+  Firefox. Expect: it loops forever; ten loops last ten times the video's
+  length (a stopwatch, within a second); a 29.97 fps project at up to 25 fps
+  plays without visible stutter.
+- [ ] **5.18.6 Chat apps** (#51). Do: send a Medium, up-to-10-fps GIF of about
+  10 s in Teams, Discord, Slack and WhatsApp desktop. Expect: it animates and
+  loops in the conversation; note any app that refuses the size or re-encodes
+  it (Discord's free upload limit is 10 MB).
+- [ ] **5.18.7 Photos and Explorer** (#51). Expect: the Photos app plays it;
+  Explorer shows a thumbnail and the preview pane animates it.
+- [ ] **5.18.8 Premiere** (#51). Expect: the finished GIF loops over the gate
+  1.1 s after the finish (an Image, not the video player); with animations off
+  in Windows it shows its first frame and stays still (by design), and turning
+  the setting off or on while it shows stops or restarts it within a second; a
+  GIF saved under a `.mp4` name still premieres as a GIF; a second export to
+  the same name replaces it, and Explorer can move or delete the file while it
+  shows (the premiere holds no file); a GIF over 256 MB shows only its first
+  frame with a neutral InfoBar that says why.
+- [ ] **5.18.9 Estimate on real photos** (#51). Do: export three real
+  sequences (a clear sky, trees in wind, a night city) as Medium GIFs and
+  compare the file with the panel's range; then run
+  `GifExportTests.MeasureBytesPerPixel` with `TENLAPSE_GIF_MEASURE` set to a
+  folder of each set's JPEGs. Expect: every file inside its range; report the
+  bytes per pixel so `GifOutput.BytesPerPixel` can follow real photos.
+- [ ] **5.18.10 Long GIF on a tight PC** (#51, #34). Run: 8 GB or iGPU. Do:
+  1,000 photos at 30 fps, Large, up to 25 fps, and let the premiere loop for a
+  minute. Expect: peak private bytes under 1 GB through the export and the
+  premiere (712 MB and 11.6 s for 834 frames, 67 MB, on the NVIDIA PC).
+
 ## 6. Per-machine measurements
 
 - [ ] **6.1 Bench on each machine** (#34, PR #89). Run: all, with the repo and

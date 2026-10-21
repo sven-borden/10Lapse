@@ -169,6 +169,105 @@ public sealed class GoldenTimingTests(GoldenTimingTests.NumberedPhotos photos) :
         File.Delete(result.Path);
     }
 
+    /// <summary>
+    /// The animated GIF (#51) at the common speeds and presets: the exporter hands GIF frame k to the encoder at exactly
+    /// <see cref="FrameTiming.FrameStart"/> of k at the GIF's rate, the file holds each frame with the delay of its rounded
+    /// start and end (<see cref="GifTiming.Delay(long, Fraction)"/>), loops forever, and frame k shows the photo the video
+    /// shows at that moment (<see cref="GifOutput.SourceFrame"/>).
+    /// </summary>
+    [Theory]
+    [InlineData("30 fps as up to 10 fps", 30, 1, false, GifFrameRate.Fps10)]
+    [InlineData("24 fps as up to 25 fps", 24, 1, false, GifFrameRate.Fps25)]
+    [InlineData("29.97 fps as up to 25 fps", 30000, 1001, false, GifFrameRate.Fps25)]
+    [InlineData("29.97 fps as up to 20 fps", 30000, 1001, false, GifFrameRate.Fps20)]
+    [InlineData("12.5 fps as up to 20 fps", 25, 2, false, GifFrameRate.Fps20)]
+    [InlineData("2 s per photo as up to 10 fps", 2, 1, true, GifFrameRate.Fps10)]
+    public async Task EveryGifFrameShowsThePhotoOnScreenAtItsStartWithItsExactDelay(string speed, long numerator, long denominator, bool perPhoto, GifFrameRate preset)
+    {
+        SkipWithoutGraphicsDevice();
+        var label = $"GIF, {speed}";
+        var evidence = GoldenExport.EvidenceFolder(ClassName, Slug(label));
+        var input = new Fraction(numerator, denominator);
+        var timing = perPhoto ? TimingSettings.PerPhoto(input) : TimingSettings.PerSecond(input);
+        var project = new Project(timing, new FrameSettings(FrameAspect.Ratio16x9, FitMode.Fill), OutputSettings.Default with { Format = VideoFormat.Gif, Gif = GifSettings.Default with { Rate = preset } }, SortMode.Manual);
+        project.AddFrames((await photos.GetAsync()).Select(photo => GoldenExport.FrameOf(photo.Path, photo.Size)));
+        var snapshot = project.Snapshot;
+        var videoRate = snapshot.EffectiveRate.Rate;
+        var gifRate = GifOutput.EffectiveRate(videoRate, preset);
+        var expectedFrames = GifOutput.SourceFrames(FrameCount, videoRate, gifRate);
+
+        var output = Path.Combine(photos.Folder, $"{Slug(label)}.gif");
+        var record = new EncoderRecord();
+        var clock = Stopwatch.StartNew();
+        var result = await ExportOrSkipAsync(snapshot, output, options: new ProjectExportOptions
+        {
+            CreateEncoder = (file, settings, device) => new RecordingEncoder(VideoExporter.OpenEncoder(file, settings, device), record),
+        });
+        var exported = clock.Elapsed;
+
+        var problems = new List<string>();
+        Check(problems, "GIF rate", gifRate, result.Rate);
+        Check(problems, "frames written", expectedFrames.Length, result.FrameCount);
+        Check(problems, "encoders opened", 1, record.EncodersOpened);
+        var writes = record.Writes;
+        var mistimedWrites = Enumerable.Range(0, Math.Min(writes.Count, expectedFrames.Length))
+            .Where(k => writes[k].Time != FrameTiming.FrameStart(k, gifRate) || writes[k].Duration != FrameTiming.FrameDuration(k, gifRate))
+            .ToList();
+        if (mistimedWrites.Count > 0)
+        {
+            problems.Add($"{mistimedWrites.Count} GIF frames were handed to the encoder at another time than FrameTiming's at the GIF rate: frames {string.Join(", ", mistimedWrites.Take(10))}");
+        }
+
+        var info = GifFileReader.Read(result.Path);
+        Check(problems, "frames in the file", expectedFrames.Length, info.FrameCount);
+        Check(problems, "size", "480x270", $"{info.Width}x{info.Height}");
+        Check(problems, "application extension", "NETSCAPE2.0", info.Application);
+        Check(problems, "loop count (0: forever)", (int?)0, info.LoopCount);
+        var wrongDelays = Enumerable.Range(0, Math.Min(info.FrameCount, expectedFrames.Length)).Where(k => info.Delays[k] != GifTiming.Delay(k, gifRate)).ToList();
+        if (wrongDelays.Count > 0)
+        {
+            problems.Add($"{wrongDelays.Count} delays differ from the rounded starts: " + string.Join("; ", wrongDelays.Take(5).Select(k => $"frame {k} has {info.Delays[k]} cs, expected {GifTiming.Delay(k, gifRate)}")));
+        }
+
+        Check(problems, "length in cs", GifTiming.Centiseconds(FrameTiming.Duration(expectedFrames.Length, gifRate)), info.TotalCentiseconds);
+
+        var shown = new List<int>();
+        GoldenImage? firstWrong = null;
+        GifFileReader.ReadFrames(result.Path, frame =>
+        {
+            var number = FrameCode.Read(frame.Pixels, frame.Width, frame.Height, frame.Stride);
+            if (frame.Index < expectedFrames.Length && number != expectedFrames[frame.Index])
+            {
+                firstWrong ??= GoldenImage.Copy(frame.Pixels, frame.Width, frame.Height, frame.Stride);
+            }
+
+            shown.Add(number);
+        });
+        var wrong = Enumerable.Range(0, Math.Min(shown.Count, expectedFrames.Length)).Where(k => shown[k] != expectedFrames[k]).ToList();
+        if (wrong.Count > 0)
+        {
+            problems.Add($"{wrong.Count} GIF frames show another photo: " + string.Join("; ", wrong.Take(5).Select(k => $"frame {k} shows {shown[k]}, expected {expectedFrames[k]}")));
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(
+            $"{label}: {expectedFrames.Length} GIF frames at {gifRate.Numerator}/{gifRate.Denominator} fps, export {exported.TotalMilliseconds:0} ms, " +
+            $"{new FileInfo(result.Path).Length:N0} bytes, {info.TotalCentiseconds} cs, delays {string.Join(",", info.Delays.Take(8))}…");
+
+        if (problems.Count > 0)
+        {
+            Directory.CreateDirectory(evidence);
+            File.Copy(result.Path, Path.Combine(evidence, "export.gif"), overwrite: true);
+            if (firstWrong is not null)
+            {
+                await firstWrong.SavePngAsync(Path.Combine(evidence, $"frame{wrong[0]:D3}-export.png"));
+            }
+
+            Assert.Fail(GoldenExport.Report($"{label}:", problems, $"{evidence} (the GIF, and the first wrong frame)"));
+        }
+
+        File.Delete(result.Path);
+    }
+
     // One encoder, FrameCount writes, each at exactly FrameStart(i) for exactly FrameDuration(i).
     private static void CheckWrites(List<string> problems, EncoderRecord record, Fraction rate)
     {

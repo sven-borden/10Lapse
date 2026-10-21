@@ -81,6 +81,12 @@ public sealed class VideoExportException : Exception
     /// <see cref="VideoExportFailure.GraphicsDeviceLost"/> (DXGI_ERROR_DEVICE_HUNG, _REMOVED, _RESET, DXGI_ERROR_DRIVER_INTERNAL_ERROR), for the log.
     /// </summary>
     public int? DeviceRemovedReason { get; init; }
+
+    /// <summary>
+    /// The format being written when it failed, for the advice the message gives: a GIF has no resolution to lower and
+    /// its encoder runs on the CPU, not the graphics driver. Null when the failure does not say, read as a video.
+    /// </summary>
+    public VideoFormat? Format { get; init; }
 }
 
 /// <summary>
@@ -155,7 +161,7 @@ internal static class ExportFailures
     /// <summary>Wraps <paramref name="exception"/> as <paramref name="failure"/>, keeping it as the inner exception.</summary>
     /// <param name="format">The codec being written, which the message names.</param>
     public static VideoExportException Wrap(Exception exception, VideoExportFailure failure, VideoFormat format) =>
-        new($"{Summary(failure, format)}: {exception.Message}", failure, exception);
+        new($"{Summary(failure, format)}: {exception.Message}", failure, exception) { Format = format };
 
     /// <summary>
     /// A plain English summary for logs and tests, naming the codec (H.264 or HEVC) where the failure is the

@@ -153,6 +153,15 @@ public static class ExportText
     /// <summary><see cref="PremiereCantPlayFormat"/> with the button it names.</summary>
     public static string PremiereCantPlay => string.Format(CultureInfo.CurrentCulture, PremiereCantPlayFormat, ShowInFolder);
 
+    /// <summary>
+    /// The finished GIF saved, but it is too large to play in the preview (<see cref="PremierePlan.GifPlayLimit"/>), so the
+    /// preview shows its first frame. {0} the button's label (<see cref="ShowInFolder"/>).
+    /// </summary>
+    public static string PremiereGifFirstFrameFormat => _strings.Get();
+
+    /// <summary><see cref="PremiereGifFirstFrameFormat"/> with the button it names.</summary>
+    public static string PremiereGifFirstFrame => string.Format(CultureInfo.CurrentCulture, PremiereGifFirstFrameFormat, ShowInFolder);
+
     /// <summary>The question when the window closes during an export.</summary>
     public static string CloseTitle => _strings.Get();
 
@@ -306,6 +315,26 @@ public static class ExportText
         return string.Format(culture ?? CultureInfo.CurrentCulture, OutputSummaryFormat, OutputText.ResolutionName(output.Resolution), OutputText.CodecName(output.Format), OutputText.QualityOption(output.Quality));
     }
 
+    /// <summary>
+    /// The output row for an animated GIF (#51): "480 × 270 · GIF · 10 fps", with the rate the GIF plays at (the preset, or
+    /// the video's own when slower) in place of a quality, which a GIF does not have.
+    /// </summary>
+    public static string GifOutputSummary(PixelSize size, Fraction rate, CultureInfo? culture = null)
+    {
+        culture ??= CultureInfo.CurrentCulture;
+        return string.Format(culture, OutputSummaryFormat, OutputText.PixelSizeText(size), OutputText.CodecName(VideoFormat.Gif), TimingFormat.FrameRate(rate, culture));
+    }
+
+    /// <summary>The output row for what a snapshot exports: <see cref="OutputSummary"/>, or <see cref="GifOutputSummary"/> for a GIF.</summary>
+    public static string OutputSummary(ProjectSnapshot snapshot, CultureInfo? culture = null)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        var output = snapshot.Output;
+        return output.Format == VideoFormat.Gif
+            ? GifOutputSummary(snapshot.VideoSize, GifOutput.EffectiveRate(snapshot.EffectiveRate.Rate, output.Gif.Rate), culture)
+            : OutputSummary(output, culture);
+    }
+
     /// <summary>"Harbor sunset.mp4 is ready".</summary>
     public static string Ready(string fileName) => string.Format(CultureInfo.CurrentCulture, ReadyFormat, fileName);
 
@@ -315,6 +344,23 @@ public static class ExportText
         ArgumentNullException.ThrowIfNull(video);
         culture ??= CultureInfo.CurrentCulture;
         return string.Format(culture, ReadySummaryFormat, TimingFormat.Duration(video.Duration, culture), OutputText.ResolutionName(resolution), OutputText.CodecName(video.Format), FileSize(video.FileBytes, culture));
+    }
+
+    /// <summary>
+    /// The finished summary for any format: <see cref="ReadySummary(ExportedVideo, OutputResolution, CultureInfo?)"/> for a
+    /// video, "10.0 s · 480 × 270 · GIF · 4.21 MB" for a GIF, whose size has no resolution name.
+    /// </summary>
+    public static string ReadySummary(ExportedVideo video, OutputSettings output, CultureInfo? culture = null)
+    {
+        ArgumentNullException.ThrowIfNull(video);
+        ArgumentNullException.ThrowIfNull(output);
+        if (video.Format != VideoFormat.Gif)
+        {
+            return ReadySummary(video, output.Resolution, culture);
+        }
+
+        culture ??= CultureInfo.CurrentCulture;
+        return string.Format(culture, ReadySummaryFormat, TimingFormat.Duration(video.Duration, culture), OutputText.PixelSizeText(video.Size), OutputText.CodecName(video.Format), FileSize(video.FileBytes, culture));
     }
 
     /// <summary>
@@ -357,13 +403,20 @@ public static class ExportText
 
     /// <summary>
     /// The Save dialog's suggested name: the project name with what Windows does not allow in a file name left out, and
-    /// <c>.mp4</c>. A name with nothing left becomes the default project name.
+    /// <c>.mp4</c> (<c>.gif</c> for an animated GIF, #51). A name with nothing left becomes the default project name.
     /// </summary>
-    public static string SuggestedFileName(string projectName)
+    public static string SuggestedFileName(string projectName, VideoFormat format = VideoFormat.Mp4H264)
     {
         var name = new string([.. (projectName ?? string.Empty).Where(c => c >= ' ' && !"<>:\"/\\|?*".Contains(c))]).Trim().TrimEnd('.').Trim();
-        return (name.Length == 0 ? Project.DefaultName : name) + ".mp4";
+        return (name.Length == 0 ? Project.DefaultName : name) + FileExtension(format);
     }
+
+    /// <summary>The file extension a format is saved with: <c>.gif</c> for an animated GIF, <c>.mp4</c> for a video.</summary>
+    public static string FileExtension(VideoFormat format) => format == VideoFormat.Gif ? ".gif" : ".mp4";
+
+    /// <summary>The Save dialog's file type for a file of <paramref name="extension"/>: "Animated GIF" or "MP4 video".</summary>
+    public static string FileTypeNameFor(string extension) =>
+        string.Equals(extension, ".gif", StringComparison.OrdinalIgnoreCase) ? OutputText.GifFormatOption : FileTypeName;
 
     // Invariant on purpose: zero-padded counter digits keep their width (DESIGN.md, the Tabular Rule).
     private static string Pad(int value, int width) => value.ToString(CultureInfo.InvariantCulture).PadLeft(width, '0');

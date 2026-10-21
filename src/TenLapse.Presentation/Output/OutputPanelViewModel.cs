@@ -31,15 +31,22 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
     private static readonly OutputOption<OutputQuality>[] _qualities =
         [.. Enum.GetValues<OutputQuality>().Select(quality => new OutputOption<OutputQuality>(quality, OutputText.QualityOption(quality)))];
 
+    private static readonly OutputOption<GifFrameRate>[] _gifRates =
+        [.. Enum.GetValues<GifFrameRate>().Select(rate => new OutputOption<GifFrameRate>(rate, OutputText.GifRateOption(rate)))];
+
     private readonly ShellViewModel _shell;
     private readonly IErrorPresenter _errors;
     private Project _project;
     private IOutputCapabilities? _capabilities;
     private OutputOption<OutputResolution>[] _resolutionOptions = [];
     private OutputOption<VideoFormat>[] _formatOptions = [];
+    private OutputOption<GifSize>[] _gifSizeOptions = [];
     private OutputOption<OutputResolution>? _selectedResolution;
     private OutputOption<VideoFormat>? _selectedFormat;
     private OutputOption<OutputQuality>? _selectedQuality;
+    private OutputOption<GifSize>? _selectedGifSize;
+    private OutputOption<GifFrameRate>? _selectedGifRate;
+    private bool _isGif;
     private string _estimatedSize = string.Empty;
     private string _note = string.Empty;
     private string _notice = string.Empty;
@@ -116,6 +123,58 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
             }
         }
     }
+
+    /// <summary>The GIF sizes (#51), Small to Large, each with its pixel size for the project's shape; empty while pending.</summary>
+    public IReadOnlyList<OutputOption<GifSize>> GifSizes => _gifSizeOptions;
+
+    /// <summary>The GIF frame rate presets (always the same three).</summary>
+    public IReadOnlyList<OutputOption<GifFrameRate>> GifRates => _gifRates;
+
+    /// <summary>The project's GIF size. Setting it stores the pick.</summary>
+    public OutputOption<GifSize>? SelectedGifSize
+    {
+        get => _selectedGifSize;
+        set
+        {
+            if (value is not null && !Equals(value, _selectedGifSize))
+            {
+                Choose(output => output with { Gif = output.Gif with { Size = value.Value } });
+            }
+        }
+    }
+
+    /// <summary>The project's GIF frame rate preset. Setting it stores the pick.</summary>
+    public OutputOption<GifFrameRate>? SelectedGifRate
+    {
+        get => _selectedGifRate;
+        set
+        {
+            if (value is not null && !Equals(value, _selectedGifRate))
+            {
+                Choose(output => output with { Gif = output.Gif with { Rate = value.Value } });
+            }
+        }
+    }
+
+    /// <summary>True when the selected format is an animated GIF: its size and rate lists show, resolution and quality are absent.</summary>
+    public bool IsGif
+    {
+        get => _isGif;
+        private set
+        {
+            if (SetProperty(ref _isGif, value))
+            {
+                OnPropertyChanged(nameof(ShowsVideoOptions));
+                OnPropertyChanged(nameof(ShowsGifOptions));
+            }
+        }
+    }
+
+    /// <summary>True when the resolution and quality lists show: settled, with a video format.</summary>
+    public bool ShowsVideoOptions => IsSettled && !IsGif;
+
+    /// <summary>True when the GIF size and frame rate lists show: settled, with GIF.</summary>
+    public bool ShowsGifOptions => IsSettled && IsGif;
 
     /// <summary>"Checking what this PC can encode…" while pending, otherwise empty.</summary>
     public string Status => IsPending ? OutputText.Checking : string.Empty;
@@ -225,6 +284,8 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
         _capabilities = capabilities;
         OnPropertyChanged(nameof(IsPending));
         OnPropertyChanged(nameof(IsSettled));
+        OnPropertyChanged(nameof(ShowsVideoOptions));
+        OnPropertyChanged(nameof(ShowsGifOptions));
         OnPropertyChanged(nameof(Status));
         Refresh();
     }
@@ -277,6 +338,8 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(SelectedResolution));
         OnPropertyChanged(nameof(SelectedFormat));
         OnPropertyChanged(nameof(SelectedQuality));
+        OnPropertyChanged(nameof(SelectedGifSize));
+        OnPropertyChanged(nameof(SelectedGifRate));
     }
 
     private void Refresh()
@@ -349,10 +412,23 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(Formats));
         }
 
+        // GIF sizes are offered while the answer is in, whatever the format, so switching to GIF finds them ready.
+        var gifSizeOptions = plan is null
+            ? []
+            : Enum.GetValues<GifSize>().Select(size => new OutputOption<GifSize>(size, OutputText.GifSizeOption(size, GifOutput.Size(size, shape.Aspect, shape.PhotoSize)))).ToArray();
+        if (!gifSizeOptions.SequenceEqual(_gifSizeOptions))
+        {
+            _gifSizeOptions = gifSizeOptions;
+            OnPropertyChanged(nameof(GifSizes));
+        }
+
         // The selections are instances from the lists, so a ComboBox finds them.
         Select(ref _selectedResolution, _resolutionOptions.FirstOrDefault(option => option.Value == output.Resolution), nameof(SelectedResolution));
         Select(ref _selectedFormat, _formatOptions.FirstOrDefault(option => option.Value == output.Format), nameof(SelectedFormat));
         Select(ref _selectedQuality, _qualities.First(option => option.Value == output.Quality), nameof(SelectedQuality));
+        Select(ref _selectedGifSize, _gifSizeOptions.FirstOrDefault(option => option.Value == output.Gif.Size), nameof(SelectedGifSize));
+        Select(ref _selectedGifRate, _gifRates.First(option => option.Value == output.Gif.Rate), nameof(SelectedGifRate));
+        IsGif = plan?.IsGif == true;
         Notice = plan?.Notice ?? string.Empty;
         OnPropertyChanged(nameof(HasReplacement));
         OnPropertyChanged(nameof(CanExport));
@@ -363,6 +439,19 @@ public sealed partial class OutputPanelViewModel : ObservableObject, IDisposable
         {
             EstimatedSize = string.Empty;
             Note = string.Empty;
+            return;
+        }
+
+        if (plan.IsGif)
+        {
+            // The GIF's own estimate (a range: GIF size depends on the photos far more than a video's), and a note only
+            // when the video is slower than the preset, so the GIF keeps the video's speed.
+            var videoRate = shape.Rate;
+            var gifRate = GifOutput.EffectiveRate(videoRate, output.Gif.Rate);
+            Note = gifRate < GifOutput.Rate(output.Gif.Rate) ? OutputText.GifKeepsSpeed(videoRate) : string.Empty;
+            EstimatedSize = snapshot.Frames.Length > 0
+                ? OutputText.GifEstimate(GifOutput.EstimateBytes(GifOutput.FrameCount(snapshot.Frames.Length, videoRate, gifRate), GifOutput.Size(output.Gif.Size, shape.Aspect, shape.PhotoSize)))
+                : string.Empty;
             return;
         }
 

@@ -192,6 +192,21 @@ public static class ProjectText
     /// <summary>Export: not enough system or video memory.</summary>
     public static string ExportFailedOutOfMemory => _strings.Get();
 
+    /// <summary>GIF export (#51): WIC's GIF encoder does not load.</summary>
+    public static string ExportFailedGifEncoderUnavailable => _strings.Get();
+
+    /// <summary>GIF export: the encoder refused the size or the frame rate.</summary>
+    public static string ExportFailedGifSettingsRejected => _strings.Get();
+
+    /// <summary>GIF export: the encoder failed for another reason (it runs on the CPU, not the graphics driver).</summary>
+    public static string ExportFailedGifEncoder => _strings.Get();
+
+    /// <summary>GIF export: the encoder stopped taking frames.</summary>
+    public static string ExportFailedGifEncoderStalled => _strings.Get();
+
+    /// <summary>GIF export: not enough memory (a GIF has a size, not a resolution).</summary>
+    public static string ExportFailedGifOutOfMemory => _strings.Get();
+
     /// <summary>Export: a frame's photo could not be loaded, when the app does not know which.</summary>
     public static string ExportFailedPhotoUnreadable => _strings.Get();
 

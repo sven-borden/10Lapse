@@ -48,6 +48,8 @@ public static class UserSettingsJson
                 ["resolution"] = settings.Output.Resolution.ToString(),
                 ["format"] = settings.Output.Format.ToString(),
                 ["quality"] = settings.Output.Quality.ToString(),
+                ["gifSize"] = settings.Output.Gif.Size.ToString(),
+                ["gifRate"] = settings.Output.Gif.Rate.ToString(),
             },
             ["importFolder"] = settings.ImportFolder,
             ["exportFolder"] = settings.ExportFolder,
@@ -110,7 +112,13 @@ public static class UserSettingsJson
             Output = new OutputSettings(
                 Field(output, "output.resolution", defaults.Output.Resolution, ReadEnum<OutputResolution>, problems),
                 Field(output, "output.format", defaults.Output.Format, ReadEnum<VideoFormat>, problems),
-                Field(output, "output.quality", defaults.Output.Quality, ReadEnum<OutputQuality>, problems)),
+                Field(output, "output.quality", defaults.Output.Quality, ReadEnum<OutputQuality>, problems))
+            {
+                // Added by #51 without a version change: a file from 3.0 has neither field and gets the defaults.
+                Gif = new GifSettings(
+                    Field(output, "output.gifSize", defaults.Output.Gif.Size, ReadEnum<GifSize>, problems),
+                    Field(output, "output.gifRate", defaults.Output.Gif.Rate, ReadEnum<GifFrameRate>, problems)),
+            },
             ImportFolder = Field(root, "importFolder", defaults.ImportFolder, ReadFolder, problems),
             ExportFolder = Field(root, "exportFolder", defaults.ExportFolder, ReadFolder, problems),
             SuccessfulExports = Field(root, "successfulExports", defaults.SuccessfulExports, ReadCount, problems),

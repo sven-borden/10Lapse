@@ -7,7 +7,7 @@ namespace TenLapse.Services;
 /// <summary>
 /// The Save dialog for the video (#24), on the Windows App SDK's <see cref="FileSavePicker"/>, which takes the window's id
 /// (no <c>InitializeWithWindow</c>) and works packaged and unpackaged alike. It suggests the project's name with
-/// <c>.mp4</c>, in the folder of the last export or in Videos.
+/// <c>.mp4</c> (or <c>.gif</c>, #51), in the folder of the last export or in Videos.
 /// </summary>
 /// <param name="window">The id of the window the dialog belongs to.</param>
 internal sealed class SaveVideoPicker(Func<WindowId> window) : ISaveVideoPicker
@@ -21,13 +21,15 @@ internal sealed class SaveVideoPicker(Func<WindowId> window) : ISaveVideoPicker
     /// <inheritdoc />
     public async Task<string?> PickVideoAsync(string suggestedName, string? startFolder)
     {
+        // The suggested name carries the format's extension: .mp4, or .gif for an animated GIF (#51).
+        var extension = Path.GetExtension(suggestedName) is { Length: > 0 } suggested ? suggested : ExportText.FileExtension(Core.Projects.VideoFormat.Mp4H264);
         var picker = new FileSavePicker(window())
         {
             SuggestedStartLocation = PickerLocationId.VideosLibrary,
             SuggestedFileName = Path.GetFileNameWithoutExtension(suggestedName),
-            DefaultFileExtension = ".mp4",
+            DefaultFileExtension = extension,
         };
-        picker.FileTypeChoices.Add(ExportText.FileTypeName, [".mp4"]);
+        picker.FileTypeChoices.Add(ExportText.FileTypeNameFor(extension), [extension]);
         if (await StartFolderAsync(startFolder) is { } folder)
         {
             picker.SuggestedFolder = folder;

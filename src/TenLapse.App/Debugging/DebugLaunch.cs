@@ -9,7 +9,7 @@ namespace TenLapse.Debugging;
 /// <c>--sample-frames=N</c> fills the project with N generated photos (DebugPreview.cs, which also has the
 /// preview's switches), so the Editing state shows and plays, and <c>--infobar</c> raises #13's skipped-photos InfoBar
 /// with its detail list, and a neutral one behind it. <c>--output=720|1080|1440|2160[,hevc][,standard|maximum]</c> stores
-/// those Output settings in the project (to see the Output panel replace what this PC cannot do, with
+/// those Output settings in the project (<c>--output=gif[,small|medium|large][,fps10|fps20|fps25]</c> an animated GIF, #51) (to see the Output panel replace what this PC cannot do, with
 /// <c>--max-resolution</c> and the other switches in DebugOutputCapabilities.cs). <c>--theme=light|dark</c> is the
 /// gallery's switch (it sets the main window's theme too). <c>--frame=</c> is in DebugFrame.cs. <c>--crash=command|task|ui|unhandled</c>
 /// is in DebugCrash.cs. <c>--lang=&lt;tag&gt;</c> sets the app's language for the run (#113), and <c>--region=&lt;tag&gt;</c> its
@@ -154,6 +154,13 @@ internal static partial class DebugLaunch
                 "hevc" => settings with { Format = VideoFormat.Mp4Hevc },
                 "standard" => settings with { Quality = OutputQuality.Standard },
                 "maximum" => settings with { Quality = OutputQuality.Maximum },
+                "gif" => settings with { Format = VideoFormat.Gif },
+                "small" => settings with { Gif = settings.Gif with { Size = GifSize.Small } },
+                "medium" => settings with { Gif = settings.Gif with { Size = GifSize.Medium } },
+                "large" => settings with { Gif = settings.Gif with { Size = GifSize.Large } },
+                "fps10" => settings with { Gif = settings.Gif with { Rate = GifFrameRate.Fps10 } },
+                "fps20" => settings with { Gif = settings.Gif with { Rate = GifFrameRate.Fps20 } },
+                "fps25" => settings with { Gif = settings.Gif with { Rate = GifFrameRate.Fps25 } },
                 _ => settings,
             };
         }

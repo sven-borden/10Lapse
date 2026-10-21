@@ -36,10 +36,10 @@ public sealed class OutputPanelViewModelTests
         var panel = Panel(shell, new FakeOutputCapabilities());
 
         Assert.Equal([OutputResolution.Hd720, OutputResolution.Hd1080, OutputResolution.Qhd1440, OutputResolution.Uhd2160], Offered(panel));
-        Assert.Equal([VideoFormat.Mp4H264, VideoFormat.Mp4Hevc], panel.Formats.Select(option => option.Value));
+        Assert.Equal([VideoFormat.Mp4H264, VideoFormat.Mp4Hevc, VideoFormat.Gif], panel.Formats.Select(option => option.Value));
         Assert.Equal(["Standard", "High", "Maximum"], panel.Qualities.Select(option => option.Label));
         Assert.Equal(["720p · 1280 × 720", "1080p · 1920 × 1080", "1440p · 2560 × 1440", "4K · 3840 × 2160"], panel.Resolutions.Select(option => option.Label));
-        Assert.Equal(["MP4 · H.264", "MP4 · HEVC"], panel.Formats.Select(option => option.Label));
+        Assert.Equal(["MP4 · H.264", "MP4 · HEVC", "Animated GIF"], panel.Formats.Select(option => option.Label));
         Assert.Equal(string.Empty, panel.Note);
         Assert.Equal(string.Empty, panel.Notice);
         Assert.True(panel.CanExport);
@@ -56,7 +56,7 @@ public sealed class OutputPanelViewModelTests
         var shell = Shell();
         var panel = Panel(shell, new FakeOutputCapabilities { Hevc = false });
 
-        Assert.Equal([VideoFormat.Mp4H264], panel.Formats.Select(option => option.Value));
+        Assert.Equal([VideoFormat.Mp4H264, VideoFormat.Gif], panel.Formats.Select(option => option.Value));
         Assert.Equal(VideoFormat.Mp4H264, panel.SelectedFormat?.Value);
         Assert.Equal(string.Empty, panel.Notice);
     }
@@ -339,7 +339,7 @@ public sealed class OutputPanelViewModelTests
         var panel = Panel(shell, ConservativeOutputCapabilities.Instance);
 
         Assert.Equal([OutputResolution.Hd720, OutputResolution.Hd1080], Offered(panel));
-        Assert.Equal([VideoFormat.Mp4H264], panel.Formats.Select(option => option.Value));
+        Assert.Equal([VideoFormat.Mp4H264, VideoFormat.Gif], panel.Formats.Select(option => option.Value));
         Assert.Equal(OutputText.ConservativeNote, panel.Note);
         Assert.Equal(new OutputSettings(OutputResolution.Hd1080, VideoFormat.Mp4H264, OutputQuality.High), panel.EffectiveOutput);
         Assert.Equal(new OutputSettings(OutputResolution.Uhd2160, VideoFormat.Mp4Hevc, OutputQuality.High), project.Output);
@@ -536,7 +536,7 @@ public sealed class OutputPanelViewModelTests
         await delivery.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
 
         Assert.Equal(4, panel.Resolutions.Count);
-        Assert.Equal(2, panel.Formats.Count);
+        Assert.Equal(3, panel.Formats.Count);
     }
 }
 

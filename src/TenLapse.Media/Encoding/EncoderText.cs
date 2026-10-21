@@ -37,11 +37,12 @@ public static class EncoderText
         _ => throw new ArgumentOutOfRangeException(nameof(resolution), resolution, "Unknown resolution."),
     };
 
-    /// <summary>The codec's name: H.264 or HEVC.</summary>
+    /// <summary>The codec's name: H.264, HEVC or GIF.</summary>
     public static string CodecName(VideoFormat format) => format switch
     {
         VideoFormat.Mp4H264 => "H.264",
         VideoFormat.Mp4Hevc => "HEVC",
+        VideoFormat.Gif => "GIF",
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Unknown video format."),
     };
 

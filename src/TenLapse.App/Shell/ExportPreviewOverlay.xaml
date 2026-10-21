@@ -27,6 +27,19 @@
       Stretch="Uniform"
       Visibility="Collapsed" />
 
+    <!--
+      The premiere of an animated GIF (#51): Media Foundation does not play GIF, so the file is shown by XAML's own GIF
+      decoder, looping as it will in a browser. With animations off in Windows (or with the Debug reduce-motion switch) it stays on
+      its first frame: the code behind sets AutoPlay from MotionTokens.AnimationsEnabled and follows a change. A GIF over
+      PremierePlan.GifPlayLimit shows only its first frame, and an InfoBar says why.
+    -->
+    <Image
+      x:Name="Gif"
+      HorizontalAlignment="Left"
+      VerticalAlignment="Top"
+      Stretch="Uniform"
+      Visibility="Collapsed" />
+
     <Border
       x:Name="Pill"
       Height="28"
