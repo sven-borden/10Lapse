@@ -634,7 +634,9 @@ real key presses, Narrator and other players need a human. Run: once, packaged.
   starts over; the strip's playhead walks out and back with it; the scrubber
   spans the whole video (its knob moves during the holds while the strip's ring
   rests); the time code reads the whole video's length, the counter the photo.
-  ←/→ step photos; Home and End go to the video's first and last frame.
+  ←/→ step to the previous or next photo the video shows, along the video
+  (→ goes on in time on the way back too, a hold is one step); after End, ←
+  goes back. Home and End go to the video's first and last frame.
 - [ ] **5.20.4 The exported video loops in other players** (#49). Do: export
   the same as MP4, open it in Photos, Media Player and a browser, and send it in
   a chat app. Expect: the length the readout gave (Explorer may show a second

@@ -369,6 +369,43 @@ public sealed class PlayerViewModelTests
     }
 
     [Fact]
+    public void TheArrowsStepAlongTheVideoOnABoomerangsWayBackAndFromItsEnd()
+    {
+        // 10 photos at 10 fps as a boomerang with 0.3 s held at the end: 0 … 9 … 1 (18 frames), then photo 0 for 3.
+        var (shell, player) = Player(10);
+        var project = shell.CurrentProject.Model;
+        project.Timing = TimingSettings.PerSecond(new Fraction(10, 1));
+        project.Sequence = new SequenceSettings(TimeSpan.Zero, TimeSpan.FromSeconds(0.3), 1, boomerang: true);
+
+        // From the end (photo 0, held), ← goes back to photo 1, the frame before the hold (review of PR #134).
+        Assert.True(player.Handle(TransportAction.Last));
+        Assert.Equal((20, 0), (player.Position, player.CurrentFrame));
+        Assert.True(player.Handle(TransportAction.StepBack));
+        Assert.Equal((17, 1), (player.Position, player.CurrentFrame));
+
+        // On the way back → goes on in time (photo 1 to the hold's photo 0), ← back in time (photo 1 to 2).
+        Assert.True(player.Handle(TransportAction.StepForward));
+        Assert.Equal((18, 0), (player.Position, player.CurrentFrame));
+        player.SeekPosition(12);
+        Assert.Equal(6, player.CurrentFrame);
+        player.Step(1);
+        Assert.Equal((13, 5), (player.Position, player.CurrentFrame));
+        player.Step(-1);
+        Assert.Equal((12, 6), (player.Position, player.CurrentFrame));
+
+        // Through the turn: → from photo 8 on the way out shows 9, then 8 on the way back; Shift goes ten at once.
+        player.SeekPosition(8);
+        player.Step(1);
+        Assert.Equal((9, 9), (player.Position, player.CurrentFrame));
+        player.Step(1);
+        Assert.Equal((10, 8), (player.Position, player.CurrentFrame));
+        player.Step(10);
+        Assert.Equal((18, 0), (player.Position, player.CurrentFrame));
+        player.Step(-10);
+        Assert.Equal((8, 8), (player.Position, player.CurrentFrame));
+    }
+
+    [Fact]
     public void PlaybackLoopsOverTheWholeVideo()
     {
         // 4 photos played 3 times at 10 fps with 0.3 s held at the end: 12 + 3 frames, 1.5 s, then it starts over.

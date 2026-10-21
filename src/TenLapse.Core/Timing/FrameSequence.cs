@@ -212,6 +212,94 @@ public readonly record struct FrameSequence
     }
 
     /// <summary>
+    /// The first frame of the showing frame <paramref name="position"/> is in: a showing is a run of frames of one photo,
+    /// a hold included. In constant time: runs longer than a frame are only the start hold with photo 0's first frame,
+    /// the end hold (with the last photo's frame, forward), and the whole video when there is one photo.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The position is outside the video.</exception>
+    public int ShowingStart(int position)
+    {
+        _ = PhotoAt(position);
+        if (PhotoCount == 1 || position <= HoldStartFrames)
+        {
+            return 0;
+        }
+
+        var endHold = HoldStartFrames + CoreLength;
+        if (HoldEndFrames > 0 && position >= endHold - 1)
+        {
+            // Forward, the last photo's frame and its hold are one showing; a boomerang's hold (photo 0) follows photo 1.
+            return PhotoAt(endHold - 1) == HoldEndPhoto ? endHold - 1 : position >= endHold ? endHold : position;
+        }
+
+        return position;
+    }
+
+    /// <summary>The last frame of the showing frame <paramref name="position"/> is in (see <see cref="ShowingStart"/>).</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The position is outside the video.</exception>
+    public int ShowingEnd(int position)
+    {
+        _ = PhotoAt(position);
+        if (PhotoCount == 1)
+        {
+            return Length - 1;
+        }
+
+        if (position <= HoldStartFrames)
+        {
+            return HoldStartFrames;
+        }
+
+        var endHold = HoldStartFrames + CoreLength;
+        return HoldEndFrames > 0 && (position >= endHold || (position == endHold - 1 && PhotoAt(position) == HoldEndPhoto))
+            ? Length - 1
+            : position;
+    }
+
+    /// <summary>
+    /// Where the arrow keys go from frame <paramref name="position"/> (review of PR #134): <paramref name="showings"/>
+    /// photos on along the video (back when negative), each to the first frame of the next showing, a hold's frames
+    /// skipped. Forward is always later in the video, on a boomerang's way back too. Back from inside a showing passes its
+    /// first frame and goes to the one before, so the photo on screen changes. Stops at the video's ends. In a plain
+    /// sequence this is the photo index plus <paramref name="showings"/>, clamped.
+    /// </summary>
+    public int StepShowings(int position, int showings)
+    {
+        if (Length == 0)
+        {
+            return 0;
+        }
+
+        var at = Math.Clamp(position, 0, Length - 1);
+        for (var step = 0; step < Math.Abs(showings); step++)
+        {
+            if (showings > 0)
+            {
+                var end = ShowingEnd(at);
+                if (end + 1 >= Length)
+                {
+                    break;
+                }
+
+                at = end + 1;
+            }
+            else
+            {
+                var start = ShowingStart(at);
+                if (start == 0)
+                {
+                    at = 0;
+                    break;
+                }
+
+                at = ShowingStart(start - 1);
+            }
+        }
+
+        return at;
+    }
+
+    /// <summary>
     /// How many photos the first <paramref name="positions"/> frames show at least once: always the photos 0 to k − 1, since
     /// the first pass goes forward. The export's strip dims the photos from this index on; all of them are done once the
     /// first forward pass is. For a plain sequence this is <paramref name="positions"/> itself.

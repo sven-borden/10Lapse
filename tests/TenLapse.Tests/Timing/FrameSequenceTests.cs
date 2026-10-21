@@ -118,6 +118,54 @@ public sealed class FrameSequenceTests
         Assert.All(Enumerable.Range(0, holdStart), i => Assert.Equal(1, sequence.DirectionAt(i)));
     }
 
+    [Theory]
+    [MemberData(nameof(SmallCases))]
+    public void ShowingsAndArrowStepsFollowTheFrames(int photos, int holdStart, int holdEnd, int plays, bool boomerang)
+    {
+        var sequence = new FrameSequence(photos, holdStart, holdEnd, plays, boomerang);
+        var frames = Reference(photos, holdStart, holdEnd, plays, boomerang);
+        for (var at = 0; at < frames.Count; at++)
+        {
+            // The run of one photo around the frame, the slow way.
+            var start = at;
+            while (start > 0 && frames[start - 1] == frames[at])
+            {
+                start--;
+            }
+
+            var end = at;
+            while (end + 1 < frames.Count && frames[end + 1] == frames[at])
+            {
+                end++;
+            }
+
+            Assert.Equal((start, end), (sequence.ShowingStart(at), sequence.ShowingEnd(at)));
+
+            // → goes to the next run, later in time; ← to the run before the one on screen, so the photo changes.
+            Assert.Equal(end + 1 < frames.Count ? end + 1 : at, sequence.StepShowings(at, 1));
+            var back = start == 0 ? 0 : start - 1;
+            while (back > 0 && frames[back - 1] == frames[start - 1 < 0 ? 0 : start - 1])
+            {
+                back--;
+            }
+
+            Assert.Equal(start == 0 ? 0 : back, sequence.StepShowings(at, -1));
+        }
+
+        // Ten steps are ten single steps, stopping at the ends.
+        if (frames.Count > 0)
+        {
+            var ten = 0;
+            for (var i = 0; i < 10; i++)
+            {
+                ten = sequence.StepShowings(ten, 1);
+            }
+
+            Assert.Equal(ten, sequence.StepShowings(0, 10));
+            Assert.Equal(0, sequence.StepShowings(ten, -10));
+        }
+    }
+
     [Fact]
     public void ABoomerangNeverShowsAPhotoTwiceInARowOutsideItsHolds()
     {

@@ -282,11 +282,21 @@ public sealed partial class PlayerViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>Pauses and moves <paramref name="frames"/> photos (negative is back), stopping at the first and last photo.</summary>
+    /// <summary>
+    /// Pauses and moves <paramref name="frames"/> photos along the video (negative is back, #49): to the next photo the
+    /// video shows, later in time also on a boomerang's way back, a hold's frames skipped
+    /// (<see cref="FrameSequence.StepShowings"/>). Stops at the video's ends. In a plain sequence that is the photo index
+    /// plus <paramref name="frames"/>.
+    /// </summary>
     public void Step(int frames)
     {
         Pause();
-        Seek(CurrentFrame + frames);
+        if (_disposed || FrameCount == 0)
+        {
+            return;
+        }
+
+        SeekPosition(State.Sequence.StepShowings(Position, frames));
     }
 
     /// <summary>Does what a transport key asks; false when the action is <see cref="TransportAction.None"/>.</summary>
