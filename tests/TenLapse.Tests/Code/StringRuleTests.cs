@@ -140,7 +140,7 @@ public sealed partial class StringRuleTests
         var root = Path.Combine(DesignFiles.Root, "src", "TenLapse.App");
         var manifest = XDocument.Load(Path.Combine(root, "Package.appxmanifest"));
         var visual = manifest.Descendants().Single(element => element.Name.LocalName == "VisualElements");
-        var properties = manifest.Descendants().Single(element => element.Name.LocalName == "DisplayName");
+        var properties = manifest.Descendants().Single(element => element.Name.LocalName == "DisplayName" && element.Parent?.Name.LocalName == "Properties");
         Assert.Equal(Brand, properties.Value);
         Assert.Equal(Brand, (string?)visual.Attribute("DisplayName"));
 
@@ -151,6 +151,23 @@ public sealed partial class StringRuleTests
         var entry = resw.Root!.Elements("data").SingleOrDefault(data => (string?)data.Attribute("name") == description["ms-resource:".Length..]);
         Assert.NotNull(entry);
         Assert.False(string.IsNullOrWhiteSpace(entry.Element("value")?.Value));
+    }
+
+    [Fact]
+    public void TheManifestAssociatesProjectFilesAndNamesTheTypeFromEveryResw()
+    {
+        // #52: .10lapse opens in 10Lapse; the type's name in File Explorer comes from each language's Resources.resw.
+        var root = Path.Combine(DesignFiles.Root, "src", "TenLapse.App");
+        var manifest = XDocument.Load(Path.Combine(root, "Package.appxmanifest"));
+        var association = manifest.Descendants().Single(element => element.Name.LocalName == "FileTypeAssociation");
+        Assert.Equal([".10lapse"], association.Descendants().Where(element => element.Name.LocalName == "FileType").Select(element => element.Value.Trim()));
+        var name = association.Elements().Single(element => element.Name.LocalName == "DisplayName").Value.Trim();
+        Assert.StartsWith("ms-resource:", name, StringComparison.Ordinal);
+        foreach (var resw in Directory.EnumerateFiles(Path.Combine(root, "Strings"), "Resources.resw", SearchOption.AllDirectories))
+        {
+            var entry = XDocument.Load(resw).Root!.Elements("data").SingleOrDefault(data => (string?)data.Attribute("name") == name["ms-resource:".Length..]);
+            Assert.False(string.IsNullOrWhiteSpace(entry?.Element("value")?.Value), $"{resw} does not name the project file type.");
+        }
     }
 
     [Theory]

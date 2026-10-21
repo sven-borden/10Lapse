@@ -179,7 +179,7 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
         var read = ProjectFileJson.Read(copy.Text);
         if (read.Content is not { Frames.Length: > 0 } content)
         {
-            _log.Warning(ProjectFileText.RecoveryUnreadable(string.Join(" ", read.Problems)));
+            _log.Warning(ProjectFileText.RecoveryUnreadable(read.Problems));
             return;
         }
 
@@ -243,7 +243,7 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
 
         if (opening.Read.Content is not { } content)
         {
-            _log.Warning(ProjectFileText.NotAProjectLog(string.Join(" ", opening.Read.Problems)));
+            _log.Warning(ProjectFileText.NotAProjectLog(opening.Read.Problems));
             _infoBars.Show(InfoBarSeverity.Critical, ProjectFileText.OpenNotAProject(path));
             return false;
         }

@@ -169,7 +169,7 @@ public static class ProjectFileText
     public static string RecoveryRestoreFailedContext => "Restoring the recovery copy failed.";
 
     /// <summary>Log line: a recovery copy was found but is not a project; it was deleted.</summary>
-    public static string RecoveryUnreadable(string problem) => $"A recovery copy was left behind but could not be read, so it was dropped: {problem}";
+    public static string RecoveryUnreadable(IReadOnlyList<string> problems) => "A recovery copy was left behind but could not be read, so it is not offered: " + string.Join(" ", problems);
 
     /// <summary>Log line: a recovery copy was found and offered.</summary>
     public static string RecoveryOffered(int frames, DateTime savedUtc) =>
@@ -183,7 +183,7 @@ public static class ProjectFileText
         + (problems.Count > 0 ? " Problems: " + string.Join(" | ", problems) : string.Empty);
 
     /// <summary>Log line: a project file could not be read as a project.</summary>
-    public static string NotAProjectLog(string problem) => "The file is not a usable project: " + problem;
+    public static string NotAProjectLog(IReadOnlyList<string> problems) => "The file is not a usable project: " + string.Join(" ", problems);
 
     /// <summary>Log line: a project was saved.</summary>
     public static string Saved(int frames, double milliseconds) =>
