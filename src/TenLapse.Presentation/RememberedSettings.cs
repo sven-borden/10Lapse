@@ -17,6 +17,13 @@ namespace TenLapse.Presentation;
 /// <c>Project.Output</c>, the user's preference; the effective output is never stored. The portrait hint's
 /// dismissal is not remembered: it is not a project setting either (#52), so it lives and dies with the open project.
 /// The recent project files (#52) are kept here too, with the app's settings.
+/// <para>
+/// Two 10Lapse windows (#52: a project opened while 10Lapse runs starts a second one) share the file, so a write never
+/// puts back what this process loaded: it rereads the file under a lock every process takes
+/// (<see cref="ISettingsStore.Update"/>) and writes only the fields this process changed since its last read or write
+/// (<see cref="Merge"/>); the export count adds this process's exports to the stored count, and the recent list replays
+/// this process's own steps (open, remove, clear) onto the stored list, so the most recent use in either window comes first.
+/// </para>
 /// </remarks>
 public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFolderMemory, Rating.IRatingMemory, ProjectFiles.IRecentProjects, IDisposable
 {
@@ -34,7 +41,13 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
     private readonly ITimer _timer;
     private readonly TimeSpan _debounce;
     private readonly TimeSpan _finalWriteLimit;
+    private readonly List<Func<PathList, PathList>> _recentSteps = [];
     private UserSettings _current;
+
+    // What the file held at this process's last read or write: a field that still equals it was not changed here.
+    private UserSettings _baseline;
+
+    // _recentSteps: this process's steps on the recent list since its last write, replayed onto the stored list.
     private bool _pending;
     private bool _disposed;
     private bool _failureShown;
@@ -73,6 +86,7 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
         }
 
         _current = loaded.Settings;
+        _baseline = loaded.Settings;
         if (loaded.Problems.Count > 0)
         {
             // One line for the whole load: the fields that read keep their values, the others use the defaults.
@@ -126,24 +140,74 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
     public event EventHandler? RecentProjectsChanged;
 
     /// <summary>Puts <paramref name="path"/> first in <see cref="RecentProjects"/> (#52: it was opened or saved) and saves the list after the pause.</summary>
-    public void AddRecentProject(string path) =>
-        UpdateRecent(Current.RecentProjects.WithFirst(path, UserSettings.MaxRecentProjects));
+    public void AddRecentProject(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        UpdateRecent(list => list.WithFirst(path, UserSettings.MaxRecentProjects));
+    }
 
     /// <summary>Takes <paramref name="path"/> off <see cref="RecentProjects"/> (it is gone) and saves the list after the pause.</summary>
-    public void RemoveRecentProject(string path) => UpdateRecent(Current.RecentProjects.Without(path));
+    public void RemoveRecentProject(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        UpdateRecent(list => list.Without(path));
+    }
 
     /// <summary>Empties <see cref="RecentProjects"/> (the first-launch screen's <i>Clear list</i>) and saves that after the pause.</summary>
-    public void ClearRecentProjects() => UpdateRecent(PathList.Empty);
+    public void ClearRecentProjects() => UpdateRecent(_ => PathList.Empty);
 
-    private void UpdateRecent(PathList recent)
+    /// <summary>
+    /// Reads the stored list again (another 10Lapse window may have opened or saved a project since) and, with this
+    /// process's unwritten steps on top, raises <see cref="RecentProjectsChanged"/> when it differs. The read runs off
+    /// the UI thread; call it on the UI thread. A file that cannot be read changes nothing.
+    /// </summary>
+    public async Task RefreshRecentProjectsAsync()
     {
-        if (recent.Equals(Current.RecentProjects))
+        var loaded = await Task.Run(_store.Load);
+        if (loaded.Problems.Count > 0)
         {
             return;
         }
 
-        Update(Current with { RecentProjects = recent });
+        var stored = loaded.Settings.RecentProjects;
+        lock (_gate)
+        {
+            var next = _recentSteps.Aggregate(stored, (list, step) => step(list));
+            if (_disposed || next.Equals(_current.RecentProjects))
+            {
+                return;
+            }
+
+            _current = _current with { RecentProjects = next };
+        }
+
         RecentProjectsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    // A step is written even when it changes nothing here: P already first in this window can be behind Q in the file,
+    // which another window opened since, and opening P again here makes it the most recent there too.
+    private void UpdateRecent(Func<PathList, PathList> step)
+    {
+        bool changed;
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            var next = step(_current.RecentProjects);
+            changed = !next.Equals(_current.RecentProjects);
+            _recentSteps.Add(step);
+            _current = _current with { RecentProjects = next };
+            _pending = true;
+        }
+
+        _timer.Change(_debounce, Timeout.InfiniteTimeSpan);
+        if (changed)
+        {
+            RecentProjectsChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     /// <summary>Counts one successful export (#31), saves the count after the pause, and returns it. Stops counting at <see cref="int.MaxValue"/>.</summary>
@@ -289,6 +353,30 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
         Update(next);
     }
 
+    /// <summary>
+    /// <paramref name="stored"/> with this process's changes on top: each field <paramref name="mine"/> changed since
+    /// <paramref name="baseline"/> (the last read or write) is <paramref name="mine"/>'s, every other the stored one; the
+    /// export count adds this process's exports; the recent list is the stored one with <paramref name="steps"/> replayed.
+    /// A new field of <see cref="UserSettings"/> needs a line here (<c>RememberedSettingsTests.EveryFieldIsMerged</c> fails until it has one).
+    /// </summary>
+    internal static UserSettings Merge(UserSettings stored, UserSettings baseline, UserSettings mine, IEnumerable<Func<PathList, PathList>> steps)
+    {
+        var exports = (long)stored.SuccessfulExports + mine.SuccessfulExports - baseline.SuccessfulExports;
+        return new UserSettings
+        {
+            Timing = Pick(stored.Timing, baseline.Timing, mine.Timing),
+            Frame = Pick(stored.Frame, baseline.Frame, mine.Frame),
+            Output = Pick(stored.Output, baseline.Output, mine.Output),
+            ImportFolder = Pick(stored.ImportFolder, baseline.ImportFolder, mine.ImportFolder),
+            ExportFolder = Pick(stored.ExportFolder, baseline.ExportFolder, mine.ExportFolder),
+            RatingAskedVersion = Pick(stored.RatingAskedVersion, baseline.RatingAskedVersion, mine.RatingAskedVersion),
+            SuccessfulExports = (int)Math.Clamp(exports, 0, int.MaxValue),
+            RecentProjects = steps.Aggregate(stored.RecentProjects, (list, step) => step(list)),
+        };
+
+        static T Pick<T>(T stored, T baseline, T mine) => EqualityComparer<T>.Default.Equals(mine, baseline) ? stored : mine;
+    }
+
     private void Update(UserSettings next)
     {
         lock (_gate)
@@ -351,6 +439,8 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
         lock (_saveGate)
         {
             UserSettings snapshot;
+            UserSettings baseline;
+            Func<PathList, PathList>[] steps;
             lock (_gate)
             {
                 if (!_pending)
@@ -359,12 +449,23 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
                 }
 
                 snapshot = _current;
+                baseline = _baseline;
+                steps = [.. _recentSteps];
+                _recentSteps.Clear();
                 _pending = false;
             }
 
             try
             {
-                _store.Save(snapshot);
+                // This process's changes onto what is stored now, under the lock the other windows take too.
+                var written = _store.Update(stored => Merge(stored, baseline, snapshot, steps));
+                lock (_gate)
+                {
+                    // The other windows' changes come in too, except where this process changed a field since the snapshot.
+                    _current = Merge(written, snapshot, _current, _recentSteps);
+                    _baseline = written;
+                }
+
                 _failureShown = false;
                 return true;
             }
@@ -372,6 +473,7 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
             {
                 lock (_gate)
                 {
+                    _recentSteps.InsertRange(0, steps);
                     _pending = true;
                 }
 

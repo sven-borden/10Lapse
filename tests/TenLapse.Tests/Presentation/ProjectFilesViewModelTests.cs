@@ -565,6 +565,8 @@ public sealed class ProjectFilesViewModelTests : IDisposable
 
         public void ClearRecentProjects() => Set(PathList.Empty);
 
+        public Task RefreshRecentProjectsAsync() => Task.CompletedTask;
+
         private void Set(PathList list)
         {
             RecentProjects = list;

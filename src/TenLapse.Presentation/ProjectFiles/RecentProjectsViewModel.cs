@@ -96,6 +96,14 @@ public sealed partial class RecentProjectsViewModel : ObservableObject, IDisposa
     /// </summary>
     public async Task RefreshAsync()
     {
+        // Another 10Lapse window may have opened or saved a project since: a change rebuilds the list and checks again.
+        var before = _generation;
+        await _recent.RefreshRecentProjectsAsync();
+        if (before != _generation)
+        {
+            return;
+        }
+
         var generation = _generation;
         var items = Items.ToList();
         bool[] missing;

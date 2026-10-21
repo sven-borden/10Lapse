@@ -27,6 +27,9 @@ public interface IRecentProjects
 
     /// <summary>Empties the list.</summary>
     void ClearRecentProjects();
+
+    /// <summary>Reads the stored list again (another 10Lapse window may have changed it); <see cref="RecentProjectsChanged"/> when it differs. On the UI thread.</summary>
+    Task RefreshRecentProjectsAsync();
 }
 
 /// <summary>

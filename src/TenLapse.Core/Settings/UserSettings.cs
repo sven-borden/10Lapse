@@ -10,7 +10,8 @@ namespace TenLapse.Core.Settings;
 /// <see cref="Output"/> is the user's <b>preference</b>, never the effective output: a 4K choice stays 4K on a PC
 /// that cannot encode it, and <c>OutputPlan</c> (Presentation) decides what is exported. Nothing here holds photo
 /// content; the folders are local paths. To add a setting, add a property here, read and write it in
-/// <see cref="UserSettingsJson"/> with its own fallback, and extend the round-trip test. The schema needs a new
+/// <see cref="UserSettingsJson"/> with its own fallback, extend the round-trip test, and merge it in Presentation's
+/// <c>RememberedSettings.Merge</c> (two windows share the file; <c>EveryFieldIsMerged</c> fails until it is). The schema needs a new
 /// version (and a migration step) only when an existing field changes meaning.
 /// </remarks>
 public sealed record UserSettings
@@ -69,6 +70,19 @@ public interface ISettingsStore
 
     /// <summary>Writes the settings, replacing what was stored. Throws when the write fails (a locked or full disk); the caller reports it.</summary>
     void Save(UserSettings settings);
+
+    /// <summary>
+    /// Reads what is stored, writes what <paramref name="change"/> makes of it, and returns that (#52: two 10Lapse windows
+    /// share the file, so each writes its own changes onto the other's instead of over them). A store shared between
+    /// processes does it under a lock they all take. Throws when the write fails, as <see cref="Save"/>.
+    /// </summary>
+    UserSettings Update(Func<UserSettings, UserSettings> change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        var next = change(Load().Settings);
+        Save(next);
+        return next;
+    }
 }
 
 /// <summary>Keeps the settings in memory, for tests and for runs that must leave the disk alone.</summary>
@@ -135,6 +149,18 @@ public sealed class MemorySettingsStore : ISettingsStore
 
             _stored = new SettingsLoadResult(settings, []);
             _saves++;
+        }
+    }
+
+    /// <inheritdoc />
+    public UserSettings Update(Func<UserSettings, UserSettings> change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        lock (_gate)
+        {
+            var next = change(_stored.Settings);
+            Save(next);
+            return next;
         }
     }
 }
