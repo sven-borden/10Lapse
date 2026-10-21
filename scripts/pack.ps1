@@ -25,6 +25,7 @@
     exits 1, listing each problem, when the x64 or ARM64 package (or the bundle) has the
     wrong identity or version, a target other than Windows.Desktop 10.0.22000.0,
     any capability but runFullTrust, no Windows App Runtime 2 dependency, a
+    file type association other than .10lapse named ms-resource:ProjectFileTypeName (#52), a
     resources.pri without the AppDescription string of every language, a
     language list other than the src/TenLapse.App/Strings/<lang> folders, a
     missing <lang>/<Assembly>.resources.dll for an X.<lang>.resx (every
