@@ -126,6 +126,18 @@ public sealed class RecoveryStoreTests : IDisposable
     }
 
     [Fact]
+    public void LeavingKeepsTheCopyForTheNextLaunch()
+    {
+        var left = new RecoveryStore(_folder);
+        left.Save("unsaved");
+        left.Leave();
+        left.Dispose();
+
+        using var next = new RecoveryStore(_folder);
+        Assert.Equal("unsaved", next.TakeOrphan()?.Text);
+    }
+
+    [Fact]
     public void ClearRemovesOnlyThisAppsCopy()
     {
         using var running = new RecoveryStore(_folder);

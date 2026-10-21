@@ -434,6 +434,25 @@ public sealed class ProjectFilesViewModelTests : IDisposable
     }
 
     [Fact]
+    public void AfterAFailedCloseQuestionTheCopyIsWrittenAndKept()
+    {
+        var (shell, _) = Create();
+        var autosave = _ui.Run(() =>
+        {
+            var created = new ProjectAutosave(shell, _recovery, _errors, debounce: TimeSpan.FromDays(1));
+            created.Attach();
+            shell.CurrentProject.Model.AddFrames(Photos(2));
+            return created;
+        });
+
+        _ui.Run(() => { autosave.KeepForNextLaunch(); autosave.Dispose(); return 0; });
+
+        Assert.NotNull(_recovery.Saved);
+        Assert.True(_recovery.Left);
+        Assert.False(_recovery.Disposed);
+    }
+
+    [Fact]
     public async Task TheRecentListShowsMissingFilesAndAClickOnOneTakesItOff()
     {
         var (_, files) = Create();
@@ -575,6 +594,10 @@ public sealed class ProjectFilesViewModelTests : IDisposable
         }
 
         public void MarkOfferRestored() => OfferRestored = true;
+
+        public bool Left { get; private set; }
+
+        public void Leave() => Left = true;
 
         public void Dispose() => Disposed = true;
     }

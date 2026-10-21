@@ -23,6 +23,7 @@ public sealed class WindowCloseGate
     private readonly IErrorPresenter _errors;
     private readonly Func<bool> _hasUnsavedWork;
     private readonly Func<Task<bool>> _confirmUnsaved;
+    private readonly Action _keepRecovery;
     private bool _asked;
     private bool _approved;
 
@@ -33,6 +34,10 @@ public sealed class WindowCloseGate
     /// <param name="errors">Logs a failed check, and shows a failed ask.</param>
     /// <param name="hasUnsavedWork">True when the project has unsaved changes (#52, <see cref="ProjectFiles.ProjectFilesViewModel.HasUnsavedWork"/>); none when null.</param>
     /// <param name="confirmUnsaved">Asks to save them; true when the window may close (<see cref="ProjectFiles.ProjectFilesViewModel.ConfirmCloseAsync"/>).</param>
+    /// <param name="keepRecovery">
+    /// The save question itself failed (a dialog that cannot open): the window closes all the same, so the user is never
+    /// trapped, and this keeps the unsaved work's recovery copy for the next launch to offer (<see cref="ProjectFiles.ProjectAutosave.KeepForNextLaunch"/>).
+    /// </param>
     public WindowCloseGate(
         Func<bool> mayCloseNow,
         Func<Task<bool>> prepareToClose,
@@ -40,7 +45,8 @@ public sealed class WindowCloseGate
         Action close,
         IErrorPresenter errors,
         Func<bool>? hasUnsavedWork = null,
-        Func<Task<bool>>? confirmUnsaved = null)
+        Func<Task<bool>>? confirmUnsaved = null,
+        Action? keepRecovery = null)
     {
         ArgumentNullException.ThrowIfNull(mayCloseNow);
         ArgumentNullException.ThrowIfNull(prepareToClose);
@@ -54,6 +60,7 @@ public sealed class WindowCloseGate
         _errors = errors;
         _hasUnsavedWork = hasUnsavedWork ?? (() => false);
         _confirmUnsaved = confirmUnsaved ?? (() => Task.FromResult(true));
+        _keepRecovery = keepRecovery ?? (() => { });
     }
 
     /// <summary>Answers a close the window was asked for. Never throws.</summary>
@@ -87,7 +94,7 @@ public sealed class WindowCloseGate
     {
         try
         {
-            if (_hasUnsavedWork() && !await _confirmUnsaved())
+            if (!await SaveQuestionAllowsCloseAsync())
             {
                 return;
             }
@@ -101,6 +108,22 @@ public sealed class WindowCloseGate
         finally
         {
             _asked = false;
+        }
+    }
+
+    // The save question (#52), under its own log context. When the question itself fails, the close goes on (a broken
+    // dialog must not trap the window, #90) and the recovery copy stays for the next launch: nothing is lost.
+    private async Task<bool> SaveQuestionAllowsCloseAsync()
+    {
+        try
+        {
+            return !_hasUnsavedWork() || await _confirmUnsaved();
+        }
+        catch (Exception exception)
+        {
+            _errors.Report(exception, ProjectFiles.ProjectFileText.CloseQuestionFailedContext);
+            _errors.RunLogged(_keepRecovery, ProjectFiles.ProjectFileText.CloseQuestionFailedContext);
+            return true;
         }
     }
 }

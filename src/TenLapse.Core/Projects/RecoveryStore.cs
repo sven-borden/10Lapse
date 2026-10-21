@@ -27,6 +27,12 @@ public interface IRecoveryStore : IDisposable
 
     /// <summary>The offered copy was restored: it goes once this process's own copy of the restored project is written.</summary>
     void MarkOfferRestored();
+
+    /// <summary>
+    /// Closing without a clean end (the question about unsaved changes could not be asked): the lock is released but the
+    /// copies stay, so the next launch offers them, as after a crash. Never throws.
+    /// </summary>
+    void Leave();
 }
 
 /// <summary>
@@ -134,6 +140,22 @@ public sealed class RecoveryStore : IRecoveryStore
         lock (_gate)
         {
             _offerRestored = true;
+        }
+    }
+
+    /// <inheritdoc />
+    public void Leave()
+    {
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _lock?.Dispose();
+            _lock = null;
         }
     }
 

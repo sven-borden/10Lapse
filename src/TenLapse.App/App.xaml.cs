@@ -277,7 +277,8 @@ public partial class App : Application
             exportWindow => new Presentation.Export.ExportServices(exporter, savePicker, remembered, dialogs, infoBars, new ExplorerFileReveal(), exportWindow, new PowerRequestKeepAwake(logOnly)),
             _startup,
             files,
-            recent);
+            recent,
+            autosave);
         _startup.Phase("attaching the window's services");
         window.Closed += (_, _) => notifications.Dispose();
         window.FirstFrameRendered += (_, _) => encoders.Start();

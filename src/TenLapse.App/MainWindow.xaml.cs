@@ -66,8 +66,10 @@ public sealed partial class MainWindow : Window
     /// <param name="startup">Logs the start-up phases (#90).</param>
     /// <param name="files">Open, Save and Save as (#52); closing with unsaved changes asks through it.</param>
     /// <param name="recent">The first-launch screen's recent projects (#52).</param>
-    internal MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, ExportNotifications notifications, Func<IExportWindow, ExportServices> exportServices, StartupTrace startup, Presentation.ProjectFiles.ProjectFilesViewModel files, Presentation.ProjectFiles.RecentProjectsViewModel recent)
+    /// <param name="autosave">The recovery copy (#52), kept for the next launch when the close question itself fails.</param>
+    internal MainWindow(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, ExportNotifications notifications, Func<IExportWindow, ExportServices> exportServices, StartupTrace startup, Presentation.ProjectFiles.ProjectFilesViewModel files, Presentation.ProjectFiles.RecentProjectsViewModel recent, Presentation.ProjectFiles.ProjectAutosave autosave)
     {
+        ArgumentNullException.ThrowIfNull(autosave);
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(errors);
@@ -102,7 +104,8 @@ public sealed partial class MainWindow : Window
             Close,
             presenter,
             () => files.HasUnsavedWork,
-            files.ConfirmCloseAsync);
+            files.ConfirmCloseAsync,
+            autosave.KeepForNextLaunch);
         _startup.Phase("setting the title bar and the backdrop");
 
         // Window is not a DependencyObject, so its Title cannot take a binding: follow the view model by hand.

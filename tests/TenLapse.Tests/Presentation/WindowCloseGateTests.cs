@@ -170,6 +170,24 @@ public sealed class WindowCloseGateTests
             () => _closes++,
             _errors,
             unsaved,
-            confirm);
+            confirm,
+            () => _kept++);
+    }
+
+    private int _kept;
+
+    [Fact]
+    public void ASaveQuestionThatFailsIsLoggedAsSuchKeepsTheRecoveryCopyAndLetsTheWindowClose()
+    {
+        var gate = Gate(mayCloseNow: () => true, prepare: () => throw new InvalidOperationException("no export"), unsaved: () => true, confirm: () => throw new InvalidOperationException("No XAML root."));
+
+        Assert.False(gate.Closing());
+
+        var (exception, context) = Assert.Single(_errors.Reported);
+        Assert.Equal("No XAML root.", exception.Message);
+        Assert.Equal(TenLapse.Presentation.ProjectFiles.ProjectFileText.CloseQuestionFailedContext, context);
+        Assert.Equal(1, _kept);
+        Assert.Equal(1, _closes);
+        Assert.True(gate.Closing());
     }
 }

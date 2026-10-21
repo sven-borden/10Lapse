@@ -31,6 +31,7 @@ public sealed class ProjectAutosave : IDisposable
     private volatile Project? _project;
     private bool _failureShown;
     private bool _disposed;
+    private bool _keep;
 
     /// <param name="shell">The window's project, followed from <see cref="Attach"/>.</param>
     /// <param name="store">Where the copy goes.</param>
@@ -65,7 +66,17 @@ public sealed class ProjectAutosave : IDisposable
     /// <summary>Writes (or clears) the copy now, on the calling thread: what the timer does. For tests.</summary>
     internal void WriteNow() => Write();
 
-    /// <summary>A clean close: stops following, and the copy goes (and with it the slot's lock).</summary>
+    /// <summary>
+    /// The window closes without the question about unsaved changes (it failed): the copy is written now, and kept when
+    /// the window closes, so the next launch offers it. On the UI thread.
+    /// </summary>
+    public void KeepForNextLaunch()
+    {
+        Write();
+        Volatile.Write(ref _keep, true);
+    }
+
+    /// <summary>A clean close: stops following, and the copy goes (and with it the slot's lock); kept after <see cref="KeepForNextLaunch"/>.</summary>
     public void Dispose()
     {
         lock (_gate)
@@ -81,7 +92,7 @@ public sealed class ProjectAutosave : IDisposable
         _shell.ProjectReplaced -= OnProjectReplaced;
         Follow(null);
         _timer.Dispose();
-        _errors.RunLogged(_store.Dispose, ProjectFileText.AutosaveFailedContext);
+        _errors.RunLogged(Volatile.Read(ref _keep) ? _store.Leave : _store.Dispose, ProjectFileText.AutosaveFailedContext);
     }
 
     private void OnProjectReplaced(object? sender, ProjectReplacedEventArgs e)
