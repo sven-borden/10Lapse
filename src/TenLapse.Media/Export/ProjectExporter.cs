@@ -131,33 +131,61 @@ public static class ProjectExporter
 
         var target = Path.GetFullPath(outputPath);
         var settings = options.Tune(SettingsFor(snapshot));
-        var frames = FramesFor(snapshot, settings);
+        var sequence = snapshot.Playback;
+        var positions = PositionsFor(snapshot, settings);
+        var frames = FramesFor(sequence, positions);
         var source = new PhotoFileSource([.. frames.Select(index => snapshot.Frames[index].SourcePath)], settings.Fit);
 
-        // Progress counts the project's frames, so the film gate, the filmstrip and "0312 of 0742" stay in photos when a
-        // GIF shows only some of them.
-        var tracker = new ExportProgressTracker(snapshot.Frames.Length, progress, options.Clock);
+        // Progress counts the video's frames (#49: holds, plays and the way back take as long to write as any frame), so
+        // the percent and the time left are right; for a plain sequence those are the photos ("0312 of 0742"). A GIF that
+        // shows only some of them reports the video frames it has covered, as it reported photos before.
+        var tracker = new ExportProgressTracker(sequence.Length, progress, options.Clock);
         tracker.Enter(ExportStage.Preparing);
-        return Task.Run(() => RunAsync(source, frames, target, settings, tracker, options, cancellationToken), CancellationToken.None);
+        return Task.Run(() => RunAsync(source, frames, positions, sequence.Length, target, settings, tracker, options, cancellationToken), CancellationToken.None);
     }
 
     /// <summary>
-    /// The project frame each exported frame shows, in order: every frame for a video; for a GIF that plays slower than
-    /// the video, the frame the video shows at each GIF frame's start (<see cref="GifOutput.SourceFrames"/>).
+    /// The project frame (the photo) each exported frame shows, in order (#49): the snapshot's
+    /// <see cref="ProjectSnapshot.Playback"/> at each of <see cref="PositionsFor"/>. Without holds, plays or a boomerang that
+    /// is every photo once for a video; for a GIF that plays slower than the video, the photo the video shows at each GIF
+    /// frame's start (<see cref="GifOutput.SourceFrames"/>).
     /// </summary>
     internal static int[] FramesFor(ProjectSnapshot snapshot, VideoExportSettings settings)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
+        return FramesFor(snapshot.Playback, PositionsFor(snapshot, settings));
+    }
+
+    /// <summary>
+    /// The video frame (a position in <see cref="ProjectSnapshot.Playback"/>) each exported frame is: every one for a video;
+    /// for a GIF, the one on screen at each GIF frame's start, strictly increasing.
+    /// </summary>
+    internal static int[] PositionsFor(ProjectSnapshot snapshot, VideoExportSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(settings);
-        var count = snapshot.Frames.Length;
+        var length = snapshot.Playback.Length;
         return settings.Format == VideoFormat.Gif
-            ? GifOutput.SourceFrames(count, snapshot.EffectiveRate.Rate, settings.FrameRate)
-            : [.. Enumerable.Range(0, count)];
+            ? GifOutput.SourceFrames(length, snapshot.EffectiveRate.Rate, settings.FrameRate)
+            : [.. Enumerable.Range(0, length)];
+    }
+
+    private static int[] FramesFor(FrameSequence sequence, int[] positions)
+    {
+        var frames = new int[positions.Length];
+        for (var i = 0; i < positions.Length; i++)
+        {
+            frames[i] = sequence.PhotoAt(positions[i]);
+        }
+
+        return frames;
     }
 
     private static async Task<ProjectExportResult> RunAsync(
         PhotoFileSource source,
         int[] frames,
+        int[] positions,
+        int videoFrames,
         string target,
         VideoExportSettings settings,
         ExportProgressTracker tracker,
@@ -189,7 +217,7 @@ public static class ProjectExporter
                     source,
                     partial,
                     settings,
-                    new CoveredFrames(tracker, frames, tracker.Count),
+                    new CoveredFrames(tracker, positions, videoFrames),
                     cancellationToken,
                     (path, s, device) =>
                     {
@@ -399,17 +427,18 @@ public static class ProjectExporter
 }
 
 /// <summary>
-/// Turns the encoder's count of exported frames into the count of project frames they cover, for the progress: once m
-/// frames are written, every project frame before the one exported frame m shows is done; once all are, every project
-/// frame is. For a video both counts are the same; for a GIF that skips frames this keeps the progress in photos.
+/// Turns the encoder's count of exported frames into the count of video frames they cover, for the progress: once m
+/// frames are written, every video frame before the one exported frame m is done; once all are, every video frame is.
+/// For an MP4 both counts are the same; for a GIF that skips frames this keeps the progress in the video's frames (which
+/// are the photos when nothing is held, repeated or reversed).
 /// </summary>
-/// <param name="target">The progress in project frames.</param>
-/// <param name="frames">The project frame each exported frame shows, strictly increasing.</param>
-/// <param name="projectFrames">The project's frame count.</param>
-internal sealed class CoveredFrames(IProgress<int> target, int[] frames, int projectFrames) : IProgress<int>
+/// <param name="target">The progress in video frames.</param>
+/// <param name="frames">The video frame each exported frame is, strictly increasing.</param>
+/// <param name="videoFrames">The video's frame count.</param>
+internal sealed class CoveredFrames(IProgress<int> target, int[] frames, int videoFrames) : IProgress<int>
 {
-    /// <summary>The project frames done once <paramref name="exported"/> frames are written.</summary>
-    public int Covered(int exported) => exported >= frames.Length ? projectFrames : frames[Math.Max(0, exported)];
+    /// <summary>The video frames done once <paramref name="exported"/> frames are written.</summary>
+    public int Covered(int exported) => exported >= frames.Length ? videoFrames : frames[Math.Max(0, exported)];
 
     /// <inheritdoc />
     public void Report(int value) => target.Report(Covered(value));
