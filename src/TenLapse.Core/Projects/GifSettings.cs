@@ -213,8 +213,10 @@ public static class GifOutput
     /// <see cref="EstimateLowShare"/> to <see cref="EstimateHighShare"/> of it.
     /// </summary>
     /// <remarks>
-    /// Measured (#51) by encoding photo sequences through the export at the three sizes, with the per-frame palette and
-    /// error diffusion the export uses: the bytes per pixel per frame of a photo GIF sit near <see cref="BytesPerPixel"/>.
+    /// Measured (#51, <c>GifExportTests.MeasureBytesPerPixel</c>) by writing nine landscape photographs (the ones
+    /// Windows ships as lock screen and wallpaper pictures) filled into 16:9 at each size, as one GIF frame each with the
+    /// export's per-frame palette and error diffusion: 0.39 to 0.59 bytes per pixel, 0.49 on average, the same at every
+    /// size within 0.02. Every frame is written whole (no frame reuses the one before), so the size is linear in frames.
     /// </remarks>
     public static long EstimateBytes(int gifFrames, PixelSize size)
     {
@@ -228,14 +230,20 @@ public static class GifOutput
         return HeaderBytes + (gifFrames * (FrameHeaderBytes + (long)Math.Round(pixels * BytesPerPixel)));
     }
 
-    /// <summary>The measured bytes per pixel of each frame of a photo GIF with a per-frame palette and error diffusion.</summary>
-    public const double BytesPerPixel = 0.62;
+    /// <summary>The bytes per pixel of each frame of a photo GIF with a per-frame palette and error diffusion, as measured.</summary>
+    public const double BytesPerPixel = 0.5;
 
-    /// <summary>The share of the estimate a quiet sequence (sky, fog) comes down to.</summary>
-    public const double EstimateLowShare = 0.6;
+    /// <summary>
+    /// The share of <see cref="EstimateBytes"/> the Output panel gives as the low end: the quietest photos measured
+    /// (0.39 bytes per pixel) and below, as fog or a clear sky goes.
+    /// </summary>
+    public const double EstimateLowShare = 0.75;
 
-    /// <summary>The share of the estimate a busy sequence (foliage, water, city lights) goes up to.</summary>
-    public const double EstimateHighShare = 1.4;
+    /// <summary>
+    /// The share of <see cref="EstimateBytes"/> the Output panel gives as the high end: the busiest photos measured (0.59)
+    /// with room for what was not measured here, a camera's noise at night and foliage in wind.
+    /// </summary>
+    public const double EstimateHighShare = 1.5;
 
     // The GIF header, logical screen descriptor and the looping extension.
     private const long HeaderBytes = 64;

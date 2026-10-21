@@ -157,6 +157,62 @@ public sealed class GifExportTests : IDisposable
             $"{size.Width}x{size.Height}: 60 frames in {clock.ElapsedMilliseconds} ms ({clock.ElapsedMilliseconds / 60.0:0.0} ms a frame), {new FileInfo(path).Length:N0} bytes");
     }
 
+    /// <summary>
+    /// The measurement behind <see cref="GifOutput.BytesPerPixel"/>: each photo in the folder named by
+    /// <c>TENLAPSE_GIF_MEASURE</c>, filled into 16:9 at every GIF size and written as one GIF frame the way the export
+    /// writes it, with its bytes per pixel. Skipped without the variable; #41 runs it on real timelapse photos.
+    /// </summary>
+    [Fact]
+    public async Task MeasureBytesPerPixel()
+    {
+        var folder = Environment.GetEnvironmentVariable("TENLAPSE_GIF_MEASURE");
+        Assert.SkipWhen(string.IsNullOrEmpty(folder), "Set TENLAPSE_GIF_MEASURE to a folder of JPEG photos to measure GIF bytes per pixel.");
+        var samples = new List<(string Name, GifSize Size, double BytesPerPixel)>();
+        using var device = new Microsoft.Graphics.Canvas.CanvasDevice();
+        foreach (var photo in Directory.GetFiles(folder!, "*.jpg"))
+        {
+            using var bitmap = await Microsoft.Graphics.Canvas.CanvasBitmap.LoadAsync(device, photo);
+            foreach (var size in Enum.GetValues<GifSize>())
+            {
+                var pixels = GifOutput.Size(size, FrameAspect.Ratio16x9);
+                using var target = new Microsoft.Graphics.Canvas.CanvasRenderTarget(device, pixels.Width, pixels.Height, 96f);
+                using (var session = target.CreateDrawingSession())
+                {
+                    TenLapse.Media.Rendering.FrameRenderer.Draw(session, bitmap, FitMode.Fill, pixels);
+                }
+
+                var path = Path.Combine(_folder, $"measure-{size}.gif");
+                var encoder = new GifEncoder(path, new VideoExportSettings(pixels.Width, pixels.Height, new Fraction(10, 1)) { Format = VideoFormat.Gif });
+                try
+                {
+                    encoder.WriteFrame(target.GetPixelBytes(), 10);
+                    encoder.Finish();
+                }
+                finally
+                {
+                    encoder.Dispose();
+                }
+
+                // One frame: the file less the header and the frame's palette and headers is the picture.
+                var picture = new FileInfo(path).Length - GifOutput.EstimateBytes(1, new PixelSize(1, 1)) + Math.Round(GifOutput.BytesPerPixel);
+                samples.Add((Path.GetFileName(photo), size, picture / ((double)pixels.Width * pixels.Height)));
+            }
+        }
+
+        var output = TestContext.Current.TestOutputHelper;
+        foreach (var sample in samples)
+        {
+            output?.WriteLine($"{sample.Name} {sample.Size}: {sample.BytesPerPixel:0.000} bytes per pixel");
+        }
+
+        foreach (var group in samples.GroupBy(sample => sample.Size))
+        {
+            output?.WriteLine($"{group.Key}: mean {group.Average(s => s.BytesPerPixel):0.000}, min {group.Min(s => s.BytesPerPixel):0.000}, max {group.Max(s => s.BytesPerPixel):0.000}");
+        }
+
+        output?.WriteLine($"all: mean {samples.Average(s => s.BytesPerPixel):0.000}, min {samples.Min(s => s.BytesPerPixel):0.000}, max {samples.Max(s => s.BytesPerPixel):0.000}");
+    }
+
     // A sunset sky: deep blue at the top through violet to orange at the horizon, a warm glow and a bright sun low in
     // the middle, as BGRX.
     internal static byte[] Sunset(int width, int height)
