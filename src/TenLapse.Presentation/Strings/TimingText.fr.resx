@@ -116,4 +116,7 @@
   <data name="HoldLasts" xml:space="preserve">
     <value>Dure {0} en images entières.</value>
   </data>
+  <data name="LengthHoldsTooLong" xml:space="preserve">
+    <value>Les arrêts sur image remplissent à eux seuls {0} (ils durent {1}) : raccourcissez-les pour laisser de la place à vos photos. La vidéo dure {2}.</value>
+  </data>
 </root>

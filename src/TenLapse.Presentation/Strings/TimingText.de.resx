@@ -115,4 +115,7 @@
   <data name="HoldLasts" xml:space="preserve">
     <value>Dauert in ganzen Bildern {0}.</value>
   </data>
+  <data name="LengthHoldsTooLong" xml:space="preserve">
+    <value>Die Standbilder allein füllen {0} (sie dauern {1}): Kürzen Sie sie, damit Ihre Fotos Platz haben. Das Video ist {2} lang.</value>
+  </data>
 </root>

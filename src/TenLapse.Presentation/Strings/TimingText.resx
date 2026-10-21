@@ -152,4 +152,8 @@
     <value>Lasts {0} in whole frames.</value>
     <comment>Under a hold box when, at the video's speed, the hold lasts another length than the box shows: a hold is a whole number of the video's frames, at least one (at 2 s per photo, 0.3 s lasts one 2 s frame). {0} the length it lasts ("2.0 s"). Half a row wide; it may wrap.</comment>
   </data>
+  <data name="LengthHoldsTooLong" xml:space="preserve">
+    <value>The holds alone fill {0} (they last {1}): shorten them to make room for your photos. The video is {2} long.</value>
+    <comment>Length mode, when the holds at the start and the end together last as long as the chosen length or longer, so no speed lets the photos fit. {0} the chosen length ("5 s"), {1} the two holds together ("20 s"), {2} the length the video has instead. A hold is a freeze frame: use the word of the Hold at start and Hold at end boxes, not the Pause button's.</comment>
+  </data>
 </root>

@@ -120,4 +120,7 @@
   <data name="HoldLasts" xml:space="preserve">
     <value>Dura {0} en fotogramas enteros.</value>
   </data>
+  <data name="LengthHoldsTooLong" xml:space="preserve">
+    <value>Las imágenes fijas ya llenan {0} (duran {1}): acórtalas para dejar espacio a tus fotos. El video dura {2}.</value>
+  </data>
 </root>

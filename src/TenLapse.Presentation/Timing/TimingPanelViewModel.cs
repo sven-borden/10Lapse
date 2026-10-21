@@ -610,7 +610,7 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
                     Retimed?.Invoke(this, EventArgs.Empty);
                 }
                 var hadNotice = _notice.Length > 0;
-                Notice = count > 0 && timing.Mode == SpeedMode.Length ? NoticeFor(rate, timing, snapshot.Duration, culture) : string.Empty;
+                Notice = count > 0 && timing.Mode == SpeedMode.Length ? NoticeFor(rate, timing, sequence, snapshot.Duration, culture) : string.Empty;
                 if (!hadNotice && _notice.Length > 0)
                 {
                     // It appears when the photos are added or removed too, where a screen reader would otherwise miss it.
@@ -682,7 +682,7 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
         return lasts == TimingFormat.Duration(hold.Ticks, culture) ? string.Empty : TimingText.Format(culture, TimingText.HoldLasts, lasts);
     }
 
-    private static string NoticeFor(PlaybackRate rate, TimingSettings timing, long duration, CultureInfo culture)
+    private static string NoticeFor(PlaybackRate rate, TimingSettings timing, SequenceSettings sequence, long duration, CultureInfo culture)
     {
         if (!rate.IsClamped)
         {
@@ -691,6 +691,14 @@ public sealed class TimingPanelViewModel : ObservableObject, IDisposable
 
         var target = TimingInput.Describe(TimingField.LengthSeconds, timing.LengthSeconds, culture);
         var actual = TimingFormat.Duration(duration, culture);
+
+        // The holds alone fill the target (#49): no speed helps, the holds must be shorter (review of PR #134).
+        if (rate.Clamp == RateClamp.Max
+            && (Int128)sequence.Holds.Ticks * timing.LengthSeconds.Denominator >= (Int128)timing.LengthSeconds.Numerator * FrameTiming.TicksPerSecond)
+        {
+            return TimingText.Format(culture, TimingText.LengthHoldsTooLong, target, HoldInput.Describe(sequence.Holds, culture), actual);
+        }
+
         return rate.Clamp == RateClamp.Max
             ? TimingText.Format(culture, TimingText.LengthTooShort, target, TimingFormat.FrameRate(FrameRates.Max, culture), actual)
             : TimingText.Format(culture, TimingText.LengthTooLong, target, TimingFormat.SecondsPerPhoto(FrameRates.Min, culture), actual);

@@ -116,4 +116,7 @@
   <data name="HoldLasts" xml:space="preserve">
     <value>Dura {0} em quadros inteiros.</value>
   </data>
+  <data name="LengthHoldsTooLong" xml:space="preserve">
+    <value>As imagens congeladas sozinhas preenchem {0} (duram {1}): encurte-as para dar espaço às suas fotos. O vídeo dura {2}.</value>
+  </data>
 </root>

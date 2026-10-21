@@ -938,5 +938,19 @@ public sealed class TimingPanelViewModelTests
         // 30 s in all: the photos out and back fill 28 s, the hold the last 2.
         Assert.Equal("742 photos → 30.0 s", panel.Headline);
         Assert.False(panel.HasNotice);
+
+        // Holds that alone fill the length: the notice names the holds, not the photos (review of PR #134).
+        panel.CommitValue("5");
+        panel.CommitHoldStart("10");
+        panel.CommitHoldEnd("10");
+        Assert.Equal(
+            $"The holds alone fill 5 s (they last 20 s): shorten them to make room for your photos. The video is {TimingFormat.Duration(shell.CurrentProject.Model.Snapshot.Duration, _en)} long.",
+            panel.Notice);
+
+        // The photos alone past the fastest speed keep their own notice.
+        panel.CommitHoldStart("0");
+        panel.CommitHoldEnd("0");
+        panel.CommitValue("1");
+        Assert.StartsWith("Your photos can't play in 1 s", panel.Notice);
     }
 }

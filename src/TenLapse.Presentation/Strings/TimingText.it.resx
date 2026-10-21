@@ -116,4 +116,7 @@
   <data name="HoldLasts" xml:space="preserve">
     <value>Dura {0} in fotogrammi interi.</value>
   </data>
+  <data name="LengthHoldsTooLong" xml:space="preserve">
+    <value>I fermi immagine da soli riempiono {0} (durano {1}): accorciali per fare spazio alle tue foto. Il video dura {2}.</value>
+  </data>
 </root>

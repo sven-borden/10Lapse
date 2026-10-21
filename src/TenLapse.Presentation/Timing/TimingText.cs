@@ -128,6 +128,12 @@ public static class TimingText
     /// </summary>
     public static string HoldLasts => _strings.Get();
 
+    /// <summary>
+    /// Length mode, when the holds alone fill the chosen length (#49). {0}: the chosen length, {1}: the holds together
+    /// ("20 s"), {2}: the length the video has instead.
+    /// </summary>
+    public static string LengthHoldsTooLong => _strings.Get();
+
     /// <summary>Log context: holds, plays or the direction could not be written to the project.</summary>
     public static string SequenceChangeFailed => "Changing the holds, plays or direction failed.";
 
