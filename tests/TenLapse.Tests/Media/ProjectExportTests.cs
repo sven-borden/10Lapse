@@ -408,6 +408,63 @@ public sealed class ProjectExportTests : IDisposable
     }
 
     [Fact]
+    public async Task AGifCountsItsProgressInPhotosAndWritesTheFramesItShows()
+    {
+        // 30 photos at 30 fps as a GIF of up to 10 fps: 10 GIF frames, photos 0, 3, 6 and so on; progress in photos.
+        var photos = ManyPhotos(30).ToList();
+        var snapshot = GoldenExport.Snapshot(photos.Select(path => GoldenExport.FrameOf(path)), TimingSettings.PerSecond(new Fraction(30, 1)), FrameAspect.Ratio16x9, FitMode.Fill, VideoFormat.Gif);
+        var settings = ProjectExporter.SettingsFor(snapshot);
+        Assert.Equal((480, 270, new Fraction(10, 1), VideoFormat.Gif, (uint?)null), (settings.Width, settings.Height, settings.FrameRate, settings.Format, settings.Bitrate));
+        Assert.Equal(Enumerable.Range(0, 10).Select(i => i * 3), ProjectExporter.FramesFor(snapshot, settings));
+
+        var reports = new List<ExportProgress>();
+        var output = _scratch.PathOf("progress.gif");
+        var result = await ExportOrSkipAsync(snapshot, output, new Synchronous(reports.Add));
+
+        Assert.Equal((10, new Fraction(10, 1), VideoFormat.Gif, output), (result.FrameCount, result.Rate, result.Format, result.Path));
+        Assert.Equal(FrameTiming.Duration(10, new Fraction(10, 1)), result.Duration);
+        Assert.Equal(10, GifFileReader.Read(output).FrameCount);
+        Assert.Equal((ExportStage.Finishing, 30), (reports[^1].Stage, reports[^1].Frame));
+        Assert.All(reports, report => Assert.Equal(30, report.FrameCount));
+        Assert.True(reports.Zip(reports.Skip(1)).All(pair => pair.First.Frame <= pair.Second.Frame));
+        Assert.All(reports.Where(report => report.Stage == ExportStage.Encoding), report => Assert.Equal(0, report.Frame % 3));
+        Assert.Empty(ProjectExporter.PartialFilesOf(output));
+    }
+
+    [Fact]
+    public async Task ABrokenPhotoInAGifIsNamedByItsPhotoNumberNotItsGifFrame()
+    {
+        // At 30 fps as a 10 fps GIF the GIF's frame 2 shows photo 6: the message must name photo 7 (frame 6).
+        var photos = ManyPhotos(12).ToList();
+        var broken = PhotoFixtureCatalogue.Get("truncated.jpg");
+        photos[6] = broken.Path;
+        var snapshot = GoldenExport.Snapshot(photos.Select(path => GoldenExport.FrameOf(path)), TimingSettings.PerSecond(new Fraction(30, 1)), FrameAspect.Ratio16x9, FitMode.Fill, VideoFormat.Gif);
+        var output = _scratch.PathOf("broken.gif");
+
+        var exception = await Assert.ThrowsAsync<VideoExportException>(() => ExportAsync(snapshot, output));
+        await ExportCleanup.WhenDone(output);
+
+        Assert.Equal(VideoExportFailure.FrameUnreadable, exception.Failure);
+        Assert.Equal((6, broken.Path), (exception.FrameIndex, exception.SourcePath));
+        Assert.StartsWith("Photo 7, truncated.jpg, can't be read", new VideoExportErrorMapper().Map(exception)!.Text, StringComparison.Ordinal);
+        Assert.False(File.Exists(output));
+        Assert.Empty(ProjectExporter.PartialFilesOf(output));
+    }
+
+    [Fact]
+    public void CoveredFramesCountsThePhotosBeforeTheNextExportedOne()
+    {
+        var counts = new List<int>();
+        var covered = new CoveredFrames(new SynchronousCount(counts.Add), [0, 3, 6, 9], 11);
+        foreach (var exported in new[] { 1, 2, 3, 4 })
+        {
+            covered.Report(exported);
+        }
+
+        Assert.Equal([3, 6, 9, 11], counts);
+    }
+
+    [Fact]
     public void AProjectWithoutFramesIsRefused() =>
         Assert.Throws<ArgumentException>(() => { _ = ProjectExporter.ExportAsync(new Project().Snapshot, _scratch.PathOf("empty.mp4"), cancellationToken: TestContext.Current.CancellationToken); });
 
@@ -487,6 +544,11 @@ public sealed class ProjectExportTests : IDisposable
     private sealed class Synchronous(Action<ExportProgress> report) : IProgress<ExportProgress>
     {
         public void Report(ExportProgress value) => report(value);
+    }
+
+    private sealed class SynchronousCount(Action<int> report) : IProgress<int>
+    {
+        public void Report(int value) => report(value);
     }
 
     /// <summary>Blocks in <see cref="Write"/> at frame <c>stallAt</c> (or in <see cref="Finish"/> for -1) until released, as a hung driver does.</summary>

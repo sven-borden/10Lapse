@@ -50,6 +50,13 @@ public sealed class GoldenGeometryTests(GoldenGeometryTests.MixedPhotos photos) 
     /// </summary>
     private const int BarTolerance = 1;
 
+    /// <summary>
+    /// <see cref="MeanErrorLimit"/> for an animated GIF (#51). Measured on this PC: at most 4.88 levels, on the square photo
+    /// whose proxy JPEG's slight noise the 256-colour palette meets with error diffusion's grain; the edges stay within
+    /// 0.37 px and the bars within 1 px, so the grain is not a shift. A wrong crop or wrong colours is far above it.
+    /// </summary>
+    private const double GifMeanErrorLimit = 6;
+
     public static TheoryData<FrameAspect, FitMode> Combinations()
     {
         var data = new TheoryData<FrameAspect, FitMode>();
@@ -145,6 +152,94 @@ public sealed class GoldenGeometryTests(GoldenGeometryTests.MixedPhotos photos) 
             }
 
             Assert.Fail(GoldenExport.Report($"{label} at {size.Width}x{size.Height}, preview against export:", problems, $"{folder} (the video, and the preview and export PNG of each failing frame)"));
+        }
+
+        File.Delete(result.Path);
+    }
+
+    /// <summary>
+    /// The same agreement for an animated GIF (#51), at the GIF's own size (Medium, 480 px on the long side): the GIF's
+    /// frames come through the same <see cref="FrameRenderer.Draw(CanvasDrawingSession, CanvasBitmap, FrameSettings, PixelSize)"/>,
+    /// then a 256-colour palette and error diffusion, which add grain but no shift.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Combinations))]
+    public async Task TheGifFrameMatchesWhatThePreviewDraws(FrameAspect aspect, FitMode fit)
+    {
+        SkipWithoutGraphicsDevice();
+        var label = $"GIF {aspect} {fit}";
+        var folder = GoldenExport.EvidenceFolder(ClassName, $"gif-{aspect}-{fit}");
+        var (sources, proxies) = await photos.GetAsync();
+        var snapshot = GoldenExport.Snapshot(sources.Select(photo => GoldenExport.FrameOf(photo.Path, photo.Size)), TimingSettings.PerPhoto(new Fraction(2, 1)), aspect, fit, VideoFormat.Gif);
+        var size = snapshot.VideoSize;
+        // The shape from the aspect alone: 480 px on the long side, the short side from the nominal ratio, within 2 px.
+        var shape = Shape(aspect);
+        var (longRatio, shortRatio) = (Math.Max(shape.Width, shape.Height), Math.Min(shape.Width, shape.Height));
+        Assert.Equal(480, Math.Max(size.Width, size.Height));
+        Assert.InRange(Math.Min(size.Width, size.Height), (480.0 * shortRatio / longRatio) - 2, (480.0 * shortRatio / longRatio) + 2);
+        Assert.Equal(shape.Width >= shape.Height, size.Width >= size.Height);
+
+        var output = Path.Combine(photos.Folder, $"gif-{aspect}-{fit}.gif");
+        var clock = Stopwatch.StartNew();
+        var result = await ExportOrSkipAsync(snapshot, output);
+        var frames = new List<GoldenImage>();
+        TenLapse.Media.Inspection.GifFileReader.ReadFrames(result.Path, frame => frames.Add(GoldenImage.Copy(frame.Pixels, frame.Width, frame.Height, frame.Stride)));
+
+        var problems = new List<string>();
+        var evidence = new List<(int Index, GoldenImage Reference, GoldenImage Exported)>();
+        if (frames.Count != sources.Count)
+        {
+            problems.Add($"frames decoded: expected {sources.Count} (0.5 fps is slower than the preset, so every photo), got {frames.Count}");
+        }
+
+        var (worstError, worstEdge, worstBar) = (0.0, 0.0, 0);
+        using (var device = new CanvasDevice())
+        {
+            var preview = new PreviewImageSource(proxies, () => device);
+            for (var index = 0; index < Math.Min(frames.Count, sources.Count); index++)
+            {
+                var exported = frames[index];
+                var where = $"frame {index} ({sources[index].Name})";
+                if (exported.Width != size.Width || exported.Height != size.Height)
+                {
+                    problems.Add($"{where}: size expected {size.Width}x{size.Height} (the preview's), got {exported.Width}x{exported.Height}");
+                    continue;
+                }
+
+                var reference = await PreviewDrawAsync(device, preview, snapshot.Frames[index], snapshot.FrameSettings, size);
+                var comparison = Compare(reference, exported, sources[index].Size, size, fit);
+                var found = comparison.Problems;
+                var error = GoldenImage.MeanAbsoluteError(reference, exported);
+                var channel = Math.Max(error.B, Math.Max(error.G, error.R));
+                (worstError, worstEdge, worstBar) = (Math.Max(worstError, channel), Math.Max(worstEdge, comparison.EdgeShift), Math.Max(worstBar, comparison.BarShift));
+                if (channel > GifMeanErrorLimit)
+                {
+                    found.Add($"mean error per channel (B, G, R) expected at most {GifMeanErrorLimit}, got ({error.B:0.00}, {error.G:0.00}, {error.R:0.00})");
+                }
+
+                if (found.Count > 0)
+                {
+                    problems.AddRange(found.Select(problem => $"{where}: {problem}"));
+                    evidence.Add((index, reference, exported));
+                }
+            }
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(
+            $"{label}: {size.Width}x{size.Height}, {frames.Count} frames, worst mean error {worstError:0.00} levels, worst matched edge shift {worstEdge:0.00} px, " +
+            $"worst bar shift {worstBar} px, {clock.ElapsedMilliseconds} ms");
+
+        if (problems.Count > 0)
+        {
+            Directory.CreateDirectory(folder);
+            File.Copy(result.Path, Path.Combine(folder, "export.gif"), overwrite: true);
+            foreach (var (index, reference, exported) in evidence)
+            {
+                await reference.SavePngAsync(Path.Combine(folder, $"frame{index}-preview.png"));
+                await exported.SavePngAsync(Path.Combine(folder, $"frame{index}-export.png"));
+            }
+
+            Assert.Fail(GoldenExport.Report($"{label} at {size.Width}x{size.Height}, preview against GIF:", problems, $"{folder} (the GIF, and the preview and export PNG of each failing frame)"));
         }
 
         File.Delete(result.Path);
