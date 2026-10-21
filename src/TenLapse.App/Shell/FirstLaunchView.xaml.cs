@@ -93,7 +93,16 @@ public sealed partial class FirstLaunchView : UserControl
     {
         _regionVisible = visible;
         UpdatePlayback();
-        if (visible && Recent is { } recent && _errors is { } errors)
+        if (visible)
+        {
+            RefreshRecent();
+        }
+    }
+
+    // Looks off the UI thread whether each recent project's file is still there; the list marks the missing ones.
+    private void RefreshRecent()
+    {
+        if (Recent is { } recent && _errors is { } errors)
         {
             _ = errors.GuardAsync(recent.RefreshAsync, ProjectFileText.RecentRefreshFailedContext);
         }
@@ -150,6 +159,9 @@ public sealed partial class FirstLaunchView : UserControl
                 _shadow ??= FlyoutShadow.Attach(DaybreakShadowCaster);
                 ActualThemeChanged += OnActualThemeChanged;
                 UpdatePlayback();
+
+                // The first look at the recent projects' files (#52); later ones come each time the screen shows again.
+                RefreshRecent();
 #if DEBUG
                 if (Debugging.DebugLaunch.DragOver)
                 {
