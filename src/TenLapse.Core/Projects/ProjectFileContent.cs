@@ -46,6 +46,10 @@ public sealed record SavedFrame(string? Path)
         };
     }
 
+    /// <summary>This entry as a project file in <paramref name="projectFolder"/> stores it: its relative path taken again from its full one.</summary>
+    internal SavedFrame RebasedTo(string? projectFolder) =>
+        Path is { } full ? this with { RelativePath = Relative(full, projectFolder) } : this;
+
     private static string? Relative(string path, string? folder)
     {
         if (string.IsNullOrEmpty(folder)
@@ -121,6 +125,54 @@ public sealed record ProjectFileContent
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         return From(snapshot, snapshot.FilePath) with { RecoveredName = snapshot.Name, RecoveredFilePath = snapshot.FilePath };
+    }
+
+    /// <summary>
+    /// This content (made by <see cref="From"/> from a snapshot whose frames are <paramref name="frames"/>) with the frames
+    /// an opened file could not find written back in (#52): each after the frame it followed in the file, or, when the user
+    /// removed that frame, at its old place in the order (clamped). One whose photo is in the project again (imported
+    /// since) is not written twice. Their relative paths are taken against <paramref name="projectFilePath"/>.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="frames"/> are not this content's frames.</exception>
+    public ProjectFileContent Carrying(IReadOnlyList<UnresolvedFrame> unresolved, IReadOnlyList<Frame> frames, string? projectFilePath)
+    {
+        ArgumentNullException.ThrowIfNull(unresolved);
+        ArgumentNullException.ThrowIfNull(frames);
+        if (frames.Count != Frames.Length)
+        {
+            throw new ArgumentException("The frames are not this content's frames.", nameof(frames));
+        }
+
+        if (unresolved.Count == 0)
+        {
+            return this;
+        }
+
+        var folder = string.IsNullOrEmpty(projectFilePath) ? null : System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(projectFilePath));
+        var present = new HashSet<string>(frames.Select(frame => frame.SourcePath), StringComparer.OrdinalIgnoreCase);
+        var ids = frames.Select(frame => frame.Id).ToHashSet();
+        var carried = unresolved
+            .Where(item => item.Entry.Path is not { } path || !present.Contains(path))
+            .OrderBy(item => item.Index)
+            .ToList();
+
+        // Guid.Empty stands for "first": no frame has it.
+        var after = carried.Where(item => item.After is not { } id || ids.Contains(id)).ToLookup(item => item.After ?? Guid.Empty);
+        var written = new List<SavedFrame>(Frames.Length + carried.Count);
+        written.AddRange(after[Guid.Empty].Select(item => item.Entry.RebasedTo(folder)));
+        for (var i = 0; i < frames.Count; i++)
+        {
+            written.Add(Frames[i]);
+            written.AddRange(after[frames[i].Id].Select(item => item.Entry.RebasedTo(folder)));
+        }
+
+        // The frame it followed was removed: never dropped, it goes back near its old place.
+        foreach (var item in carried.Where(item => item.After is { } id && !ids.Contains(id)))
+        {
+            written.Insert(Math.Min(item.Index, written.Count), item.Entry.RebasedTo(folder));
+        }
+
+        return this with { Frames = [.. written] };
     }
 
     /// <summary>A new, empty, clean project with these settings, owned by the calling thread; the caller adds the frames.</summary>

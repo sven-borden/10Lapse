@@ -55,6 +55,94 @@ public sealed class ProjectFilesTests
     }
 
     [Fact]
+    public void TheSavedFullPathWinsOverAPhotoOfTheSameNameBesideTheProject()
+    {
+        // D:\Shoots\2024-05\Harbor.10lapse copied alone into 2024-06, where the camera's numbering started again.
+        var disk = new FakeDisk
+        {
+            [@"D:\Shoots\2024-05\IMG_0001.jpg"] = new(10, _written),
+            [@"D:\Shoots\2024-06\IMG_0001.jpg"] = new(99, _written.AddDays(30)),
+        };
+        var content = new ProjectFileContent
+        {
+            Frames = [new(@"D:\Shoots\2024-05\IMG_0001.jpg") { RelativePath = "IMG_0001.jpg", FileSize = 10, LastWriteTimeUtc = _written }],
+        };
+
+        var resolved = SavedFrames.Resolve(content, @"D:\Shoots\2024-06\Harbor.10lapse", disk);
+
+        Assert.Equal(@"D:\Shoots\2024-05\IMG_0001.jpg", Assert.Single(resolved.Frames).SourcePath);
+        Assert.Equal(0, resolved.FoundBesideProject);
+        Assert.Equal(0, resolved.Changed);
+    }
+
+    [Fact]
+    public void OnlineOnlyPhotosAreCountedAndNotReadAgainAndUnknownOrChangedOnesAre()
+    {
+        var disk = new FakeDisk
+        {
+            [@"C:\Shoot\known.jpg"] = new(10, _written),
+            [@"C:\Shoot\unknown.jpg"] = new(10, _written),
+            [@"C:\Shoot\changed.jpg"] = new(11, _written),
+            [@"C:\Shoot\cloud.jpg"] = new(3_000_000, _written, IsCloudOnly: true),
+        };
+        var pixels = new PixelSize(6000, 4000);
+        var content = new ProjectFileContent
+        {
+            Frames =
+            [
+                new(@"C:\Shoot\known.jpg") { FileSize = 10, LastWriteTimeUtc = _written, PixelSize = pixels },
+                new(@"C:\Shoot\unknown.jpg") { FileSize = 10, LastWriteTimeUtc = _written },
+                new(@"C:\Shoot\changed.jpg") { FileSize = 10, LastWriteTimeUtc = _written, PixelSize = pixels },
+                new(@"C:\Shoot\cloud.jpg"),
+            ],
+        };
+
+        var resolved = SavedFrames.Resolve(content, null, disk);
+
+        Assert.Equal([@"C:\Shoot\unknown.jpg", @"C:\Shoot\changed.jpg"], resolved.ToRead.Select(frame => frame.SourcePath));
+        Assert.Equal(1, resolved.CloudOnly);
+        Assert.Equal(3_000_000, resolved.CloudOnlyBytes);
+    }
+
+    [Fact]
+    public void MissingPhotosAreKeptWithTheirPlaceAndWrittenBackThere()
+    {
+        var disk = new FakeDisk { [@"C:\Shoot\1.jpg"] = new(10, _written), [@"C:\Shoot\3.jpg"] = new(10, _written) };
+        var content = new ProjectFileContent
+        {
+            Frames = [new(@"E:\Card\0.jpg"), new(@"C:\Shoot\1.jpg"), new(@"E:\Card\2.jpg"), new(@"C:\Shoot\3.jpg")],
+        };
+        var resolved = SavedFrames.Resolve(content, @"C:\Projects\Shoot.10lapse", disk);
+        Assert.Equal([@"E:\Card\0.jpg", @"E:\Card\2.jpg"], resolved.Unresolved.Select(item => item.Entry.Path));
+
+        // As opened: the missing ones go back where they were.
+        var project = new Project();
+        project.AddFrames(resolved.Frames);
+        Assert.Equal(
+            [@"E:\Card\0.jpg", @"C:\Shoot\1.jpg", @"E:\Card\2.jpg", @"C:\Shoot\3.jpg"],
+            Write(project).Frames.Select(frame => frame.Path));
+
+        // Reordered: each follows the frame it followed. 1.jpg removed: 2.jpg goes back near its old place.
+        project.ReorderFrames([project.Frames[1].Id, project.Frames[0].Id]);
+        Assert.Equal(
+            [@"E:\Card\0.jpg", @"C:\Shoot\3.jpg", @"C:\Shoot\1.jpg", @"E:\Card\2.jpg"],
+            Write(project).Frames.Select(frame => frame.Path));
+        project.RemoveFrames([project.Frames.Single(frame => frame.SourcePath.EndsWith("1.jpg", StringComparison.Ordinal)).Id]);
+        Assert.Equal(
+            [@"E:\Card\0.jpg", @"C:\Shoot\3.jpg", @"E:\Card\2.jpg"],
+            Write(project).Frames.Select(frame => frame.Path));
+
+        // One imported again since: written once, as the project's own frame.
+        project.AddFrames([new Frame(@"E:\Card\2.jpg", 10, _written)]);
+        Assert.Equal(
+            [@"E:\Card\0.jpg", @"C:\Shoot\3.jpg", @"E:\Card\2.jpg"],
+            Write(project).Frames.Select(frame => frame.Path));
+
+        ProjectFileContent Write(Project source) =>
+            ProjectFileContent.From(source.Snapshot, @"C:\Projects\Shoot.10lapse").Carrying(resolved.Unresolved, source.Snapshot.Frames, @"C:\Projects\Shoot.10lapse");
+    }
+
+    [Fact]
     public void AFrameWithOnlyARelativePathAndNoProjectFileIsMissing()
     {
         var content = new ProjectFileContent { Frames = [new SavedFrame(null) { RelativePath = @"Photos\1.jpg" }] };
