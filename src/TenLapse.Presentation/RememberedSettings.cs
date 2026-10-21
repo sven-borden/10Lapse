@@ -15,9 +15,10 @@ namespace TenLapse.Presentation;
 /// <remarks>
 /// Everything but the debounced write runs on the UI thread, like <see cref="Project"/>. The output stored is
 /// <c>Project.Output</c>, the user's preference; the effective output is never stored. The portrait hint's
-/// dismissal is not remembered: projects are not saved, so it lives and dies with the open project.
+/// dismissal is not remembered: it is not a project setting either (#52), so it lives and dies with the open project.
+/// The recent project files (#52) are kept here too, with the app's settings.
 /// </remarks>
-public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFolderMemory, Rating.IRatingMemory, IDisposable
+public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFolderMemory, Rating.IRatingMemory, ProjectFiles.IRecentProjects, IDisposable
 {
     /// <summary>How long after the last change the file is written.</summary>
     public static readonly TimeSpan DefaultDebounce = TimeSpan.FromMilliseconds(600);
@@ -118,6 +119,33 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
     /// <summary>How many exports have succeeded on this PC (#31).</summary>
     public int SuccessfulExports => Current.SuccessfulExports;
 
+    /// <summary>The project files opened or saved last (#52), the most recent first.</summary>
+    public PathList RecentProjects => Current.RecentProjects;
+
+    /// <summary>Raised on the calling thread (the UI thread) when <see cref="RecentProjects"/> changed.</summary>
+    public event EventHandler? RecentProjectsChanged;
+
+    /// <summary>Puts <paramref name="path"/> first in <see cref="RecentProjects"/> (#52: it was opened or saved) and saves the list after the pause.</summary>
+    public void AddRecentProject(string path) =>
+        UpdateRecent(Current.RecentProjects.WithFirst(path, UserSettings.MaxRecentProjects));
+
+    /// <summary>Takes <paramref name="path"/> off <see cref="RecentProjects"/> (it is gone) and saves the list after the pause.</summary>
+    public void RemoveRecentProject(string path) => UpdateRecent(Current.RecentProjects.Without(path));
+
+    /// <summary>Empties <see cref="RecentProjects"/> (the first-launch screen's <i>Clear list</i>) and saves that after the pause.</summary>
+    public void ClearRecentProjects() => UpdateRecent(PathList.Empty);
+
+    private void UpdateRecent(PathList recent)
+    {
+        if (recent.Equals(Current.RecentProjects))
+        {
+            return;
+        }
+
+        Update(Current with { RecentProjects = recent });
+        RecentProjectsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     /// <summary>Counts one successful export (#31), saves the count after the pause, and returns it. Stops counting at <see cref="int.MaxValue"/>.</summary>
     public int CountSuccessfulExport()
     {
@@ -173,6 +201,9 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
             {
                 SuccessfulExports = _current.SuccessfulExports,
                 RatingAskedVersion = _current.RatingAskedVersion,
+
+                // History, not a preference (#52): the first-launch screen clears it on its own.
+                RecentProjects = _current.RecentProjects,
             };
             _pending = true;
         }

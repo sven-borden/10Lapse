@@ -19,16 +19,16 @@
     <value>{0} ({1})</value>
   </data>
   <data name="ChooseFolderShortcut" xml:space="preserve">
-    <value>Strg+O</value>
+    <value>Strg+I</value>
   </data>
   <data name="ChooseFolderKeys" xml:space="preserve">
-    <value>Strg+O</value>
+    <value>Strg+I</value>
   </data>
   <data name="ChoosePhotosShortcut" xml:space="preserve">
-    <value>Strg+Umschalt+O</value>
+    <value>Strg+Umschalt+I</value>
   </data>
   <data name="ChoosePhotosKeys" xml:space="preserve">
-    <value>Strg+Umschalt+O</value>
+    <value>Strg+Umschalt+I</value>
   </data>
   <data name="NewProjectShortcut" xml:space="preserve">
     <value>Strg+N</value>
@@ -38,6 +38,24 @@
   </data>
   <data name="ExportShortcut" xml:space="preserve">
     <value>Strg+E</value>
+  </data>
+  <data name="OpenShortcut" xml:space="preserve">
+    <value>Strg+O</value>
+  </data>
+  <data name="OpenKeys" xml:space="preserve">
+    <value>Strg+O</value>
+  </data>
+  <data name="SaveShortcut" xml:space="preserve">
+    <value>Strg+S</value>
+  </data>
+  <data name="SaveKeys" xml:space="preserve">
+    <value>Strg+S</value>
+  </data>
+  <data name="SaveAsShortcut" xml:space="preserve">
+    <value>Strg+Umschalt+S</value>
+  </data>
+  <data name="SaveAsKeys" xml:space="preserve">
+    <value>Strg+Umschalt+S</value>
   </data>
   <data name="PlayKeys" xml:space="preserve">
     <value>Leertaste</value>
