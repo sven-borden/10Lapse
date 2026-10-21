@@ -869,8 +869,13 @@ public sealed class TimingPanelViewModelTests
         Assert.Equal(TimeSpan.FromSeconds(2.3), shell.CurrentProject.Model.Sequence.HoldStart);
         Assert.Equal(string.Format(_de, TimingText.NotANumberHold, "0 s", "10 s", "1,5"), panel.SequenceMessage);
 
+        // "1,000" and "2.500" could be thousands: refused with the hold's own hint, not the speed box's "type 1000".
         panel.CommitHoldStart("1,000");
         Assert.Equal(TimeSpan.FromSeconds(2.3), shell.CurrentProject.Model.Sequence.HoldStart);
+        Assert.Equal(string.Format(_de, TimingText.ThousandsSeparatorHold, "0 s", "10 s", "1,5"), panel.SequenceMessage);
+        panel.CommitHoldStart("2.500");
+        Assert.Equal(TimeSpan.FromSeconds(2.3), shell.CurrentProject.Model.Sequence.HoldStart);
+        Assert.DoesNotContain("1000", panel.SequenceMessage, StringComparison.Ordinal);
 
         // An empty box is no hold.
         panel.CommitHoldStart(string.Empty);

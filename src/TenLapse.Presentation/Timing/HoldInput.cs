@@ -14,7 +14,8 @@ public readonly record struct HoldEntry(bool IsValid, TimeSpan Value, string Mes
 /// <summary>
 /// Reads what the user typed into a hold box of the Timing panel (#49): seconds from 0 to
 /// <see cref="SequenceSettings.MaxHold"/>, kept to a tenth. As in <see cref="TimingInput"/>, a dot or a single comma is the
-/// decimal point whatever the culture, "1,000" is refused rather than guessed, the unit may follow (the user's
+/// decimal point whatever the culture, "1,000" is refused rather than guessed (with a hint of its own: the speed box's
+/// "type 1000" would be wrong in a box that ends at 10 s), the unit may follow (the user's
 /// language's and the English "s"), and nothing is changed without a sentence: a value past the range is held to it and
 /// more decimals are rounded, each said under the boxes. An empty box means no hold.
 /// </summary>
@@ -51,7 +52,7 @@ public static class HoldInput
 
         if (LooksLikeThousands(body))
         {
-            return new HoldEntry(false, default, TimingText.Format(culture, TimingText.ThousandsSeparator, TimingFormat.Decimal(new Fraction(3, 2), culture)));
+            return new HoldEntry(false, default, TimingText.Format(culture, TimingText.ThousandsSeparatorHold, Describe(TimeSpan.Zero, culture), Describe(SequenceSettings.MaxHold, culture), TimingFormat.Decimal(new Fraction(3, 2), culture)));
         }
 
         // Digits past what a decimal holds are far past the range: held to the longest, as any long hold.

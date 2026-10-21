@@ -156,4 +156,8 @@
     <value>The holds alone fill {0} (they last {1}): shorten them to make room for your photos. The video is {2} long.</value>
     <comment>Length mode, when the holds at the start and the end together last as long as the chosen length or longer, so no speed lets the photos fit. {0} the chosen length ("5 s"), {1} the two holds together ("20 s"), {2} the length the video has instead. A hold is a freeze frame: use the word of the Hold at start and Hold at end boxes, not the Pause button's.</comment>
   </data>
+  <data name="ThousandsSeparatorHold" xml:space="preserve">
+    <value>Type the hold with one decimal at most, from {0} to {1}, like {2}.</value>
+    <comment>Under the hold boxes when what was typed has a separator and three digits ("2.500", "1,000"), which could be a thousands separator or a decimal point. {0} the shortest hold ("0 s"), {1} the longest ("10 s"), {2} one and a half written with your decimal separator ("1.5"). A hold is a freeze frame: use the word of the Hold at start and Hold at end boxes.</comment>
+  </data>
 </root>

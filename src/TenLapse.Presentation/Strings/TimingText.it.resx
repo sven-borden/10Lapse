@@ -119,4 +119,7 @@
   <data name="LengthHoldsTooLong" xml:space="preserve">
     <value>I fermi immagine da soli riempiono {0} (durano {1}): accorciali per fare spazio alle tue foto. Il video dura {2}.</value>
   </data>
+  <data name="ThousandsSeparatorHold" xml:space="preserve">
+    <value>Digita la durata del fermo immagine con al massimo un decimale, da {0} a {1}, ad esempio {2}.</value>
+  </data>
 </root>

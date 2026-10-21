@@ -118,4 +118,7 @@
   <data name="LengthHoldsTooLong" xml:space="preserve">
     <value>Die Standbilder allein füllen {0} (sie dauern {1}): Kürzen Sie sie, damit Ihre Fotos Platz haben. Das Video ist {2} lang.</value>
   </data>
+  <data name="ThousandsSeparatorHold" xml:space="preserve">
+    <value>Geben Sie die Dauer des Standbilds mit höchstens einer Nachkommastelle ein, von {0} bis {1}, z. B. {2}.</value>
+  </data>
 </root>

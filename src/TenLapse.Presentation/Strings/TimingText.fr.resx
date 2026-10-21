@@ -119,4 +119,7 @@
   <data name="LengthHoldsTooLong" xml:space="preserve">
     <value>Les arrêts sur image remplissent à eux seuls {0} (ils durent {1}) : raccourcissez-les pour laisser de la place à vos photos. La vidéo dure {2}.</value>
   </data>
+  <data name="ThousandsSeparatorHold" xml:space="preserve">
+    <value>Entrez la durée de l'arrêt sur image avec une décimale au plus, de {0} à {1}, par exemple {2}.</value>
+  </data>
 </root>

@@ -134,6 +134,13 @@ public static class TimingText
     /// </summary>
     public static string LengthHoldsTooLong => _strings.Get();
 
+    /// <summary>
+    /// A hold box was left with a separator and three digits ("2.500", "1,000"), which reads as a thousands separator in
+    /// some countries (review of PR #134). {0}: the shortest hold ("0 s"), {1}: the longest ("10 s"), {2}: one and a half
+    /// ("1.5").
+    /// </summary>
+    public static string ThousandsSeparatorHold => _strings.Get();
+
     /// <summary>Log context: holds, plays or the direction could not be written to the project.</summary>
     public static string SequenceChangeFailed => "Changing the holds, plays or direction failed.";
 

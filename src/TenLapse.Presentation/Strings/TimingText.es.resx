@@ -123,4 +123,7 @@
   <data name="LengthHoldsTooLong" xml:space="preserve">
     <value>Las imágenes fijas ya llenan {0} (duran {1}): acórtalas para dejar espacio a tus fotos. El video dura {2}.</value>
   </data>
+  <data name="ThousandsSeparatorHold" xml:space="preserve">
+    <value>Escribe la duración de la imagen fija con un decimal como máximo, de {0} a {1}, como {2}.</value>
+  </data>
 </root>

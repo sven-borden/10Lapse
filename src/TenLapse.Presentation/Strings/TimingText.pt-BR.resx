@@ -119,4 +119,7 @@
   <data name="LengthHoldsTooLong" xml:space="preserve">
     <value>As imagens congeladas sozinhas preenchem {0} (duram {1}): encurte-as para dar espaço às suas fotos. O vídeo dura {2}.</value>
   </data>
+  <data name="ThousandsSeparatorHold" xml:space="preserve">
+    <value>Digite a duração da imagem congelada com no máximo uma casa decimal, de {0} a {1}, como {2}.</value>
+  </data>
 </root>
