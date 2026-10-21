@@ -142,6 +142,36 @@
           Maximum="100"
           Value="{x:Bind ViewModel.MeasuringPercent, Mode=OneWay}" />
       </Grid>
+
+      <!--
+        Photos deflicker has no measurement for while nothing measures them (they could not be read, or measuring a pass
+        that started by itself was stopped): "3 photos not measured" and Measure. Their correction comes from their
+        neighbours meanwhile. Absent otherwise.
+      -->
+      <Grid
+        x:Name="UnmeasuredRow"
+        ColumnSpacing="{StaticResource SpacingSm}"
+        Visibility="{x:Bind ViewModel.HasUnmeasured, Mode=OneWay}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBlock
+          x:Name="UnmeasuredText"
+          VerticalAlignment="Center"
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource CaptionTabularTextStyle}"
+          Text="{x:Bind ViewModel.UnmeasuredText, Mode=OneWay}"
+          TextWrapping="Wrap" />
+        <Button
+          x:Name="MeasureButton"
+          Grid.Column="1"
+          Height="{StaticResource ControlHeight}"
+          Padding="{StaticResource PaddingButtonSubtle}"
+          AutomationProperties.Name="{x:Bind look:LookText.MeasureName}"
+          Command="{x:Bind ViewModel.MeasureCommand}"
+          Content="{x:Bind look:LookText.MeasureButton}" />
+      </Grid>
     </StackPanel>
   </Border>
 </UserControl>

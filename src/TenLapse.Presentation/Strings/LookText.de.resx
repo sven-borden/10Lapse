@@ -40,10 +40,22 @@
     <value>Messen der Fotos beenden</value>
   </data>
   <data name="MeasureFailed_one" xml:space="preserve">
-    <value>{0} Foto konnte nicht gemessen werden. Entflackern lässt seine Helligkeit unverändert.</value>
+    <value>{0} Foto konnte nicht gemessen werden. Entflackern übernimmt dafür die Korrektur der Fotos daneben. Prüfen Sie, ob sich die Datei öffnen lässt, und wählen Sie dann „Messen“ im Abschnitt „Look“.</value>
   </data>
   <data name="MeasureFailed_other" xml:space="preserve">
-    <value>{0} Fotos konnten nicht gemessen werden. Entflackern lässt ihre Helligkeit unverändert.</value>
+    <value>{0} Fotos konnten nicht gemessen werden. Entflackern übernimmt dafür die Korrektur der Fotos daneben. Prüfen Sie, ob sich die Dateien öffnen lassen, und wählen Sie dann „Messen“ im Abschnitt „Look“.</value>
+  </data>
+  <data name="NotMeasured_one" xml:space="preserve">
+    <value>{0} Foto nicht gemessen</value>
+  </data>
+  <data name="NotMeasured_other" xml:space="preserve">
+    <value>{0} Fotos nicht gemessen</value>
+  </data>
+  <data name="MeasureButton" xml:space="preserve">
+    <value>Messen</value>
+  </data>
+  <data name="MeasureName" xml:space="preserve">
+    <value>Noch nicht gemessene Fotos messen</value>
   </data>
   <data name="CompareName" xml:space="preserve">
     <value>Vorher oder nachher</value>

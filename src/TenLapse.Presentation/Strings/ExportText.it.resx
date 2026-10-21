@@ -38,6 +38,18 @@
   <data name="GettingReady" xml:space="preserve">
     <value>Preparazione…</value>
   </data>
+  <data name="WaitingForDeflicker" xml:space="preserve">
+    <value>In attesa dell'antisfarfallio…</value>
+  </data>
+  <data name="MeasuringFirstFormat" xml:space="preserve">
+    <value>L'antisfarfallio misura prima le foto: {0} di {1}</value>
+  </data>
+  <data name="MeasuringFirstName" xml:space="preserve">
+    <value>Avanzamento della misurazione dell'antisfarfallio</value>
+  </data>
+  <data name="MeasuringFirstAnnouncement" xml:space="preserve">
+    <value>L'antisfarfallio misura prima le foto. L'esportazione inizia subito dopo.</value>
+  </data>
   <data name="EstimatingTimeLeft" xml:space="preserve">
     <value>Calcolo del tempo rimanente…</value>
   </data>

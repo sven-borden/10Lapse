@@ -43,13 +43,28 @@
     <value>Parar de medir as fotos</value>
   </data>
   <data name="MeasureFailed_one" xml:space="preserve">
-    <value>Não foi possível medir {0} foto. A anticintilação mantém o brilho dela como está.</value>
+    <value>Não foi possível medir {0} foto, então a anticintilação usa a correção das fotos ao lado dela. Verifique se o arquivo abre e escolha Medir na seção Visual.</value>
   </data>
   <data name="MeasureFailed_other" xml:space="preserve">
-    <value>Não foi possível medir {0} fotos. A anticintilação mantém o brilho delas como está.</value>
+    <value>Não foi possível medir {0} fotos, então a anticintilação usa a correção das fotos ao lado delas. Verifique se os arquivos abrem e escolha Medir na seção Visual.</value>
   </data>
   <data name="MeasureFailed_many" xml:space="preserve">
-    <value>Não foi possível medir {0} de fotos. A anticintilação mantém o brilho delas como está.</value>
+    <value>Não foi possível medir {0} de fotos, então a anticintilação usa a correção das fotos ao lado delas. Verifique se os arquivos abrem e escolha Medir na seção Visual.</value>
+  </data>
+  <data name="NotMeasured_one" xml:space="preserve">
+    <value>{0} foto não medida</value>
+  </data>
+  <data name="NotMeasured_other" xml:space="preserve">
+    <value>{0} fotos não medidas</value>
+  </data>
+  <data name="NotMeasured_many" xml:space="preserve">
+    <value>{0} de fotos não medidas</value>
+  </data>
+  <data name="MeasureButton" xml:space="preserve">
+    <value>Medir</value>
+  </data>
+  <data name="MeasureName" xml:space="preserve">
+    <value>Medir as fotos ainda não medidas</value>
   </data>
   <data name="CompareName" xml:space="preserve">
     <value>Antes ou depois da anticintilação</value>

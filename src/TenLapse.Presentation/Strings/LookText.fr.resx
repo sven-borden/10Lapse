@@ -43,13 +43,28 @@
     <value>Arrêter la mesure des photos</value>
   </data>
   <data name="MeasureFailed_one" xml:space="preserve">
-    <value>{0} photo n’a pas pu être mesurée. L’anti-scintillement laisse sa luminosité telle quelle.</value>
+    <value>{0} photo n’a pas pu être mesurée : l’anti-scintillement lui donne la correction des photos voisines. Vérifiez que le fichier s’ouvre, puis choisissez Mesurer dans la section Rendu.</value>
   </data>
   <data name="MeasureFailed_other" xml:space="preserve">
-    <value>{0} photos n’ont pas pu être mesurées. L’anti-scintillement laisse leur luminosité telle quelle.</value>
+    <value>{0} photos n’ont pas pu être mesurées : l’anti-scintillement leur donne la correction des photos voisines. Vérifiez que les fichiers s’ouvrent, puis choisissez Mesurer dans la section Rendu.</value>
   </data>
   <data name="MeasureFailed_many" xml:space="preserve">
-    <value>{0} de photos n’ont pas pu être mesurées. L’anti-scintillement laisse leur luminosité telle quelle.</value>
+    <value>{0} de photos n’ont pas pu être mesurées : l’anti-scintillement leur donne la correction des photos voisines. Vérifiez que les fichiers s’ouvrent, puis choisissez Mesurer dans la section Rendu.</value>
+  </data>
+  <data name="NotMeasured_one" xml:space="preserve">
+    <value>{0} photo non mesurée</value>
+  </data>
+  <data name="NotMeasured_other" xml:space="preserve">
+    <value>{0} photos non mesurées</value>
+  </data>
+  <data name="NotMeasured_many" xml:space="preserve">
+    <value>{0} de photos non mesurées</value>
+  </data>
+  <data name="MeasureButton" xml:space="preserve">
+    <value>Mesurer</value>
+  </data>
+  <data name="MeasureName" xml:space="preserve">
+    <value>Mesurer les photos pas encore mesurées</value>
   </data>
   <data name="CompareName" xml:space="preserve">
     <value>Avant ou après l’anti-scintillement</value>

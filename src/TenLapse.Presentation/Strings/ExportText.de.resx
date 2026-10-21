@@ -37,6 +37,18 @@
   <data name="GettingReady" xml:space="preserve">
     <value>Wird vorbereitet…</value>
   </data>
+  <data name="WaitingForDeflicker" xml:space="preserve">
+    <value>Warten auf Entflackern…</value>
+  </data>
+  <data name="MeasuringFirstFormat" xml:space="preserve">
+    <value>Entflackern misst zuerst die Fotos: {0} von {1}</value>
+  </data>
+  <data name="MeasuringFirstName" xml:space="preserve">
+    <value>Fortschritt der Messung für Entflackern</value>
+  </data>
+  <data name="MeasuringFirstAnnouncement" xml:space="preserve">
+    <value>Entflackern misst zuerst die Fotos. Der Export beginnt danach.</value>
+  </data>
   <data name="EstimatingTimeLeft" xml:space="preserve">
     <value>Restzeit wird berechnet…</value>
   </data>

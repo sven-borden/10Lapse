@@ -38,6 +38,18 @@
   <data name="GettingReady" xml:space="preserve">
     <value>Preparando…</value>
   </data>
+  <data name="WaitingForDeflicker" xml:space="preserve">
+    <value>Aguardando a anticintilação…</value>
+  </data>
+  <data name="MeasuringFirstFormat" xml:space="preserve">
+    <value>A anticintilação mede as fotos primeiro: {0} de {1}</value>
+  </data>
+  <data name="MeasuringFirstName" xml:space="preserve">
+    <value>Progresso da medição da anticintilação</value>
+  </data>
+  <data name="MeasuringFirstAnnouncement" xml:space="preserve">
+    <value>A anticintilação mede as fotos primeiro. A exportação começa em seguida.</value>
+  </data>
   <data name="EstimatingTimeLeft" xml:space="preserve">
     <value>Calculando o tempo restante…</value>
   </data>

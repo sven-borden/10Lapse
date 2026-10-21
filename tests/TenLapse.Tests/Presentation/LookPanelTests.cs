@@ -82,7 +82,7 @@ public sealed class LookPanelTests
     }
 
     [Fact]
-    public async Task APhotoThatCannotBeMeasuredIsToldOnceAndTriedAgainOnlyWhenTurnedOnAgain()
+    public async Task APhotoThatCannotBeMeasuredIsTriedTwiceToldOnceAndMeasuredAgainOnRequest()
     {
         using var app = new LookHarness(frames: 6);
         var broken = app.On(() => app.Project.Frames[2]);
@@ -93,23 +93,93 @@ public sealed class LookPanelTests
 
         var bar = Assert.Single(app.InfoBars.Shown);
         Assert.Equal(InfoBarSeverity.Caution, bar.Severity);
-        Assert.Equal("1 photo couldn't be measured. Deflicker leaves its brightness as it is.", bar.Message);
+        Assert.Equal("1 photo couldn't be measured, so deflicker takes its correction from the photos beside it. Check that the file opens, then choose Measure in the Look section.", bar.Message);
         Assert.Equal(broken.FileName, Assert.Single(bar.Details).Text);
         Assert.Null(app.On(() => app.Project.Frames[2].Exposure));
+        Assert.Equal(2, app.Meter.Calls.Count(path => path == broken.SourcePath));
 
-        // Another edit does not try it again; turning deflicker off and on does.
+        // It does not flash: its correction is the one between its neighbours.
+        var curve = ExposureCurve.For(app.On(() => app.Project.Snapshot));
+        var frames = app.On(() => app.Project.Frames);
+        Assert.Equal((curve.Correction(frames[1].Id) + curve.Correction(frames[3].Id)) / 2, curve.Correction(frames[2].Id), 1e-12);
+
+        // The Look section says so, with Measure.
+        Assert.True(app.On(() => app.Panel.HasUnmeasured));
+        Assert.Equal("1 photo not measured", app.On(() => app.Panel.UnmeasuredText));
+
+        // Another edit does not try it again; Measure does.
         app.On(() => app.Panel.Strength = 50);
         app.Settle();
-        Assert.Equal(6, app.Meter.Calls.Count);
+        Assert.Equal(7, app.Meter.Calls.Count);
         app.Meter.Failing.Clear();
-        app.On(() => app.Panel.IsDeflickerOn = false);
+        app.On(() => app.Panel.MeasureCommand.Execute(null));
+        await app.UntilAsync(() => app.Project.Frames[2].Exposure is not null && !app.Analysis.IsMeasuring);
+        Assert.False(app.On(() => app.Panel.HasUnmeasured));
+    }
+
+    [Fact]
+    public async Task APhotoThatFailsOnceIsMeasuredOnTheSecondTryWithoutAnInfoBar()
+    {
+        using var app = new LookHarness(frames: 6);
+        var flaky = app.On(() => app.Project.Frames[4]);
+        app.Meter.FailingOnce[flaky.SourcePath] = 0;
+
         app.On(() => app.Panel.IsDeflickerOn = true);
-        await app.UntilAsync(() => app.Project.Frames[2].Exposure is not null);
+        await app.UntilAsync(() => app.Project.Frames.All(frame => frame.Exposure is not null) && !app.Analysis.IsMeasuring);
+
+        Assert.Empty(app.InfoBars.Shown);
+        Assert.False(app.On(() => app.Panel.HasUnmeasured));
+    }
+
+    [Fact]
+    public async Task PhotosRemovedWhileMeasuringLeaveThePass()
+    {
+        using var app = new LookHarness(frames: 20, parallelism: 1);
+        app.Meter.Hold();
+        app.On(() => app.Panel.IsDeflickerOn = true);
+        await app.UntilAsync(() => app.Meter.Calls.Count >= 1);
+
+        app.On(() => app.Project.RemoveFrames(app.Project.Frames.Skip(10).Select(frame => frame.Id).ToList()));
+        Assert.Equal("Measuring 0 of 10 photos…", app.On(() => app.Panel.MeasuringText));
+        app.Meter.Release();
+
+        await app.UntilAsync(() => app.Project.Frames.All(frame => frame.Exposure is not null) && !app.Analysis.IsMeasuring);
+        Assert.Equal(10, app.Meter.Calls.Count);
+    }
+
+    [Fact]
+    public async Task CancelOnAPassThatStartedByItselfKeepsDeflickerOnAndTheProjectClean()
+    {
+        // Opened with deflicker on: the pass is not the user's doing, so Cancel means "not now", not "drop deflicker".
+        using var app = new LookHarness(frames: 40, parallelism: 1, holdAfter: 5, setup: project =>
+        {
+            project.Look = new LookSettings(true, 80);
+            project.MarkSaved(project.Version);
+        });
+        await app.UntilAsync(() => app.Project.Frames.Count(frame => frame.Exposure is not null) == 5);
+
+        app.On(() => app.Panel.CancelMeasuringCommand.Execute(null));
+
+        Assert.False(app.On(() => app.Panel.IsMeasuring));
+        Assert.True(app.On(() => app.Project.Look.Deflicker));
+        Assert.False(app.On(() => app.Project.IsDirty));
+        Assert.True(app.On(() => app.Panel.HasUnmeasured));
+        Assert.Equal("35 photos not measured", app.On(() => app.Panel.UnmeasuredText));
+        Assert.Equal(40, ExposureCurve.For(app.On(() => app.Project.Snapshot)).Count);
+        app.Meter.Release();
+        app.Settle();
+        Assert.False(app.On(() => app.Analysis.IsMeasuring));
+
+        app.On(() => app.Panel.MeasureCommand.Execute(null));
+        await app.UntilAsync(() => app.Project.Frames.All(frame => frame.Exposure is not null) && !app.Analysis.IsMeasuring);
+        Assert.False(app.On(() => app.Project.IsDirty));
+        Assert.False(app.On(() => app.Panel.HasUnmeasured));
     }
 
     [Fact]
     public async Task CancelStopsAtOnceKeepsWhatWasMeasuredAndTurnsDeflickerOff()
     {
+        // Right after the user turned deflicker on, Cancel takes the switch back.
         using var app = new LookHarness(frames: 40, parallelism: 1);
         app.Meter.HoldAfter(5);
         app.On(() => app.Panel.IsDeflickerOn = true);
@@ -181,8 +251,16 @@ public sealed class LookPanelTests
             },
             measuring: shell => new ExposureAnalysis(shell, meter, new UiThreadDispatcher(), new FakeErrorSink(), new FakeInfoBarService()));
 
+        var heard = new List<string>();
+        app.On(() => app.Export.Announced += (_, text) => heard.Add(text));
         app.StartExport();
         Assert.Empty(app.Exporter.Calls);
+
+        // The panel says why it waits, with the count and its own bar (#45 review).
+        Assert.True(app.On(() => app.Export.IsWaitingForMeasuring));
+        Assert.Equal("Deflicker is measuring the photos first: 0 of 8", app.On(() => app.Export.MeasuringText));
+        Assert.Equal("Waiting for deflicker…", app.On(() => app.Export.TimeLeftText));
+        Assert.Contains("Deflicker is measuring the photos first. The export starts when it is done.", heard);
 
         meter.Release();
         var deadline = Stopwatch.StartNew();
@@ -193,6 +271,27 @@ public sealed class LookPanelTests
 
         var (snapshot, _) = Assert.Single(app.Exporter.Calls);
         Assert.All(snapshot.Frames, frame => Assert.NotNull(frame.Exposure));
+        Assert.False(app.On(() => app.Export.IsWaitingForMeasuring));
+    }
+
+    [Fact]
+    public void AnOpenedProjectsDetailsReadKeepsAMeasurementThatLandedFirst()
+    {
+        // A photo changed on disk since the save: it is read again for its details and measured at once (its saved size
+        // is known). When the measurement lands first, the details, read from the frame as it was, must not wipe it.
+        var project = new Project();
+        var frame = TestFrames.At(@"C:\Photos\Changed\IMG_0001.jpg") with { PixelSize = new PixelSize(30, 20) };
+        project.AddFrames([frame]);
+        var reading = TenLapse.Core.Import.FrameReading.Read(frame with { PixelSize = new PixelSize(6000, 4000) });
+        var measured = new PhotoExposure(-2.5);
+        project.UpdateFrames([project.Frames[0] with { Exposure = measured }]);
+        project.MarkSaved(project.Version);
+
+        ImportViewModel.ApplyDetails(project, [reading]);
+
+        Assert.Equal(new PixelSize(6000, 4000), project.Frames[0].PixelSize);
+        Assert.Same(measured, project.Frames[0].Exposure);
+        Assert.False(project.IsDirty);
     }
 
     /// <summary>A meter that answers from the photo's name, can fail some photos, and can hold its answers.</summary>
@@ -204,6 +303,9 @@ public sealed class LookPanelTests
         public ConcurrentQueue<string> Calls { get; } = new();
 
         public ConcurrentBag<string> Failing { get; } = [];
+
+        // Photos whose first measuring fails and the next one works (a file share waking up).
+        public ConcurrentDictionary<string, byte> FailingOnce { get; } = new();
 
         public void Hold() => _open.Reset();
 
@@ -230,7 +332,7 @@ public sealed class LookPanelTests
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-            return Failing.Contains(frame.SourcePath)
+            return Failing.Contains(frame.SourcePath) || FailingOnce.TryRemove(frame.SourcePath, out _)
                 ? ExposureMeasurement.Failed("unreadable")
                 : ExposureMeasurement.Measured(new PhotoExposure(LookHarness.LuminanceOf(frame)));
         }
@@ -264,8 +366,9 @@ public sealed class LookPanelTests
     /// <summary>A shell, its project of photos with known sizes, the exposure pass and the Look panel, on a stand-in UI thread.</summary>
     private sealed class LookHarness : IDisposable
     {
-        public LookHarness(int frames, bool sized = true, Action<Project>? setup = null, int parallelism = 2)
+        public LookHarness(int frames, bool sized = true, Action<Project>? setup = null, int parallelism = 2, int holdAfter = int.MaxValue)
         {
+            Meter.HoldAfter(holdAfter);
             Ui.Run(() =>
             {
                 Shell = new ShellViewModel(new FakeDialogService(), Errors);

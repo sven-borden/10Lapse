@@ -49,15 +49,31 @@
   </data>
   <data name="MeasureCancelName" xml:space="preserve">
     <value>Stop measuring the photos</value>
-    <comment>The screen reader name of the Cancel button beside the measuring progress. Stopping also turns deflicker off.</comment>
+    <comment>The screen reader name of the Cancel button beside the measuring progress. Right after deflicker was turned on, stopping turns it off again; otherwise deflicker stays on and the photos left are counted as not measured.</comment>
   </data>
   <data name="MeasureFailed_one" xml:space="preserve">
-    <value>{0} photo couldn't be measured. Deflicker leaves its brightness as it is.</value>
-    <comment>The InfoBar when deflicker could not measure some photos (unreadable, gone): they keep their own brightness in the video. {0} the count ("1").</comment>
+    <value>{0} photo couldn't be measured, so deflicker takes its correction from the photos beside it. Check that the file opens, then choose Measure in the Look section.</value>
+    <comment>The InfoBar when deflicker could not measure a photo (unreadable, gone), after trying twice: its correction is the one between the photos before and after it. The InfoBar's list names the photo. "Measure" is the MeasureButton text and "Look" the Heading: use your translations of them. {0} the count ("1").</comment>
   </data>
   <data name="MeasureFailed_other" xml:space="preserve">
-    <value>{0} photos couldn't be measured. Deflicker leaves their brightness as it is.</value>
+    <value>{0} photos couldn't be measured, so deflicker takes their correction from the photos beside them. Check that the files open, then choose Measure in the Look section.</value>
     <comment>The same, for several photos. {0} the count ("3").</comment>
+  </data>
+  <data name="NotMeasured_one" xml:space="preserve">
+    <value>{0} photo not measured</value>
+    <comment>In the Look panel while deflicker is on, beside the Measure button: a photo has no measurement (it could not be read, or measuring was stopped). Its correction comes from the photos beside it. {0} the count ("1"). Keep it to about 26 characters.</comment>
+  </data>
+  <data name="NotMeasured_other" xml:space="preserve">
+    <value>{0} photos not measured</value>
+    <comment>The same, for several photos. {0} the count ("1,240"). Keep it to about 26 characters with the number.</comment>
+  </data>
+  <data name="MeasureButton" xml:space="preserve">
+    <value>Measure</value>
+    <comment>The button beside "3 photos not measured": measures those photos now. A verb. Keep it to about 12 characters.</comment>
+  </data>
+  <data name="MeasureName" xml:space="preserve">
+    <value>Measure the photos not measured yet</value>
+    <comment>The screen reader name of the Measure button.</comment>
   </data>
   <data name="CompareName" xml:space="preserve">
     <value>Before or after deflicker</value>

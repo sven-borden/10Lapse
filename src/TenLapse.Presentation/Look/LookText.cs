@@ -35,6 +35,15 @@ public static class LookText
     /// <summary>The InfoBar for photos that could not be measured: {0} their count.</summary>
     public static PluralText MeasureFailed => _strings.Plural();
 
+    /// <summary>"3 photos not measured" beside Measure: {0} their count.</summary>
+    public static PluralText NotMeasured => _strings.Plural();
+
+    /// <summary>The button that measures the photos not measured yet.</summary>
+    public static string MeasureButton => _strings.Get();
+
+    /// <summary>The Measure button's screen reader name.</summary>
+    public static string MeasureName => _strings.Get();
+
     /// <summary>The screen reader name of the Before and After switch.</summary>
     public static string CompareName => _strings.Get();
 
@@ -61,9 +70,13 @@ public static class LookText
         return Measuring.Format(CultureInfo.CurrentCulture, total, Count(measured), Count(total));
     }
 
-    /// <summary>"3 photos couldn't be measured. Deflicker leaves their brightness as it is."</summary>
+    /// <summary>"3 photos couldn't be measured, so deflicker takes their correction from the photos beside them. Check …"</summary>
     public static string MeasureFailedMessage(int count) =>
         MeasureFailed.Format(CultureInfo.CurrentCulture, count, Count(count));
+
+    /// <summary>"3 photos not measured" in the user's culture.</summary>
+    public static string NotMeasuredMessage(int count) =>
+        NotMeasured.Format(CultureInfo.CurrentCulture, count, Count(count));
 
     /// <summary>The strength as the slider's value reads: "80%" in English, "80 %" in French, in the user's culture.</summary>
     public static string Percent(int strength) => (strength / 100.0).ToString("P0", CultureInfo.CurrentCulture);

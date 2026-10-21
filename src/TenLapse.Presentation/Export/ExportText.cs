@@ -47,6 +47,22 @@ public static class ExportText
     /// <summary>Before the first frame is written.</summary>
     public static string GettingReady => _strings.Get();
 
+    /// <summary>The time-left line while deflicker measures the photos before the first frame (#45).</summary>
+    public static string WaitingForDeflicker => _strings.Get();
+
+    /// <summary>"Deflicker is measuring the photos first: {0} of {1}" (#45): {0} measured, {1} all.</summary>
+    public static string MeasuringFirstFormat => _strings.Get();
+
+    /// <summary>The screen reader name of the measuring bar in the export panel (#45).</summary>
+    public static string MeasuringFirstName => _strings.Get();
+
+    /// <summary>Said once as an export waits for deflicker's measuring (#45).</summary>
+    public static string MeasuringFirstAnnouncement => _strings.Get();
+
+    /// <summary>"Deflicker is measuring the photos first: 1,240 of 5,000" in the user's culture.</summary>
+    public static string MeasuringFirst(int measured, int total) =>
+        string.Format(CultureInfo.CurrentCulture, MeasuringFirstFormat, measured.ToString("N0", CultureInfo.CurrentCulture), total.ToString("N0", CultureInfo.CurrentCulture));
+
     /// <summary>Frames are being written but the speed is not known yet.</summary>
     public static string EstimatingTimeLeft => _strings.Get();
 

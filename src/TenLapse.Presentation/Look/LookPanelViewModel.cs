@@ -12,9 +12,12 @@ namespace TenLapse.Presentation.Look;
 /// <see cref="Project.Look"/>; the preview and the export take the correction from the next snapshot. UI thread.
 /// </summary>
 /// <remarks>
-/// Cancel stops the measuring and turns deflicker off: a correction from some of the photos would be a different curve
-/// from the one the finished pass gives, and turning it on again goes on where the pass stopped (the measurements made
-/// are kept). Before and After is the preview's alone, never saved and never exported: it shows the photos without the
+/// Cancel stops the measuring. When the pass is the one turning deflicker on started, it also turns deflicker off: the
+/// user is taking back the switch they just turned, and turning it on again goes on where the pass stopped (the
+/// measurements made are kept). A pass that started by itself (a project opened or photos imported with deflicker on)
+/// stops without touching the project, so the user's setting and the saved state stay as they were: the photos left
+/// take their correction from their measured neighbours, and "3 photos not measured" with Measure shows until they are
+/// measured. Before and After is the preview's alone, never saved and never exported: it shows the photos without the
 /// correction while it is on Before, and goes back to After whenever deflicker is turned off.
 /// </remarks>
 public sealed class LookPanelViewModel : ObservableObject, IDisposable
@@ -41,6 +44,7 @@ public sealed class LookPanelViewModel : ObservableObject, IDisposable
         Analysis = analysis;
         _errors = errors;
         CancelMeasuringCommand = errors.Command(CancelMeasuring, LookText.ChangeFailed);
+        MeasureCommand = errors.Command(analysis.MeasureRemaining, LookText.MeasureFailedContext);
         _project = shell.CurrentProject.Model;
         _project.Changed += OnProjectChanged;
         _shell.ProjectReplaced += OnProjectReplaced;
@@ -93,8 +97,17 @@ public sealed class LookPanelViewModel : ObservableObject, IDisposable
     /// <summary>The share measured, 0 to 100.</summary>
     public double MeasuringPercent => Analysis.ProgressPercent;
 
-    /// <summary>Stops the measuring and turns deflicker off.</summary>
+    /// <summary>Stops the measuring (and turns deflicker off when the pass is the one turning it on started).</summary>
     public IRelayCommand CancelMeasuringCommand { get; }
+
+    /// <summary>True when "3 photos not measured" and Measure show: deflicker is on, nothing is measured, and some photos have no measurement.</summary>
+    public bool HasUnmeasured => _deflicker && !Analysis.IsMeasuring && Analysis.Unmeasured > 0;
+
+    /// <summary>"3 photos not measured".</summary>
+    public string UnmeasuredText => Analysis.Unmeasured > 0 ? LookText.NotMeasuredMessage(Analysis.Unmeasured) : string.Empty;
+
+    /// <summary>Measures the photos not measured yet.</summary>
+    public IRelayCommand MeasureCommand { get; }
 
     /// <summary>Before, After: the parts of the switch under the preview.</summary>
     public IReadOnlyList<string> CompareLabels => _compareLabels;
@@ -134,8 +147,7 @@ public sealed class LookPanelViewModel : ObservableObject, IDisposable
 
     private void CancelMeasuring()
     {
-        Analysis.Cancel();
-        if (_deflicker)
+        if (Analysis.Cancel() && _deflicker)
         {
             Edit(look => look with { Deflicker = false });
         }
@@ -147,6 +159,11 @@ public sealed class LookPanelViewModel : ObservableObject, IDisposable
         {
             case nameof(ExposureAnalysis.IsMeasuring):
                 OnPropertyChanged(nameof(IsMeasuring));
+                OnPropertyChanged(nameof(HasUnmeasured));
+                break;
+            case nameof(ExposureAnalysis.Unmeasured):
+                OnPropertyChanged(nameof(UnmeasuredText));
+                OnPropertyChanged(nameof(HasUnmeasured));
                 break;
             case nameof(ExposureAnalysis.ProgressText):
                 OnPropertyChanged(nameof(MeasuringText));
@@ -197,11 +214,15 @@ public sealed class LookPanelViewModel : ObservableObject, IDisposable
             {
                 var look = _project.Snapshot.Look;
                 var before = ShowsOriginal;
-                if (SetProperty(ref _deflicker, look.Deflicker, nameof(IsDeflickerOn)) && !look.Deflicker)
+                if (SetProperty(ref _deflicker, look.Deflicker, nameof(IsDeflickerOn)))
                 {
-                    // Off: the next time it is on, the preview starts on After.
-                    _compareIndex = 1;
-                    OnPropertyChanged(nameof(CompareIndex));
+                    OnPropertyChanged(nameof(HasUnmeasured));
+                    if (!look.Deflicker)
+                    {
+                        // Off: the next time it is on, the preview starts on After.
+                        _compareIndex = 1;
+                        OnPropertyChanged(nameof(CompareIndex));
+                    }
                 }
 
                 if (SetProperty(ref _strength, look.Strength, nameof(Strength)))

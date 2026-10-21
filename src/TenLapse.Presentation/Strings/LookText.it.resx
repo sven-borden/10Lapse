@@ -40,13 +40,28 @@
     <value>Interrompi la misurazione delle foto</value>
   </data>
   <data name="MeasureFailed_one" xml:space="preserve">
-    <value>Non è stato possibile misurare {0} foto. L'antisfarfallio ne lascia la luminosità com'è.</value>
+    <value>Non è stato possibile misurare {0} foto, quindi l'antisfarfallio le dà la correzione delle foto vicine. Verifica che il file si apra, poi scegli Misura nella sezione Aspetto.</value>
   </data>
   <data name="MeasureFailed_other" xml:space="preserve">
-    <value>Non è stato possibile misurare {0} foto. L'antisfarfallio ne lascia la luminosità com'è.</value>
+    <value>Non è stato possibile misurare {0} foto, quindi l'antisfarfallio dà loro la correzione delle foto vicine. Verifica che i file si aprano, poi scegli Misura nella sezione Aspetto.</value>
   </data>
   <data name="MeasureFailed_many" xml:space="preserve">
-    <value>Non è stato possibile misurare {0} di foto. L'antisfarfallio ne lascia la luminosità com'è.</value>
+    <value>Non è stato possibile misurare {0} di foto, quindi l'antisfarfallio dà loro la correzione delle foto vicine. Verifica che i file si aprano, poi scegli Misura nella sezione Aspetto.</value>
+  </data>
+  <data name="NotMeasured_one" xml:space="preserve">
+    <value>{0} foto non misurata</value>
+  </data>
+  <data name="NotMeasured_other" xml:space="preserve">
+    <value>{0} foto non misurate</value>
+  </data>
+  <data name="NotMeasured_many" xml:space="preserve">
+    <value>{0} di foto non misurate</value>
+  </data>
+  <data name="MeasureButton" xml:space="preserve">
+    <value>Misura</value>
+  </data>
+  <data name="MeasureName" xml:space="preserve">
+    <value>Misura le foto non ancora misurate</value>
   </data>
   <data name="CompareName" xml:space="preserve">
     <value>Prima o dopo l'antisfarfallio</value>

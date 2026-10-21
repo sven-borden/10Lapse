@@ -49,6 +49,22 @@
     <value>Getting ready…</value>
     <comment>The time-left line before the first frame is written. Up to two lines in the 280 px panel.</comment>
   </data>
+  <data name="WaitingForDeflicker" xml:space="preserve">
+    <value>Waiting for deflicker…</value>
+    <comment>The time-left line while the export waits for deflicker to measure the brightness of the photos (deflicker evens out the brightness of the photos; it is the Look panel's switch, use your translation of it). Up to two lines in the 280 px panel.</comment>
+  </data>
+  <data name="MeasuringFirstFormat" xml:space="preserve">
+    <value>Deflicker is measuring the photos first: {0} of {1}</value>
+    <comment>Under the progress bar while the export waits for deflicker to measure the photos; a small bar of its own follows. {0} the photos measured so far ("1,240"), {1} all of them ("5,000"). Wraps in the 280 px panel.</comment>
+  </data>
+  <data name="MeasuringFirstName" xml:space="preserve">
+    <value>Deflicker measuring progress</value>
+    <comment>The screen reader name of that small bar.</comment>
+  </data>
+  <data name="MeasuringFirstAnnouncement" xml:space="preserve">
+    <value>Deflicker is measuring the photos first. The export starts when it is done.</value>
+    <comment>Read by a screen reader once, as an export waits for deflicker's measuring.</comment>
+  </data>
   <data name="EstimatingTimeLeft" xml:space="preserve">
     <value>Working out the time left…</value>
     <comment>The time-left line while frames are written but the speed is not known yet. Up to two lines in the 280 px panel.</comment>

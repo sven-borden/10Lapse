@@ -43,13 +43,28 @@
     <value>Dejar de medir las fotos</value>
   </data>
   <data name="MeasureFailed_one" xml:space="preserve">
-    <value>No se pudo medir {0} foto. El antiparpadeo deja su brillo como está.</value>
+    <value>No se pudo medir {0} foto, así que el antiparpadeo le da la corrección de las fotos de al lado. Compruebe que el archivo se abre y elija Medir en la sección Aspecto.</value>
   </data>
   <data name="MeasureFailed_other" xml:space="preserve">
-    <value>No se pudieron medir {0} fotos. El antiparpadeo deja su brillo como está.</value>
+    <value>No se pudieron medir {0} fotos, así que el antiparpadeo les da la corrección de las fotos de al lado. Compruebe que los archivos se abren y elija Medir en la sección Aspecto.</value>
   </data>
   <data name="MeasureFailed_many" xml:space="preserve">
-    <value>No se pudieron medir {0} de fotos. El antiparpadeo deja su brillo como está.</value>
+    <value>No se pudieron medir {0} de fotos, así que el antiparpadeo les da la corrección de las fotos de al lado. Compruebe que los archivos se abren y elija Medir en la sección Aspecto.</value>
+  </data>
+  <data name="NotMeasured_one" xml:space="preserve">
+    <value>{0} foto sin medir</value>
+  </data>
+  <data name="NotMeasured_other" xml:space="preserve">
+    <value>{0} fotos sin medir</value>
+  </data>
+  <data name="NotMeasured_many" xml:space="preserve">
+    <value>{0} de fotos sin medir</value>
+  </data>
+  <data name="MeasureButton" xml:space="preserve">
+    <value>Medir</value>
+  </data>
+  <data name="MeasureName" xml:space="preserve">
+    <value>Medir las fotos que aún no se han medido</value>
   </data>
   <data name="CompareName" xml:space="preserve">
     <value>Antes o después del antiparpadeo</value>
