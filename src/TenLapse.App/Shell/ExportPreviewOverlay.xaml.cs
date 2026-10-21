@@ -40,6 +40,7 @@ public sealed partial class ExportPreviewOverlay : UserControl
     private IInfoBarService? _infoBars;
     private MediaPlayer? _media;
     private MediaSource? _source;
+    private readonly DispatcherQueueTimer _motionCheck;
     private int _premiere;
     private bool _playing;
     private bool _arrived;
@@ -48,6 +49,13 @@ public sealed partial class ExportPreviewOverlay : UserControl
     {
         InitializeComponent();
         SizeChanged += (_, _) => Guarded(Place);
+
+        // Windows has no change event for its animation setting: while a GIF premiere loops, it is polled, as Daybreak
+        // polls it on its ticks, and the GIF stops on its first frame or plays again when it changes.
+        _motionCheck = DispatcherQueue.CreateTimer();
+        _motionCheck.Interval = TimeSpan.FromSeconds(1);
+        _motionCheck.IsRepeating = true;
+        _motionCheck.Tick += (_, _) => Guarded(FollowAnimationSetting);
     }
 
     /// <summary>Follows the export and the preview's player; <paramref name="infoBars"/> says when the video can't play here.</summary>
@@ -195,9 +203,12 @@ public sealed partial class ExportPreviewOverlay : UserControl
     // straight off the disk: no copy of ours on top of XAML's, and the premiere holds no file afterwards, so an export to
     // the same name can replace it. While it is open it shares reading, writing and deleting, so the user can still move
     // or delete the file. A GIF that will not decode falls back as a video does.
+    //
+    // It loops only while animations are on (Windows' setting, or Debug --reduce-motion, through MotionTokens); with them
+    // off it stands on its first frame, as Microsoft recommends for BitmapImage.AutoPlay.
     private async Task PremiereGifAsync(string path, int ticket)
     {
-        var image = new BitmapImage { AutoPlay = true };
+        var image = new BitmapImage { AutoPlay = Themes.MotionTokens.AnimationsEnabled };
         image.ImageFailed += OnGifFailed;
         await using (var file = OpenShared(path))
         {
@@ -211,6 +222,32 @@ public sealed partial class ExportPreviewOverlay : UserControl
         }
 
         ShowGif(image);
+        _motionCheck.Start();
+    }
+
+    // The animation setting changed while the GIF is on screen: it stops on its first frame, or loops again.
+    private void FollowAnimationSetting()
+    {
+        if (Gif.Source is not BitmapImage { IsAnimatedBitmap: true } gif)
+        {
+            _motionCheck.Stop();
+            return;
+        }
+
+        var animate = Themes.MotionTokens.AnimationsEnabled;
+        if (animate == gif.IsPlaying)
+        {
+            return;
+        }
+
+        if (animate)
+        {
+            gif.Play();
+        }
+        else
+        {
+            gif.Stop();
+        }
     }
 
     // A GIF over PremierePlan.GifPlayLimit would put that much in memory to play: its first frame is decoded alone from
@@ -260,6 +297,7 @@ public sealed partial class ExportPreviewOverlay : UserControl
         }
 
         _playing = false;
+        _motionCheck.Stop();
         var shown = Gif.Source;
         Gif.Source = null;
         if (shown is BitmapImage gif)
