@@ -38,4 +38,10 @@ public interface IFrameSource
 
     /// <summary>The file frame <paramref name="index"/> comes from, for failure messages; null when it has none.</summary>
     string? SourcePath(int index) => null;
+
+    /// <summary>
+    /// The processing frame <paramref name="index"/> is drawn with (#45: its deflicker exposure), the same
+    /// <see cref="FrameLook"/> the preview draws the photo with; none by default.
+    /// </summary>
+    FrameLook LookOf(int index) => FrameLook.None;
 }

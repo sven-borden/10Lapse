@@ -1,6 +1,7 @@
 using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
 using TenLapse.Media.Inspection;
+using TenLapse.Media.Rendering;
 
 namespace TenLapse.Media.Export;
 
@@ -132,7 +133,7 @@ public static class ProjectExporter
         var target = Path.GetFullPath(outputPath);
         var settings = options.Tune(SettingsFor(snapshot));
         var frames = FramesFor(snapshot, settings);
-        var source = new PhotoFileSource([.. frames.Select(index => snapshot.Frames[index].SourcePath)], settings.Fit);
+        var source = new PhotoFileSource([.. frames.Select(index => snapshot.Frames[index].SourcePath)], settings.Fit, LooksFor(snapshot, frames));
 
         // Progress counts the project's frames, so the film gate, the filmstrip and "0312 of 0742" stay in photos when a
         // GIF shows only some of them.
@@ -153,6 +154,17 @@ public static class ProjectExporter
         return settings.Format == VideoFormat.Gif
             ? GifOutput.SourceFrames(count, snapshot.EffectiveRate.Rate, settings.FrameRate)
             : [.. Enumerable.Range(0, count)];
+    }
+
+    /// <summary>
+    /// Each exported frame's processing (#45): the look of the photo it shows, keyed by the photo, so a photo the
+    /// sequence shows more than once is drawn the same each time, and exactly as the preview draws it. Null when no
+    /// photo has a look.
+    /// </summary>
+    internal static FrameLook[]? LooksFor(ProjectSnapshot snapshot, int[] frames)
+    {
+        var looks = frames.Select(index => FrameLook.For(snapshot, snapshot.Frames[index].Id)).ToArray();
+        return looks.All(look => look.IsNeutral) ? null : looks;
     }
 
     private static async Task<ProjectExportResult> RunAsync(

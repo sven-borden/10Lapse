@@ -12,14 +12,18 @@ namespace TenLapse.Media.Export;
 /// </summary>
 /// <param name="paths">Absolute paths, one per frame, in frame order.</param>
 /// <param name="fit">How the frames are drawn, which sets the decode size; the export's <see cref="VideoExportSettings.Fit"/> must agree.</param>
+/// <param name="looks">Each frame's processing (#45), in frame order; null for none.</param>
 /// <remarks>
 /// A photo that cannot be decoded throws a <see cref="PhotoDecodeException"/> naming the frame and the
 /// <see cref="SkipReason"/>; the export fails with it (as the inner exception of a
 /// <see cref="VideoExportFailure.FrameUnreadable"/> failure): it cannot leave a frame out without changing the clip's timing.
 /// </remarks>
-public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = FitMode.Fill) : IFrameSource
+public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = FitMode.Fill, IReadOnlyList<FrameLook>? looks = null) : IFrameSource
 {
     private readonly IReadOnlyList<string> _paths = paths ?? throw new ArgumentNullException(nameof(paths));
+    private readonly IReadOnlyList<FrameLook>? _looks = looks is null || looks.Count == paths.Count
+        ? looks
+        : throw new ArgumentException("One look per frame.", nameof(looks));
 
     /// <inheritdoc/>
     public int FrameCount => _paths.Count;
@@ -29,6 +33,9 @@ public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = F
 
     /// <inheritdoc/>
     public string? SourcePath(int index) => _paths[index];
+
+    /// <inheritdoc/>
+    public FrameLook LookOf(int index) => _looks?[index] ?? FrameLook.None;
 
     /// <inheritdoc/>
     public Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken) =>
