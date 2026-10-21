@@ -33,6 +33,9 @@ public enum ProjectChanges
 
     /// <summary><see cref="Project.IsDirty"/> flipped.</summary>
     Dirty = 1 << 7,
+
+    /// <summary><see cref="Project.FilePath"/> changed (#52: the project was opened from, saved to or restored for a file).</summary>
+    File = 1 << 8,
 }
 
 /// <summary>The kind of a <see cref="FrameChange"/>.</summary>
@@ -163,8 +166,11 @@ public sealed record ProjectSnapshot
     /// <summary>The order the user chose.</summary>
     public SortMode SortMode { get; internal init; } = SortMode.CaptureTime;
 
-    /// <summary>True after any change since the project was created or last exported.</summary>
+    /// <summary>True after any change since the project was created, opened, saved or (while it has no file) exported.</summary>
     public bool IsDirty { get; internal init; }
+
+    /// <summary>The <c>.10lapse</c> file this project was opened from or last saved to (#52), or null while it has none.</summary>
+    public string? FilePath { get; internal init; }
 
     /// <summary>The rate these frames play and export at: <see cref="TimingSettings.EffectiveRate"/> for <see cref="Frames"/>.</summary>
     public PlaybackRate EffectiveRate => Timing.EffectiveRate(Frames.Length);
@@ -339,15 +345,19 @@ public sealed class Project
         }
     }
 
-    /// <summary>True after any change since the project was created or last exported.</summary>
+    /// <summary>True after any change since the project was created, opened, saved or (while it has no file) exported.</summary>
     public bool IsDirty => _state.IsDirty;
+
+    /// <summary>The <c>.10lapse</c> file this project was opened from or last saved to (#52), or null while it has none.</summary>
+    public string? FilePath => _state.FilePath;
 
     /// <summary>True once <see cref="Close"/> ran: the project was replaced and takes no more changes.</summary>
     public bool IsClosed => _closed;
 
     /// <summary>
-    /// True when replacing this project would lose something the user did: it changed since it was created
-    /// or last exported. A fresh project, and one exported since its last change, have nothing to lose.
+    /// True when replacing this project would lose something the user did: it changed since it was created, opened or
+    /// saved, or exported while it had no file. A fresh project, a saved one, and one without a file that was exported
+    /// since its last change, have nothing to lose.
     /// </summary>
     public bool HasWorkToLose => IsDirty;
 
@@ -660,17 +670,65 @@ public sealed class Project
     }
 
     /// <summary>
-    /// Records a finished export (#24): the project has no unsaved work until it changes again, but only if
+    /// Records a finished export (#24): a project without a file has no unsaved work until it changes again, but only if
     /// nothing changed while the export ran. #24 reads <see cref="Version"/> (from the snapshot it encodes)
     /// when the export starts and passes it here when it finishes; a change made meanwhile is not in the file,
-    /// so the project stays dirty. Clearing the flag does not change <see cref="Version"/>.
+    /// so the project stays dirty. Clearing the flag does not change <see cref="Version"/>. A project with a
+    /// <see cref="FilePath"/> (#52) keeps its flag: the video does not hold the project, only Save writes the file.
     /// </summary>
     /// <param name="versionAtExportStart">The <see cref="ProjectSnapshot.Version"/> the export encoded.</param>
     /// <returns>True when the project is clean afterwards.</returns>
     public bool MarkExported(long versionAtExportStart)
     {
         EnsureWritable();
-        if (versionAtExportStart != _state.Version)
+        return _state.FilePath is null ? MarkClean(versionAtExportStart) : !_state.IsDirty;
+    }
+
+    /// <summary>
+    /// Records a save (#52): the project has no unsaved work until it changes again, but only if nothing changed since
+    /// the snapshot that was written (<paramref name="versionWritten"/>, read before the write). Call
+    /// <see cref="SetFile"/> first. Does not change <see cref="Version"/>.
+    /// </summary>
+    /// <returns>True when the project is clean afterwards.</returns>
+    public bool MarkSaved(long versionWritten)
+    {
+        EnsureWritable();
+        return MarkClean(versionWritten);
+    }
+
+    /// <summary>
+    /// Ties the project to its <c>.10lapse</c> file (#52: opened from, saved to, or restored for it): <see cref="FilePath"/>
+    /// becomes <paramref name="path"/> (made full) and <see cref="Name"/> the file's name without its extension, as a
+    /// document takes its file's name. Not an edit: it neither marks the project dirty nor cleans it, nor changes
+    /// <see cref="Version"/>. One <see cref="Changed"/> with <see cref="ProjectChanges.File"/> (and
+    /// <see cref="ProjectChanges.Name"/> when the name changes); none when nothing does.
+    /// </summary>
+    public void SetFile(string path)
+    {
+        EnsureWritable();
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        var full = Path.GetFullPath(path);
+        var name = Path.GetFileNameWithoutExtension(full) is { } stem && !string.IsNullOrWhiteSpace(stem) ? stem.Trim() : DefaultName;
+        var changes = ProjectChanges.None;
+        if (!string.Equals(full, _state.FilePath, StringComparison.Ordinal))
+        {
+            changes |= ProjectChanges.File;
+        }
+
+        if (name != _state.Name)
+        {
+            changes |= ProjectChanges.Name;
+        }
+
+        if (changes != ProjectChanges.None)
+        {
+            Publish(_state with { FilePath = full, Name = name }, changes);
+        }
+    }
+
+    private bool MarkClean(long version)
+    {
+        if (version != _state.Version)
         {
             return false;
         }

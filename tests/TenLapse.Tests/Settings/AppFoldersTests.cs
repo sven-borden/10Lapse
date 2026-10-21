@@ -11,7 +11,7 @@ public sealed class AppFoldersTests
     private static AppFolders Defaults() => AppFolders.Resolve(Path.Combine(_real, "Logs"), Path.Combine(_real, "Proxies"));
 
     private static IEnumerable<string> All(AppFolders folders) =>
-        [folders.LogFolder, folders.SettingsFile, folders.EncoderCacheFile, folders.UnfinishedExportsFile, folders.ProxyCacheFolder];
+        [folders.LogFolder, folders.SettingsFile, folders.EncoderCacheFile, folders.UnfinishedExportsFile, folders.ProxyCacheFolder, folders.RecoveryFolder];
 
     private static bool Under(string path, string folder) =>
         Path.GetFullPath(path).StartsWith(Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder)) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
@@ -26,6 +26,7 @@ public sealed class AppFoldersTests
         Assert.Equal(Path.Combine(_real, "encoder-capabilities.json"), folders.EncoderCacheFile);
         Assert.Equal(Path.Combine(_real, "unfinished-exports.txt"), folders.UnfinishedExportsFile);
         Assert.Equal(Path.Combine(_real, "Proxies"), folders.ProxyCacheFolder);
+        Assert.Equal(Path.Combine(_real, "Recovery"), folders.RecoveryFolder);
         Assert.Equal(folders, AppFolders.Resolve(Path.Combine(_real, "Logs"), Path.Combine(_real, "Proxies"), new AppFolderOverrides(null, null, null, null)));
     }
 
@@ -40,6 +41,7 @@ public sealed class AppFoldersTests
         Assert.Equal(Path.Combine(state, "unfinished-exports.txt"), folders.UnfinishedExportsFile);
         Assert.Equal(Path.Combine(state, "settings.json"), folders.SettingsFile);
         Assert.Equal(cache, folders.ProxyCacheFolder);
+        Assert.Equal(Path.Combine(state, "Recovery"), folders.RecoveryFolder);
     }
 
     [Fact]

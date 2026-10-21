@@ -41,6 +41,15 @@ public sealed record UserSettings
 
     /// <summary>The app version the rating prompt was last shown in (#31), or null when it never was. Kept by <i>Reset to defaults</i> too.</summary>
     public string? RatingAskedVersion { get; init; }
+
+    /// <summary>
+    /// The project files (#52) opened or saved last, the most recent first, at most <see cref="MaxRecentProjects"/>. Not a
+    /// preference: <i>Reset to defaults</i> keeps it (the first-launch screen has its own <i>Clear list</i>).
+    /// </summary>
+    public PathList RecentProjects { get; init; } = PathList.Empty;
+
+    /// <summary>How many recent projects are remembered and listed.</summary>
+    public const int MaxRecentProjects = 5;
 }
 
 /// <summary>What <see cref="ISettingsStore.Load"/> found.</summary>

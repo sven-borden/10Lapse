@@ -54,37 +54,8 @@ public sealed class JsonFileSettingsStore : ISettingsStore
     public void Save(UserSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        var folder = Path.GetDirectoryName(FilePath);
-        if (!string.IsNullOrEmpty(folder))
-        {
-            Directory.CreateDirectory(folder);
-        }
 
-        // A name of its own, so two running copies of the app never write the same temporary file.
-        var temporary = FilePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
-        try
-        {
-            using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-            {
-                var bytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(UserSettingsJson.Write(settings));
-                stream.Write(bytes);
-                stream.Flush(flushToDisk: true);
-            }
-
-            // The data is on disk already (Flush above); the rename swaps it in whole or not at all.
-            File.Move(temporary, FilePath, overwrite: true);
-        }
-        finally
-        {
-            // After a good write the temporary file is gone already; after a failed one it must not stay behind.
-            try
-            {
-                File.Delete(temporary);
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                // Nothing more to do for a leftover temporary file; the save's own error is what matters.
-            }
-        }
+        // Through a temporary file and one rename (#52 shares it with the project files).
+        IO.AtomicFile.WriteAllText(FilePath, UserSettingsJson.Write(settings));
     }
 }
