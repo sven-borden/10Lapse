@@ -26,8 +26,9 @@ builds on. Every new string ships in all six languages. Read first: PR #66
 `FrameRenderer`), #80 (`OutputPlan`: export with the effective output), #77
 (preview), #100 (motion, the reframe exception).
 
-- Wave 25: #52 save and reopen (O) and #51 GIF export (O). **In flight.** PRs
-  #132 (#51) and #133 (#52) in review.
+- Wave 25: #52 save and reopen (O) and #51 GIF export (O). #51 merged (PR
+  #132). **In flight:** PR #133 (#52), review fixes and the GIF settings in
+  `.10lapse`.
 - Wave 26: #45 deflicker (O, the canvas's Look section) and #49 hold, loop,
   boomerang (O, timing and the frame sequence).
 - Wave 27: #46 crop and pan (O) and #50 music (O, after #49 so the music
