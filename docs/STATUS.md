@@ -4,7 +4,7 @@ Updated 2026-10-21. Roadmap: the pinned #59 and the milestones. Working agreemen
 
 ## Now
 
-2026-10-21: **3.0 is live on the Store at full rollout.** Submission 4 passed certification and went straight to the public listing, with no beta flight and no separate test pass (#40 and #41 closed as not planned). It holds the 3.0.0.0 bundle (`TenLapse.App_3.0.0.0_x64_arm64_bundle.msixupload`, 125.8 MB, six languages, `runFullTrust` justified with the `docs/release/flight.md` text), six listings (en-US, fr, de, es, it, pt-BR) each with its description, What's new, 19 features, 7 search terms and six captioned screenshots, and the 30 s showreel as the trailer with `thumbnail.png` (#42 and #43 closed). Sven answered the five existing reviews; #44 and milestone 5 are closed. Next: the #90 watch through Partner Center Health, the 3.1 waves, #58 pricing later. `docs/test-matrix.md` is now a checklist for the live build.
+2026-10-21: **3.0 is live on the Store at full rollout** (tag `v3.0.0`). Submission 4 went straight to the public listing, with no beta flight and no separate test pass (#40 and #41 closed as not planned): the 3.0.0.0 bundle (x64 and ARM64, six languages, `runFullTrust` justified with the `docs/release/flight.md` text), six listings with captioned screenshots, and the 30 s showreel as the trailer (#42, #43). Sven answered the five existing reviews; #44 and milestone 5 are closed. Now: 3.1, wave 25. Watch: #90 through Partner Center Health. `docs/test-matrix.md` is a checklist for the live build.
 
 ## Waves
 
@@ -12,18 +12,24 @@ Each wave runs at most two issues at once, only when they touch disjoint
 areas. A wave starts when everything it depends on is merged. Model: **O** is
 Opus 5.5, **S** is Sonnet 5.5.
 
-Waves 0 to 24 are done; every issue in them is under Merged below. Milestones
-4 (private beta) and 5 (relaunch) were owner work, all done except the #90
-watch (the translations were in milestone 4):
+Waves 0 to 24 (3.0) are done; every issue in them is under Merged below.
+Milestones 4 and 5 are done except the #90 watch.
 
-- Wave 21: #113 plumbing (O) and #114 translatable English (O), disjoint
-  files (each issue lists what the other owns).
-- Wave 22: #115 fr and #116 de (O). Wave 23: #117 es and #118 it (O).
-  Wave 24: #119 pt-BR (O). Language PRs add new files only.
+3.1 (milestone 6), planned 2026-10-21. Every 3.1 feature adds a settings
+group to `ProjectSettings`/`Project`; two issues may run together when that
+additive change is their only overlap (the second PR to merge rebases). #52
+goes first so each later feature adds its group to the `.10lapse` format
+with a round-trip test; #51 gives the encode stage a second format, which
+#50's audio stream builds on. Every new string ships in all six languages.
 
-Milestone 6 (3.1) gets its own waves once 3.0
-ships: #45, #46, #47 and #48 all draw in `FrameRenderer`, so they run one at
-a time.
+- Wave 25: #52 save and reopen (O) and #51 GIF export (O). **In flight.**
+- Wave 26: #45 deflicker (O, the canvas's Look section) and #49 hold, loop,
+  boomerang (O, timing and the frame sequence).
+- Wave 27: #46 crop and pan (O) and #50 music (O, after #49 so the music
+  fits the final length).
+- Wave 28: #47 frame blending (O). Wave 29: #48 stamp and title (O). #45 to
+  #48 all draw in `FrameRenderer`, so they never run together.
+- #30 sample sequence once Sven picks the photos.
 
 ## Owner items (Sven)
 
