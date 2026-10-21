@@ -22,15 +22,15 @@ each later feature adds its group to the `.10lapse` format with a round-trip
 test; #51 gives the encode stage a second format, which #50's audio stream
 builds on. Every new string ships in all six languages. Read first: PR #66
 (`Project`, snapshot, single writer), #83 and #111 (`settings.json`,
-`AppFolders`: every path the app writes), #65 and #74 (export pipeline,
-`FrameRenderer`), #80 (`OutputPlan`: export with the effective output), #77
-(preview), #100 (motion, the reframe exception).
+`AppFolders`: every path the app writes), #133 (`.10lapse`: how a settings
+group is added; `settings.json` is read-merge-write across windows), #65, #74
+and #132 (export pipeline, `FrameRenderer`, the GIF path), #80 (`OutputPlan`:
+export with the effective output), #77 (preview), #100 (motion, the reframe
+exception).
 
-- Wave 25: #52 save and reopen (O) and #51 GIF export (O). #51 merged (PR
-  #132). **In flight:** PR #133 (#52), review fixes and the GIF settings in
-  `.10lapse`.
+- Wave 25: done. #51 GIF export (PR #132), #52 save and reopen (PR #133).
 - Wave 26: #45 deflicker (O, the canvas's Look section) and #49 hold, loop,
-  boomerang (O, timing and the frame sequence).
+  boomerang (O, timing and the frame sequence). **In flight.**
 - Wave 27: #46 crop and pan (O) and #50 music (O, after #49 so the music
   fits the final length).
 - Wave 28: #47 frame blending (O). Wave 29: #48 stamp and title (O). #45 to
