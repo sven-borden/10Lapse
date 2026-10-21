@@ -241,6 +241,12 @@ public static class ProjectExporter
                     Format = settings.Format,
                 };
             }
+            finally
+            {
+                // The pipeline has stopped: a held photo's shared pixels go now, not at a collection, also when the export
+                // was cancelled or failed in the middle of a hold (review of PR #134).
+                source.Dispose();
+            }
 
             tracker.Enter(ExportStage.Finishing);
             SetHidden(partial, false);

@@ -39,6 +39,42 @@ public sealed class PhotoFileSourceTests : IDisposable
     }
 
     [Fact]
+    public async Task AHeldPhotosSharedPixelsGoWithTheRunOrWithTheSource()
+    {
+        // A hold (#49): six frames of one photo share one decode. All six taken: the pixels go with the last.
+        SkipWithoutGraphicsDevice();
+        var photo = await _files.WriteAsync("held.jpg", BitmapEncoder.JpegEncoderId, width: 600, height: 400);
+        var other = await _files.WriteAsync("other.jpg", BitmapEncoder.JpegEncoderId, width: 600, height: 400);
+        string[] paths = [other, photo, photo, photo, photo, photo, photo, other];
+        using var device = VideoDevice.Create();
+        var output = new PixelSize(192, 108);
+        var token = TestContext.Current.CancellationToken;
+
+        using (var whole = new PhotoFileSource(paths))
+        {
+            for (var i = 1; i <= 6; i++)
+            {
+                using var bitmap = await whole.LoadAsync(i, device.Canvas, output, token);
+                Assert.Equal(i < 6 ? 1 : 0, whole.HeldDecodes);
+            }
+        }
+
+        // An export stopped two frames into the hold (cancelled, or failed elsewhere): the run never ends, and the pixels
+        // go when the source is disposed, not at a collection (review of PR #134).
+        var stopped = new PhotoFileSource(paths);
+        using (await stopped.LoadAsync(1, device.Canvas, output, token))
+        using (await stopped.LoadAsync(2, device.Canvas, output, token))
+        {
+            Assert.Equal(1, stopped.HeldDecodes);
+        }
+
+        stopped.Dispose();
+        Assert.Equal(0, stopped.HeldDecodes);
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => stopped.LoadAsync(3, device.Canvas, output, token));
+        stopped.Dispose();
+    }
+
+    [Fact]
     public async Task AFrameThatCannotBeDecodedNamesItsIndexAndReason()
     {
         SkipWithoutGraphicsDevice();

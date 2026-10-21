@@ -18,16 +18,20 @@ namespace TenLapse.Media.Export;
 /// <see cref="VideoExportFailure.FrameUnreadable"/> failure): it cannot leave a frame out without changing the clip's timing.
 /// <para>
 /// Frames in a row that show the same photo (a hold, #49) decode it once: the run's loads share one decode and each
-/// uploads its own bitmap from it, so a 10 s hold at 60 fps is one decode, not 600.
+/// uploads its own bitmap from it, so a 10 s hold at 60 fps is one decode, not 600. The shared pixels go when the run's
+/// last frame has its bitmap, or, for an export cancelled or failed mid-run, when the source is disposed (review of PR
+/// #134): a 4K photo's pixels are about 33 MB of native memory the collector does not feel.
 /// </para>
 /// </remarks>
-public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = FitMode.Fill) : IFrameSource
+public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = FitMode.Fill) : IFrameSource, IDisposable
 {
     private readonly IReadOnlyList<string> _paths = paths ?? throw new ArgumentNullException(nameof(paths));
 
     // The decodes runs of the same photo share, by the run's first frame; each leaves once its last frame has its bitmap.
     private readonly Dictionary<int, SharedDecode> _shared = [];
     private readonly Lock _gate = new();
+    private int _heldDecodes;
+    private bool _disposed;
 
     /// <inheritdoc/>
     public int FrameCount => _paths.Count;
@@ -37,6 +41,34 @@ public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = F
 
     /// <inheritdoc/>
     public string? SourcePath(int index) => _paths[index];
+
+    /// <summary>Shared decoded pixels not yet let go, for the tests.</summary>
+    internal int HeldDecodes => Volatile.Read(ref _heldDecodes);
+
+    /// <summary>
+    /// Lets go of every shared decode still held: a run the export stopped in (cancelled, or failed elsewhere) never
+    /// reaches its last frame. A decode still running is let go when it ends. Call it once the pipeline has stopped.
+    /// </summary>
+    public void Dispose()
+    {
+        List<SharedDecode> held;
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            held = [.. _shared.Values];
+            _shared.Clear();
+        }
+
+        foreach (var shared in held)
+        {
+            shared.Release();
+        }
+    }
 
     /// <inheritdoc/>
     public Task<CanvasBitmap> LoadAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken)
@@ -73,10 +105,11 @@ public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = F
         SharedDecode shared;
         lock (_gate)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (!_shared.TryGetValue(first, out shared!))
             {
                 // Started on the pool: a decode's first steps run synchronously, and must not hold the gate.
-                shared = new SharedDecode(last - first + 1, Task.Run(() => DecodeOnlyAsync(first, device, outputSize, cancellationToken), cancellationToken));
+                shared = new SharedDecode(last - first + 1, Task.Run(() => DecodeSharedAsync(first, device, outputSize, cancellationToken), cancellationToken), () => Interlocked.Decrement(ref _heldDecodes));
                 _shared[first] = shared;
             }
         }
@@ -90,8 +123,10 @@ public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = F
             }
 
             // One upload at a time from the shared pixels: each frame gets a bitmap of its own (the pipeline disposes it).
+            // Under the decode's own lock, which its release takes too, so the pixels never go mid-upload.
             lock (shared)
             {
+                ObjectDisposedException.ThrowIf(shared.Released, this);
                 return CanvasBitmap.CreateFromSoftwareBitmap(device, result.Value.Pixels);
             }
         }
@@ -114,16 +149,23 @@ public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = F
             }
         }
 
-        if (done && shared.Decode.IsCompletedSuccessfully && shared.Decode.Result.Succeeded)
+        if (done)
         {
-            shared.Decode.Result.Value.Dispose();
+            shared.Release();
         }
     }
 
-    private Task<PhotoResult<DecodedPhoto>> DecodeOnlyAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken)
+    // A decode a run shares; counted while its pixels are held.
+    private async Task<PhotoResult<DecodedPhoto>> DecodeSharedAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken)
     {
         var options = FrameRenderer.DecodeOptions(Fit, outputSize) with { MaxSide = device.MaximumBitmapSizeInPixels };
-        return PhotoDecoder.DecodeAsync(_paths[index], options, cancellationToken);
+        var result = await PhotoDecoder.DecodeAsync(_paths[index], options, cancellationToken).ConfigureAwait(false);
+        if (result.Succeeded)
+        {
+            Interlocked.Increment(ref _heldDecodes);
+        }
+
+        return result;
     }
 
     private async Task<CanvasBitmap> DecodeAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken)
@@ -140,11 +182,51 @@ public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = F
         return CanvasBitmap.CreateFromSoftwareBitmap(device, photo.Pixels);
     }
 
-    private sealed class SharedDecode(int frames, Task<PhotoResult<DecodedPhoto>> decode)
+    private sealed class SharedDecode(int frames, Task<PhotoResult<DecodedPhoto>> decode, Action released)
     {
         public Task<PhotoResult<DecodedPhoto>> Decode { get; } = decode;
 
         // Frames of the run that have not taken their bitmap yet; under the source's gate.
         public int Remaining { get; set; } = frames;
+
+        // True once the pixels went (or will go when the decode ends); under this object's lock.
+        public bool Released { get; private set; }
+
+        // Lets the pixels go: now when the decode has ended, else when it ends. Once, whoever asks first.
+        public void Release()
+        {
+            lock (this)
+            {
+                if (Released)
+                {
+                    return;
+                }
+
+                Released = true;
+            }
+
+            Decode.ContinueWith(
+                static (task, state) => ((SharedDecode)state!).DisposePixels(task),
+                this,
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+        }
+
+        private void DisposePixels(Task<PhotoResult<DecodedPhoto>> task)
+        {
+            if (!task.IsCompletedSuccessfully || !task.Result.Succeeded)
+            {
+                return;
+            }
+
+            // Under the lock an upload from these pixels holds.
+            lock (this)
+            {
+                task.Result.Value.Dispose();
+            }
+
+            released();
+        }
     }
 }
