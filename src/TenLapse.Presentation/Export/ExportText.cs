@@ -71,8 +71,12 @@ public static class ExportText
     /// <summary>The label of the speed row.</summary>
     public static string SpeedLabel => _strings.Get();
 
-    /// <summary>The export's speed: {0} photos per second, with one decimal under 10 ("4.3"); the form follows the number as shown.</summary>
-    public static PluralText SpeedPhotos => _strings.Plural();
+    /// <summary>
+    /// The export's speed: {0} frames of the video per second, with one decimal under 10 ("4.3"); the form follows the number
+    /// as shown. Frames, not photos (#49): the progress counts the video's frames, held and repeated ones included, as the
+    /// Frame row beside it does.
+    /// </summary>
+    public static PluralText SpeedFrames => _strings.Plural();
 
     /// <summary>The speed before it has been measured.</summary>
     public static string SpeedMeasuring => _strings.Get();
@@ -291,7 +295,7 @@ public static class ExportText
         return string.Format(culture ?? CultureInfo.CurrentCulture, RenderingFrameFormat, Pad(Math.Clamp(frameIndex + 1, 1, Math.Max(1, total)), width));
     }
 
-    /// <summary>"4.3 photos per second", or <see cref="SpeedMeasuring"/> before it is known.</summary>
+    /// <summary>"4.3 frames per second", or <see cref="SpeedMeasuring"/> before it is known.</summary>
     public static string Speed(double? framesPerSecond, CultureInfo? culture = null)
     {
         if (framesPerSecond is not (> 0 and var speed))
@@ -302,10 +306,10 @@ public static class ExportText
         culture ??= CultureInfo.CurrentCulture;
         var pattern = speed < 10 ? "0.0" : "0";
 
-        // The plural form follows the number as shown, its decimal included ("1.0 photos per second" in English).
+        // The plural form follows the number as shown, its decimal included ("1.0 frames per second" in English).
         // Invariant on purpose: only the digits are read back, to pick the form.
         var shown = decimal.Parse(speed.ToString(pattern, CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
-        return SpeedPhotos.Format(culture, shown, shown.ToString(pattern, culture));
+        return SpeedFrames.Format(culture, shown, shown.ToString(pattern, culture));
     }
 
     /// <summary>"4K · H.264 · High".</summary>

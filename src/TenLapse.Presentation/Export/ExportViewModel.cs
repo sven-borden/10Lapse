@@ -239,7 +239,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string FramesText { get; private set; }
 
-    /// <summary>"4.3 photos per second".</summary>
+    /// <summary>"4.3 frames per second".</summary>
     [ObservableProperty]
     public partial string SpeedText { get; private set; }
 

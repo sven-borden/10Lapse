@@ -153,8 +153,8 @@ public sealed partial class TextResourcesTests
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
             Assert.Equal("{0} photo in the project.", ProjectText.ImportDone.For(1));
             Assert.Equal("{0} photos in the project.", ProjectText.ImportDone.For(0));
-            Assert.Equal("{0} photos per second", TenLapse.Presentation.Export.ExportText.SpeedPhotos.For(1.0m));
-            Assert.Equal("{0} photo per second", TenLapse.Presentation.Export.ExportText.SpeedPhotos.For(1m));
+            Assert.Equal("{0} frames per second", TenLapse.Presentation.Export.ExportText.SpeedFrames.For(1.0m));
+            Assert.Equal("{0} frame per second", TenLapse.Presentation.Export.ExportText.SpeedFrames.For(1m));
         }
         finally
         {

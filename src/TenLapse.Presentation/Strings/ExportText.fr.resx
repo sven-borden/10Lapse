@@ -62,11 +62,11 @@
   <data name="SpeedLabel" xml:space="preserve">
     <value>Vitesse</value>
   </data>
-  <data name="SpeedPhotos_one" xml:space="preserve">
-    <value>{0} photo par seconde</value>
+  <data name="SpeedFrames_one" xml:space="preserve">
+    <value>{0} image par seconde</value>
   </data>
-  <data name="SpeedPhotos_other" xml:space="preserve">
-    <value>{0} photos par seconde</value>
+  <data name="SpeedFrames_other" xml:space="preserve">
+    <value>{0} images par seconde</value>
   </data>
   <data name="SpeedMeasuring" xml:space="preserve">
     <value>Mesure en cours…</value>

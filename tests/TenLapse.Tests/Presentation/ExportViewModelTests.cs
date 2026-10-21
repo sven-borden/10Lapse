@@ -184,7 +184,7 @@ public sealed class ExportViewModelTests
         Assert.Equal(38, app.On(() => app.Export.Percent));
         Assert.Equal("About 2 min 30 s left", app.On(() => app.Export.TimeLeftText));
         Assert.Equal("0046 of 0120", app.On(() => app.Export.FramesText));
-        Assert.Equal("4.3 photos per second", app.On(() => app.Export.SpeedText));
+        Assert.Equal("4.3 frames per second", app.On(() => app.Export.SpeedText));
         Assert.Equal("Rendering frame 0047", app.On(() => app.Export.RenderingText));
         Assert.Equal("progress 0.38", app.Window.Calls[^1]);
     }
