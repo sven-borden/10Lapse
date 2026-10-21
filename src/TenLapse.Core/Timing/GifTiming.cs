@@ -4,7 +4,8 @@ namespace TenLapse.Core.Timing;
 /// GIF frame delays (#51). A GIF times each frame in hundredths of a second (centiseconds, cs). The delay of frame n is
 /// the difference of two rounded starts, <c>cs(start of n + 1) − cs(start of n)</c>, each start rounded half up from its
 /// exact time: never a rounded delay added up, so the GIF's length stays within half a centisecond of the exact one
-/// however long it runs. At 15 fps (6⅔ cs a frame) the delays go 7, 7, 6, 7, 7, 6; at 29.97 fps mostly 3 and 4.
+/// however long it runs. At 15 fps (6⅔ cs a frame) the starts round to 0, 7, 13, 20, 27, 33, 40, so the delays go 7, 6,
+/// 7, 7, 6, 7; at 29.97 fps mostly 3 and 4.
 /// </summary>
 public static class GifTiming
 {
