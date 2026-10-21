@@ -102,16 +102,16 @@
     <value>Una GIF si ripete da sola, quindi riproduce le tue foto una volta sola.</value>
   </data>
   <data name="HoldStart" xml:space="preserve">
-    <value>Pausa all'inizio</value>
+    <value>Fermo immagine all'inizio</value>
   </data>
   <data name="HoldEnd" xml:space="preserve">
-    <value>Pausa alla fine</value>
+    <value>Fermo immagine alla fine</value>
   </data>
   <data name="NotANumberHold" xml:space="preserve">
-    <value>Digita una pausa in secondi, ad esempio {2}. Può andare da {0} a {1}.</value>
+    <value>Digita la durata del fermo immagine in secondi, ad esempio {2}. Può andare da {0} a {1}.</value>
   </data>
   <data name="ClampedHold" xml:space="preserve">
-    <value>Una pausa può durare da {2} a {3}, quindi {0} ora è {1}.</value>
+    <value>Un fermo immagine può durare da {2} a {3}, quindi {0} ora è {1}.</value>
   </data>
   <data name="HoldLasts" xml:space="preserve">
     <value>Dura {0} in fotogrammi interi.</value>

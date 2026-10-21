@@ -102,16 +102,16 @@
     <value>Um GIF se repete sozinho, então ele reproduz suas fotos uma vez.</value>
   </data>
   <data name="HoldStart" xml:space="preserve">
-    <value>Pausa no início</value>
+    <value>Imagem congelada no início</value>
   </data>
   <data name="HoldEnd" xml:space="preserve">
-    <value>Pausa no fim</value>
+    <value>Imagem congelada no fim</value>
   </data>
   <data name="NotANumberHold" xml:space="preserve">
-    <value>Digite uma pausa em segundos, como {2}. Ela pode ir de {0} a {1}.</value>
+    <value>Digite a duração da imagem congelada em segundos, como {2}. Ela pode ir de {0} a {1}.</value>
   </data>
   <data name="ClampedHold" xml:space="preserve">
-    <value>Uma pausa pode durar de {2} a {3}, então {0} passou a ser {1}.</value>
+    <value>Uma imagem congelada pode durar de {2} a {3}, então {0} passou a ser {1}.</value>
   </data>
   <data name="HoldLasts" xml:space="preserve">
     <value>Dura {0} em quadros inteiros.</value>

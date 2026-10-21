@@ -134,11 +134,11 @@
   </data>
   <data name="HoldStart" xml:space="preserve">
     <value>Hold at start</value>
-    <comment>The caption over the box for how many seconds the first frame stays on screen before the photos play; also the box's screen reader name. Keep it to about 18 characters (two boxes share the row).</comment>
+    <comment>The caption over the box for how many seconds the first frame stays on screen before the photos play; also the box's screen reader name. A hold is a freeze frame: use your language's video-editing term for it (German Standbild, French arrêt sur image, Italian fermo immagine), never the Pause button's word, which sits next to it in the player. Keep it short (two boxes share the row; it may wrap to two lines).</comment>
   </data>
   <data name="HoldEnd" xml:space="preserve">
     <value>Hold at end</value>
-    <comment>The caption over the box for how many seconds the last frame stays on screen after the photos played. Keep it to about 18 characters.</comment>
+    <comment>The caption over the box for how many seconds the last frame stays on screen after the photos played. The same freeze-frame term as Hold at start. Keep it short.</comment>
   </data>
   <data name="NotANumberHold" xml:space="preserve">
     <value>Type a hold in seconds, like {2}. It can be from {0} to {1}.</value>

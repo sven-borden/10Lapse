@@ -102,16 +102,16 @@
     <value>Un GIF tourne en boucle tout seul : il lit donc vos photos une seule fois.</value>
   </data>
   <data name="HoldStart" xml:space="preserve">
-    <value>Pause au début</value>
+    <value>Arrêt sur image au début</value>
   </data>
   <data name="HoldEnd" xml:space="preserve">
-    <value>Pause à la fin</value>
+    <value>Arrêt sur image à la fin</value>
   </data>
   <data name="NotANumberHold" xml:space="preserve">
-    <value>Entrez une pause en secondes, par exemple {2}. Elle peut aller de {0} à {1}.</value>
+    <value>Entrez la durée de l'arrêt sur image en secondes, par exemple {2}. Elle peut aller de {0} à {1}.</value>
   </data>
   <data name="ClampedHold" xml:space="preserve">
-    <value>Une pause peut durer de {2} à {3} : {0} devient donc {1}.</value>
+    <value>Un arrêt sur image peut durer de {2} à {3} : {0} devient donc {1}.</value>
   </data>
   <data name="HoldLasts" xml:space="preserve">
     <value>Dure {0} en images entières.</value>
