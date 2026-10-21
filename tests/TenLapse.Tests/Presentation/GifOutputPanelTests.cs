@@ -186,4 +186,38 @@ public sealed class GifOutputPanelTests
         Assert.Empty(app.Exporter.Calls);
         Assert.Equal(ExportText.ChangedDuringDialog, Assert.Single(app.InfoBars.Shown).Message);
     }
+
+    [Fact]
+    public void AGifChangedToAVideoWhileTheSaveDialogIsOpenStartsNothing()
+    {
+        using var app = new ExportHarness(
+            capabilities: new FakeOutputCapabilities(),
+            setup: project => project.Output = OutputSettings.Default with { Format = VideoFormat.Gif });
+        app.Picker.Answer = @"C:\Videos\10Lapse\Harbor sunset.gif";
+        app.Picker.WhileOpen = () => app.Project.Output = app.Project.Output with { Format = VideoFormat.Mp4H264 };
+
+        app.StartExport();
+
+        Assert.Empty(app.Exporter.Calls);
+        Assert.Equal(ExportText.ChangedDuringDialog, Assert.Single(app.InfoBars.Shown).Message);
+    }
+
+    [Fact]
+    public void ALateProbeAnswerThatOnlyChangesTheCodecStillExports()
+    {
+        // HEVC is wanted, but the probe was slow: the panel runs on H.264 until the real answer arrives while the Save
+        // dialog is open. The name still ends in .mp4, so the export goes ahead, with HEVC.
+        using var app = new ExportHarness(
+            capabilities: new FakeOutputCapabilities { Hevc = false },
+            setup: project => project.Output = OutputSettings.Default with { Format = VideoFormat.Mp4Hevc });
+        Assert.Equal(VideoFormat.Mp4H264, app.On(() => app.Output.EffectiveOutput!.Format));
+        app.Picker.WhileOpen = () => app.Output.SetCapabilities(new FakeOutputCapabilities());
+
+        app.StartExport();
+
+        Assert.Equal(("Harbor sunset.mp4", (string?)null), Assert.Single(app.Picker.Asked));
+        var (snapshot, _) = Assert.Single(app.Exporter.Calls);
+        Assert.Equal(VideoFormat.Mp4Hevc, snapshot.Output.Format);
+        Assert.Empty(app.InfoBars.Shown);
+    }
 }

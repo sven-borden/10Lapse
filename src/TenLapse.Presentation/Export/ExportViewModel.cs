@@ -400,7 +400,13 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (!CanStartExport || !ReferenceEquals(project, _shell.CurrentProject) || _output.EffectiveOutput is not { } output || output.Format != format)
+        // Only a change of file type (GIF against MP4) stops it: the name the user picked has the other extension. A codec
+        // change alone (the probe's late answer turned H.264 into HEVC) keeps the .mp4 name right, so the export goes
+        // ahead with the output as it is now.
+        if (!CanStartExport
+            || !ReferenceEquals(project, _shell.CurrentProject)
+            || _output.EffectiveOutput is not { } output
+            || ExportText.FileExtension(output.Format) != ExportText.FileExtension(format))
         {
             _services.InfoBars.Show(InfoBarSeverity.Caution, ExportText.ChangedDuringDialog);
             return;
