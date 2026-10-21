@@ -4,7 +4,7 @@ Updated 2026-10-21. Roadmap: the pinned #59 and the milestones. Working agreemen
 
 ## Now
 
-2026-10-21: **3.0 is submitted to the Store.** Sven sent submission 4 for certification straight to the public listing, with no beta flight and no separate test pass (#40 and #41 closed as not planned). It holds the 3.0.0.0 bundle (`TenLapse.App_3.0.0.0_x64_arm64_bundle.msixupload`, 125.8 MB, six languages, `runFullTrust` justified with the `docs/release/flight.md` text), six listings (en-US, fr, de, es, it, pt-BR) each with its description, What's new, 19 features, 7 search terms and six captioned screenshots, and the 30 s showreel as the trailer with `thumbnail.png` (#42 and #43 closed). Next: the certification result, then #44 (gradual rollout, answer the existing reviews, the `v3.0.0` tag with Sven's OK), the #90 watch, #58 pricing later, and the 3.1 waves once 3.0 is live. `docs/test-matrix.md` is now a checklist for the live build.
+2026-10-21: **3.0 is live on the Store at full rollout.** Submission 4 passed certification and went straight to the public listing, with no beta flight and no separate test pass (#40 and #41 closed as not planned). It holds the 3.0.0.0 bundle (`TenLapse.App_3.0.0.0_x64_arm64_bundle.msixupload`, 125.8 MB, six languages, `runFullTrust` justified with the `docs/release/flight.md` text), six listings (en-US, fr, de, es, it, pt-BR) each with its description, What's new, 19 features, 7 search terms and six captioned screenshots, and the 30 s showreel as the trailer with `thumbnail.png` (#42 and #43 closed). Sven answered the five existing reviews; #44 and milestone 5 are closed. Next: the #90 watch through Partner Center Health, the 3.1 waves, #58 pricing later. `docs/test-matrix.md` is now a checklist for the live build.
 
 ## Waves
 
@@ -13,8 +13,8 @@ areas. A wave starts when everything it depends on is merged. Model: **O** is
 Opus 5.5, **S** is Sonnet 5.5.
 
 Waves 0 to 24 are done; every issue in them is under Merged below. Milestones
-4 (private beta) and 5 (relaunch) were owner work, now submitted except #44
-and #90 (the translations were in milestone 4):
+4 (private beta) and 5 (relaunch) were owner work, all done except the #90
+watch (the translations were in milestone 4):
 
 - Wave 21: #113 plumbing (O) and #114 translatable English (O), disjoint
   files (each issue lists what the other owns).
@@ -29,12 +29,12 @@ a time.
 
 Nothing blocks the build loop.
 
-- After certification: #44 rollout (gradual or not, answer the existing
-  reviews, the `v3.0.0` tag). The submitted listing text (all six
-  languages) still has the sentence that Windows 10 keeps 2.1.1; the
-  `listing*.md` files no longer do. Fix it in the first listing update, with
-  no resubmission just for that. Also check what the mandatory-update and
-  gradual-rollout boxes say.
+- The `v3.0.0` tag on the released commit, with Sven's OK.
+- Watch Partner Center Health for start-up crashes (#90); traces are not
+  symbolicated, so a count is all it gives.
+- The live listing text (all six languages) still has the sentence that
+  Windows 10 keeps 2.1.1; the `listing*.md` files no longer do. Fix it in the
+  first listing update, with no resubmission just for that.
 - A native read of the fr, de, es, it and pt-BR texts where he can; whether
   Portugal gets a pt-PT listing reusing the pt-BR text (else it may show
   English); a real-timelapse trailer later (#43's original brief).
@@ -152,6 +152,9 @@ Nothing blocks the build loop.
   #42 and #43 completed. The showreel is the trailer (a real-timelapse trailer
   can follow in a listing update); its thumbnail and six captions are in
   `docs/store/showreel/`. `flight.md` stays as the recipe for a later flight.
+- 2026-10-21 (Sven): 3.0 went live at full rollout, not 10/50/100 %; Sven
+  answered the five existing reviews; #44 closed with Health not yet watched
+  for a week (#90 carries that watch).
 - 2026-10-21 (Sven): Windows 10 is not supported. The 2.1.1 packages were
   removed from submission 4, so a Windows 10 PC that has 2.1.1 keeps it with no
   updates and a new Windows 10 customer cannot get the app. Accepted
