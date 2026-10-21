@@ -69,6 +69,7 @@ public sealed class ShellLayoutTests
         Assert.True(layout.ShowsTiming);
         Assert.True(layout.ShowsFrame);
         Assert.True(layout.ShowsOutput);
+        Assert.True(layout.ShowsLook);
     }
 
     [Fact]
@@ -90,6 +91,14 @@ public sealed class ShellLayoutTests
         Assert.False(layout.ShowsTiming);
         Assert.False(layout.ShowsFrame);
         Assert.True(layout.ShowsOutput);
+        Assert.False(layout.ShowsLook);
+
+        // #45: Look, built, has the fourth tab.
+        layout.SelectedTabIndex = 3;
+
+        Assert.Equal(InspectorTab.Look, layout.Tab);
+        Assert.False(layout.ShowsOutput);
+        Assert.True(layout.ShowsLook);
     }
 
     [Fact]
@@ -155,7 +164,7 @@ public sealed class ShellLayoutTests
 
     [Theory]
     [InlineData(-1)]
-    [InlineData(3)]
+    [InlineData(4)]
     public void ATabIndexOutOfRangeIsIgnored(int index)
     {
         var layout = Layout();
@@ -184,8 +193,8 @@ public sealed class ShellLayoutTests
     }
 
     [Fact]
-    public void TheTabsAreTheThreeSectionsInTheCanvasOrder() =>
-        Assert.Equal(new[] { "Timing", "Frame", "Output" }, ShellLayout.TabLabels);
+    public void TheTabsAreTheFourSectionsInTheCanvasOrder() =>
+        Assert.Equal(new[] { "Timing", "Frame", "Output", "Look" }, ShellLayout.TabLabels);
 
     [Theory]
     [InlineData(800, 260)] // the default window: the full panel

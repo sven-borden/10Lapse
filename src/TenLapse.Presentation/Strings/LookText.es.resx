@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Spanish (es) translation of LookText.resx (#45). The English file's comments are the brief for each key. Tú.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Aspecto</value>
+  </data>
+  <data name="DeflickerLabel" xml:space="preserve">
+    <value>Antiparpadeo</value>
+  </data>
+  <data name="DeflickerHint" xml:space="preserve">
+    <value>Suaviza los saltos de exposición entre fotos</value>
+  </data>
+  <data name="StrengthLabel" xml:space="preserve">
+    <value>Intensidad</value>
+  </data>
+  <data name="StrengthName" xml:space="preserve">
+    <value>Intensidad del antiparpadeo</value>
+  </data>
+  <data name="Measuring_one" xml:space="preserve">
+    <value>Midiendo {1} foto…</value>
+  </data>
+  <data name="Measuring_other" xml:space="preserve">
+    <value>Midiendo {0} de {1} fotos…</value>
+  </data>
+  <data name="Measuring_many" xml:space="preserve">
+    <value>Midiendo {0} de {1} de fotos…</value>
+  </data>
+  <data name="MeasureCancelName" xml:space="preserve">
+    <value>Dejar de medir las fotos</value>
+  </data>
+  <data name="MeasureFailed_one" xml:space="preserve">
+    <value>No se pudo medir {0} foto. El antiparpadeo deja su brillo como está.</value>
+  </data>
+  <data name="MeasureFailed_other" xml:space="preserve">
+    <value>No se pudieron medir {0} fotos. El antiparpadeo deja su brillo como está.</value>
+  </data>
+  <data name="MeasureFailed_many" xml:space="preserve">
+    <value>No se pudieron medir {0} de fotos. El antiparpadeo deja su brillo como está.</value>
+  </data>
+  <data name="CompareName" xml:space="preserve">
+    <value>Antes o después del antiparpadeo</value>
+  </data>
+  <data name="CompareBefore" xml:space="preserve">
+    <value>Antes</value>
+  </data>
+  <data name="CompareAfter" xml:space="preserve">
+    <value>Después</value>
+  </data>
+</root>

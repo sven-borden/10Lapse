@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TenLapse.Core.Projects;
 using TenLapse.Presentation.Filmstrip;
+using TenLapse.Presentation.Look;
 using TenLapse.Presentation.Preview;
 using TenLapse.Presentation.Services;
 
@@ -423,6 +424,12 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         await RunAsync(project, project.Model.Snapshot.WithOutput(output), output, path, cancellationToken);
     }
 
+    /// <summary>
+    /// Deflicker's exposure pass (#45), when the window has one: an export with deflicker on waits in its Preparing stage
+    /// until the photos are measured, then takes the snapshot again, so the video has the finished curve the preview shows.
+    /// </summary>
+    public ExposureAnalysis? Measuring { get; init; }
+
     private async Task RunAsync(ProjectViewModel project, ProjectSnapshot snapshot, OutputSettings output, string path, CancellationToken cancellationToken)
     {
         var run = ++_run;
@@ -434,6 +441,13 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         ExportedVideo video;
         try
         {
+            if (Measuring is { IsMeasuring: true } measuring && snapshot.Look.Deflicker)
+            {
+                // The edits are closed (Begin): only the measurements can still arrive, and the frames stay the same.
+                await measuring.WhenMeasuredAsync(cancellationToken);
+                snapshot = project.Model.Snapshot.WithOutput(output);
+            }
+
             video = await _services.Exporter.ExportAsync(snapshot, path, progress, cancellationToken);
         }
         catch (Exception exception) when (ErrorMessages.IsCancellation(exception) && cancellationToken.IsCancellationRequested)

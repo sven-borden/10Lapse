@@ -202,7 +202,7 @@ internal sealed class ExportHarness : IDisposable
 {
     private long _nowTicks;
 
-    public ExportHarness(int frames = 120, IOutputCapabilities? capabilities = null, Action<Project>? setup = null)
+    public ExportHarness(int frames = 120, IOutputCapabilities? capabilities = null, Action<Project>? setup = null, Func<ShellViewModel, TenLapse.Presentation.Look.ExposureAnalysis>? measuring = null)
     {
         Exporter.EndOn = Ui;
         Ui.Run(() =>
@@ -232,7 +232,10 @@ internal sealed class ExportHarness : IDisposable
                 () => Importing,
                 new ExportServices(Exporter, Picker, Folders, Dialogs, InfoBars, Reveal, Window, KeepAwake),
                 Errors,
-                () => TimeSpan.FromTicks(Interlocked.Read(ref _nowTicks)));
+                () => TimeSpan.FromTicks(Interlocked.Read(ref _nowTicks)))
+            {
+                Measuring = measuring?.Invoke(Shell),
+            };
             Export.Announced += (_, message) => Announced.Add(message);
             Export.Started += (_, _) => Lifecycle.Add("started");
             Export.Ended += (_, e) => Lifecycle.Add("ended " + e.Outcome);
