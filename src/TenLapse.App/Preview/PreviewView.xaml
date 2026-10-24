@@ -3,12 +3,17 @@
   The preview gate (#19): a swap chain the render thread (PreviewRenderLoop) draws the frame into, through the export's
   FrameRenderer, as large as fits at the video's shape, centred, with the RadiusCard corners. Around the gate the
   render thread paints the Layer color itself (a transparent swap chain came out Mica-grey), so the stage reads as one
-  surface. It resizes with the window.
+  surface. It resizes with the window. Over it, crop and pan's framing while the Frame section adjusts one (#46,
+  FramingOverlay).
 -->
 <UserControl
   x:Class="TenLapse.Preview.PreviewView"
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:preview="using:TenLapse.Preview"
   xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml">
-  <win2d:CanvasSwapChainPanel x:Name="Panel" />
+  <Grid>
+    <win2d:CanvasSwapChainPanel x:Name="Panel" />
+    <preview:FramingOverlay x:Name="Framer" />
+  </Grid>
 </UserControl>

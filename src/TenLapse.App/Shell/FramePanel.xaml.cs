@@ -18,6 +18,9 @@ public sealed partial class FramePanel : UserControl
     /// <summary>The panel's view model, for x:Bind. Set once, before the panel is loaded.</summary>
     public FramePanelViewModel? ViewModel { get; set; }
 
+    /// <summary>Crop and pan's rows (#46), for x:Bind. Set once, before the panel is loaded.</summary>
+    public CropViewModel? Crop { get; set; }
+
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         if (ViewModel is { } viewModel)

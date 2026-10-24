@@ -10,6 +10,11 @@
   them says which size Match photos takes, and a quiet line with two buttons suggests 9:16 when most photos are
   portrait and the shape is landscape. The suggestion never changes the shape by itself.
   No amber here: the selected segment is a neutral pill; amber is for Export and progress.
+
+  Crop and pan (#46, beyond the prototype, which predates it): a switch with its Caption Secondary line, as Deflicker
+  has in the Look section (the switch is the one amber indicator here); while it is on, what the preview shows (Video,
+  Start, End), and while Start or End is chosen a line saying how to adjust the framing over the preview, its zoom
+  (label, value, slider, in Ink Secondary as the strength slider) with Reset; then how the move eases (Smooth, Linear).
 -->
 <UserControl
   x:Class="TenLapse.Shell.FramePanel"
@@ -17,6 +22,32 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:presentation="using:TenLapse.Presentation"
   xmlns:shell="using:TenLapse.Shell">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <!-- The switch is only its 40 x 20 pill: no room kept for On and Off text it does not show (as in the Look section). -->
+      <x:Double x:Key="ToggleSwitchThemeMinWidth">0</x:Double>
+      <x:Double x:Key="ToggleSwitchPreContentMargin">0</x:Double>
+      <x:Double x:Key="ToggleSwitchPostContentMargin">0</x:Double>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="SliderTrackValueFill" Color="{ThemeResource InkSecondaryColor}" />
+          <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource InkSecondaryColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{ThemeResource InkColor}" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="SliderTrackValueFill" Color="{ThemeResource InkSecondaryColor}" />
+          <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource InkSecondaryColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{ThemeResource InkColor}" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
 
   <Border
     Padding="0,16,0,16"
@@ -87,6 +118,92 @@
             Click="OnPortraitDismiss"
             Content="{x:Bind presentation:FrameText.PortraitDismiss}" />
         </StackPanel>
+      </StackPanel>
+
+      <!-- Crop and pan (#46). -->
+      <Grid ColumnSpacing="{StaticResource SpacingMd}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Style="{StaticResource BodyTextStyle}" Text="{x:Bind presentation:CropText.CropLabel}" TextWrapping="Wrap" />
+          <TextBlock
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTextStyle}"
+            Text="{x:Bind presentation:CropText.CropHint}"
+            TextWrapping="Wrap" />
+        </StackPanel>
+        <ToggleSwitch
+          x:Name="CropSwitch"
+          Grid.Column="1"
+          MinWidth="0"
+          VerticalAlignment="Center"
+          AutomationProperties.HelpText="{x:Bind presentation:CropText.CropHint}"
+          AutomationProperties.Name="{x:Bind presentation:CropText.CropLabel}"
+          IsOn="{x:Bind Crop.IsOn, Mode=TwoWay}"
+          OffContent=""
+          OnContent="" />
+      </Grid>
+
+      <StackPanel x:Name="CropRows" Spacing="{StaticResource SpacingMd}" Visibility="{x:Bind Crop.IsOn, Mode=OneWay}">
+        <shell:SegmentedControl
+          x:Name="CropShowControl"
+          AutomationProperties.Name="{x:Bind presentation:CropText.ShowName}"
+          Items="{x:Bind Crop.ShowLabels}"
+          SelectedIndex="{x:Bind Crop.ShowIndex, Mode=TwoWay}" />
+
+        <!-- While Start or End is chosen: how to adjust the framing over the preview, and its zoom with Reset. -->
+        <StackPanel x:Name="CropEditRows" Spacing="{StaticResource SpacingSm}" Visibility="{x:Bind Crop.IsEditing, Mode=OneWay}">
+          <TextBlock
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTextStyle}"
+            Text="{x:Bind presentation:CropText.EditHint}"
+            TextWrapping="Wrap" />
+          <Grid>
+            <TextBlock
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind presentation:CropText.ZoomLabel}" />
+            <TextBlock
+              x:Name="CropZoomValue"
+              HorizontalAlignment="Right"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTabularTextStyle}"
+              Text="{x:Bind Crop.ZoomText, Mode=OneWay}" />
+          </Grid>
+          <Grid ColumnSpacing="{StaticResource SpacingSm}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Slider
+              x:Name="CropZoomSlider"
+              VerticalAlignment="Center"
+              AutomationProperties.Name="{x:Bind Crop.ZoomName, Mode=OneWay}"
+              IsThumbToolTipEnabled="False"
+              LargeChange="0.5"
+              Maximum="{x:Bind Crop.MaxZoom}"
+              Minimum="{x:Bind Crop.MinZoom}"
+              SmallChange="0.1"
+              StepFrequency="0.1"
+              Value="{x:Bind Crop.Zoom, Mode=TwoWay}" />
+            <Button
+              x:Name="CropResetButton"
+              Grid.Column="1"
+              Height="{StaticResource ControlHeight}"
+              Padding="{StaticResource PaddingButtonSubtle}"
+              AutomationProperties.Name="{x:Bind presentation:CropText.ResetName}"
+              Command="{x:Bind Crop.ResetCommand}"
+              Content="{x:Bind presentation:CropText.ResetButton}" />
+          </Grid>
+        </StackPanel>
+
+        <shell:SegmentedControl
+          x:Name="CropEasingControl"
+          AutomationProperties.Name="{x:Bind presentation:CropText.EasingName}"
+          Items="{x:Bind Crop.EasingLabels}"
+          SelectedIndex="{x:Bind Crop.EasingIndex, Mode=TwoWay}" />
       </StackPanel>
     </StackPanel>
   </Border>

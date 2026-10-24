@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CropLabel" xml:space="preserve">
+    <value>Corte e movimento</value>
+  </data>
+  <data name="CropHint" xml:space="preserve">
+    <value>Vai de um enquadramento inicial a um final</value>
+  </data>
+  <data name="ShowName" xml:space="preserve">
+    <value>A prévia mostra</value>
+  </data>
+  <data name="ShowVideo" xml:space="preserve">
+    <value>Vídeo</value>
+  </data>
+  <data name="ShowStart" xml:space="preserve">
+    <value>Início</value>
+  </data>
+  <data name="ShowEnd" xml:space="preserve">
+    <value>Fim</value>
+  </data>
+  <data name="EditHint" xml:space="preserve">
+    <value>Arraste a moldura na prévia para movê-la, ou um canto para dar zoom</value>
+  </data>
+  <data name="ZoomLabel" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="ZoomStartName" xml:space="preserve">
+    <value>Zoom do enquadramento inicial</value>
+  </data>
+  <data name="ZoomEndName" xml:space="preserve">
+    <value>Zoom do enquadramento final</value>
+  </data>
+  <data name="ZoomValue" xml:space="preserve">
+    <value>{0}×</value>
+  </data>
+  <data name="ResetButton" xml:space="preserve">
+    <value>Redefinir</value>
+  </data>
+  <data name="ResetName" xml:space="preserve">
+    <value>Mostrar a imagem inteira neste enquadramento</value>
+  </data>
+  <data name="EasingName" xml:space="preserve">
+    <value>Movimento</value>
+  </data>
+  <data name="EasingSmooth" xml:space="preserve">
+    <value>Suave</value>
+  </data>
+  <data name="EasingLinear" xml:space="preserve">
+    <value>Linear</value>
+  </data>
+  <data name="FramingStartName" xml:space="preserve">
+    <value>Enquadramento inicial</value>
+  </data>
+  <data name="FramingEndName" xml:space="preserve">
+    <value>Enquadramento final</value>
+  </data>
+  <data name="FramingHelp" xml:space="preserve">
+    <value>As setas a movem, Shift com uma seta a move mais, mais e menos dão zoom</value>
+  </data>
+</root>

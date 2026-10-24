@@ -53,6 +53,9 @@ public sealed partial class AmberRuleTests
         // #24: the export's film gate frame, and the dot on the "Rendering frame" pill over the preview.
         "src/TenLapse.App/Shell/FilmGate.xaml",
         "src/TenLapse.App/Shell/ExportPreviewOverlay.xaml",
+
+        // #46: the border and corner handles of crop and pan's framing over the preview, a selection indicator.
+        "src/TenLapse.App/Preview/FramingOverlay.xaml",
     ];
 
     [Fact]

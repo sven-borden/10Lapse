@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The user-visible text of CropText.cs (#46), read through TextResources: crop and pan, in the Frame section of the
+  inspector and drawn over the preview. Crop and pan shows part of each frame, enlarged, and moves from a start framing
+  to an end framing over the video (the Ken Burns effect). A framing is a rectangle of the video's shape over the
+  photo; the preview can show the video, or the whole frame with the start or end framing over it to adjust.
+  English is the neutral language. A translation is a copy of this file named CropText.<culture>.resx with the values
+  translated. Keep every {0} placeholder; each entry is whole. The panel is 280 px wide.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CropLabel" xml:space="preserve">
+    <value>Crop and pan</value>
+    <comment>The label of the switch that turns crop and pan on: the video shows part of the frame, enlarged, and moves from a start framing to an end framing (the Ken Burns effect). Also the switch's screen reader name. Keep it to about 22 characters.</comment>
+  </data>
+  <data name="CropHint" xml:space="preserve">
+    <value>Moves from a start framing to an end framing</value>
+    <comment>The line under the switch, saying what crop and pan does. No final period, like the line under Deflicker. Keep it to about 44 characters: it wraps to a second line after that.</comment>
+  </data>
+  <data name="ShowName" xml:space="preserve">
+    <value>Preview shows</value>
+    <comment>The screen reader name of the three-part switch that picks what the preview shows while crop and pan is on: the video, or the start or end framing to adjust.</comment>
+  </data>
+  <data name="ShowVideo" xml:space="preserve">
+    <value>Video</value>
+    <comment>The switch's first part: the preview shows the video as it will be exported, framed. Short: the three parts share 280 px.</comment>
+  </data>
+  <data name="ShowStart" xml:space="preserve">
+    <value>Start</value>
+    <comment>The second part: the preview shows the whole frame with the start framing drawn over it, to move and resize. Short.</comment>
+  </data>
+  <data name="ShowEnd" xml:space="preserve">
+    <value>End</value>
+    <comment>The third part: the same for the end framing. Short.</comment>
+  </data>
+  <data name="EditHint" xml:space="preserve">
+    <value>Drag the frame on the preview to move it, or a corner to zoom</value>
+    <comment>The line under the switch while the start or end framing is shown: the framing is a rectangle drawn over the preview. No final period.</comment>
+  </data>
+  <data name="ZoomLabel" xml:space="preserve">
+    <value>Zoom</value>
+    <comment>The label above the slider that sets how much the framing being adjusted enlarges the picture, from 1x to 4x.</comment>
+  </data>
+  <data name="ZoomStartName" xml:space="preserve">
+    <value>Start framing zoom</value>
+    <comment>The screen reader name of the zoom slider while the start framing is adjusted.</comment>
+  </data>
+  <data name="ZoomEndName" xml:space="preserve">
+    <value>End framing zoom</value>
+    <comment>The screen reader name of the zoom slider while the end framing is adjusted.</comment>
+  </data>
+  <data name="ZoomValue" xml:space="preserve">
+    <value>{0}×</value>
+    <comment>The zoom beside its label: {0} is the number, already in the user's number format with one decimal (1.5). Keep the multiplication sign; French puts a narrow no-break space before it.</comment>
+  </data>
+  <data name="ResetButton" xml:space="preserve">
+    <value>Reset</value>
+    <comment>The button that gives the framing being adjusted the whole frame again. Short.</comment>
+  </data>
+  <data name="ResetName" xml:space="preserve">
+    <value>Show the whole frame in this framing</value>
+    <comment>The screen reader name of Reset.</comment>
+  </data>
+  <data name="EasingName" xml:space="preserve">
+    <value>Motion</value>
+    <comment>The screen reader name of the two-part switch that sets how the framing moves from start to end.</comment>
+  </data>
+  <data name="EasingSmooth" xml:space="preserve">
+    <value>Smooth</value>
+    <comment>The first part: the move starts gently, is fastest in the middle and settles into the end framing. Short: the two parts share 280 px.</comment>
+  </data>
+  <data name="EasingLinear" xml:space="preserve">
+    <value>Linear</value>
+    <comment>The second part: the move keeps one speed from start to end. Short.</comment>
+  </data>
+  <data name="FramingStartName" xml:space="preserve">
+    <value>Start framing</value>
+    <comment>The screen reader name of the start framing drawn over the preview, which the keyboard can move and resize.</comment>
+  </data>
+  <data name="FramingEndName" xml:space="preserve">
+    <value>End framing</value>
+    <comment>The screen reader name of the end framing drawn over the preview.</comment>
+  </data>
+  <data name="FramingHelp" xml:space="preserve">
+    <value>The arrow keys move it, Shift with an arrow moves it further, plus and minus zoom</value>
+    <comment>The screen reader help of the framing drawn over the preview: the keys that move and resize it.</comment>
+  </data>
+</root>

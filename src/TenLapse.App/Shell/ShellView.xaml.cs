@@ -49,6 +49,7 @@ public sealed partial class ShellView : UserControl
     private readonly long _emptyRegionVisibilityToken;
     private readonly TimingPanelViewModel _timing;
     private readonly FramePanelViewModel _frame;
+    private readonly CropViewModel _crop;
     private readonly ExposureAnalysis _exposure;
     private readonly LookPanelViewModel _look;
     private readonly Presentation.Filmstrip.FilmstripViewModel _filmstrip;
@@ -130,6 +131,11 @@ public sealed partial class ShellView : UserControl
         _player = preview.Player;
         PreviewSurface.Attach(preview);
         PreviewSurface.AttachLook(_look);
+
+        // Crop and pan (#46): its rows in the Frame section, its framing over the preview.
+        _crop = new CropViewModel(viewModel, preview.Player, presenter);
+        FrameSection.Crop = _crop;
+        PreviewSurface.AttachCrop(_crop);
         Transport.Attach(preview.Player, presenter);
         Transport.AttachLook(_look);
         ShellRoot.KeyDown += OnShellKeyDown;
@@ -320,6 +326,7 @@ public sealed partial class ShellView : UserControl
         _timing.Dispose();
         _frame.Dispose();
         _look.Dispose();
+        _crop.Dispose();
         _exposure.Dispose();
         Filmstrip.Detach();
         _filmstrip.Dispose();
