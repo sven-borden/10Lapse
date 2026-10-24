@@ -37,7 +37,7 @@ How it works
 Make it look right
 - Deflicker smooths the exposure jumps between photos. Where you changed the shutter speed, aperture or ISO during a sunset, it reads those settings from the photos and turns each step into a smooth ramp, while the scene still darkens as it did.
 - Frame blending makes each frame the average of 2 to 16 nearby photos, like a long exposure: moving lights leave trails and clouds move smoothly.
-- Crop and pan moves from a start framing to an end framing, zooming in up to 4x, smoothly or at an even speed. Drag the framing on the preview to set it.
+- Crop and pan moves from a start framing to an end framing, zooming in up to 4×, smoothly or at an even speed. Drag the framing on the preview to set it.
 - Before and After in the preview shows your photos with and without deflicker and frame blending.
 - Hold the video's first and last frames for up to 10 seconds each, play the photos up to five times, or play them as a boomerang, out and back.
 - Add music under an MP4 (MP3, M4A, WAV, WMA or FLAC): choose where in the song the video starts, and fade it in and out. The song ends where the video ends. A GIF has no sound.
@@ -82,7 +82,7 @@ Limit 1,500 characters. This draft: 1,220. It is what 3.0 users get with the upd
 
 - Deflicker: smooths the exposure jumps between photos. Where you changed the shutter speed, aperture or ISO during a sunset, it turns each step into a smooth ramp.
 - Frame blending: each frame is the average of 2 to 16 nearby photos, like a long exposure, for light trails and smooth clouds.
-- Crop and pan: move from a start framing to an end framing, zooming in up to 4x, smoothly or at an even speed.
+- Crop and pan: move from a start framing to an end framing, zooming in up to 4×, smoothly or at an even speed.
 - Animated GIF: export a GIF that loops, in three sizes, at up to 25 frames per second.
 - Music under an MP4: choose where the song starts and fade it in and out. It ends with the video.
 - Hold the first and last frames for up to 10 seconds, play the photos up to five times, or play them as a boomerang.
@@ -110,7 +110,7 @@ Frame shapes: match the photos, 16:9, 9:16, 1:1, 4:5 or 4:3, with Fit or Fill
 Live preview that matches the export, and a filmstrip with gap markers: drag, remove and undo
 Deflicker smooths exposure jumps, and turns the exposure steps of a sunset shoot into a smooth ramp
 Frame blending averages 2 to 16 nearby photos for light trails and smooth clouds
-Crop and pan from a start framing to an end framing, zooming in up to 4x, Smooth or Linear
+Crop and pan from a start framing to an end framing, zooming in up to 4×, Smooth or Linear
 Hold at start and at end, play the photos up to five times, or play them as a boomerang
 Music under an MP4: choose where the song starts, fade it in and out; it ends with the video
 Save projects as .10lapse files, reopen recent ones from the start screen, restore unsaved changes after a crash
