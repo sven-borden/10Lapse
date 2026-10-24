@@ -5,9 +5,9 @@ Updated 2026-10-24. Roadmap: the pinned #59 and the milestones. Working agreemen
 ## Now
 
 2026-10-21: **3.0 is live on the Store at full rollout** (tag `v3.0.0`, on
-`7c63de5`). Now: 3.1, wave 27 is next. 2026-10-24: **paused by Sven** after the
-#45 merge; start wave 27 only when he says so. `docs/test-matrix.md` is a
-checklist for the live build.
+`7c63de5`). Now: 3.1, wave 27: #46 merged 2026-10-24 (PR #136), #50 music is
+next when Sven says so. `docs/test-matrix.md` is a checklist for the live build
+(5.22 for crop and pan, which nobody has seen on screen yet).
 
 ## Waves
 
@@ -29,13 +29,14 @@ and #132 (export pipeline, `FrameRenderer`, the GIF path), #80 (`OutputPlan`:
 export with the effective output), #77 (preview), #100 (motion, the reframe
 exception), #134 (`FrameSequence`: holds, loop, boomerang, shared decode of a
 held photo), #135 (the `look` group, per-photo exposure on the frame, the
-measuring pass and the export's wait for it).
+measuring pass and the export's wait for it), #136 (`Framing`, the `crop` group,
+`FrameLook.View`, a geometry step in `Draw`, the export's zoomed decode).
 
 - Wave 25: done. #51 GIF export (PR #132), #52 save and reopen (PR #133).
 - Wave 26: done. #49 hold, loop, boomerang (PR #134), #45 deflicker (PR #135,
   merged 2026-10-24 after master was merged in; gate 3,710 passed).
-- Wave 27: #46 crop and pan (O) and #50 music (O, after #49 so the music
-  fits the final length).
+- Wave 27: #46 crop and pan done (PR #136). #50 music (O, after #49 so the
+  music fits the final length).
 - Wave 28: #47 frame blending (O). Wave 29: #48 stamp and title (O). #45 to
   #48 all draw in `FrameRenderer`, so they never run together.
 - #30 sample sequence once Sven picks the photos.
@@ -67,7 +68,8 @@ Nothing blocks the build loop.
   `FrameRenderer.Layout`, instead of `FrameRenderer.Draw`. #45's correction
   shows there (it calls `FrameRenderer.DrawPhoto`; tested by
   `FrameLookTests.TheReframePathAppliesTheSameLook`); #46 to #48 must go through
-  that call too or update the path.
+  that call too or update the path. #46 did: `PhotoRect` takes the framed
+  placement (`FrameRenderer.Placement`), so the reframe moves the framed photo.
 - 2026-10-24 (#45, PR #135): exposure measurements live on the frame
   (`Frame.Exposure`, saved in `.10lapse`), never in an app-data cache; the
   `look` group is project-only, not in `settings.json`. The correction belongs
@@ -76,6 +78,16 @@ Nothing blocks the build loop.
   turned it on turns it off. Autosave waits at most 10 s. `ProjectChanges` bits
   9 (`Sequence`) and 10 (`Look`) are taken. The reasoning: PR #135's
   "Decisions".
+- 2026-10-24 (Sven): #46 built by the main session ("no agent, do yourself"),
+  no tests run while building and no review pass ("just commit, push, gate,
+  merge"); the gate before the merge still runs every test.
+- 2026-10-24 (#46, PR #136): a framing is a rectangle of the frame's shape in
+  shares of the frame (any aspect or resolution), 4x zoom at most; the move
+  runs over the photos' frames, holds stand still, plays and a boomerang are
+  one move; a steady zoom about the point both framings share; Video, Start
+  and End are the preview's alone. A zoomed export decodes larger and fewer
+  frames ahead (by the zoom squared, at least 2). `ProjectChanges` bit 11
+  (`Crop`) is taken; the full `Project` constructor ends with `crop`.
 - Timing tests (PR #102): prove a timeout by its effect and give ceilings a wide
   margin. If one flakes, look first at `ImportPerformanceTests` and the
   `EncoderProbeTests` cached-load ratio.
