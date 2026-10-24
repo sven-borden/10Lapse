@@ -42,6 +42,9 @@ public enum ProjectChanges
     Sequence = 1 << 9,
     /// <summary><see cref="Project.Look"/> changed (#45: deflicker and its strength).</summary>
     Look = 1 << 10,
+
+    /// <summary><see cref="Project.Crop"/> changed (#46: crop and pan).</summary>
+    Crop = 1 << 11,
 }
 
 /// <summary>The kind of a <see cref="FrameChange"/>.</summary>
@@ -175,6 +178,9 @@ public sealed record ProjectSnapshot
     /// <summary>The Look section (#45): deflicker and its strength. The correction it gives each photo is <see cref="Look.ExposureCurve.For"/>.</summary>
     public LookSettings Look { get; internal init; } = LookSettings.Default;
 
+    /// <summary>Crop and pan (#46): the framing each video frame shows is <see cref="CropSettings.At(FrameSequence, int)"/> of <see cref="Playback"/>.</summary>
+    public CropSettings Crop { get; internal init; } = CropSettings.Default;
+
     /// <summary>True after any change since the project was created, opened, saved or (while it has no file) exported.</summary>
     public bool IsDirty { get; internal init; }
 
@@ -282,7 +288,7 @@ public sealed class Project
     /// plays and boomerang), owned by the calling thread. Like the constructor without it, this is not an edit.
     /// </summary>
     public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode, SequenceSettings sequence)
-        : this(timing, frameSettings, output, sortMode, sequence, LookSettings.Default)
+        : this(timing, frameSettings, output, sortMode, sequence, LookSettings.Default, CropSettings.Default)
     {
     }
 
@@ -292,7 +298,7 @@ public sealed class Project
     /// makes the project dirty; this constructor does not.
     /// </summary>
     public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode)
-        : this(timing, frameSettings, output, sortMode, SequenceSettings.Default, LookSettings.Default)
+        : this(timing, frameSettings, output, sortMode, SequenceSettings.Default, LookSettings.Default, CropSettings.Default)
     {
     }
 
@@ -300,28 +306,30 @@ public sealed class Project
     /// Creates an empty, clean project that starts with these settings and this look (#45), owned by the calling thread.
     /// </summary>
     public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode, LookSettings look)
-        : this(timing, frameSettings, output, sortMode, SequenceSettings.Default, look)
+        : this(timing, frameSettings, output, sortMode, SequenceSettings.Default, look, CropSettings.Default)
     {
     }
 
     /// <summary>
     /// Creates an empty, clean project with every project-only group too: <paramref name="sequence"/> (#49: holds, plays,
-    /// boomerang) and <paramref name="look"/> (#45: deflicker), as an opened project file has them
-    /// (<see cref="ProjectFileContent.CreateEmptyProject"/>). Owned by the calling thread; like the others, not an edit.
+    /// boomerang), <paramref name="look"/> (#45: deflicker) and <paramref name="crop"/> (#46: crop and pan), as an opened
+    /// project file has them (<see cref="ProjectFileContent.CreateEmptyProject"/>). Owned by the calling thread; like the
+    /// others, not an edit. A later project-only group adds a parameter here.
     /// </summary>
-    public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode, SequenceSettings sequence, LookSettings look)
+    public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode, SequenceSettings sequence, LookSettings look, CropSettings crop)
     {
         ArgumentNullException.ThrowIfNull(timing);
         ArgumentNullException.ThrowIfNull(frameSettings);
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(sequence);
         ArgumentNullException.ThrowIfNull(look);
+        ArgumentNullException.ThrowIfNull(crop);
         if (!Enum.IsDefined(sortMode))
         {
             throw new ArgumentOutOfRangeException(nameof(sortMode), sortMode, "Unknown sort mode.");
         }
 
-        _state = ProjectSnapshot.Empty with { Timing = timing, FrameSettings = frameSettings, Output = output, SortMode = sortMode, Sequence = sequence, Look = look };
+        _state = ProjectSnapshot.Empty with { Timing = timing, FrameSettings = frameSettings, Output = output, SortMode = sortMode, Sequence = sequence, Look = look, Crop = crop };
     }
 
     /// <summary>Raised after every mutation, once per call, on the owner thread.</summary>
@@ -421,6 +429,19 @@ public sealed class Project
             if (Changes(_state.Look, value))
             {
                 Commit(_state with { Look = value }, ProjectChanges.Look);
+            }
+        }
+    }
+
+    /// <summary>Crop and pan (#46): on or off, the start and end framings, the easing.</summary>
+    public CropSettings Crop
+    {
+        get => _state.Crop;
+        set
+        {
+            if (Changes(_state.Crop, value))
+            {
+                Commit(_state with { Crop = value }, ProjectChanges.Crop);
             }
         }
     }

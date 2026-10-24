@@ -102,6 +102,9 @@ public sealed record ProjectFileContent
     /// <summary>The look group (<see cref="ProjectSnapshot.Look"/>, #45). A file from before #45 has none: deflicker off.</summary>
     public LookSettings Look { get; init; } = LookSettings.Default;
 
+    /// <summary>The crop group (<see cref="ProjectSnapshot.Crop"/>, #46). A file from before #46 has none: the whole frame.</summary>
+    public CropSettings Crop { get; init; } = CropSettings.Default;
+
     /// <summary>A recovery copy only: the project's name, which a project that was never saved has no file to take it from.</summary>
     public string? RecoveredName { get; init; }
 
@@ -125,6 +128,7 @@ public sealed record ProjectFileContent
             SortMode = snapshot.SortMode,
             Sequence = snapshot.Sequence,
             Look = snapshot.Look,
+            Crop = snapshot.Crop,
         };
     }
 
@@ -187,5 +191,5 @@ public sealed record ProjectFileContent
     }
 
     /// <summary>A new, empty, clean project with these settings, owned by the calling thread; the caller adds the frames.</summary>
-    public Project CreateEmptyProject() => new(Timing, Frame, Output, SortMode, Sequence, Look);
+    public Project CreateEmptyProject() => new(Timing, Frame, Output, SortMode, Sequence, Look, Crop);
 }

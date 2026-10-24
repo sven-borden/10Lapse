@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CropLabel" xml:space="preserve">
+    <value>Recadrage animé</value>
+  </data>
+  <data name="CropHint" xml:space="preserve">
+    <value>Passe d’un cadrage de début à un cadrage de fin</value>
+  </data>
+  <data name="ShowName" xml:space="preserve">
+    <value>L’aperçu montre</value>
+  </data>
+  <data name="ShowVideo" xml:space="preserve">
+    <value>Vidéo</value>
+  </data>
+  <data name="ShowStart" xml:space="preserve">
+    <value>Début</value>
+  </data>
+  <data name="ShowEnd" xml:space="preserve">
+    <value>Fin</value>
+  </data>
+  <data name="EditHint" xml:space="preserve">
+    <value>Faites glisser le cadre sur l’aperçu pour le déplacer, ou un coin pour zoomer</value>
+  </data>
+  <data name="ZoomLabel" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="ZoomStartName" xml:space="preserve">
+    <value>Zoom du cadrage de début</value>
+  </data>
+  <data name="ZoomEndName" xml:space="preserve">
+    <value>Zoom du cadrage de fin</value>
+  </data>
+  <data name="ZoomValue" xml:space="preserve">
+    <value>{0} ×</value>
+  </data>
+  <data name="ResetButton" xml:space="preserve">
+    <value>Rétablir</value>
+  </data>
+  <data name="ResetName" xml:space="preserve">
+    <value>Montrer tout le cadre dans ce cadrage</value>
+  </data>
+  <data name="EasingName" xml:space="preserve">
+    <value>Mouvement</value>
+  </data>
+  <data name="EasingSmooth" xml:space="preserve">
+    <value>Doux</value>
+  </data>
+  <data name="EasingLinear" xml:space="preserve">
+    <value>Linéaire</value>
+  </data>
+  <data name="FramingStartName" xml:space="preserve">
+    <value>Cadrage de début</value>
+  </data>
+  <data name="FramingEndName" xml:space="preserve">
+    <value>Cadrage de fin</value>
+  </data>
+  <data name="FramingHelp" xml:space="preserve">
+    <value>Les flèches le déplacent, Maj avec une flèche le déplace plus loin, plus et moins zooment</value>
+  </data>
+</root>

@@ -89,14 +89,16 @@ public static class ProjectExporter
             {
                 Format = VideoFormat.Gif,
                 Fit = snapshot.FrameSettings.Fit,
+                DecodeZoom = snapshot.Crop.MaxZoom,
             };
         }
 
         return new VideoExportSettings(size.Width, size.Height, rate)
         {
-            Format = snapshot.Output.Format,
+                Format = snapshot.Output.Format,
             Fit = snapshot.FrameSettings.Fit,
             Bitrate = ExportBitrate.For(size, rate, snapshot.Output.Format, snapshot.Output.Quality),
+            DecodeZoom = snapshot.Crop.MaxZoom,
         };
     }
 
@@ -135,7 +137,7 @@ public static class ProjectExporter
         var sequence = snapshot.Playback;
         var positions = PositionsFor(snapshot, settings);
         var frames = FramesFor(sequence, positions);
-        var source = new PhotoFileSource([.. frames.Select(index => snapshot.Frames[index].SourcePath)], settings.Fit, LooksFor(snapshot, frames));
+        var source = new PhotoFileSource([.. frames.Select(index => snapshot.Frames[index].SourcePath)], settings.Fit, LooksFor(snapshot, frames, positions));
 
         // Progress counts the video's frames (#49: holds, plays and the way back take as long to write as any frame), so
         // the percent and the time left are right; for a plain sequence those are the photos ("0312 of 0742"). A GIF that
@@ -183,13 +185,16 @@ public static class ProjectExporter
     }
 
     /// <summary>
-    /// Each exported frame's processing (#45): the look of the photo it shows, keyed by the photo, so a photo the
-    /// sequence shows more than once is drawn the same each time, and exactly as the preview draws it. Null when no
-    /// photo has a look.
+    /// Each exported frame's processing, exactly as the preview draws it: the look of the photo it shows (#45), keyed by the
+    /// photo, so a photo the sequence shows more than once is corrected the same each time, and the framing of the video
+    /// frame it is (#46, crop and pan), which follows the video. Null when no frame has a look.
     /// </summary>
-    internal static FrameLook[]? LooksFor(ProjectSnapshot snapshot, int[] frames)
+    /// <param name="snapshot">The project.</param>
+    /// <param name="frames">The photo each exported frame shows (<see cref="FramesFor(ProjectSnapshot, VideoExportSettings)"/>).</param>
+    /// <param name="positions">The video frame each one is (<see cref="PositionsFor"/>); null when exported frame n is video frame n.</param>
+    internal static FrameLook[]? LooksFor(ProjectSnapshot snapshot, int[] frames, int[]? positions = null)
     {
-        var looks = frames.Select(index => FrameLook.For(snapshot, snapshot.Frames[index].Id)).ToArray();
+        var looks = frames.Select((index, i) => FrameLook.For(snapshot, snapshot.Frames[index].Id, positions?[i] ?? i)).ToArray();
         return looks.All(look => look.IsNeutral) ? null : looks;
     }
 

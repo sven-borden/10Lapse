@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CropLabel" xml:space="preserve">
+    <value>Ritaglio animato</value>
+  </data>
+  <data name="CropHint" xml:space="preserve">
+    <value>Passa da un’inquadratura iniziale a una finale</value>
+  </data>
+  <data name="ShowName" xml:space="preserve">
+    <value>L’anteprima mostra</value>
+  </data>
+  <data name="ShowVideo" xml:space="preserve">
+    <value>Video</value>
+  </data>
+  <data name="ShowStart" xml:space="preserve">
+    <value>Inizio</value>
+  </data>
+  <data name="ShowEnd" xml:space="preserve">
+    <value>Fine</value>
+  </data>
+  <data name="EditHint" xml:space="preserve">
+    <value>Trascina la cornice nell’anteprima per spostarla, o un angolo per lo zoom</value>
+  </data>
+  <data name="ZoomLabel" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="ZoomStartName" xml:space="preserve">
+    <value>Zoom dell’inquadratura iniziale</value>
+  </data>
+  <data name="ZoomEndName" xml:space="preserve">
+    <value>Zoom dell’inquadratura finale</value>
+  </data>
+  <data name="ZoomValue" xml:space="preserve">
+    <value>{0}×</value>
+  </data>
+  <data name="ResetButton" xml:space="preserve">
+    <value>Ripristina</value>
+  </data>
+  <data name="ResetName" xml:space="preserve">
+    <value>Mostra tutto il fotogramma in questa inquadratura</value>
+  </data>
+  <data name="EasingName" xml:space="preserve">
+    <value>Movimento</value>
+  </data>
+  <data name="EasingSmooth" xml:space="preserve">
+    <value>Morbido</value>
+  </data>
+  <data name="EasingLinear" xml:space="preserve">
+    <value>Lineare</value>
+  </data>
+  <data name="FramingStartName" xml:space="preserve">
+    <value>Inquadratura iniziale</value>
+  </data>
+  <data name="FramingEndName" xml:space="preserve">
+    <value>Inquadratura finale</value>
+  </data>
+  <data name="FramingHelp" xml:space="preserve">
+    <value>Le frecce la spostano, Maiusc con una freccia la sposta di più, più e meno fanno lo zoom</value>
+  </data>
+</root>

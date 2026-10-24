@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Crop and pan's framing over the preview (#46), while the Frame section shows Start or End: the preview draws the whole
+  frame, and this draws the framing over it, a rectangle of the video's shape. Outside it the picture is dimmed with the
+  Letterbox at 62 % (the export pill's PreviewPill token: it sits on the photo, so it is the same in both themes); its
+  2 px border and the four corner handles are the Deep Amber Indicator on the photo, a selection indicator as DESIGN.md
+  allows amber. Drag inside to move it, a corner to resize it; with focus, the arrows move it, Shift with an arrow
+  further, plus and minus zoom. Collapsed otherwise, so the preview below takes the pointer as before.
+-->
+<UserControl
+  x:Class="TenLapse.Preview.FramingOverlay"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:presentation="using:TenLapse.Presentation"
+  IsTabStop="False"
+  Visibility="Collapsed">
+  <Canvas x:Name="Surface">
+    <Path x:Name="Dim" Fill="{StaticResource PreviewPillBrush}" IsHitTestVisible="False">
+      <Path.Data>
+        <GeometryGroup FillRule="EvenOdd">
+          <RectangleGeometry x:Name="GateGeometry" />
+          <RectangleGeometry x:Name="FramingGeometry" />
+        </GeometryGroup>
+      </Path.Data>
+    </Path>
+
+    <ContentControl
+      x:Name="Box"
+      AutomationProperties.AccessibilityView="Content"
+      AutomationProperties.HelpText="{x:Bind presentation:CropText.FramingHelp}"
+      Background="Transparent"
+      IsTabStop="True"
+      ManipulationMode="None"
+      UseSystemFocusVisuals="True">
+      <Border
+        Background="Transparent"
+        BorderBrush="{StaticResource DeepAmberIndicatorOnPhotoBrush}"
+        BorderThickness="2" />
+    </ContentControl>
+
+    <Rectangle x:Name="TopLeftHandle" Width="12" Height="12" Fill="{StaticResource DeepAmberIndicatorOnPhotoBrush}" />
+    <Rectangle x:Name="TopRightHandle" Width="12" Height="12" Fill="{StaticResource DeepAmberIndicatorOnPhotoBrush}" />
+    <Rectangle x:Name="BottomLeftHandle" Width="12" Height="12" Fill="{StaticResource DeepAmberIndicatorOnPhotoBrush}" />
+    <Rectangle x:Name="BottomRightHandle" Width="12" Height="12" Fill="{StaticResource DeepAmberIndicatorOnPhotoBrush}" />
+  </Canvas>
+</UserControl>

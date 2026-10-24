@@ -104,6 +104,7 @@ internal sealed class PreviewRenderLoop : IDisposable
     private bool _shownPlaceholder;
     private bool _drewAnything;
     private long _shownVersion = -1;
+    private Framing _shownView;
     private ImmutableArray<Frame> _frames = [];
     private bool _drawFailureTold;
     private int _quickBlanks;
@@ -132,6 +133,9 @@ internal sealed class PreviewRenderLoop : IDisposable
 
     // #45: the Look panel's Before (true), set on the UI thread: the photos are drawn without their look.
     private volatile bool _showOriginals;
+
+    // #46: the Frame panel edits a framing (true), set on the UI thread: the whole frame is drawn, the framing over it.
+    private volatile bool _showWholeFrame;
 
     // #45: the deflicker curve last drawn with (render thread only), and the callback that wakes the thread once a curve it
     // asked for is computed.
@@ -200,6 +204,26 @@ internal sealed class PreviewRenderLoop : IDisposable
         }
 
         _showOriginals = originals;
+        lock (_gate)
+        {
+            _changes++;
+        }
+
+        _wake.Set();
+    }
+
+    /// <summary>
+    /// Crop and pan's editor (#46; UI thread): true draws the whole frame, without the framing, so the start or end framing
+    /// can be drawn over it; the export never sees it.
+    /// </summary>
+    public void ShowWholeFrame(bool whole)
+    {
+        if (_showWholeFrame == whole)
+        {
+            return;
+        }
+
+        _showWholeFrame = whole;
         lock (_gate)
         {
             _changes++;
@@ -383,6 +407,10 @@ internal sealed class PreviewRenderLoop : IDisposable
         // The clock counts the video's frames (#49); the photo is what the sequence shows there, and loading runs ahead
         // over the photos the video shows next: through a boomerang's turn and into the next loop (review of PR #134).
         var index = Math.Clamp(reading is { } at ? state.PhotoAt(at.Frame) : state.Frame, 0, frames.Length - 1);
+
+        // Crop and pan's framing of the video frame (#46), which follows the video rather than the photo: a photo held or
+        // shown alone while the framing moves is drawn again for each frame.
+        var view = ViewOf(state.Snapshot, reading is { } playing ? playing.Frame : state.Position);
         var frame = frames[index];
         var lookahead = Lookahead(state.Clock?.Rate ?? state.Snapshot.EffectiveRate.Rate);
         if (reading is { } ahead)
@@ -404,7 +432,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         if (lease is not null)
         {
             // A new image for the same frame (better, or the photo changed on disk) is drawn too.
-            draw = settingsChanged || frame.Id != _shownId || _shownPlaceholder || !ReferenceEquals(lease.Image, _shown?.Image);
+            draw = settingsChanged || frame.Id != _shownId || _shownPlaceholder || !ReferenceEquals(lease.Image, _shown?.Image) || view != _shownView;
         }
         else if (failure is not null)
         {
@@ -423,8 +451,9 @@ internal sealed class PreviewRenderLoop : IDisposable
         draw |= animating;
         if (draw)
         {
-            Draw(chain, state.Snapshot, lease?.Image ?? (lease is null && failure is null ? _shown?.Image : null), lease is not null, failure, frame, look, now);
+            Draw(chain, state.Snapshot, lease?.Image ?? (lease is null && failure is null ? _shown?.Image : null), lease is not null, failure, frame, view, look, now);
             chain.Present();
+            _shownView = view;
             var presented = Stopwatch.GetTimestamp();
             _drewAnything = true;
             _drawnChanges = changes;
@@ -499,7 +528,7 @@ internal sealed class PreviewRenderLoop : IDisposable
     }
 
     // image: the frame's own picture (current), or the previous frame's, held while this one loads.
-    private void Draw(CanvasSwapChain chain, ProjectSnapshot snapshot, CanvasBitmap? image, bool current, FrameLoadFailure? failure, Frame frame, PreviewLook look, long now)
+    private void Draw(CanvasSwapChain chain, ProjectSnapshot snapshot, CanvasBitmap? image, bool current, FrameLoadFailure? failure, Frame frame, Framing view, PreviewLook look, long now)
     {
         var video = snapshot.VideoSize;
         var fit = snapshot.FrameSettings.Fit;
@@ -513,10 +542,10 @@ internal sealed class PreviewRenderLoop : IDisposable
         }
 
         var gate = new Rect(place.X, place.Y, place.Width, place.Height);
-        var photo = image is null ? gate : PhotoRect(gate, video, fit, image);
+        var photoLook = LookOf(snapshot, current ? frame.Id : _shownId, view);
+        var photo = image is null ? gate : PhotoRect(gate, video, fit, image, photoLook.View);
         var (shownGate, shownPhoto) = Reframing(gate, photo, image is not null, video, fit, size, now);
         var (opacity, blur, grow) = Developing(current, now);
-        var photoLook = LookOf(snapshot, current ? frame.Id : _shownId);
         _shownGate = shownGate;
         _shownPhoto = shownPhoto;
         _aimedGate = gate;
@@ -587,14 +616,23 @@ internal sealed class PreviewRenderLoop : IDisposable
         FrameRenderer.Draw(session, image, snapshot.FrameSettings, video, look);
     }
 
-    // The look the photo is drawn with (#45): its deflicker correction from the snapshot's curve, keyed by the photo, or none
-    // while the Look panel shows Before. The curve is never computed here: a new one (a measuring batch, the strength) is
-    // computed on the pool, and until it is ready the photos keep the correction of the last curve this thread had.
-    private FrameLook LookOf(ProjectSnapshot snapshot, Guid frameId)
+    // Crop and pan's framing of the video frame at position (#46, as FrameLook.For gives the export), or the whole frame while
+    // the Frame panel edits a framing.
+    private Framing ViewOf(ProjectSnapshot snapshot, int position)
+    {
+        var sequence = snapshot.Playback;
+        return _showWholeFrame || sequence.Length == 0 ? Framing.Whole : snapshot.Crop.At(sequence, Math.Clamp(position, 0, sequence.Length - 1));
+    }
+
+    // The look the frame is drawn with: the photo's deflicker correction from the snapshot's curve (#45), keyed by the photo,
+    // or none while the Look panel shows Before; and the frame's view (ViewOf). The curve is never computed here: a new one
+    // (a measuring batch, the strength) is computed on the pool, and until it is ready the photos keep the correction of the
+    // last curve this thread had.
+    private FrameLook LookOf(ProjectSnapshot snapshot, Guid frameId, Framing view)
     {
         if (_showOriginals || frameId == Guid.Empty)
         {
-            return FrameLook.None;
+            return FrameLook.None with { View = view };
         }
 
         if (ExposureCurve.TryGet(snapshot, _curveReady, out var curve))
@@ -602,7 +640,7 @@ internal sealed class PreviewRenderLoop : IDisposable
             _drawnCurve = curve;
         }
 
-        return new FrameLook((float)_drawnCurve.Correction(frameId));
+        return new FrameLook((float)_drawnCurve.Correction(frameId), view);
     }
 
     // A curve the render thread asked for is ready: draw again with it. Any thread.
@@ -719,8 +757,9 @@ internal sealed class PreviewRenderLoop : IDisposable
         _reframe = null;
     }
 
-    // Where the whole photo lies on screen when FrameRenderer draws it into the gate (Fill overflows the gate, Fit fits in it).
-    private static Rect PhotoRect(Rect gate, PixelSize video, FitMode fit, CanvasBitmap image)
+    // Where the whole photo lies on screen when FrameRenderer draws it into the gate through view (Fill overflows the gate,
+    // Fit fits in it, a crop and pan view enlarges it, #46), so a reframe moves the framed photo.
+    private static Rect PhotoRect(Rect gate, PixelSize video, FitMode fit, CanvasBitmap image, Framing view)
     {
         var pixels = image.SizeInPixels;
         var photo = new PixelSize((int)pixels.Width, (int)pixels.Height);
@@ -729,14 +768,9 @@ internal sealed class PreviewRenderLoop : IDisposable
             return gate;
         }
 
-        var (source, destination) = FrameRenderer.Layout(photo, video, fit);
-        var perPhotoPixel = destination.Width / source.Width;
+        var placed = FrameRenderer.Placement(photo, video, fit, view);
         var toScreen = gate.Width / video.Width;
-        return new Rect(
-            gate.X + ((destination.X - (source.X * perPhotoPixel)) * toScreen),
-            gate.Y + ((destination.Y - (source.Y * perPhotoPixel)) * toScreen),
-            photo.Width * perPhotoPixel * toScreen,
-            photo.Height * perPhotoPixel * toScreen);
+        return new Rect(gate.X + (placed.X * toScreen), gate.Y + (placed.Y * toScreen), placed.Width * toScreen, placed.Height * toScreen);
     }
 
     private static Rect Lerp(Rect from, Rect to, double share) => new(

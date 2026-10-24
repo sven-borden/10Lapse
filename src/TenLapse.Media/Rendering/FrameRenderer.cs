@@ -2,6 +2,7 @@ using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Effects;
 using TenLapse.Core.Look;
 using TenLapse.Core.Projects;
+using TenLapse.Core.Timing;
 using TenLapse.Media.Decoding;
 using Windows.Foundation;
 using Windows.UI;
@@ -9,31 +10,47 @@ using Windows.UI;
 namespace TenLapse.Media.Rendering;
 
 /// <summary>
-/// The per-photo processing <see cref="FrameRenderer"/> applies after placing a photo (#45 onward). Today the exposure
-/// correction deflicker gives the photo, in stops; the default is no change. #46 to #48 add their steps here.
+/// The processing <see cref="FrameRenderer"/> applies to one frame (#45 onward): the exposure correction deflicker gives
+/// the photo, in stops, and the part of the frame crop and pan shows (#46). The default is no change. #47 and #48 add
+/// their steps here.
 /// </summary>
 /// <param name="Stops">The exposure change in stops, applied in linear light: +1 doubles the light, 0 changes nothing.</param>
-public readonly record struct FrameLook(float Stops)
+/// <param name="View">The part of the frame the video shows, enlarged to fill it (#46); <see cref="Framing.Whole"/> (the default) for all of it.</param>
+public readonly record struct FrameLook(float Stops, Framing View = default)
 {
-    /// <summary>No processing: the photo exactly as decoded.</summary>
+    /// <summary>No processing: the photo exactly as decoded, the whole frame.</summary>
     public static FrameLook None => default;
 
-    /// <summary>True when drawing with this look is drawing the photo as it is.</summary>
-    public bool IsNeutral => Stops == 0;
+    /// <summary>True when drawing with this look is drawing the photo as it is, the whole frame.</summary>
+    public bool IsNeutral => Stops == 0 && View.IsWhole;
 
     /// <summary>
     /// The look of the photo <paramref name="frameId"/> in <paramref name="snapshot"/>: its deflicker correction
     /// (<see cref="ExposureCurve.For"/>, none while deflicker is off). Keyed by photo, so a photo shown twice looks the same.
+    /// The whole frame: <see cref="For(ProjectSnapshot, Guid, int)"/> is a frame of the video.
     /// </summary>
     public static FrameLook For(ProjectSnapshot snapshot, Guid frameId) =>
         new((float)ExposureCurve.For(snapshot).Correction(frameId));
+
+    /// <summary>
+    /// The look of frame <paramref name="position"/> of <paramref name="snapshot"/>'s video, which shows the photo
+    /// <paramref name="frameId"/>: the photo's deflicker correction, and the framing crop and pan gives that frame
+    /// (<see cref="CropSettings.At(FrameSequence, int)"/> of <see cref="ProjectSnapshot.Playback"/>), which follows the
+    /// video, not the photo.
+    /// </summary>
+    public static FrameLook For(ProjectSnapshot snapshot, Guid frameId, int position)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        return For(snapshot, frameId) with { View = snapshot.Crop.At(snapshot.Playback, position) };
+    }
 }
 
 /// <summary>
 /// The processing stage that preview (#19) and export (#22) share: given a decoded photo and the frame settings,
 /// it draws one output frame. Fill is a centred cover crop; Fit shows the whole photo, centred, with black bars.
 /// Deterministic, and with no shortcut for either caller, so a preview frame always matches the exported one. The
-/// photo's <see cref="FrameLook"/> (deflicker's exposure, #45) is applied to it in the same call.
+/// photo's <see cref="FrameLook"/> (deflicker's exposure, #45; crop and pan's view of the frame, #46) is applied to it in
+/// the same call.
 /// </summary>
 /// <remarks>
 /// Decode with <see cref="DecodeOptions"/> for the same output size: the photo then arrives at the size the frame
@@ -53,6 +70,23 @@ public static class FrameRenderer
         FitMode.Fit => PhotoDecodeOptions.Contain(output),
         _ => throw new ArgumentOutOfRangeException(nameof(fit), fit, "Unknown fit mode."),
     };
+
+    /// <summary>
+    /// How to decode a photo for a frame that enlarges the picture by <paramref name="zoom"/> (#46: a crop and pan view,
+    /// <see cref="Framing.Zoom"/>): for a frame <paramref name="zoom"/> times as large, so the part in view keeps its detail
+    /// (the decoder never enlarges, so a photo smaller than that is decoded whole). A zoom of 1 is
+    /// <see cref="DecodeOptions(FitMode, PixelSize)"/>.
+    /// </summary>
+    public static PhotoDecodeOptions DecodeOptions(FitMode fit, PixelSize output, double zoom)
+    {
+        if (!(zoom > 1))
+        {
+            return DecodeOptions(fit, output);
+        }
+
+        var enlarged = new PixelSize((int)Math.Ceiling(output.Width * zoom), (int)Math.Ceiling(output.Height * zoom));
+        return DecodeOptions(fit, enlarged);
+    }
 
     /// <summary>
     /// Draws <paramref name="photo"/> as frame settings <paramref name="settings"/> place it into the
@@ -84,7 +118,7 @@ public static class FrameRenderer
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(photo);
         var pixels = photo.SizeInPixels;
-        var (source, destination) = Layout(new PixelSize((int)pixels.Width, (int)pixels.Height), output, fit);
+        var (source, destination) = Layout(new PixelSize((int)pixels.Width, (int)pixels.Height), output, fit, look.View);
 
         // DrawImage takes the source rectangle in the bitmap's own DIPs: a photo that declares 95.9866 DPI (a PNG's
         // 3779 pixels a metre) would otherwise be resampled by 0.014 %. The destination is in the session's DIPs.
@@ -97,7 +131,11 @@ public static class FrameRenderer
 
         // Filled, not cleared: the preview may draw the frame into part of a larger surface.
         session.FillRectangle(new Rect(0, 0, output.Width * scale, output.Height * scale), Background);
-        DrawPhoto(session, photo, destination, source, look);
+        if (destination.Width > 0 && destination.Height > 0)
+        {
+            // Empty only when a Fit frame's view shows nothing but a bar (#46).
+            DrawPhoto(session, photo, destination, source, look);
+        }
     }
 
     /// <summary>
@@ -108,6 +146,8 @@ public static class FrameRenderer
     /// the same correction.
     /// </summary>
     /// <remarks>
+    /// Only the exposure is applied here: <see cref="FrameLook.View"/> is geometry, which the caller has placed already
+    /// (<see cref="Layout(PixelSize, PixelSize, FitMode, Framing)"/>, <see cref="Placement"/>).
     /// The exposure is applied in linear light: each 8-bit sRGB code maps to sRGB(2^stops × linear(code)) through a
     /// 256-entry <see cref="TableTransferEffect"/> whose entries fall on the codes (<see cref="ExposureTable"/>, which also
     /// rolls brightened highlights off into white and limits how far apart brightened shadows spread). The photo is placed
@@ -119,7 +159,7 @@ public static class FrameRenderer
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(photo);
-        if (look.IsNeutral)
+        if (look.Stops == 0)
         {
             session.DrawImage(photo, destination, source, 1f, CanvasImageInterpolation.HighQualityCubic);
             return;
@@ -208,6 +248,66 @@ public static class FrameRenderer
             _ => throw new ArgumentOutOfRangeException(nameof(fit), fit, "Unknown fit mode."),
         };
     }
+
+    /// <summary>
+    /// <see cref="Layout(PixelSize, PixelSize, FitMode)"/> through crop and pan's <paramref name="view"/> (#46): the part of
+    /// the photo that shows in that part of the frame, and where it lands once the view is enlarged to fill the frame. For
+    /// Fill that is always the whole frame; for Fit a view that takes in a bar shows the bar, enlarged too, and a view inside
+    /// a bar shows no photo at all (both rectangles empty). <see cref="Framing.Whole"/> is the layout without a view.
+    /// </summary>
+    public static (Rect Source, Rect Destination) Layout(PixelSize photo, PixelSize output, FitMode fit, Framing view)
+    {
+        var (source, destination) = Layout(photo, output, fit);
+        if (view.IsWhole)
+        {
+            return (source, destination);
+        }
+
+        var (shown, visible) = Visible(destination, output, view);
+        if (visible.IsEmpty || visible.Width <= 0 || visible.Height <= 0)
+        {
+            return (new Rect(0, 0, 0, 0), new Rect(0, 0, 0, 0));
+        }
+
+        // The part of the photo behind the visible part of the frame: the same share of the source as of the destination.
+        var (perX, perY) = (source.Width / destination.Width, source.Height / destination.Height);
+        var cropped = new Rect(
+            source.X + ((visible.X - destination.X) * perX),
+            source.Y + ((visible.Y - destination.Y) * perY),
+            visible.Width * perX,
+            visible.Height * perY);
+        return (cropped, Enlarged(visible, shown, view));
+    }
+
+    /// <summary>
+    /// Where the whole photo lies in the <paramref name="output"/>-pixel frame when it is drawn through
+    /// <paramref name="view"/> (#46): <see cref="Layout(PixelSize, PixelSize, FitMode)"/>'s placement of all of it, the
+    /// part a cover crop leaves out included, enlarged with the view. Larger than the frame where it is cropped. The
+    /// preview's reframe moves the photo between two of these.
+    /// </summary>
+    public static Rect Placement(PixelSize photo, PixelSize output, FitMode fit, Framing view)
+    {
+        var (source, destination) = Layout(photo, output, fit);
+        var (perX, perY) = (destination.Width / source.Width, destination.Height / source.Height);
+        var whole = new Rect(destination.X - (source.X * perX), destination.Y - (source.Y * perY), photo.Width * perX, photo.Height * perY);
+        return view.IsWhole ? whole : Enlarged(whole, Visible(destination, output, view).Shown, view);
+    }
+
+    // The view as a rectangle of the frame's pixels, and the part of the destination inside it.
+    private static (Rect Shown, Rect Visible) Visible(Rect destination, PixelSize output, Framing view)
+    {
+        var shown = new Rect(view.Left * output.Width, view.Top * output.Height, view.Size * output.Width, view.Size * output.Height);
+        var visible = destination;
+        visible.Intersect(shown);
+        return (shown, visible);
+    }
+
+    // A rectangle of the frame, where it lands once the view (shown, in the frame's pixels) is enlarged to fill the frame.
+    private static Rect Enlarged(Rect rect, Rect shown, Framing view) => new(
+        (rect.X - shown.X) / view.Size,
+        (rect.Y - shown.Y) / view.Size,
+        rect.Width / view.Size,
+        rect.Height / view.Size);
 
     /// <summary>The centred part of <paramref name="source"/> that, scaled, exactly covers <paramref name="output"/> (Fill).</summary>
     public static Rect CoverSourceRect(Size source, Size output)

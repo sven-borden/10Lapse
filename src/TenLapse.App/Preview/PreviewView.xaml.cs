@@ -24,6 +24,7 @@ public sealed partial class PreviewView : UserControl
     private PreviewSession? _session;
     private PreviewRenderLoop? _loop;
     private Presentation.Look.LookPanelViewModel? _lookPanel;
+    private CropViewModel? _crop;
 
     public PreviewView()
     {
@@ -57,6 +58,18 @@ public sealed partial class PreviewView : UserControl
         _lookPanel = look;
         look.ShowsOriginalChanged += (_, _) => _loop?.ShowOriginals(look.ShowsOriginal);
         _loop?.ShowOriginals(look.ShowsOriginal);
+    }
+
+    /// <summary>
+    /// Follows crop and pan (#46): while the Frame section adjusts the start or end framing, the preview draws the whole
+    /// frame and the framing over it. Set once, with the session.
+    /// </summary>
+    internal void AttachCrop(CropViewModel crop)
+    {
+        _crop = crop;
+        Framer.Attach(crop);
+        crop.EditingChanged += (_, _) => _loop?.ShowWholeFrame(crop.IsEditing);
+        _loop?.ShowWholeFrame(crop.IsEditing);
     }
 
     /// <summary>The photos landed: the first frame develops (motion spec, Arrival). Nothing when the preview is not running.</summary>
@@ -116,6 +129,7 @@ public sealed partial class PreviewView : UserControl
 
         _loop = new PreviewRenderLoop(Panel, session.Player, session.Images, session.Errors, session.Log);
         _loop.ShowOriginals(_lookPanel?.ShowsOriginal ?? false);
+        _loop.ShowWholeFrame(_crop?.IsEditing ?? false);
         session.Loop = _loop;
         RefreshColors();
         Resize();

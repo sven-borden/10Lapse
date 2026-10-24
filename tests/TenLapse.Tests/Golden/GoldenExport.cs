@@ -110,7 +110,8 @@ internal static class GoldenExport
         VideoFormat format = VideoFormat.Mp4H264,
         OutputQuality quality = OutputQuality.High,
         SequenceSettings? sequence = null,
-        LookSettings? look = null)
+        LookSettings? look = null,
+        CropSettings? crop = null)
     {
         var project = new Project(
             timing,
@@ -118,7 +119,8 @@ internal static class GoldenExport
             new OutputSettings(OutputResolution.Hd720, format, quality),
             SortMode.Manual,
             sequence ?? SequenceSettings.Default,
-            look ?? LookSettings.Default);
+            look ?? LookSettings.Default,
+            crop ?? CropSettings.Default);
         project.AddFrames(frames);
         return project.Snapshot;
     }
@@ -240,6 +242,7 @@ internal static class GoldenExport
             DecodeThreads = settings.DecodeThreads,
             StallTimeout = settings.StallTimeout,
             RenderTargets = settings.RenderTargets,
+            DecodeZoom = settings.DecodeZoom,
         };
 
     private static void DeleteFolder(string folder)
