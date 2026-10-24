@@ -111,8 +111,8 @@ Ritaglio animato da un'inquadratura iniziale a una finale, zoom fino a 4×, “M
 Fermo immagine all'inizio e alla fine, fino a cinque riproduzioni delle foto, oppure modalità Boomerang
 Musica sotto un MP4: scegli dove inizia la canzone, con dissolvenza in entrata e in uscita; viene tagliata dove finisce il video
 Salva i progetti come file .10lapse, riapri quelli recenti dalla schermata iniziale e ripristina le modifiche dopo un arresto anomalo
-MP4 in H.264 (o HEVC se il PC lo supporta) a 720p, 1080p, 1440p o 4K, con tre livelli di qualità e la stima delle dimensioni del file
-GIF animata che si ripete all'infinito, in tre misure (320, 480 o 640 pixel), fino a 10, 20 o 25 fotogrammi al secondo
+MP4 in H.264 (o HEVC se il PC lo supporta) a 720p, 1080p, 1440p o 4K, con tre livelli di qualità e la stima delle dimensioni del file prima dell'esportazione
+GIF animata che si ripete all'infinito, in tre misure, fino a 10, 20 o 25 fotogrammi al secondo
 Esporta in MP4 con il codificatore video della scheda grafica, se c'è; continua con la finestra ridotta a icona e tiene il PC attivo
 Riproduci il video o la GIF finita nell'app o apri la sua cartella
 Messaggi chiari che dicono cosa è andato storto e cosa fare

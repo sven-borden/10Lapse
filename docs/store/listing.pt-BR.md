@@ -111,7 +111,7 @@ Corte e movimento de um enquadramento inicial a um final, zoom de até 4×, Suav
 Imagem congelada no início e no fim, até cinco reproduções das fotos ou modo Bumerangue
 Música sob um MP4: escolha onde a música começa, com fade de entrada e de saída; ela é cortada onde o vídeo termina
 Salve projetos como arquivos .10lapse, abra os recentes na tela inicial e restaure as alterações depois de um travamento
-MP4 em H.264 (ou HEVC quando o PC é compatível) em 720p, 1080p, 1440p ou 4K, com três níveis de qualidade e estimativa do tamanho
+MP4 em H.264 (ou HEVC quando o PC é compatível) em 720p, 1080p, 1440p ou 4K, com três níveis de qualidade e estimativa do tamanho antes de exportar
 GIF animado que se repete sem parar, em três tamanhos, com até 10, 20 ou 25 quadros por segundo
 Exporta MP4 com o codificador da placa de vídeo quando há um; continua com a janela minimizada e mantém o PC ativo
 Reproduza o vídeo ou o GIF pronto no aplicativo ou abra a pasta dele
