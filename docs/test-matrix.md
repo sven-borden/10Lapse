@@ -710,6 +710,45 @@ photos and a human eye. Run: once, on the Store or a sideloaded 3.1 build.
   its gradation (no flat white patch that grows and shrinks), and a night sky
   shows no stronger banding than the photos themselves have.
 
+### 5.22 Crop and pan (#46, 3.1)
+
+Built without a real pointer on the dev PC (no synthetic input there): the
+geometry, the framing's moves and the export's framings are tested
+(`CropSettingsTests`, `CropLayoutTests`, `CropViewModelTests`); the drag, the
+look of the framing over the preview and the result on screen need a person.
+Run: once, on the Store or a sideloaded 3.1 build.
+
+- [ ] **5.22.1 Set a start and an end** (#46). Do: import a few hundred photos,
+  Frame section, turn Crop and pan on, choose Start, drag the framing to a
+  corner and drag a corner in; choose End, zoom in elsewhere; Video, play.
+  Expect: Start pauses on the first frame and End on the last, with the whole
+  frame dimmed outside an amber framing and four corner handles; the framing
+  keeps the video's shape and never leaves the frame; Play goes back to Video
+  and shows a steady move from the start framing to the end one, eased at both
+  ends with Smooth and at one speed with Linear. Turning it off shows the whole
+  frame; on again, both framings are back.
+- [ ] **5.22.2 Every shape and Fit** (#46). Do: with both framings set, try
+  every shape (Match, 16:9, 9:16, 1:1, 4:5, 4:3) and Fit and Fill. Expect: the
+  same part of the picture stays in view (the framings are shares of the
+  frame), the 400 ms reframe moves the framed photo without a jump at its end,
+  and with Fit a framing that takes in a bar shows the bar, enlarged.
+- [ ] **5.22.3 Export matches the preview** (#46). Do: export the project of
+  5.22.1 as MP4 at 4K and as a GIF, then again with 1 s held at each end and a
+  boomerang played twice (5.20) and Deflicker on (5.21). Expect: the video moves
+  as the preview did, frame for frame; the holds stand still on the start and
+  end framings; a 4x zoom of a 24 MP photo is sharp in the MP4 (the export
+  decodes it larger) and the export stays under 1 GB of memory (5.8, it decodes
+  fewer frames ahead); the deflicker correction is unchanged.
+- [ ] **5.22.4 Keyboard and Narrator** (#46). Do: Tab to the switch, Video,
+  Start and End (arrows), the zoom slider and Reset, Smooth and Linear, and,
+  with Start or End chosen, the framing over the preview. Expect: Narrator reads
+  "Crop and pan, toggle switch", "Start framing" with its keys; the arrows move
+  the framing (Shift further), plus and minus zoom it, and the transport's
+  arrows do not step a frame meanwhile; Reset gives the whole frame back.
+- [ ] **5.22.5 Save and reopen** (#46). Do: save, close, open. Expect: the
+  switch, both framings and the easing are back, and no unsaved-changes dot;
+  the preview opens on Video.
+
 ## 6. Per-machine measurements
 
 - [ ] **6.1 Bench on each machine** (#34, PR #89). Run: all, with the repo and
