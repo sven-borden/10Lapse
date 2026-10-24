@@ -12,7 +12,8 @@ which waits for Sven's photos. Next: what Health and the first reviews bring up.
 `docs/test-matrix.md` is a checklist for the live build (5.22 crop and pan, 5.23 music, 5.24 frame
 blending: nobody has seen or heard them on real shoots yet). 2026-10-24: a 59 s motion reel of 3.1 for borden.ch
 is in `docs/showreel/` (PR #143, Sven's request; it passes its `source/flashes.py`, WCAG 2.3.1). The Store trailer
-fails that check at 1.6–2.9 s and 20.2–22.7 s; it matters only if the trailer is used beyond the Store.
+shows 3.0 only and fails that check in four stretches, from 1.6, 3.8, 10.8 and 20.2 s (worst 100 % of a 10° field,
+limit 25 %).
 
 ## Waves
 
