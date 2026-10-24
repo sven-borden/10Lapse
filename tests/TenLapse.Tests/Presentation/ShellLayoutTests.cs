@@ -174,7 +174,7 @@ public sealed class ShellLayoutTests
 
     [Theory]
     [InlineData(-1)]
-    [InlineData(4)]
+    [InlineData(5)]
     public void ATabIndexOutOfRangeIsIgnored(int index)
     {
         var layout = Layout();
