@@ -364,7 +364,10 @@ player at the right size; the Finished summary ("24.7 s . 4K . H.264 .
   across restarts and Reset to defaults, so a tester who exported before never
   sees it. A later build with a new package version asks once more. Checked
   unpackaged (PR for #139) with `--fake-rating`: card, Yes, No, wide and
-  narrow, light and dark, not again in the same version; not checked: the
+  narrow, light and dark, not again in the same version; and (review fixes)
+  minimized through UIA during the export: no card and no version until the
+  window was restored, then both; Back to editing while minimized: neither,
+  after the restore too; not checked: the
   real Store dialog, Narrator's reading, real Tab and clicks.
 - [ ] **5.10.5 Feedback card** (#31). Expect: *Send feedback* opens the GitHub
   new-issue page, *Rate 10Lapse* opens the Store review page for
