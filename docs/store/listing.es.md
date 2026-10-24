@@ -40,7 +40,7 @@ El aspecto justo
 - “Recorte y paneo” pasa de un encuadre inicial a uno final, con un zoom de hasta 4×, “Suave” o “Lineal”. Arrastra el encuadre en la vista previa para colocarlo.
 - “Antes” y “Después”, en la vista previa, muestran tus fotos con y sin antiparpadeo y fusión de fotogramas.
 - Una imagen fija al inicio y al final del video, de hasta 10 segundos cada una, hasta cinco reproducciones de las fotos, o un “Bumerán”, de ida y vuelta.
-- Agrega música bajo un MP4 (MP3, M4A, WAV, WMA o FLAC): elige en qué punto de la canción empieza el video, con fundido de entrada y de salida. La canción termina donde termina el video. Un GIF no tiene sonido.
+- Agrega música bajo un MP4 (MP3, M4A, WAV, WMA o FLAC): elige en qué punto de la canción empieza el video, con fundido de entrada y de salida. La canción se corta donde termina el video; si es más corta, el resto queda en silencio. Un GIF no tiene sonido.
 
 Edición y exportación
 - Recorre la secuencia, avanza fotograma a fotograma, y quita una foto borrosa (Ctrl+Z la devuelve) o arrastra otra a su sitio. Quitar una foto la saca del video, nunca de tu disco.
@@ -84,7 +84,7 @@ out the rating question.
 - Fusión de fotogramas: cada fotograma es el promedio de 2 a 16 fotos cercanas, como una exposición larga, para estelas de luz y nubes suaves.
 - Recorte y paneo: pasa de un encuadre inicial a uno final, con un zoom de hasta 4×, suave o lineal.
 - GIF animado: exporta un GIF que se repite, en tres tamaños, con hasta 25 fotogramas por segundo.
-- Música bajo un MP4: elige dónde empieza la canción, con fundido de entrada y de salida. Termina con el video.
+- Música bajo un MP4: elige dónde empieza la canción, con fundido de entrada y de salida. Se corta donde termina el video.
 - Imagen fija al inicio y al final, de hasta 10 segundos, hasta cinco reproducciones de las fotos, o el modo Bumerán.
 - Guarda tu trabajo: un archivo de proyecto .10lapse se vuelve a abrir más tarde, la pantalla de inicio muestra los proyectos recientes y, si 10Lapse se cierra antes de que guardes, te ofrece restaurar tus cambios.
 - Ctrl+O ahora abre un proyecto; “Elegir carpeta” pasó a Ctrl+I.
@@ -110,7 +110,7 @@ Antiparpadeo: suaviza los saltos de exposición y convierte los escalones de una
 Fusión de fotogramas: promedio de 2 a 16 fotos cercanas para estelas de luz y nubes suaves
 Recorte y paneo de un encuadre inicial a uno final, zoom de hasta 4×, “Suave” o “Lineal”
 Imagen fija al inicio y al final, hasta cinco reproducciones de las fotos, o modo Bumerán
-Música bajo un MP4: elige dónde empieza la canción, con fundido de entrada y de salida; termina con el video
+Música bajo un MP4: elige dónde empieza la canción, con fundido de entrada y de salida; se corta donde termina el video
 Guarda proyectos como archivos .10lapse, abre los recientes desde la pantalla de inicio y restaura los cambios tras un cierre inesperado
 MP4 en H.264 (o HEVC si el equipo lo admite) en 720p, 1080p, 1440p o 4K, con tres niveles de calidad y tamaño estimado antes de exportar
 GIF animado que se repite, en tres tamaños, con hasta 10, 20 o 25 fotogramas por segundo

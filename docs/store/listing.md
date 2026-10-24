@@ -40,7 +40,7 @@ Make it look right
 - Crop and pan moves from a start framing to an end framing, zooming in up to 4×, smoothly or at an even speed. Drag the framing on the preview to set it.
 - Before and After in the preview shows your photos with and without deflicker and frame blending.
 - Hold the video's first and last frames for up to 10 seconds each, play the photos up to five times, or play them as a boomerang, out and back.
-- Add music under an MP4 (MP3, M4A, WAV, WMA or FLAC): choose where in the song the video starts, and fade it in and out. The song ends where the video ends. A GIF has no sound.
+- Add music under an MP4 (MP3, M4A, WAV, WMA or FLAC): choose where in the song the video starts, and fade it in and out. The song is cut where the video ends; a shorter song leaves the rest silent. A GIF has no sound.
 
 Editing and export
 - Scrub through the sequence, step frame by frame, and remove a blurry photo or drag one into place. Ctrl+Z puts it back. Removing a photo takes it out of the video, never off your disk.
@@ -84,7 +84,7 @@ Limit 1,500 characters. This draft: 1,220. It is what 3.0 users get with the upd
 - Frame blending: each frame is the average of 2 to 16 nearby photos, like a long exposure, for light trails and smooth clouds.
 - Crop and pan: move from a start framing to an end framing, zooming in up to 4×, smoothly or at an even speed.
 - Animated GIF: export a GIF that loops, in three sizes, at up to 25 frames per second.
-- Music under an MP4: choose where the song starts and fade it in and out. It ends with the video.
+- Music under an MP4: choose where the song starts and fade it in and out. It is cut where the video ends.
 - Hold the first and last frames for up to 10 seconds, play the photos up to five times, or play them as a boomerang.
 - Save your work: a .10lapse project file opens again later, the start screen lists recent projects, and if 10Lapse closes before you saved, it offers to restore your changes.
 - Ctrl+O now opens a project; Choose folder moved to Ctrl+I.
@@ -112,7 +112,7 @@ Deflicker smooths exposure jumps, and turns the exposure steps of a sunset shoot
 Frame blending averages 2 to 16 nearby photos for light trails and smooth clouds
 Crop and pan from a start framing to an end framing, zooming in up to 4×, Smooth or Linear
 Hold at start and at end, play the photos up to five times, or play them as a boomerang
-Music under an MP4: choose where the song starts, fade it in and out; it ends with the video
+Music under an MP4: choose where the song starts, fade it in and out; it is cut where the video ends
 Save projects as .10lapse files, reopen recent ones from the start screen, restore unsaved changes after a crash
 MP4 in H.264 (or HEVC where the PC supports it) at 720p, 1080p, 1440p or 4K, three quality levels, size estimate first
 Animated GIF that loops, in three sizes, at up to 10, 20 or 25 frames per second

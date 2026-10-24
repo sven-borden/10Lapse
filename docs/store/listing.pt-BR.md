@@ -41,7 +41,7 @@ O visual certo
 - Corte e movimento vai de um enquadramento inicial a um final, com zoom de até 4×, Suave ou Linear. Arraste o enquadramento na visualização para posicioná-lo.
 - Antes e Depois, na visualização, mostram suas fotos com e sem anticintilação e fusão de quadros.
 - Uma imagem congelada no início e no fim do vídeo, de até 10 segundos cada, até cinco reproduções das fotos ou um Bumerangue, de ida e volta.
-- Adicione música sob um MP4 (MP3, M4A, WAV, WMA ou FLAC): escolha em que ponto da música o vídeo começa, com fade de entrada e de saída. A música termina junto com o vídeo. Um GIF não tem som.
+- Adicione música sob um MP4 (MP3, M4A, WAV, WMA ou FLAC): escolha em que ponto da música o vídeo começa, com fade de entrada e de saída. A música é cortada onde o vídeo termina; se for mais curta, o resto fica em silêncio. Um GIF não tem som.
 
 Edição e exportação
 - Percorra a sequência, avance quadro a quadro e remova uma foto tremida ou arraste uma foto para o lugar certo. Ctrl+Z devolve a foto ao projeto. Remover uma foto a tira do vídeo, nunca do seu disco.
@@ -83,7 +83,7 @@ O 10Lapse 3.1 traz o que um timelapse precisa depois da sessão de fotos.
 - Fusão de quadros: cada quadro é a média de 2 a 16 fotos próximas, como uma longa exposição, para rastros de luz e nuvens suaves.
 - Corte e movimento: vá de um enquadramento inicial a um final, com zoom de até 4×, suave ou linear.
 - GIF animado: exporte um GIF que se repete sem parar, em três tamanhos, com até 25 quadros por segundo.
-- Música sob um MP4: escolha onde a música começa, com fade de entrada e de saída. Ela termina junto com o vídeo.
+- Música sob um MP4: escolha onde a música começa, com fade de entrada e de saída. Ela é cortada onde o vídeo termina.
 - Imagem congelada no início e no fim, de até 10 segundos, até cinco reproduções das fotos ou o modo Bumerangue.
 - Salve seu trabalho: um arquivo de projeto .10lapse abre de novo depois, a tela inicial mostra os projetos recentes e, se o 10Lapse fechar antes de você salvar, ele oferece restaurar suas alterações.
 - Ctrl+O agora abre um projeto; Escolher pasta passou para Ctrl+I.
@@ -109,7 +109,7 @@ Anticintilação: suaviza os saltos de exposição e transforma os degraus de um
 Fusão de quadros: a média de 2 a 16 fotos próximas, para rastros de luz e nuvens suaves
 Corte e movimento de um enquadramento inicial a um final, zoom de até 4×, Suave ou Linear
 Imagem congelada no início e no fim, até cinco reproduções das fotos ou modo Bumerangue
-Música sob um MP4: escolha onde a música começa, com fade de entrada e de saída; ela termina junto com o vídeo
+Música sob um MP4: escolha onde a música começa, com fade de entrada e de saída; ela é cortada onde o vídeo termina
 Salve projetos como arquivos .10lapse, abra os recentes na tela inicial e restaure as alterações depois de um travamento
 MP4 em H.264 (ou HEVC quando o PC é compatível) em 720p, 1080p, 1440p ou 4K, com três níveis de qualidade e estimativa do tamanho
 GIF animado que se repete sem parar, em três tamanhos, com até 10, 20 ou 25 quadros por segundo

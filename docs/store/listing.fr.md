@@ -40,7 +40,7 @@ Soignez le rendu
 - « Recadrage animé » passe d’un cadrage de début à un cadrage de fin, avec un zoom jusqu’à 4 ×, en mouvement « Doux » ou « Linéaire ». Faites glisser le cadrage sur l’aperçu pour le régler.
 - « Avant » et « Après », dans l’aperçu, montrent vos photos avec et sans anti-scintillement et fusion d’images.
 - Ajoutez un arrêt sur image au début et à la fin de la vidéo, jusqu’à 10 s chacun, lisez les photos jusqu’à cinq fois, ou en « Boomerang », à l’aller puis au retour.
-- Ajoutez une musique sous un MP4 (MP3, M4A, WAV, WMA ou FLAC) : choisissez à quel moment de la chanson la vidéo commence, avec un fondu d’entrée et un fondu de sortie. La chanson s’arrête avec la vidéo. Un GIF n’a pas de son.
+- Ajoutez une musique sous un MP4 (MP3, M4A, WAV, WMA ou FLAC) : choisissez à quel moment de la chanson la vidéo commence, avec un fondu d’entrée et un fondu de sortie. La chanson est coupée à la fin de la vidéo ; si elle est plus courte, la suite reste silencieuse. Un GIF n’a pas de son.
 
 Montage et exportation
 - Parcourez la séquence, avancez image par image, retirez une photo floue ou faites-en glisser une à sa place. Ctrl+Z la remet dans le projet. Retirer une photo la sort de la vidéo, jamais de votre disque.
@@ -82,7 +82,7 @@ Limit 1,500 characters. This draft: 1,415. Like the English one, it is what 3.0 
 - Fusion d’images : chaque image est la moyenne de 2 à 16 photos voisines, comme une pose longue, pour des filés de lumière et des nuages fluides.
 - Recadrage animé : passez d’un cadrage de début à un cadrage de fin, avec un zoom jusqu’à 4 ×, en mouvement doux ou linéaire.
 - GIF animé : exportez un GIF qui tourne en boucle, en trois tailles, jusqu’à 25 images par seconde.
-- Musique sous un MP4 : choisissez où commence la chanson, avec un fondu d’entrée et de sortie. Elle s’arrête avec la vidéo.
+- Musique sous un MP4 : choisissez où commence la chanson, avec un fondu d’entrée et de sortie. Elle est coupée à la fin de la vidéo.
 - Arrêt sur image au début et à la fin, jusqu’à 10 s, jusqu’à cinq lectures des photos, ou le mode Boomerang.
 - Vos projets s’enregistrent : un fichier .10lapse se rouvre plus tard, l’écran d’accueil affiche les projets récents, et si 10Lapse se ferme avant l’enregistrement, il propose de restaurer vos modifications.
 - Ctrl+O ouvre désormais un projet ; Choisir un dossier passe à Ctrl+I.
@@ -108,7 +108,7 @@ Anti-scintillement : atténue les sauts d’exposition et change les paliers d
 Fusion d’images : la moyenne de 2 à 16 photos voisines, pour des filés de lumière et des nuages fluides
 Recadrage animé d’un cadrage de début à un cadrage de fin, zoom jusqu’à 4 ×, mouvement Doux ou Linéaire
 Arrêt sur image au début et à la fin, jusqu’à cinq lectures des photos, ou mode Boomerang
-Musique sous un MP4 : choisissez où commence la chanson, avec fondu d’entrée et de sortie ; elle s’arrête avec la vidéo
+Musique sous un MP4 : choisissez où commence la chanson, avec fondu d’entrée et de sortie ; elle est coupée à la fin de la vidéo
 Projets enregistrés en fichiers .10lapse, projets récents sur l’écran d’accueil, modifications restaurées après un plantage
 MP4 en H.264 (ou HEVC si le PC le permet) en 720p, 1080p, 1440p ou 4K, trois niveaux de qualité, taille estimée avant l’exportation
 GIF animé qui tourne en boucle, en trois tailles, jusqu’à 10, 20 ou 25 images par seconde

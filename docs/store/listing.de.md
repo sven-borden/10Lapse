@@ -37,7 +37,7 @@ Der richtige Look
 - „Zoomen und Schwenken“ wandert von einem Start- zu einem Endausschnitt, mit bis zu 4× Zoom, „Sanft“ oder „Gleichmäßig“. Ziehen Sie den Ausschnitt in der Vorschau an seinen Platz.
 - „Vorher“ und „Nachher“ in der Vorschau zeigen Ihre Fotos mit und ohne Entflackern und Überlagern.
 - Ein Standbild am Anfang und am Ende des Videos, je bis zu 10 Sekunden, bis zu fünf Durchläufe der Fotos oder ein „Bumerang“, vorwärts und wieder zurück.
-- Musik unter einem MP4-Video (MP3, M4A, WAV, WMA oder FLAC): Wählen Sie, an welcher Stelle des Songs das Video beginnt, und blenden Sie die Musik ein und aus. Der Song endet mit dem Video. Ein GIF hat keinen Ton.
+- Musik unter einem MP4-Video (MP3, M4A, WAV, WMA oder FLAC): Wählen Sie, an welcher Stelle des Songs das Video beginnt, und blenden Sie die Musik ein und aus. Der Song wird am Ende des Videos abgeschnitten; ist er kürzer, bleibt der Rest still. Ein GIF hat keinen Ton.
 
 Bearbeiten und exportieren
 - Spulen Sie durch die Sequenz, gehen Sie Bild für Bild vor, und entfernen Sie ein unscharfes Foto oder ziehen Sie eines an seinen Platz. Strg+Z holt es zurück. Ein entferntes Foto verschwindet aus dem Video, nie von Ihrem Datenträger.
@@ -81,7 +81,7 @@ and it leaves out the rating question.
 - Überlagern: Jedes Bild ist der Durchschnitt von 2 bis 16 benachbarten Fotos, wie bei einer Langzeitbelichtung, für Lichtspuren und weich ziehende Wolken.
 - Zoomen und Schwenken: von einem Start- zu einem Endausschnitt, mit bis zu 4× Zoom, sanft oder gleichmäßig.
 - Animiertes GIF: ein GIF, das endlos läuft, in drei Größen, mit bis zu 25 Bildern pro Sekunde.
-- Musik unter einem MP4-Video: Wählen Sie, wo der Song beginnt, und blenden Sie ihn ein und aus. Er endet mit dem Video.
+- Musik unter einem MP4-Video: Wählen Sie, wo der Song beginnt, und blenden Sie ihn ein und aus. Er wird am Ende des Videos abgeschnitten.
 - Standbild am Anfang und am Ende, bis zu 10 Sekunden, bis zu fünf Durchläufe der Fotos oder ein Bumerang.
 - Projekte speichern: Eine .10lapse-Projektdatei lässt sich später wieder öffnen, der Startbildschirm zeigt die zuletzt verwendeten Projekte, und wird 10Lapse vor dem Speichern beendet, bietet es an, Ihre Änderungen wiederherzustellen.
 - Strg+O öffnet jetzt ein Projekt; „Ordner auswählen“ liegt nun auf Strg+I.
@@ -107,7 +107,7 @@ Entflackern gleicht Belichtungssprünge aus und macht aus den Belichtungsstufen 
 Überlagern: Durchschnitt von 2 bis 16 benachbarten Fotos für Lichtspuren und weich ziehende Wolken
 Zoomen und Schwenken von einem Start- zu einem Endausschnitt, bis 4× Zoom, „Sanft“ oder „Gleichmäßig“
 Standbild am Anfang und am Ende, bis zu fünf Durchläufe der Fotos oder ein Bumerang
-Musik unter einem MP4-Video: Startpunkt im Song wählen, ein- und ausblenden; sie endet mit dem Video
+Musik unter einem MP4-Video: Startpunkt im Song wählen, ein- und ausblenden; sie wird am Videoende abgeschnitten
 Projekte als .10lapse-Dateien speichern, zuletzt verwendete auf dem Startbildschirm, Änderungen nach einem Absturz wiederherstellen
 MP4 mit H.264 (oder HEVC, wo der PC es unterstützt) in 720p, 1080p, 1440p oder 4K, drei Qualitätsstufen, Dateigröße vorab geschätzt
 Animiertes GIF, das endlos läuft, in drei Größen, mit bis zu 10, 20 oder 25 Bildern pro Sekunde

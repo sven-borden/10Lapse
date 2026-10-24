@@ -39,7 +39,7 @@ L'aspetto giusto
 - “Ritaglio animato” passa da un'inquadratura iniziale a una finale, con uno zoom fino a 4×, “Morbido” o “Lineare”. Trascina l'inquadratura sull'anteprima per impostarla.
 - “Prima” e “Dopo”, nell'anteprima, mostrano le tue foto con e senza antisfarfallio e fusione di fotogrammi.
 - Un fermo immagine all'inizio e alla fine del video, fino a 10 secondi ciascuno, fino a cinque riproduzioni delle foto, oppure un “Boomerang”, avanti e indietro.
-- Aggiungi musica sotto un MP4 (MP3, M4A, WAV, WMA o FLAC): scegli in che punto della canzone inizia il video, con dissolvenza in entrata e in uscita. La canzone finisce dove finisce il video. Una GIF non ha audio.
+- Aggiungi musica sotto un MP4 (MP3, M4A, WAV, WMA o FLAC): scegli in che punto della canzone inizia il video, con dissolvenza in entrata e in uscita. La canzone viene tagliata dove finisce il video; se è più corta, il resto è in silenzio. Una GIF non ha audio.
 
 Modifica ed esportazione
 - Scorri la sequenza, avanza un fotogramma alla volta, rimuovi una foto mossa o trascinala al suo posto. Ctrl+Z la rimette nel progetto. Rimuovere una foto la toglie dal video, mai dal disco.
@@ -83,7 +83,7 @@ out the rating question.
 - Fusione di fotogrammi: ogni fotogramma è la media delle foto vicine, da 2 a 16, come una lunga esposizione, per scie luminose e nuvole fluide.
 - Ritaglio animato: passa da un'inquadratura iniziale a una finale, con uno zoom fino a 4×, morbido o lineare.
 - GIF animata: esporta una GIF che si ripete all'infinito, in tre misure, fino a 25 fotogrammi al secondo.
-- Musica sotto un MP4: scegli dove inizia la canzone, con dissolvenza in entrata e in uscita. Finisce con il video.
+- Musica sotto un MP4: scegli dove inizia la canzone, con dissolvenza in entrata e in uscita. Viene tagliata dove finisce il video.
 - Fermo immagine all'inizio e alla fine, fino a 10 secondi, fino a cinque riproduzioni delle foto, oppure la modalità Boomerang.
 - Salva il tuo lavoro: un file di progetto .10lapse si riapre più tardi, la schermata iniziale mostra i progetti recenti e, se 10Lapse si chiude prima del salvataggio, propone di ripristinare le modifiche.
 - Ctrl+O ora apre un progetto; “Scegli cartella” è passato a Ctrl+I.
@@ -109,7 +109,7 @@ Antisfarfallio: attenua i salti di esposizione e trasforma i gradini di un tramo
 Fusione di fotogrammi: la media delle foto vicine, da 2 a 16, per scie luminose e nuvole fluide
 Ritaglio animato da un'inquadratura iniziale a una finale, zoom fino a 4×, “Morbido” o “Lineare”
 Fermo immagine all'inizio e alla fine, fino a cinque riproduzioni delle foto, oppure modalità Boomerang
-Musica sotto un MP4: scegli dove inizia la canzone, con dissolvenza in entrata e in uscita; finisce con il video
+Musica sotto un MP4: scegli dove inizia la canzone, con dissolvenza in entrata e in uscita; viene tagliata dove finisce il video
 Salva i progetti come file .10lapse, riapri quelli recenti dalla schermata iniziale e ripristina le modifiche dopo un arresto anomalo
 MP4 in H.264 (o HEVC se il PC lo supporta) a 720p, 1080p, 1440p o 4K, con tre livelli di qualità e la stima delle dimensioni del file
 GIF animata che si ripete all'infinito, in tre misure (320, 480 o 640 pixel), fino a 10, 20 o 25 fotogrammi al secondo
