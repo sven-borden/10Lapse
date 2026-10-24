@@ -41,6 +41,7 @@ public sealed class GoldenExportTests
             _ when type == typeof(uint) => (current is uint number ? number : 0u) + 12_345u,
             _ when type == typeof(TimeSpan) => (current is TimeSpan span ? span : TimeSpan.Zero) + TimeSpan.FromSeconds(7),
             _ when type == typeof(double) => (current is double number ? number : 0) + 1.5,
+            _ when type == typeof(TenLapse.Media.Audio.MusicTrack) => new TenLapse.Media.Audio.MusicTrack(MusicSettings.Default with { Path = @"C:\Music\Sunrise.mp3" }, 20_000_000),
             _ => throw new InvalidOperationException($"VideoExportSettings.{property.Name} is a {type.Name}: give it a value other than its default in {nameof(ResizedCopiesEverySettingButTheSize)}."),
         };
     }

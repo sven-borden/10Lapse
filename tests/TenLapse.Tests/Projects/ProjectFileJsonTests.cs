@@ -143,6 +143,54 @@ public sealed class ProjectFileJsonTests
     }
 
     [Fact]
+    public void TheMusicGroupSurvivesAWriteAndARead()
+    {
+        // #50: the song's full path and its path beside the project, its length, the start and the fades in exact ticks;
+        // the opened project starts with it, clean.
+        var music = new MusicSettings(@"D:\Trip\Music\Sunrise.mp3", TimeSpan.FromTicks(1_834_567_891), TimeSpan.FromSeconds(12.3), TimeSpan.FromSeconds(1.5), TimeSpan.FromSeconds(10));
+        var content = ProjectFileContent.From(new Project { Music = music }.Snapshot, @"D:\Trip\Trip.10lapse");
+        Assert.Equal(@"Music\Sunrise.mp3", content.MusicRelativePath);
+
+        var read = RoundTrip(content);
+        Assert.Equal(music, read.Music);
+        Assert.Equal(@"Music\Sunrise.mp3", read.MusicRelativePath);
+        Assert.Equal(MusicSettings.Default, RoundTrip(new ProjectFileContent()).Music);
+        Assert.Null(RoundTrip(new ProjectFileContent()).MusicRelativePath);
+
+        var project = read.CreateEmptyProject();
+        Assert.Equal(music, project.Music);
+        Assert.False(project.Snapshot.IsDirty);
+    }
+
+    [Fact]
+    public void AFileWithoutMusicOrWithABadGroupHasNone()
+    {
+        var written = ProjectFileJson.Write(new ProjectFileContent { Music = MusicSettings.Default with { Path = @"C:\Music\Sunrise.mp3" } });
+        var root = System.Text.Json.Nodes.JsonNode.Parse(written)!.AsObject();
+
+        // A file from before #50 has no music group: no music, without a word.
+        root.Remove("music");
+        var before = ProjectFileJson.Read(root.ToJsonString());
+        Assert.Equal(MusicSettings.Default, before.Content!.Music);
+        Assert.Empty(before.Problems);
+
+        // A hand-edited one keeps the default for each field it spoils (a path that is not a full one, a fade over 10 s, a
+        // negative start, a relative path that is rooted), and says so.
+        root["music"] = new System.Text.Json.Nodes.JsonObject
+        {
+            ["path"] = @"Music\Sunrise.mp3",
+            ["relativePath"] = @"C:\Sunrise.mp3",
+            ["startSeconds"] = -1,
+            ["fadeInSeconds"] = 3,
+            ["fadeOutSeconds"] = 11,
+        };
+        var spoiled = ProjectFileJson.Read(root.ToJsonString());
+        Assert.Equal(MusicSettings.Default with { FadeIn = TimeSpan.FromSeconds(3) }, spoiled.Content!.Music);
+        Assert.Null(spoiled.Content.MusicRelativePath);
+        Assert.Equal(4, spoiled.Problems.Count);
+    }
+
+    [Fact]
     public void AFileWithoutTheCropOrWithABadOneShowsTheWholeFrame()
     {
         var written = ProjectFileJson.Write(new ProjectFileContent { Crop = new CropSettings(true, new Framing(0.5, 0.5, 0.5), Framing.Whole, CropEasing.Linear) });
@@ -399,6 +447,7 @@ public sealed class ProjectFileJsonTests
             (SequenceSettings.Default, value => new ProjectFileContent { Sequence = (SequenceSettings)value }, content => content.Sequence),
             (LookSettings.Default, value => new ProjectFileContent { Look = (LookSettings)value }, content => content.Look),
             (CropSettings.Default, value => new ProjectFileContent { Crop = (CropSettings)value }, content => content.Crop),
+            (MusicSettings.Default, value => new ProjectFileContent { Music = (MusicSettings)value }, content => content.Music),
         ];
         var walked = new List<string>();
         foreach (var (defaults, make, take) in groups)
@@ -422,6 +471,8 @@ public sealed class ProjectFileJsonTests
         Assert.Contains("LookSettings.Strength", walked);
         Assert.Contains("CropSettings.Start", walked);
         Assert.Contains("CropSettings.Easing", walked);
+        Assert.Contains("MusicSettings.Path", walked);
+        Assert.Contains("MusicSettings.FadeOut", walked);
     }
 
     // Every settable property of a settings record, recursing into the records it holds.
@@ -489,6 +540,12 @@ public sealed class ProjectFileJsonTests
         if (type == typeof(bool))
         {
             return [!(bool)current!];
+        }
+
+        // #50's song.
+        if (type == typeof(string) && path == "MusicSettings.Path")
+        {
+            return [@"C:\Music\Sunrise.mp3", @"\\nas\music\Été.flac"];
         }
 
         // #46's framings: zoomed in off centre, and a size whose decimal text is long.

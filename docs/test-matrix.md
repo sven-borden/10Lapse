@@ -749,6 +749,48 @@ Run: once, on the Store or a sideloaded 3.1 build.
   switch, both framings and the easing are back, and no unsaved-changes dot;
   the preview opens on Video.
 
+### 5.23 Music (#50, 3.1)
+
+Built on the dev PC with tones written as WAV files: the export's sound is read
+back and measured (`MusicExportTests`: the start point, the fades, silence
+after a short song, resampling from 22.05 kHz), the settings and the section are
+tested (`MusicSettingsTests`, `MusicPanelTests`). Nobody has heard a real song
+through it yet, in the preview or in an exported MP4. Run: once, on the Store or
+a sideloaded 3.1 build, with headphones.
+
+- [ ] **5.23.1 Add a song and export** (#50). Do: import a few hundred photos,
+  Music section, Add music, choose an MP3 longer than the video; set the start
+  to skip its intro, fade in 2 s, fade out 4 s; export an MP4 and play it in
+  Media Player and in a browser. Expect: the music starts at the chosen point,
+  rises over 2 s, falls over the last 4 s and ends with the last frame; the
+  picture is unchanged (5.1); the line under the sliders says the song plays
+  under the whole video.
+- [ ] **5.23.2 Every format** (#50). Do: repeat with an M4A, a WAV (44.1 and 96
+  kHz), a WMA and a FLAC, and a mono file. Expect: each plays at its pitch (the
+  96 kHz one is resampled to 48 kHz), the mono one on both sides; a file that is
+  not a song (rename a .txt to .mp3) is refused at once with an InfoBar.
+- [ ] **5.23.3 A short song** (#50). Do: a 10 s song under a 30 s video.
+  Expect: the line says the song ends 20 s before the video; the export plays
+  it once, faded out at its end, then silence to the last frame.
+- [ ] **5.23.4 The preview** (#50). Do: play the preview, scrub, step, loop
+  over the end, pause, minimize; change the start and the fades while it plays.
+  Expect: the song plays in step with the picture from the chosen point, at the
+  fades' loudness, follows a scrub at once and the loop back to the start,
+  stops with the preview; the song never shows in Windows' media flyout or
+  answers the media keys. With the output on GIF the preview is silent and the
+  section says a GIF has no sound.
+- [ ] **5.23.5 Save, move and reopen** (#50). Do: save the project with the
+  song in a folder beside it, move the whole folder to another drive, open it;
+  then delete the song and open it again. Expect: the song is found beside the
+  project; once deleted, the section says it can't be found (Replace or
+  Remove), and an export says the music can't be read.
+- [ ] **5.23.6 Keyboard, Narrator and the narrow window** (#50). Do: Tab
+  through Add music, Replace, Remove and the three sliders; narrow the window
+  under 1000 px. Expect: Narrator reads the song's name and length and each
+  slider's name; after Add music focus is on Replace, after Remove on Add music;
+  the narrow panel has a fifth tab, Music, and the five tabs fit at 640 px in
+  every language.
+
 ## 6. Per-machine measurements
 
 - [ ] **6.1 Bench on each machine** (#34, PR #89). Run: all, with the repo and

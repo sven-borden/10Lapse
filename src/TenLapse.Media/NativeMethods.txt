@@ -116,3 +116,16 @@ WICBitmapPaletteType
 WICBitmapEncoderCacheOption
 PROPVARIANT
 GENERIC_ACCESS_RIGHTS
+// Media Foundation, through CsWin32: the music under an MP4 (#50), decoded by the source reader, encoded to AAC by the sink writer.
+MFMediaType_Audio
+MFAudioFormat_PCM
+MFAudioFormat_Float
+MFAudioFormat_AAC
+MF_MT_AUDIO_SAMPLES_PER_SECOND
+MF_MT_AUDIO_NUM_CHANNELS
+MF_MT_AUDIO_BITS_PER_SAMPLE
+MF_MT_AUDIO_BLOCK_ALIGNMENT
+MF_MT_AUDIO_AVG_BYTES_PER_SECOND
+MF_MT_AAC_PAYLOAD_TYPE
+MF_MT_AAC_AUDIO_PROFILE_LEVEL_INDICATION
+MFCreateMemoryBuffer

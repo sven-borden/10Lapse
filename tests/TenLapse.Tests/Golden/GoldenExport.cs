@@ -111,7 +111,8 @@ internal static class GoldenExport
         OutputQuality quality = OutputQuality.High,
         SequenceSettings? sequence = null,
         LookSettings? look = null,
-        CropSettings? crop = null)
+        CropSettings? crop = null,
+        MusicSettings? music = null)
     {
         var project = new Project(
             timing,
@@ -120,7 +121,8 @@ internal static class GoldenExport
             SortMode.Manual,
             sequence ?? SequenceSettings.Default,
             look ?? LookSettings.Default,
-            crop ?? CropSettings.Default);
+            crop ?? CropSettings.Default,
+            music ?? MusicSettings.Default);
         project.AddFrames(frames);
         return project.Snapshot;
     }
@@ -243,6 +245,7 @@ internal static class GoldenExport
             StallTimeout = settings.StallTimeout,
             RenderTargets = settings.RenderTargets,
             DecodeZoom = settings.DecodeZoom,
+            Music = settings.Music,
         };
 
     private static void DeleteFolder(string folder)

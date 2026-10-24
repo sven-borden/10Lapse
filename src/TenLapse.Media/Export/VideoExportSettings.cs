@@ -1,5 +1,6 @@
 using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
+using TenLapse.Media.Audio;
 
 namespace TenLapse.Media.Export;
 
@@ -91,6 +92,12 @@ public sealed record VideoExportSettings
         get;
         init => field = double.IsFinite(value) && value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The decode zoom must be 1 or more.");
     } = 1;
+
+    /// <summary>
+    /// The music the MP4 carries (#50, <see cref="MusicTrack.For"/>), or null for a silent video. A GIF has no sound and
+    /// leaves it out.
+    /// </summary>
+    public MusicTrack? Music { get; init; }
 
     /// <summary>
     /// The decode depth and concurrency an export uses: <see cref="DecodeAhead"/> and <see cref="DecodeThreads"/>

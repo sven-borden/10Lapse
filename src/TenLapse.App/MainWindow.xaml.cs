@@ -92,7 +92,7 @@ public sealed partial class MainWindow : Window
         notifications.Invoked += (_, _) => _queue.TryEnqueueGuarded(errors, Activate, ExportText.NotificationFailed);
 
         _startup.Phase("building the shell");
-        _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter, preview, exportServices(_exportFeedback), files, recent);
+        _shell = new ShellView(viewModel, settings, import, output, infoBars, errors, presenter, preview, exportServices(_exportFeedback), files, recent, new Services.MusicFiles(() => AppWindow.Id));
         // The language of the text (#113), for WinUI's own strings, line breaks and font fallback; the tree inherits it.
         _shell.Language = AppLanguage.Tag;
         Content = _shell;

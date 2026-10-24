@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Music section of the inspector (#50), beyond the prototype (which predates it), built as the Look section is: a
+  Body strong heading, 16 px of padding above and below and no divider at the bottom (it is the last section).
+
+  Without a song: a Caption Secondary line saying what the section does and Add music. With one: its file name (Body,
+  trimmed) over its length (Caption Secondary), with Replace and Remove beside them; then where the video starts in the
+  song and the fades in and out, each a label, its value and a slider in Ink Secondary (as the strength slider), and a
+  Caption Secondary line saying how the song fits the video. A song whose file is gone says so in place of the sliders.
+  While the output is a GIF a line says a GIF has no sound. No amber here: amber is for Export and progress.
+-->
+<UserControl
+  x:Class="TenLapse.Shell.MusicPanel"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:music="using:TenLapse.Presentation.Music">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="SliderTrackValueFill" Color="{ThemeResource InkSecondaryColor}" />
+          <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource InkSecondaryColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{ThemeResource InkColor}" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="SliderTrackValueFill" Color="{ThemeResource InkSecondaryColor}" />
+          <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource InkSecondaryColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{ThemeResource InkColor}" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+
+  <Border Padding="0,16,0,16">
+    <StackPanel Spacing="{StaticResource SpacingMd}">
+      <TextBlock
+        AutomationProperties.HeadingLevel="Level2"
+        Style="{StaticResource BodyStrongTextStyle}"
+        Text="{x:Bind music:MusicText.Heading}" />
+
+      <!-- No song yet: what the section does, and Add music. -->
+      <StackPanel x:Name="EmptyBlock" Spacing="{StaticResource SpacingSm}" Visibility="{x:Bind ViewModel.ShowsEmpty, Mode=OneWay}">
+        <TextBlock
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource CaptionTextStyle}"
+          Text="{x:Bind music:MusicText.EmptyHint}"
+          TextWrapping="Wrap" />
+        <Button
+          x:Name="AddButton"
+          Height="{StaticResource ControlHeight}"
+          Padding="{StaticResource PaddingButtonSubtle}"
+          AutomationProperties.Name="{x:Bind music:MusicText.AddName}"
+          Command="{x:Bind ViewModel.AddCommand}"
+          Content="{x:Bind music:MusicText.AddButton}" />
+      </StackPanel>
+
+      <!-- The song: its name and length, Replace and Remove. -->
+      <Grid x:Name="SongRow" ColumnSpacing="{StaticResource SpacingSm}" Visibility="{x:Bind ViewModel.HasMusic, Mode=OneWay}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel VerticalAlignment="Center" AutomationProperties.Name="{x:Bind ViewModel.SongName, Mode=OneWay}">
+          <TextBlock
+            x:Name="SongFileName"
+            MaxLines="1"
+            Style="{StaticResource BodyTextStyle}"
+            Text="{x:Bind ViewModel.FileName, Mode=OneWay}"
+            TextTrimming="CharacterEllipsis" />
+          <TextBlock
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTabularTextStyle}"
+            Text="{x:Bind ViewModel.LengthText, Mode=OneWay}" />
+        </StackPanel>
+        <Button
+          x:Name="ReplaceButton"
+          Grid.Column="1"
+          Height="{StaticResource ControlHeight}"
+          Padding="{StaticResource PaddingButtonSubtle}"
+          VerticalAlignment="Center"
+          AutomationProperties.Name="{x:Bind music:MusicText.ReplaceName}"
+          Command="{x:Bind ViewModel.AddCommand}"
+          Content="{x:Bind music:MusicText.ReplaceButton}" />
+        <Button
+          x:Name="RemoveButton"
+          Grid.Column="2"
+          Height="{StaticResource ControlHeight}"
+          Padding="{StaticResource PaddingButtonSubtle}"
+          VerticalAlignment="Center"
+          AutomationProperties.Name="{x:Bind music:MusicText.RemoveName}"
+          Command="{x:Bind ViewModel.RemoveCommand}"
+          Content="{x:Bind music:MusicText.RemoveButton}" />
+      </Grid>
+
+      <!-- The song's file is gone: said in place of the sliders. -->
+      <TextBlock
+        x:Name="MissingText"
+        Foreground="{ThemeResource InkSecondaryBrush}"
+        Style="{StaticResource CaptionTextStyle}"
+        Text="{x:Bind ViewModel.MissingText, Mode=OneWay}"
+        TextWrapping="Wrap"
+        Visibility="{x:Bind ViewModel.IsMissing, Mode=OneWay}" />
+
+      <!-- Where the video starts in the song, the fades (0 to 10 s: MusicSettings.MaxFade), and how the song fits. -->
+      <StackPanel x:Name="ControlsBlock" Spacing="{StaticResource SpacingMd}" Visibility="{x:Bind ViewModel.ShowsControls, Mode=OneWay}">
+        <StackPanel Spacing="{StaticResource SpacingXs}">
+          <Grid>
+            <TextBlock Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource CaptionTextStyle}" Text="{x:Bind music:MusicText.StartLabel}" />
+            <TextBlock
+              x:Name="StartValue"
+              HorizontalAlignment="Right"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTabularTextStyle}"
+              Text="{x:Bind ViewModel.StartText, Mode=OneWay}" />
+          </Grid>
+          <Slider
+            x:Name="StartSlider"
+            AutomationProperties.Name="{x:Bind music:MusicText.StartName}"
+            IsThumbToolTipEnabled="False"
+            LargeChange="5"
+            Maximum="{x:Bind ViewModel.StartMaximum, Mode=OneWay}"
+            Minimum="0"
+            SmallChange="1"
+            StepFrequency="0.1"
+            Value="{x:Bind ViewModel.StartSeconds, Mode=TwoWay}" />
+        </StackPanel>
+
+        <StackPanel Spacing="{StaticResource SpacingXs}">
+          <Grid>
+            <TextBlock Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource CaptionTextStyle}" Text="{x:Bind music:MusicText.FadeInLabel}" />
+            <TextBlock
+              x:Name="FadeInValue"
+              HorizontalAlignment="Right"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTabularTextStyle}"
+              Text="{x:Bind ViewModel.FadeInText, Mode=OneWay}" />
+          </Grid>
+          <Slider
+            x:Name="FadeInSlider"
+            AutomationProperties.Name="{x:Bind music:MusicText.FadeInName}"
+            IsThumbToolTipEnabled="False"
+            LargeChange="2"
+            Maximum="10"
+            Minimum="0"
+            SmallChange="0.5"
+            StepFrequency="0.5"
+            Value="{x:Bind ViewModel.FadeInSeconds, Mode=TwoWay}" />
+        </StackPanel>
+
+        <StackPanel Spacing="{StaticResource SpacingXs}">
+          <Grid>
+            <TextBlock Foreground="{ThemeResource InkSecondaryBrush}" Style="{StaticResource CaptionTextStyle}" Text="{x:Bind music:MusicText.FadeOutLabel}" />
+            <TextBlock
+              x:Name="FadeOutValue"
+              HorizontalAlignment="Right"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTabularTextStyle}"
+              Text="{x:Bind ViewModel.FadeOutText, Mode=OneWay}" />
+          </Grid>
+          <Slider
+            x:Name="FadeOutSlider"
+            AutomationProperties.Name="{x:Bind music:MusicText.FadeOutName}"
+            IsThumbToolTipEnabled="False"
+            LargeChange="2"
+            Maximum="10"
+            Minimum="0"
+            SmallChange="0.5"
+            StepFrequency="0.5"
+            Value="{x:Bind ViewModel.FadeOutSeconds, Mode=TwoWay}" />
+        </StackPanel>
+
+        <TextBlock
+          x:Name="FitText"
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource CaptionTextStyle}"
+          Text="{x:Bind ViewModel.FitText, Mode=OneWay}"
+          TextWrapping="Wrap"
+          Visibility="{x:Bind ViewModel.ShowsFit, Mode=OneWay}" />
+      </StackPanel>
+
+      <!-- A GIF has no sound. -->
+      <TextBlock
+        x:Name="GifSilentText"
+        Foreground="{ThemeResource InkSecondaryBrush}"
+        Style="{StaticResource CaptionTextStyle}"
+        Text="{x:Bind music:MusicText.GifSilent}"
+        TextWrapping="Wrap"
+        Visibility="{x:Bind ViewModel.ShowsGifSilent, Mode=OneWay}" />
+    </StackPanel>
+  </Border>
+</UserControl>

@@ -53,6 +53,7 @@ public sealed class VideoExportErrorMapper : IErrorMessageMapper
         VideoExportFailure.OutOfMemory => Critical(ProjectText.ExportFailedOutOfMemory),
         VideoExportFailure.FrameUnreadable => Critical(ProjectText.ExportFailedPhotoUnreadable),
         VideoExportFailure.DrawingFailed => Critical(ProjectText.ExportFailedDrawing, diagnostics: true),
+        VideoExportFailure.MusicUnreadable => Critical(Presentation.Music.MusicText.ExportFailed),
         _ => Critical(ProjectText.ExportFailedEncoder, diagnostics: true),
     };
 

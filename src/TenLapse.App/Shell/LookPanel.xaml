@@ -2,8 +2,8 @@
 <!--
   The Look section of the inspector (#45), after the prototype's Look section in docs/design/canvas/Main.dc.html (its
   "Coming in 3.1" badge dropped now that it is built): a Body strong heading, then Deflicker with its Caption Secondary
-  line on the left and the 40 x 20 switch on the right, 16 px of padding above and below and no divider at the bottom
-  (it is the last section).
+  line on the left and the 40 x 20 switch on the right, 16 px of padding above and below and a divider at the bottom
+  (Music, #50, follows it).
 
   Beyond the prototype: while deflicker is on, the strength (a label, its percentage and a slider); while the photos are
   being measured, the progress line with Cancel and a 4 px progress bar under it. The switch is the one amber indicator
@@ -47,7 +47,10 @@
     </ResourceDictionary>
   </UserControl.Resources>
 
-  <Border Padding="0,16,0,16">
+  <Border
+    Padding="0,16,0,16"
+    BorderBrush="{ThemeResource DividerBrush}"
+    BorderThickness="0,0,0,1">
     <StackPanel Spacing="{StaticResource SpacingMd}">
       <TextBlock
         AutomationProperties.HeadingLevel="Level2"

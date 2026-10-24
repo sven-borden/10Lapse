@@ -45,6 +45,9 @@ public enum ProjectChanges
 
     /// <summary><see cref="Project.Crop"/> changed (#46: crop and pan).</summary>
     Crop = 1 << 11,
+
+    /// <summary><see cref="Project.Music"/> changed (#50: the music under the video).</summary>
+    Music = 1 << 12,
 }
 
 /// <summary>The kind of a <see cref="FrameChange"/>.</summary>
@@ -181,6 +184,9 @@ public sealed record ProjectSnapshot
     /// <summary>Crop and pan (#46): the framing each video frame shows is <see cref="CropSettings.At(FrameSequence, int)"/> of <see cref="Playback"/>.</summary>
     public CropSettings Crop { get; internal init; } = CropSettings.Default;
 
+    /// <summary>The music (#50): the song under the video, where in it the video starts, its fades. MP4 only.</summary>
+    public MusicSettings Music { get; internal init; } = MusicSettings.Default;
+
     /// <summary>True after any change since the project was created, opened, saved or (while it has no file) exported.</summary>
     public bool IsDirty { get; internal init; }
 
@@ -314,9 +320,19 @@ public sealed class Project
     /// Creates an empty, clean project with every project-only group too: <paramref name="sequence"/> (#49: holds, plays,
     /// boomerang), <paramref name="look"/> (#45: deflicker) and <paramref name="crop"/> (#46: crop and pan), as an opened
     /// project file has them (<see cref="ProjectFileContent.CreateEmptyProject"/>). Owned by the calling thread; like the
-    /// others, not an edit. A later project-only group adds a parameter here.
+    /// others, not an edit.
     /// </summary>
     public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode, SequenceSettings sequence, LookSettings look, CropSettings crop)
+        : this(timing, frameSettings, output, sortMode, sequence, look, crop, MusicSettings.Default)
+    {
+    }
+
+    /// <summary>
+    /// Creates an empty, clean project with every project-only group, the music (#50) too, as an opened project file has
+    /// them (<see cref="ProjectFileContent.CreateEmptyProject"/>). Owned by the calling thread; not an edit. A later
+    /// project-only group adds a parameter here.
+    /// </summary>
+    public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode, SequenceSettings sequence, LookSettings look, CropSettings crop, MusicSettings music)
     {
         ArgumentNullException.ThrowIfNull(timing);
         ArgumentNullException.ThrowIfNull(frameSettings);
@@ -324,12 +340,13 @@ public sealed class Project
         ArgumentNullException.ThrowIfNull(sequence);
         ArgumentNullException.ThrowIfNull(look);
         ArgumentNullException.ThrowIfNull(crop);
+        ArgumentNullException.ThrowIfNull(music);
         if (!Enum.IsDefined(sortMode))
         {
             throw new ArgumentOutOfRangeException(nameof(sortMode), sortMode, "Unknown sort mode.");
         }
 
-        _state = ProjectSnapshot.Empty with { Timing = timing, FrameSettings = frameSettings, Output = output, SortMode = sortMode, Sequence = sequence, Look = look, Crop = crop };
+        _state = ProjectSnapshot.Empty with { Timing = timing, FrameSettings = frameSettings, Output = output, SortMode = sortMode, Sequence = sequence, Look = look, Crop = crop, Music = music };
     }
 
     /// <summary>Raised after every mutation, once per call, on the owner thread.</summary>
@@ -442,6 +459,19 @@ public sealed class Project
             if (Changes(_state.Crop, value))
             {
                 Commit(_state with { Crop = value }, ProjectChanges.Crop);
+            }
+        }
+    }
+
+    /// <summary>The music (#50): the song, where in it the video starts, its fades in and out.</summary>
+    public MusicSettings Music
+    {
+        get => _state.Music;
+        set
+        {
+            if (Changes(_state.Music, value))
+            {
+                Commit(_state with { Music = value }, ProjectChanges.Music);
             }
         }
     }

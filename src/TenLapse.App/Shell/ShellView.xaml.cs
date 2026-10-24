@@ -52,6 +52,8 @@ public sealed partial class ShellView : UserControl
     private readonly CropViewModel _crop;
     private readonly ExposureAnalysis _exposure;
     private readonly LookPanelViewModel _look;
+    private readonly Presentation.Music.MusicPanelViewModel _music;
+    private readonly Preview.MusicPlayback _musicPlayback;
     private readonly Presentation.Filmstrip.FilmstripViewModel _filmstrip;
     private readonly PanelSwap _inspectorSwap;
     private readonly ScreenMotion? _screens;
@@ -71,7 +73,8 @@ public sealed partial class ShellView : UserControl
     /// <param name="exportServices">What the export (#24) works through: the exporter, the Save dialog, the window's taskbar and notification.</param>
     /// <param name="files">The File menu's Open, Save and Save as (#52).</param>
     /// <param name="recent">The first-launch screen's recent projects (#52).</param>
-    internal ShellView(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, ExportServices exportServices, ProjectFilesViewModel files, RecentProjectsViewModel recent)
+    /// <param name="musicFiles">The Music section's file dialog and the reading of a chosen song (#50).</param>
+    internal ShellView(ShellViewModel viewModel, SettingsViewModel settings, ImportViewModel import, OutputPanelViewModel output, InfoBarQueue infoBars, IErrorSink errors, IErrorPresenter presenter, Preview.PreviewSession preview, ExportServices exportServices, ProjectFilesViewModel files, RecentProjectsViewModel recent, Presentation.Music.IMusicFiles musicFiles)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(settings);
@@ -82,6 +85,7 @@ public sealed partial class ShellView : UserControl
         ArgumentNullException.ThrowIfNull(presenter);
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(recent);
+        ArgumentNullException.ThrowIfNull(musicFiles);
         ViewModel = viewModel;
         Import = import;
         Files = files;
@@ -110,6 +114,10 @@ public sealed partial class ShellView : UserControl
         _exposure = new ExposureAnalysis(viewModel, new Media.Look.ExposureMeter(), new DispatcherQueueUiDispatcher(DispatcherQueue, errors), presenter, infoBars);
         _look = new LookPanelViewModel(viewModel, _exposure, presenter);
         LookSection.ViewModel = _look;
+
+        // The Music section (#50): the song under the video, its start and its fades.
+        _music = new Presentation.Music.MusicPanelViewModel(viewModel, musicFiles, infoBars, presenter);
+        MusicSection.ViewModel = _music;
 #if DEBUG
         Debugging.DebugTiming.Apply(_timing);
         Debugging.DebugFrame.Apply(_frame);
@@ -139,6 +147,9 @@ public sealed partial class ShellView : UserControl
         Transport.Attach(preview.Player, presenter);
         Transport.AttachLook(_look);
         ShellRoot.KeyDown += OnShellKeyDown;
+
+        // The music under the preview (#50): it plays while the preview plays, in step with the picture.
+        _musicPlayback = new Preview.MusicPlayback(preview.Player, DispatcherQueue, errors);
 
         // The filmstrip (#20): thumbnails, selection, removal and undo, reorder and gap markers. Its Delete and Ctrl+Z
         // also listen on ShellRoot, after the transport keys, and not on the Settings page.
@@ -327,6 +338,8 @@ public sealed partial class ShellView : UserControl
         _frame.Dispose();
         _look.Dispose();
         _crop.Dispose();
+        _musicPlayback.Dispose();
+        _music.Dispose();
         _exposure.Dispose();
         Filmstrip.Detach();
         _filmstrip.Dispose();
@@ -363,7 +376,7 @@ public sealed partial class ShellView : UserControl
         PreviewSurface.Develop();
         Filmstrip.BeginArrival();
         var index = 0;
-        foreach (var section in new UIElement[] { TimingSection, FrameSection, OutputSection, LookSection }.Where(section => section.Visibility == Visibility.Visible))
+        foreach (var section in new UIElement[] { TimingSection, FrameSection, OutputSection, LookSection, MusicSection }.Where(section => section.Visibility == Visibility.Visible))
         {
             Reveal(section, MotionTokens.Plan(MotionCatalogue.ArrivalInspector, index++));
         }
@@ -559,6 +572,7 @@ public sealed partial class ShellView : UserControl
                 InspectorTab.Timing => (UIElement)TimingSection,
                 InspectorTab.Frame => FrameSection,
                 InspectorTab.Look => LookSection,
+                InspectorTab.Music => MusicSection,
                 _ => OutputSection,
             };
             DispatcherQueue.TryEnqueueGuarded(
@@ -620,6 +634,11 @@ public sealed partial class ShellView : UserControl
         if (IsWithin(node, LookSection))
         {
             return InspectorTab.Look;
+        }
+
+        if (IsWithin(node, MusicSection))
+        {
+            return InspectorTab.Music;
         }
 
         return IsWithin(node, OutputSection) ? InspectorTab.Output : null;

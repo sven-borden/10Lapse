@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Musica</value>
+  </data>
+  <data name="EmptyHint" xml:space="preserve">
+    <value>Una canzone sotto il video, tagliata e sfumata sulla sua durata. Solo MP4.</value>
+  </data>
+  <data name="AddButton" xml:space="preserve">
+    <value>Aggiungi musica…</value>
+  </data>
+  <data name="AddName" xml:space="preserve">
+    <value>Aggiungi musica</value>
+  </data>
+  <data name="ReplaceButton" xml:space="preserve">
+    <value>Sostituisci…</value>
+  </data>
+  <data name="ReplaceName" xml:space="preserve">
+    <value>Sostituisci la musica</value>
+  </data>
+  <data name="RemoveButton" xml:space="preserve">
+    <value>Rimuovi</value>
+  </data>
+  <data name="RemoveName" xml:space="preserve">
+    <value>Rimuovi la musica dal progetto</value>
+  </data>
+  <data name="SongName" xml:space="preserve">
+    <value>{0}, durata {1}</value>
+  </data>
+  <data name="StartLabel" xml:space="preserve">
+    <value>Il video inizia a</value>
+  </data>
+  <data name="StartName" xml:space="preserve">
+    <value>Dove inizia il video nella canzone</value>
+  </data>
+  <data name="FadeInLabel" xml:space="preserve">
+    <value>Dissolvenza in entrata</value>
+  </data>
+  <data name="FadeOutLabel" xml:space="preserve">
+    <value>Dissolvenza in uscita</value>
+  </data>
+  <data name="FadeInName" xml:space="preserve">
+    <value>Durata della dissolvenza in entrata</value>
+  </data>
+  <data name="FadeOutName" xml:space="preserve">
+    <value>Durata della dissolvenza in uscita</value>
+  </data>
+  <data name="FitsVideo" xml:space="preserve">
+    <value>La canzone accompagna tutto il video e sfuma alla sua fine.</value>
+  </data>
+  <data name="EndsEarly" xml:space="preserve">
+    <value>La canzone finisce {0} prima del video; il resto è in silenzio.</value>
+  </data>
+  <data name="StartsAfterEnd" xml:space="preserve">
+    <value>Il video inizia dopo la fine della canzone, quindi non ha musica. Sposta l'inizio indietro.</value>
+  </data>
+  <data name="GifSilent" xml:space="preserve">
+    <value>Una GIF non ha audio. Esporta un MP4 per mantenere la musica.</value>
+  </data>
+  <data name="Missing" xml:space="preserve">
+    <value>Impossibile trovare {0}. Sostituiscilo o rimuovi la musica.</value>
+  </data>
+  <data name="Unreadable" xml:space="preserve">
+    <value>Impossibile riprodurre {0}. Scegli un file MP3, M4A, WAV, WMA o FLAC.</value>
+  </data>
+  <data name="ExportFailed" xml:space="preserve">
+    <value>Impossibile leggere il file musicale. Sostituiscilo o rimuovilo nella sezione Musica, poi esporta di nuovo.</value>
+  </data>
+</root>

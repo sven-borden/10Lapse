@@ -382,9 +382,11 @@ public sealed partial class ProjectFilesViewModel : ObservableObject, IDisposabl
     }
 
     // Replaces the current project with the content's settings and frames; false when the shell refused (an export holds it).
+    // The music is the one looked up with the frames: its song beside the project when it moved with it (#50).
     private bool Replace(ProjectFileContent content, ResolvedFrames frames)
     {
-        if (!_shell.ReplaceWithoutAsking(content.CreateEmptyProject))
+        var opened = frames.Music is { } music ? content with { Music = music } : content;
+        if (!_shell.ReplaceWithoutAsking(opened.CreateEmptyProject))
         {
             return false;
         }

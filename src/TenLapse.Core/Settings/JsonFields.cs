@@ -138,6 +138,52 @@ internal static class JsonFields
             Field(section, $"{name}.easing", fallback.Easing, ReadEnum<CropEasing>, problems));
     }
 
+    /// <summary>
+    /// The music group (#50): the song's full path and, when it is on the project file's drive, its path relative to the
+    /// file's folder; the song's length, where the video starts in it and the fades, in seconds as decimal numbers (exact
+    /// ticks). Project files only: a new project starts without music.
+    /// </summary>
+    public static JsonObject WriteMusic(MusicSettings music, string? relativePath)
+    {
+        var section = new JsonObject
+        {
+            ["path"] = music.Path,
+            ["lengthSeconds"] = Seconds(music.Length),
+            ["startSeconds"] = Seconds(music.Start),
+            ["fadeInSeconds"] = Seconds(music.FadeIn),
+            ["fadeOutSeconds"] = Seconds(music.FadeOut),
+        };
+        if (music.Path is not null && relativePath is not null)
+        {
+            section["relativePath"] = relativePath;
+        }
+
+        return section;
+    }
+
+    /// <summary>
+    /// Reads the music group named <paramref name="name"/>, field by field; a value out of range (a fade over 10 s, a path
+    /// that is not a full one) keeps the fallback's. <paramref name="relativePath"/> is the song's path relative to the
+    /// project file's folder, when the file has one.
+    /// </summary>
+    public static MusicSettings ReadMusic(JsonObject root, string name, MusicSettings fallback, List<string> problems, out string? relativePath)
+    {
+        var section = Section(root, name, problems);
+        relativePath = Field(section, $"{name}.relativePath", null, ReadRelativePath, problems);
+        return new MusicSettings(
+            Field(section, $"{name}.path", fallback.Path, node => (MusicSettings.Default with { Path = node.GetValue<string>() }).Path, problems),
+            Field(section, $"{name}.lengthSeconds", fallback.Length, node => (MusicSettings.Default with { Length = ReadSeconds(node) }).Length, problems),
+            Field(section, $"{name}.startSeconds", fallback.Start, node => (MusicSettings.Default with { Start = ReadSeconds(node) }).Start, problems),
+            Field(section, $"{name}.fadeInSeconds", fallback.FadeIn, node => (MusicSettings.Default with { FadeIn = ReadSeconds(node) }).FadeIn, problems),
+            Field(section, $"{name}.fadeOutSeconds", fallback.FadeOut, node => (MusicSettings.Default with { FadeOut = ReadSeconds(node) }).FadeOut, problems));
+    }
+
+    private static string? ReadRelativePath(JsonNode node)
+    {
+        var path = node.GetValue<string>();
+        return path.Length == 0 || path.Contains('\0') || Path.IsPathRooted(path) ? throw new FormatException("not a relative path") : path;
+    }
+
     private static JsonObject WriteFraming(Framing framing) => new()
     {
         ["size"] = framing.Size,

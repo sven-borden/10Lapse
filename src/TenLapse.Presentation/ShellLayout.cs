@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using TenLapse.Presentation.Look;
+using TenLapse.Presentation.Music;
 
 namespace TenLapse.Presentation;
 
@@ -17,12 +18,15 @@ public enum InspectorTab
 
     /// <summary>Deflicker and its strength (#45).</summary>
     Look,
+
+    /// <summary>The song under the video, its start and its fades (#50).</summary>
+    Music,
 }
 
 /// <summary>
 /// The shell's responsive layout (#36; DESIGN.md section 5, the canvas's narrow state). From
 /// <see cref="DockMinWindowWidth"/> DIPs of window width the inspector docks right at a fixed width. Below it the
-/// inspector becomes a panel under the stage, with a row of tabs (Timing, Frame, Output, Look) in place of the stacked
+/// inspector becomes a panel under the stage, with a row of tabs (Timing, Frame, Output, Look, Music) in place of the stacked
 /// sections, and the panel gives up height to the preview when the window is short. The sizes come from the
 /// <c>Layout.xaml</c> tokens; this class holds the rules, so the view only applies them.
 /// </summary>
@@ -32,7 +36,7 @@ public sealed partial class ShellLayout : ObservableObject
     public static string TabsName => ProjectText.InspectorTabsName;
 
     /// <summary>The tabs' labels, in <see cref="InspectorTab"/> order.</summary>
-    public static IReadOnlyList<string> TabLabels { get; } = [TimingText.Heading, FrameText.Heading, OutputText.Heading, LookText.Heading];
+    public static IReadOnlyList<string> TabLabels { get; } = [TimingText.Heading, FrameText.Heading, OutputText.Heading, LookText.Heading, MusicText.Heading];
 
     private readonly double _dockMinWindowWidth;
     private readonly double _panelHeight;
@@ -40,11 +44,11 @@ public sealed partial class ShellLayout : ObservableObject
     private readonly double _previewMinHeight;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsTabs), nameof(ShowsTiming), nameof(ShowsFrame), nameof(ShowsOutput), nameof(ShowsLook))]
+    [NotifyPropertyChangedFor(nameof(ShowsTabs), nameof(ShowsTiming), nameof(ShowsFrame), nameof(ShowsOutput), nameof(ShowsLook), nameof(ShowsMusic))]
     private bool _isNarrow;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SelectedTabIndex), nameof(ShowsTiming), nameof(ShowsFrame), nameof(ShowsOutput), nameof(ShowsLook))]
+    [NotifyPropertyChangedFor(nameof(SelectedTabIndex), nameof(ShowsTiming), nameof(ShowsFrame), nameof(ShowsOutput), nameof(ShowsLook), nameof(ShowsMusic))]
     private InspectorTab _tab;
 
     /// <param name="dockMinWindowWidth">The narrowest window that docks the inspector (token InspectorDockMinWindowWidth, 1000).</param>
@@ -78,6 +82,9 @@ public sealed partial class ShellLayout : ObservableObject
 
     /// <summary>Whether the Look section shows (#45; the canvas shows it docked only, but built, it has its own tab).</summary>
     public bool ShowsLook => !IsNarrow || Tab == InspectorTab.Look;
+
+    /// <summary>Whether the Music section shows (#50, a section and a tab the canvas does not have).</summary>
+    public bool ShowsMusic => !IsNarrow || Tab == InspectorTab.Music;
 
     /// <summary>The selected tab as an index for the segmented control (two-way); an index out of range is ignored.</summary>
     public int SelectedTabIndex
