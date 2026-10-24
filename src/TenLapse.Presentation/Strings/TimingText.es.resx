@@ -90,4 +90,40 @@
   <data name="LengthTooLong" xml:space="preserve">
     <value>Tus fotos no llegan a llenar {0}: la velocidad más lenta es {1}, así que el video dura {2}.</value>
   </data>
+  <data name="DirectionName" xml:space="preserve">
+    <value>Sentido</value>
+  </data>
+  <data name="DirectionForward" xml:space="preserve">
+    <value>Adelante</value>
+  </data>
+  <data name="DirectionBoomerang" xml:space="preserve">
+    <value>Bumerán</value>
+  </data>
+  <data name="PlaysName" xml:space="preserve">
+    <value>Reproducciones</value>
+  </data>
+  <data name="PlaysGif" xml:space="preserve">
+    <value>Un GIF se repite solo, así que reproduce tus fotos una vez.</value>
+  </data>
+  <data name="HoldStart" xml:space="preserve">
+    <value>Imagen fija al inicio</value>
+  </data>
+  <data name="HoldEnd" xml:space="preserve">
+    <value>Imagen fija al final</value>
+  </data>
+  <data name="NotANumberHold" xml:space="preserve">
+    <value>Escribe la duración de la imagen fija en segundos, como {2}. Puede ir de {0} a {1}.</value>
+  </data>
+  <data name="ClampedHold" xml:space="preserve">
+    <value>Una imagen fija puede durar de {2} a {3}, así que {0} pasa a ser {1}.</value>
+  </data>
+  <data name="HoldLasts" xml:space="preserve">
+    <value>Dura {0} en fotogramas enteros.</value>
+  </data>
+  <data name="LengthHoldsTooLong" xml:space="preserve">
+    <value>Las imágenes fijas ya llenan {0} (duran {1}): acórtalas para dejar espacio a tus fotos. El video dura {2}.</value>
+  </data>
+  <data name="ThousandsSeparatorHold" xml:space="preserve">
+    <value>Escribe la duración de la imagen fija con un decimal como máximo, de {0} a {1}, como {2}.</value>
+  </data>
 </root>

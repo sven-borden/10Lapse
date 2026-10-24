@@ -85,4 +85,40 @@
   <data name="LengthTooLong" xml:space="preserve">
     <value>Ihre Fotos reichen nicht für {0}: Das langsamste Tempo ist {1}, deshalb ist das Video {2} lang.</value>
   </data>
+  <data name="DirectionName" xml:space="preserve">
+    <value>Richtung</value>
+  </data>
+  <data name="DirectionForward" xml:space="preserve">
+    <value>Vorwärts</value>
+  </data>
+  <data name="DirectionBoomerang" xml:space="preserve">
+    <value>Bumerang</value>
+  </data>
+  <data name="PlaysName" xml:space="preserve">
+    <value>Durchläufe</value>
+  </data>
+  <data name="PlaysGif" xml:space="preserve">
+    <value>Ein GIF läuft von selbst in einer Schleife, deshalb spielt es Ihre Fotos einmal ab.</value>
+  </data>
+  <data name="HoldStart" xml:space="preserve">
+    <value>Standbild am Anfang</value>
+  </data>
+  <data name="HoldEnd" xml:space="preserve">
+    <value>Standbild am Ende</value>
+  </data>
+  <data name="NotANumberHold" xml:space="preserve">
+    <value>Geben Sie die Dauer des Standbilds in Sekunden ein, z. B. {2}. Möglich sind {0} bis {1}.</value>
+  </data>
+  <data name="ClampedHold" xml:space="preserve">
+    <value>Ein Standbild kann {2} bis {3} lang sein, deshalb wird aus {0} jetzt {1}.</value>
+  </data>
+  <data name="HoldLasts" xml:space="preserve">
+    <value>Dauert in ganzen Bildern {0}.</value>
+  </data>
+  <data name="LengthHoldsTooLong" xml:space="preserve">
+    <value>Die Standbilder allein füllen {0} (sie dauern {1}): Kürzen Sie sie, damit Ihre Fotos Platz haben. Das Video ist {2} lang.</value>
+  </data>
+  <data name="ThousandsSeparatorHold" xml:space="preserve">
+    <value>Geben Sie die Dauer des Standbilds mit höchstens einer Nachkommastelle ein, von {0} bis {1}, z. B. {2}.</value>
+  </data>
 </root>

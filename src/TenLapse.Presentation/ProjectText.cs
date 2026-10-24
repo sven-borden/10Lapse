@@ -412,14 +412,24 @@ public static class ProjectText
     /// <param name="frameCount">The number of photos.</param>
     /// <param name="timing">The speed.</param>
     /// <param name="culture">The culture of the numbers (decimal separator, grouping); the current culture when null.</param>
-    public static (string Headline, string Detail) TimingReadoutParts(int frameCount, TimingSettings timing, CultureInfo? culture = null)
+    public static (string Headline, string Detail) TimingReadoutParts(int frameCount, TimingSettings timing, CultureInfo? culture = null) =>
+        TimingReadoutParts(frameCount, timing, SequenceSettings.Default, culture);
+
+    /// <summary>
+    /// The Timing readout for photos played as <paramref name="sequence"/> says (#49): the length is the whole video's,
+    /// holds, plays and the way back included (<see cref="ProjectSnapshot.Duration"/>), at the rate
+    /// <see cref="TimingSettings.EffectiveRate(int, SequenceSettings)"/> gives. Pass the snapshot's
+    /// <see cref="ProjectSnapshot.EffectiveSequence"/>, which a GIF plays once.
+    /// </summary>
+    public static (string Headline, string Detail) TimingReadoutParts(int frameCount, TimingSettings timing, SequenceSettings sequence, CultureInfo? culture = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(frameCount);
         ArgumentNullException.ThrowIfNull(timing);
+        ArgumentNullException.ThrowIfNull(sequence);
         culture ??= CultureInfo.CurrentCulture;
 
-        var effective = timing.EffectiveRate(frameCount).Rate;
-        var length = TimingFormat.Duration(FrameTiming.Duration(frameCount, effective), culture);
+        var effective = timing.EffectiveRate(frameCount, sequence).Rate;
+        var length = TimingFormat.Duration(sequence.Resolve(frameCount, effective).Duration(effective), culture);
         var rate = timing.Mode == SpeedMode.PerPhoto
             ? TimingFormat.SecondsPerPhoto(effective, culture)
             : TimingFormat.FrameRate(effective, culture);

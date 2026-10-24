@@ -97,12 +97,12 @@
     <value>Speed</value>
     <comment>The label of the export panel's row that says how fast the video is being written. Keep it to about 12 characters.</comment>
   </data>
-  <data name="SpeedPhotos_one" xml:space="preserve">
-    <value>{0} photo per second</value>
-    <comment>The speed row's value: how many photos are written each second. {0} the number with one decimal under 10 ("4.3") or none from 10 ("12"). English never shows this form: under 10 the number always has a decimal, and "1.0" takes the _other form ("1.0 photos per second"). Keep it anyway, translated. Your language's rule decides: French and Brazilian Portuguese use it for every number under 2 ("0.5", "1.5"), Spanish for "1.0"; German and Italian never show it either.</comment>
+  <data name="SpeedFrames_one" xml:space="preserve">
+    <value>{0} frame per second</value>
+    <comment>The speed row's value: how many frames of the video (one picture each, holds and repeats included) are written each second, as the Frame row beside it counts them. {0} the number with one decimal under 10 ("4.3") or none from 10 ("12"). English never shows this form: under 10 the number always has a decimal, and "1.0" takes the _other form ("1.0 frames per second"). Keep it anyway, translated. Your language's rule decides: French and Brazilian Portuguese use it for every number under 2 ("0.5", "1.5"), Spanish for "1.0"; German and Italian never show it either.</comment>
   </data>
-  <data name="SpeedPhotos_other" xml:space="preserve">
-    <value>{0} photos per second</value>
+  <data name="SpeedFrames_other" xml:space="preserve">
+    <value>{0} frames per second</value>
     <comment>The speed row's value. {0} the number with one decimal under 10 ("4.3", "1.0") or none from 10 ("12"). It may wrap to a second line.</comment>
   </data>
   <data name="SpeedMeasuring" xml:space="preserve">

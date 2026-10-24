@@ -613,36 +613,77 @@ package).
   the first-launch screen of either lists both projects, the latest first, and
   neither window's change is lost when the other closes.
 
-### 5.20 Deflicker (#45, 3.1)
+### 5.20 Hold, loop, boomerang (#49, 3.1)
+
+The Debug app played and exported these on the dev PC through `--sequence=`;
+real key presses, Narrator and other players need a human. Run: once, packaged.
+
+- [ ] **5.20.1 The controls with the keyboard** (#49). Do: Tab through the
+  Timing panel. Expect: after the speed box come Direction (Forward, Boomerang;
+  the arrows move the pill), Times played (1 to 5), Hold at start and Hold at
+  end; each box takes Enter, Escape and leaving it as the speed box does, and a
+  sentence under the boxes says when 12 became 10 s or 1.55 became 1.6 s. Type
+  "1,5" with an English keyboard and "1.5" with a German one: both are 1.5 s.
+  Ctrl+E right after typing a hold exports with it.
+- [ ] **5.20.2 Narrator** (#49). Expect: "Direction", "Times played", "Hold at
+  start" and "Hold at end" as names; after each change the readout ("742 photos →
+  49.4 s at 30 fps") is heard once, after the sentence about a corrected hold.
+- [ ] **5.20.3 Preview and strip** (#49). Do: a boomerang played twice with 1 s
+  held at each end; play. Expect: the first photo rests 1 s, the photos run out
+  and back twice with no stutter at the turn, the first photo rests 1 s, and it
+  starts over; the strip's playhead walks out and back with it; the scrubber
+  spans the whole video (its knob moves during the holds while the strip's ring
+  rests); the time code reads the whole video's length, the counter the photo.
+  ←/→ step to the previous or next photo the video shows, along the video
+  (→ goes on in time on the way back too, a hold is one step); after End, ←
+  goes back. Home and End go to the video's first and last frame.
+- [ ] **5.20.4 The exported video loops in other players** (#49). Do: export
+  the same as MP4, open it in Photos, Media Player and a browser, and send it in
+  a chat app. Expect: the length the readout gave (Explorer may show a second
+  less, 8.x), the holds and the way back as in the preview, no frame twice in a
+  row at the turn. Without holds, set the player to repeat: the first photo
+  does not stay twice as long where the video starts over (a play ends on
+  photo 1). As a GIF: Times played is gone with its caption, and the GIF plays
+  the photos once, out and back, with both holds, looping forever.
+- [ ] **5.20.5 Export panel** (#49). Expect: the percent and time left run over
+  the whole video (a boomerang takes about twice as long as forward), "Frame ...
+  of ..." counts the video's frames, the film gate walks the photos the first time
+  through and then waits at the end, and the strip's dimmed photos light up
+  during that first pass.
+- [ ] **5.20.6 Saved with the project** (#49). Do: save a project with a
+  boomerang, three plays and holds, close, open it. Expect: all four come back;
+  a new project starts plain (forward, once, no holds) whatever the last one had.
+
+### 5.21 Deflicker (#45, 3.1)
 
 The dev PC has no real flickering timelapse and no real sunset shot by hand;
 the algorithm was proven on synthetic sequences (`ExposureCurveTests`,
 `GoldenLookTests`) and the Debug app's `--sample-flicker`. These need real
 photos and a human eye. Run: once, on the Store or a sideloaded 3.1 build.
 
-- [ ] **5.20.1 A flickering sequence** (#45). Do: import a daytime timelapse
+- [ ] **5.21.1 A flickering sequence** (#45). Do: import a daytime timelapse
   shot in aperture priority or with a lens that flickers (a few hundred JPEGs or
   RAW files), turn Deflicker on, wait for "Measuring … photos" to finish, play.
   Expect: the brightness no longer pumps from frame to frame; slow changes
   (a cloud passing, the light falling) stay. Before shows the flicker again,
   After removes it, on the frame that is on screen, while playing too.
-- [ ] **5.20.2 A sunset shot by hand** (#45). Do: a sunset or sunrise where the
+- [ ] **5.21.2 A sunset shot by hand** (#45). Do: a sunset or sunrise where the
   shutter, aperture or ISO was changed by hand in steps (holy grail), Deflicker
   on at 100 %. Expect: no visible jump at any step; the evening still gets darker
   (or the morning lighter) overall, as the photographer's steps intended. Try
   50 %: the steps show again, softened.
-- [ ] **5.20.3 Export matches the preview** (#45). Do: export the sequences of
-  5.20.1 and 5.20.2 as MP4 and as GIF. Expect: the video looks like the preview
+- [ ] **5.21.3 Export matches the preview** (#45). Do: export the sequences of
+  5.21.1 and 5.21.2 as MP4 and as GIF. Expect: the video looks like the preview
   on After, frame for frame, also right after changing the shape (the 400 ms
   reframe keeps the correction). An export started while photos are still being
   measured waits: the panel reads "Waiting for deflicker…" and "Deflicker is
   measuring the photos first: … of …" with its own bar, Cancel export stops the
   wait, and once measured it exports the finished curve.
-- [ ] **5.20.4 Reopen and edit** (#45). Do: save the project with Deflicker on,
+- [ ] **5.21.4 Reopen and edit** (#45). Do: save the project with Deflicker on,
   close, open it again. Expect: no measuring (the file keeps the measurements)
   and no unsaved-changes dot; edit one photo on disk (any change), open again:
   only that photo is measured, and the project stays clean.
-- [ ] **5.20.5 Cancel and failures** (#45). Do: on 5,000 photos, turn Deflicker
+- [ ] **5.21.5 Cancel and failures** (#45). Do: on 5,000 photos, turn Deflicker
   on and Cancel during the measuring. Expect: it stops at once, Deflicker turns
   off; on again, it goes on from where it stopped. Then save with Deflicker on,
   change a few hundred photos on disk (or import more), open the project and
@@ -653,14 +694,14 @@ photos and a human eye. Run: once, on the Store or a sideloaded 3.1 build.
   tried twice, then gets one Caution InfoBar ("… couldn't be measured, so
   deflicker takes its correction from the photos beside it …") with its name;
   it does not flash. Removing photos during the measuring lowers the count.
-- [ ] **5.20.6 Keyboard and Narrator** (#45). Do: Tab to the switch (Space
+- [ ] **5.21.6 Keyboard and Narrator** (#45). Do: Tab to the switch (Space
   toggles it), the strength slider (arrows step 5 %), Cancel, and Before and
   After under the preview (arrows). Expect: Narrator reads "Deflicker, toggle
   switch" with its line, "Deflicker strength, 80", the progress text, and
   "Before or after deflicker"; after Cancel the focus lands on the switch (on
   Measure when photos are left unmeasured). In a narrow window the fourth tab is
   Look.
-- [ ] **5.20.7 Bright and dark frames** (#45). Do: a sequence whose corrected
+- [ ] **5.21.7 Bright and dark frames** (#45). Do: a sequence whose corrected
   frames are brightened (+0.5 stop or more) with a sun or a bright sky, and a
   night sequence brightened toward +2 stops. Expect: the sky round the sun keeps
   its gradation (no flat white patch that grows and shrinks), and a night sky

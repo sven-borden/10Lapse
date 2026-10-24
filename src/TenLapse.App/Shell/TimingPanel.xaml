@@ -12,11 +12,17 @@
   range or rounded), and shows the stored value after every entry. In Length mode a line under the readout says
   when the photos cannot reach the target at 1 to 120 fps. No amber here: the selected segment is a neutral pill and
   the bar is Ink Secondary on Track; amber is for Export and progress.
+
+  Also beyond the prototype (#49): how the photos play out, between the box and the readout so the readout sums it all
+  up. The direction (Forward, Boomerang) and the play count (1 to 5) are segmented controls like the speed's; the play
+  count is absent for a GIF, which loops by itself, with a caption saying so. The two holds are boxes that take seconds
+  as the speed box does (a dot or a comma, held to 0 to 10 s, kept to a tenth, a sentence under them for any change).
 -->
 <UserControl
   x:Class="TenLapse.Shell.TimingPanel"
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:core="using:TenLapse.Core.Timing"
   xmlns:presentation="using:TenLapse.Presentation"
   xmlns:shell="using:TenLapse.Shell">
 
@@ -75,6 +81,122 @@
           Text="{x:Bind ViewModel.Message, Mode=OneWay}"
           TextWrapping="Wrap"
           Visibility="{x:Bind ViewModel.HasMessage, Mode=OneWay}" />
+      </StackPanel>
+
+      <!-- #49: forward or boomerang. The caption names the switch for a screen reader too. -->
+      <StackPanel Spacing="6">
+        <TextBlock
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource CaptionTextStyle}"
+          Text="{x:Bind presentation:TimingText.DirectionName}" />
+        <shell:SegmentedControl
+          x:Name="DirectionControl"
+          AutomationProperties.Name="{x:Bind presentation:TimingText.DirectionName}"
+          Items="{x:Bind ViewModel.DirectionLabels}"
+          SelectedIndex="{x:Bind ViewModel.SelectedDirectionIndex, Mode=TwoWay}" />
+      </StackPanel>
+
+      <!-- How many times the photos play; a GIF loops by itself, so in its place a caption says why the row is absent. -->
+      <StackPanel Spacing="6">
+        <TextBlock
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource CaptionTextStyle}"
+          Text="{x:Bind presentation:TimingText.PlaysName}" />
+        <shell:SegmentedControl
+          x:Name="PlaysControl"
+          AutomationProperties.Name="{x:Bind presentation:TimingText.PlaysName}"
+          Items="{x:Bind ViewModel.PlaysLabels, Mode=OneWay}"
+          SelectedIndex="{x:Bind ViewModel.SelectedPlaysIndex, Mode=TwoWay}"
+          Visibility="{x:Bind ViewModel.ShowsPlays, Mode=OneWay}" />
+        <TextBlock
+          x:Name="PlaysGifText"
+          Foreground="{ThemeResource InkBrush}"
+          Style="{StaticResource CaptionTextStyle}"
+          Text="{x:Bind ViewModel.PlaysGifNote}"
+          TextWrapping="Wrap"
+          Visibility="{x:Bind ViewModel.ShowsPlaysGifNote, Mode=OneWay}" />
+      </StackPanel>
+
+      <!-- The holds, in seconds: Enter or leaving a box takes the entry, Escape drops it, as in the speed box. -->
+      <StackPanel Spacing="6">
+        <Grid ColumnSpacing="{StaticResource SpacingMd}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <StackPanel Spacing="6">
+            <TextBlock
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind presentation:TimingText.HoldStart}"
+              TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+              <TextBox
+                x:Name="HoldStartBox"
+                Width="72"
+                MaxLength="8"
+                AutomationProperties.Name="{x:Bind presentation:TimingText.HoldStart}"
+                CornerRadius="{StaticResource RadiusControl}"
+                GotFocus="OnHoldGotFocus"
+                KeyDown="OnHoldKeyDown"
+                LostFocus="OnHoldLostFocus"
+                Text="{x:Bind ViewModel.HoldStartText, Mode=OneWay}" />
+              <TextBlock
+                VerticalAlignment="Center"
+                Foreground="{ThemeResource InkSecondaryBrush}"
+                Style="{StaticResource CaptionTextStyle}"
+                Text="{x:Bind core:TimingWords.Second}" />
+            </StackPanel>
+            <!-- What the hold lasts as whole frames when that is not what the box shows ("Lasts 2.0 s in whole frames."). -->
+            <TextBlock
+              x:Name="HoldStartLastsText"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind ViewModel.HoldStartLasts, Mode=OneWay}"
+              TextWrapping="Wrap"
+              Visibility="{x:Bind ViewModel.HasHoldStartLasts, Mode=OneWay}" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="6">
+            <TextBlock
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind presentation:TimingText.HoldEnd}"
+              TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpacingSm}">
+              <TextBox
+                x:Name="HoldEndBox"
+                Width="72"
+                MaxLength="8"
+                AutomationProperties.Name="{x:Bind presentation:TimingText.HoldEnd}"
+                CornerRadius="{StaticResource RadiusControl}"
+                GotFocus="OnHoldGotFocus"
+                KeyDown="OnHoldKeyDown"
+                LostFocus="OnHoldLostFocus"
+                Text="{x:Bind ViewModel.HoldEndText, Mode=OneWay}" />
+              <TextBlock
+                VerticalAlignment="Center"
+                Foreground="{ThemeResource InkSecondaryBrush}"
+                Style="{StaticResource CaptionTextStyle}"
+                Text="{x:Bind core:TimingWords.Second}" />
+            </StackPanel>
+            <TextBlock
+              x:Name="HoldEndLastsText"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind ViewModel.HoldEndLasts, Mode=OneWay}"
+              TextWrapping="Wrap"
+              Visibility="{x:Bind ViewModel.HasHoldEndLasts, Mode=OneWay}" />
+          </StackPanel>
+        </Grid>
+
+        <!-- What became of the last hold entry ("A hold can be from 0 s to 10 s, so 12 is now 10 s."). Raised as a notification too. -->
+        <TextBlock
+          x:Name="SequenceMessageText"
+          Foreground="{ThemeResource InkBrush}"
+          Style="{StaticResource CaptionTextStyle}"
+          Text="{x:Bind ViewModel.SequenceMessage, Mode=OneWay}"
+          TextWrapping="Wrap"
+          Visibility="{x:Bind ViewModel.HasSequenceMessage, Mode=OneWay}" />
       </StackPanel>
 
       <!-- The readout, always visible: "742 photos → 24.7 s" and under it "at 30 fps". The screen reader reads both lines in order. -->

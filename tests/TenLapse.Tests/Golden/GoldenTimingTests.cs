@@ -268,6 +268,198 @@ public sealed class GoldenTimingTests(GoldenTimingTests.NumberedPhotos photos) :
         File.Delete(result.Path);
     }
 
+    /// <summary>
+    /// Holds, plays and a boomerang (#49) at odd rates: the exporter hands video frame k to the encoder at exactly
+    /// <see cref="FrameTiming.FrameStart"/> of k, the file holds every frame at its time, and frame k shows the photo the
+    /// sequence puts there (<see cref="FrameSequence.PhotoAt"/>), which is what the preview shows at that moment.
+    /// </summary>
+    [Theory]
+    [InlineData("29.97 fps boomerang", 30000, 1001, false, 1, true, 5, 10)]
+    [InlineData("25 fps twice", 25, 1, false, 2, false, 0, 10)]
+    [InlineData("60 fps boomerang twice", 60, 1, false, 2, true, 3, 0)]
+    [InlineData("2 s per photo boomerang", 2, 1, true, 1, true, 5, 5)]
+    public async Task EveryVideoFrameShowsThePhotoTheSequencePutsThere(string speed, long numerator, long denominator, bool perPhoto, int plays, bool boomerang, int holdStartTenths, int holdEndTenths)
+    {
+        SkipWithoutH264Encoder();
+        // Short: the file's path (and its partial file's) must stay under MAX_PATH for the sink writer.
+        var label = $"seq {speed} {holdStartTenths}-{holdEndTenths}";
+        var evidence = GoldenExport.EvidenceFolder(ClassName, Slug(label));
+        var input = new Fraction(numerator, denominator);
+        var timing = perPhoto ? TimingSettings.PerPhoto(input) : TimingSettings.PerSecond(input);
+        var sequence = new SequenceSettings(TimeSpan.FromTicks(holdStartTenths * 1_000_000L), TimeSpan.FromTicks(holdEndTenths * 1_000_000L), plays, boomerang);
+        var snapshot = GoldenExport.Snapshot((await photos.GetAsync()).Select(photo => GoldenExport.FrameOf(photo.Path, photo.Size)), timing, FrameAspect.Ratio16x9, FitMode.Fill, sequence: sequence);
+        var rate = snapshot.EffectiveRate.Rate;
+        var video = snapshot.Playback;
+        var length = video.Length;
+
+        var output = Path.Combine(photos.Folder, $"{Slug(label)}.mp4");
+        var (result, record) = await GoldenExport.ExportSmallOrSkipAsync(snapshot, output);
+
+        var problems = new List<string>();
+        var info = VideoFileReader.Read(result.Path);
+        Check(problems, "frames written", length, result.FrameCount);
+        Check(problems, "frames in the file", length, info.FrameCount);
+        Check(problems, "clip duration (ticks)", snapshot.Duration, result.Duration);
+        Check(problems, "frames handed to the encoder", length, record.Writes.Count);
+        var mistimedWrites = Enumerable.Range(0, Math.Min(length, record.Writes.Count))
+            .Where(i => record.Writes[i].Time != FrameTiming.FrameStart(i, rate) || record.Writes[i].Duration != FrameTiming.FrameDuration(i, rate))
+            .ToList();
+        if (mistimedWrites.Count > 0)
+        {
+            problems.Add($"{mistimedWrites.Count} frames were handed to the encoder at another time than FrameTiming's: frames {string.Join(", ", mistimedWrites.Take(10))}");
+        }
+
+        var (earliest, latest) = GoldenExport.SampleTimeBound(rate);
+        var off = Enumerable.Range(0, Math.Min(length, info.FrameCount))
+            .Where(i => info.SampleTimes[i] - FrameTiming.FrameStart(i, rate) < earliest || info.SampleTimes[i] - FrameTiming.FrameStart(i, rate) > latest)
+            .ToList();
+        if (off.Count > 0)
+        {
+            problems.Add($"{off.Count} sample times are off FrameTiming.FrameStart: frames {string.Join(", ", off.Take(10))}");
+        }
+
+        var unit = GoldenExport.SinkTimescaleUnit(rate);
+        Check(problems, $"header duration (ticks; at most {unit} short)", snapshot.Duration, info.Duration, ok: info.Duration <= snapshot.Duration && snapshot.Duration - info.Duration <= unit);
+
+        var wrong = new List<(int Index, int Number)>();
+        GoldenImage? firstWrong = null;
+        VideoFileReader.ReadFrames(result.Path, frame =>
+        {
+            var number = FrameCode.Read(frame.Pixels, frame.Width, frame.Height, frame.Stride);
+            if (frame.Index >= length || number != video.PhotoAt(frame.Index))
+            {
+                wrong.Add((frame.Index, number));
+                firstWrong ??= GoldenImage.Copy(frame.Pixels, frame.Width, frame.Height, frame.Stride);
+            }
+        });
+        if (wrong.Count > 0)
+        {
+            problems.Add($"{wrong.Count} decoded frames show another photo: " + string.Join("; ", wrong.Take(5).Select(w => $"frame {w.Index} shows {w.Number}, expected {(w.Index < length ? video.PhotoAt(w.Index) : -1)}")));
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(
+            $"{label}: {length} frames ({video.HoldStartFrames} + {video.CoreLength} + {video.HoldEndFrames}) at {rate.Numerator}/{rate.Denominator} fps, " +
+            $"{snapshot.Duration} ticks expected, header {info.Duration}, encoder {result.Encoder?.Name ?? "unknown"}");
+
+        if (problems.Count > 0)
+        {
+            Directory.CreateDirectory(evidence);
+            File.Copy(result.Path, Path.Combine(evidence, "export.mp4"), overwrite: true);
+            if (firstWrong is not null)
+            {
+                await firstWrong.SavePngAsync(Path.Combine(evidence, $"frame{wrong[0].Index:D4}-export.png"));
+            }
+
+            Assert.Fail(GoldenExport.Report($"{label}:", problems, $"{evidence} (the video, and the first wrong frame)"));
+        }
+
+        File.Delete(result.Path);
+    }
+
+    /// <summary>
+    /// A held, boomeranged GIF (#49): one play (a GIF loops by itself), each GIF frame showing the photo the video's
+    /// sequence shows at that GIF frame's start, as long as the sequence. A run of GIF frames that show the same photo (a
+    /// hold) is stored as one frame (review of PR #134), whose delay is its rounded end minus its rounded start, so the
+    /// delays still add up to the rounded starts.
+    /// </summary>
+    [Theory]
+    [InlineData("30 fps as up to 10 fps", 30, 1, GifFrameRate.Fps10, 10, 5, true)]
+    [InlineData("29.97 fps as up to 25 fps", 30000, 1001, GifFrameRate.Fps25, 10, 5, true)]
+    [InlineData("30 fps 10 fps 3 s end", 30, 1, GifFrameRate.Fps10, 0, 30, false)]
+    public async Task EveryGifFrameShowsThePhotoTheSequenceShowsAtItsStart(string speed, long numerator, long denominator, GifFrameRate preset, int holdStartTenths, int holdEndTenths, bool boomerang)
+    {
+        SkipWithoutGraphicsDevice();
+        var label = $"GIF seq {speed}";
+        var evidence = GoldenExport.EvidenceFolder(ClassName, Slug(label));
+        var sequence = new SequenceSettings(TimeSpan.FromTicks(holdStartTenths * 1_000_000L), TimeSpan.FromTicks(holdEndTenths * 1_000_000L), 3, boomerang);
+
+        // The photos first: the project is changed on the thread that made it, and an await may move the test to another.
+        var frames = (await photos.GetAsync()).Select(photo => GoldenExport.FrameOf(photo.Path, photo.Size)).ToList();
+        var project = new Project(
+            TimingSettings.PerSecond(new Fraction(numerator, denominator)),
+            new FrameSettings(FrameAspect.Ratio16x9, FitMode.Fill),
+            OutputSettings.Default with { Format = VideoFormat.Gif, Gif = GifSettings.Default with { Rate = preset } },
+            SortMode.Manual,
+            sequence);
+        project.AddFrames(frames);
+        var snapshot = project.Snapshot;
+        var videoRate = snapshot.EffectiveRate.Rate;
+        var gifRate = GifOutput.EffectiveRate(videoRate, preset);
+        var video = snapshot.Playback;
+        Assert.Equal(1, video.Plays);
+        var expected = GifOutput.SourceFrames(video.Length, videoRate, gifRate).Select(video.PhotoAt).ToArray();
+
+        var output = Path.Combine(photos.Folder, $"{Slug(label)}.gif");
+        var record = new EncoderRecord();
+        var result = await ExportOrSkipAsync(snapshot, output, options: new ProjectExportOptions
+        {
+            CreateEncoder = (file, settings, device) => new RecordingEncoder(VideoExporter.OpenEncoder(file, settings, device), record),
+        });
+
+        var problems = new List<string>();
+        Check(problems, "frames written", expected.Length, result.FrameCount);
+        var mistimed = Enumerable.Range(0, Math.Min(record.Writes.Count, expected.Length))
+            .Where(k => record.Writes[k].Time != FrameTiming.FrameStart(k, gifRate) || record.Writes[k].Duration != FrameTiming.FrameDuration(k, gifRate))
+            .ToList();
+        if (mistimed.Count > 0)
+        {
+            problems.Add($"{mistimed.Count} GIF frames were handed to the encoder at another time than FrameTiming's: frames {string.Join(", ", mistimed.Take(10))}");
+        }
+
+        // The runs of GIF frames that show one photo, [First, End): each is one frame in the file.
+        var runs = new List<(int First, int End)>();
+        for (var k = 0; k < expected.Length; k++)
+        {
+            if (k == 0 || expected[k] != expected[k - 1])
+            {
+                runs.Add((k, k + 1));
+            }
+            else
+            {
+                runs[^1] = (runs[^1].First, k + 1);
+            }
+        }
+
+        var info = GifFileReader.Read(result.Path);
+        Check(problems, "frames in the file (one per run of one photo)", runs.Count, info.FrameCount);
+        Check(problems, "frames the Output panel's estimate counts", runs.Count, GifOutput.StoredFrames(video, videoRate, gifRate));
+        Check(problems, "loop count (0: forever)", (int?)0, info.LoopCount);
+        var wrongDelays = Enumerable.Range(0, Math.Min(info.FrameCount, runs.Count)).Where(r => info.Delays[r] != RunDelay(runs[r], gifRate)).ToList();
+        if (wrongDelays.Count > 0)
+        {
+            problems.Add($"{wrongDelays.Count} delays differ from their run's rounded start and end: " + string.Join("; ", wrongDelays.Take(5).Select(r => $"frame {r} has {info.Delays[r]} cs, expected {RunDelay(runs[r], gifRate)}")));
+        }
+
+        // As long as the video's sequence, to within the GIF's last frame (which ends on its own grid).
+        Check(problems, "length in cs", GifTiming.Centiseconds(FrameTiming.Duration(expected.Length, gifRate)), info.TotalCentiseconds);
+        var over = FrameTiming.Duration(expected.Length, gifRate) - snapshot.Duration;
+        Check(problems, "GIF length past the video's (ticks, 0 to one GIF frame)", 0L, over, ok: over >= 0 && over <= FrameTiming.FrameDuration(0, gifRate) + 1);
+
+        var shown = new List<int>();
+        GifFileReader.ReadFrames(result.Path, frame => shown.Add(FrameCode.Read(frame.Pixels, frame.Width, frame.Height, frame.Stride)));
+        var wrong = Enumerable.Range(0, Math.Min(shown.Count, runs.Count)).Where(r => shown[r] != expected[runs[r].First]).ToList();
+        if (wrong.Count > 0)
+        {
+            problems.Add($"{wrong.Count} GIF frames show another photo: " + string.Join("; ", wrong.Take(5).Select(r => $"frame {r} shows {shown[r]}, expected {expected[runs[r].First]}")));
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(
+            $"{label}: {expected.Length} GIF frames for {video.Length} video frames, {info.FrameCount} stored, {new FileInfo(result.Path).Length:N0} bytes, {info.TotalCentiseconds} cs, video {snapshot.Duration / 100_000} cs");
+
+        if (problems.Count > 0)
+        {
+            Directory.CreateDirectory(evidence);
+            File.Copy(result.Path, Path.Combine(evidence, "export.gif"), overwrite: true);
+            Assert.Fail(GoldenExport.Report($"{label}:", problems, $"{evidence} (the GIF)"));
+        }
+
+        File.Delete(result.Path);
+    }
+
+    // A stored GIF frame's delay: the rounded start of the GIF frame after its run less the rounded start of its first.
+    private static int RunDelay((int First, int End) run, Fraction gifRate) =>
+        (int)(GifTiming.Centiseconds(FrameTiming.FrameStart(run.End, gifRate)) - GifTiming.Centiseconds(FrameTiming.FrameStart(run.First, gifRate)));
+
     // One encoder, FrameCount writes, each at exactly FrameStart(i) for exactly FrameDuration(i).
     private static void CheckWrites(List<string> problems, EncoderRecord record, Fraction rate)
     {

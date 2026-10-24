@@ -95,6 +95,55 @@ public static class TimingText
     /// </summary>
     public static string LengthTooLong => _strings.Get();
 
+    /// <summary>The caption over the direction switch (#49), which is also its name for a screen reader.</summary>
+    public static string DirectionName => _strings.Get();
+
+    /// <summary>The first part of the direction switch: the photos play forward.</summary>
+    public static string DirectionForward => _strings.Get();
+
+    /// <summary>The second part: forward, then backward.</summary>
+    public static string DirectionBoomerang => _strings.Get();
+
+    /// <summary>The caption over the row of play counts (1 to 5), which is also its name for a screen reader.</summary>
+    public static string PlaysName => _strings.Get();
+
+    /// <summary>In place of the play counts while the output is a GIF: why they are not there.</summary>
+    public static string PlaysGif => _strings.Get();
+
+    /// <summary>The caption over the box for the hold before the photos play (also its name).</summary>
+    public static string HoldStart => _strings.Get();
+
+    /// <summary>The caption over the box for the hold after they played (also its name).</summary>
+    public static string HoldEnd => _strings.Get();
+
+    /// <summary>A hold box was left with something that is not a number. {0}: the shortest hold ("0 s"), {1}: the longest ("10 s"), {2}: one and a half ("1.5").</summary>
+    public static string NotANumberHold => _strings.Get();
+
+    /// <summary>A hold past the range was typed. {0}: what was typed, {1}: the hold now set ("10 s"), {2}: the shortest, {3}: the longest.</summary>
+    public static string ClampedHold => _strings.Get();
+
+    /// <summary>
+    /// Under a hold box when the hold, as whole frames at the video's speed, lasts another length than the box shows
+    /// (review of PR #134). {0}: the length it lasts ("2.0 s").
+    /// </summary>
+    public static string HoldLasts => _strings.Get();
+
+    /// <summary>
+    /// Length mode, when the holds alone fill the chosen length (#49). {0}: the chosen length, {1}: the holds together
+    /// ("20 s"), {2}: the length the video has instead.
+    /// </summary>
+    public static string LengthHoldsTooLong => _strings.Get();
+
+    /// <summary>
+    /// A hold box was left with a separator and three digits ("2.500", "1,000"), which reads as a thousands separator in
+    /// some countries (review of PR #134). {0}: the shortest hold ("0 s"), {1}: the longest ("10 s"), {2}: one and a half
+    /// ("1.5").
+    /// </summary>
+    public static string ThousandsSeparatorHold => _strings.Get();
+
+    /// <summary>Log context: holds, plays or the direction could not be written to the project.</summary>
+    public static string SequenceChangeFailed => "Changing the holds, plays or direction failed.";
+
     /// <summary>Log context: a speed could not be written to the project.</summary>
     public static string ChangeFailed => "Changing the speed failed.";
 

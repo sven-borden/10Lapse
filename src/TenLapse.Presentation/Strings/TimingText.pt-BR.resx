@@ -86,4 +86,40 @@
   <data name="LengthTooLong" xml:space="preserve">
     <value>Suas fotos não preenchem {0}: a velocidade mínima é {1}, então o vídeo dura {2}.</value>
   </data>
+  <data name="DirectionName" xml:space="preserve">
+    <value>Sentido</value>
+  </data>
+  <data name="DirectionForward" xml:space="preserve">
+    <value>Para frente</value>
+  </data>
+  <data name="DirectionBoomerang" xml:space="preserve">
+    <value>Bumerangue</value>
+  </data>
+  <data name="PlaysName" xml:space="preserve">
+    <value>Reproduções</value>
+  </data>
+  <data name="PlaysGif" xml:space="preserve">
+    <value>Um GIF se repete sozinho, então ele reproduz suas fotos uma vez.</value>
+  </data>
+  <data name="HoldStart" xml:space="preserve">
+    <value>Imagem congelada no início</value>
+  </data>
+  <data name="HoldEnd" xml:space="preserve">
+    <value>Imagem congelada no fim</value>
+  </data>
+  <data name="NotANumberHold" xml:space="preserve">
+    <value>Digite a duração da imagem congelada em segundos, como {2}. Ela pode ir de {0} a {1}.</value>
+  </data>
+  <data name="ClampedHold" xml:space="preserve">
+    <value>Uma imagem congelada pode durar de {2} a {3}, então {0} passou a ser {1}.</value>
+  </data>
+  <data name="HoldLasts" xml:space="preserve">
+    <value>Dura {0} em quadros inteiros.</value>
+  </data>
+  <data name="LengthHoldsTooLong" xml:space="preserve">
+    <value>As imagens congeladas sozinhas preenchem {0} (duram {1}): encurte-as para dar espaço às suas fotos. O vídeo dura {2}.</value>
+  </data>
+  <data name="ThousandsSeparatorHold" xml:space="preserve">
+    <value>Digite a duração da imagem congelada com no máximo uma casa decimal, de {0} a {1}, como {2}.</value>
+  </data>
 </root>
