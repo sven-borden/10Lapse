@@ -4,8 +4,9 @@
   play-button): the round play button, the scrubber, then the frame counter ("0312 / 0742") and the time code
   ("00:10.40 / 00:24.73") in Caption, tabular, Ink Secondary. 12 px between them (SpacingMd; the prototype's 14 is off
   the 4 px grid). The counter and time code carry names Narrator reads ("Frame 312 of 742") that change only while
-  paused, so playback does not flood it. While deflicker is on (#45), Before and After at the end of the row shows the
-  photos without or with it; absent otherwise. It changes the preview only, never the project or the export.
+  paused, so playback does not flood it. While deflicker (#45) or frame blending (#47) is on, Before and After at the end
+  of the row shows the photos without or with them; absent otherwise. It changes the preview only, never the project or
+  the export.
 -->
 <UserControl
   x:Class="TenLapse.Preview.TransportBar"
@@ -107,6 +108,6 @@
       AutomationProperties.Name="{x:Bind look:LookText.CompareName}"
       Items="{x:Bind local:TransportBar.CompareLabels}"
       SelectedIndex="{x:Bind Look.CompareIndex, Mode=TwoWay, FallbackValue=1}"
-      Visibility="{x:Bind Look.IsDeflickerOn, Mode=OneWay, FallbackValue=Collapsed}" />
+      Visibility="{x:Bind Look.HasLook, Mode=OneWay, FallbackValue=Collapsed}" />
   </Grid>
 </UserControl>

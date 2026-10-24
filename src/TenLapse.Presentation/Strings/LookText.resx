@@ -76,8 +76,8 @@
     <comment>The screen reader name of the Measure button.</comment>
   </data>
   <data name="CompareName" xml:space="preserve">
-    <value>Before or after deflicker</value>
-    <comment>The screen reader name of the two-part switch under the preview that shows the photos without deflicker (Before) or with it (After). Shown only while deflicker is on.</comment>
+    <value>Before or after deflicker and frame blending</value>
+    <comment>The screen reader name of the two-part switch under the preview that shows the photos without the Look section's changes, deflicker and frame blending (Before), or with them (After). Shown only while deflicker or frame blending is on.</comment>
   </data>
   <data name="CompareBefore" xml:space="preserve">
     <value>Before</value>
@@ -86,5 +86,25 @@
   <data name="CompareAfter" xml:space="preserve">
     <value>After</value>
     <comment>The second part: the photos with deflicker, as the video will have them. Keep it to about 10 characters.</comment>
+  </data>
+  <data name="BlendLabel" xml:space="preserve">
+    <value>Frame blending</value>
+    <comment>The label of the switch that turns frame blending on: each frame of the video becomes a blend of the photo and the photos just before and after it, like one long exposure, so moving lights leave trails and clouds move smoothly. Also the switch's screen reader name. Keep it to about 22 characters.</comment>
+  </data>
+  <data name="BlendHint" xml:space="preserve">
+    <value>Blends nearby photos for light trails</value>
+    <comment>The line under Frame blending, saying what it does: "nearby" is the photos just before and after each photo; "light trails" the streaks moving lights (cars, stars) leave. No final period, like the line under Deflicker. Keep it to about 44 characters: it wraps to a second line after that.</comment>
+  </data>
+  <data name="BlendFramesLabel" xml:space="preserve">
+    <value>Photos blended</value>
+    <comment>The label above the slider that sets how many photos each frame blends, from 2 to 16; the number shows on the right. Shown only while frame blending is on. Keep it to about 26 characters.</comment>
+  </data>
+  <data name="BlendFramesName" xml:space="preserve">
+    <value>Photos blended into each frame</value>
+    <comment>The screen reader name of the slider that sets how many photos each frame of the video blends, 2 to 16.</comment>
+  </data>
+  <data name="BlendStrengthName" xml:space="preserve">
+    <value>Frame blending strength</value>
+    <comment>The screen reader name of frame blending's strength slider (its label is Strength, the same word as deflicker's): how much of the blend each frame shows, from 0 % (the photo alone) to 100 % (the blend alone).</comment>
   </data>
 </root>

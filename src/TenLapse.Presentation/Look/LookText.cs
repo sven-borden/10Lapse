@@ -4,8 +4,8 @@ using TenLapse.Core.Text;
 namespace TenLapse.Presentation.Look;
 
 /// <summary>
-/// Every user-visible word of the Look panel and the preview's Before and After switch (#45), as whole format strings
-/// read from <c>Strings/LookText.resx</c>; the log contexts stay here in English.
+/// Every user-visible word of the Look panel (#45 deflicker, #47 frame blending) and the preview's Before and After switch,
+/// as whole format strings read from <c>Strings/LookText.resx</c>; the log contexts stay here in English.
 /// </summary>
 public static class LookText
 {
@@ -53,6 +53,21 @@ public static class LookText
     /// <summary>The switch's second part: the photos with deflicker.</summary>
     public static string CompareAfter => _strings.Get();
 
+    /// <summary>Frame blending's switch label and screen reader name (#47).</summary>
+    public static string BlendLabel => _strings.Get();
+
+    /// <summary>The line under Frame blending: what it does.</summary>
+    public static string BlendHint => _strings.Get();
+
+    /// <summary>The label above the slider of how many photos a frame blends.</summary>
+    public static string BlendFramesLabel => _strings.Get();
+
+    /// <summary>That slider's screen reader name.</summary>
+    public static string BlendFramesName => _strings.Get();
+
+    /// <summary>The screen reader name of frame blending's strength slider (its label is <see cref="StrengthLabel"/>).</summary>
+    public static string BlendStrengthName => _strings.Get();
+
     /// <summary>Log context: an edit of the look (the switch, the strength) failed.</summary>
     public static string ChangeFailed => "Changing the look failed.";
 
@@ -81,5 +96,6 @@ public static class LookText
     /// <summary>The strength as the slider's value reads: "80%" in English, "80 %" in French, in the user's culture.</summary>
     public static string Percent(int strength) => (strength / 100.0).ToString("P0", CultureInfo.CurrentCulture);
 
-    private static string Count(int count) => count.ToString("N0", CultureInfo.CurrentCulture);
+    /// <summary>A count as a slider's value reads it ("16"), in the user's culture.</summary>
+    public static string Count(int count) => count.ToString("N0", CultureInfo.CurrentCulture);
 }

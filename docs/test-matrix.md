@@ -791,6 +791,42 @@ a sideloaded 3.1 build, with headphones.
   the narrow panel has a fifth tab, Music, and the five tabs fit at 640 px in
   every language.
 
+### 5.24 Frame blending (#47, 3.1)
+
+Built on the dev PC: the blend is tested on the GPU (`FrameBlendTests`: averages
+in linear light, each photo's own exposure, one photo drawn to the bit as
+without blending) and a moving light exported as MP4 matches the preview's blend
+within 0.3 levels, its trail within 1.4 of the linear average
+(`GoldenBlendTests`). The preview was looked at with generated sunsets, and the
+preview bench plays 300 photos blending 16 at 30 fps with no frame dropped.
+Nobody has blended a real night shoot or exported one at 4K yet. Run: once, on
+the Store or a sideloaded 3.1 build.
+
+- [ ] **5.24.1 Light trails** (#47). Do: import a night sequence with cars or
+  stars, Look section, turn Frame blending on, 8 photos, 100 %; play; then 50 %
+  and 16 photos. Expect: moving lights leave trails and clouds or water move
+  smoothly; at 50 % the photo is sharp with fainter trails; the first and last
+  photos blend fewer (the trail grows over the first frames); Before shows the
+  photos as they are, After the blend, and Before and After shows while
+  blending is on even with Deflicker off.
+- [ ] **5.24.2 Export matches the preview** (#47). Do: export the project as
+  MP4 at 4K and as a GIF; then with Deflicker on (5.21), a 2x crop and pan
+  (5.22), 1 s held at each end and a boomerang (5.20). Expect: the video blends
+  as the preview did, frame for frame; a hold holds the blended photo; the
+  boomerang plays the blends back; each photo keeps its deflicker correction in
+  the blend; the export stays under 1 GB of memory (5.8) and takes about as long
+  as without blending (each photo is decoded once).
+- [ ] **5.24.3 A photo that cannot be read** (#47). Do: with blending on,
+  rename one photo in Explorer, export. Expect: the export fails at once with
+  the InfoBar naming that photo and its file, even when it is only a neighbour
+  of the frame being drawn.
+- [ ] **5.24.4 Keyboard, Narrator, save and reopen** (#47). Do: Tab to the
+  switch and the two sliders; save, close, open. Expect: Narrator reads "Frame
+  blending, toggle switch", "Photos blended into each frame" and "Frame
+  blending strength" with their values; the arrows move the sliders by 1 photo
+  and 5 %; the reopened project has the switch, the count and the strength, and
+  no unsaved-changes dot.
+
 ## 6. Per-machine measurements
 
 - [ ] **6.1 Bench on each machine** (#34, PR #89). Run: all, with the repo and

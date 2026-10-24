@@ -67,12 +67,27 @@
     <value>Medir as fotos ainda não medidas</value>
   </data>
   <data name="CompareName" xml:space="preserve">
-    <value>Antes ou depois da anticintilação</value>
+    <value>Antes ou depois da anticintilação e da fusão de quadros</value>
   </data>
   <data name="CompareBefore" xml:space="preserve">
     <value>Antes</value>
   </data>
   <data name="CompareAfter" xml:space="preserve">
     <value>Depois</value>
+  </data>
+  <data name="BlendLabel" xml:space="preserve">
+    <value>Fusão de quadros</value>
+  </data>
+  <data name="BlendHint" xml:space="preserve">
+    <value>Funde fotos próximas para rastros de luz</value>
+  </data>
+  <data name="BlendFramesLabel" xml:space="preserve">
+    <value>Fotos fundidas</value>
+  </data>
+  <data name="BlendFramesName" xml:space="preserve">
+    <value>Fotos fundidas em cada quadro</value>
+  </data>
+  <data name="BlendStrengthName" xml:space="preserve">
+    <value>Intensidade da fusão de quadros</value>
   </data>
 </root>

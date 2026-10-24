@@ -34,7 +34,9 @@ internal readonly record struct PreviewLook(Color Ground, Color Gate, Color Text
 /// The preview's render thread (#19): draws the frame the player says belongs on screen into a swap chain, through
 /// <see cref="FrameRenderer.Draw(CanvasDrawingSession, CanvasBitmap, FrameSettings, PixelSize)"/> with the snapshot's
 /// frame settings and video size, the exact call the export makes; the gate only places and rounds it. Each photo is drawn
-/// with its own <see cref="FrameLook"/> (#45, deflicker's exposure), as the export draws it, also during a reframe.
+/// with its own <see cref="FrameLook"/> (#45, deflicker's exposure), as the export draws it, also during a reframe. With
+/// frame blending on (#47) the frame is drawn from the photos around it that are in memory, through the export's blend, and
+/// again as more of them arrive.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -105,6 +107,10 @@ internal sealed class PreviewRenderLoop : IDisposable
     private bool _drewAnything;
     private long _shownVersion = -1;
     private Framing _shownView;
+
+    // Frame blending (#47): the photos the picture on screen is blended from, with their shares, the others leased while
+    // they may be drawn again (as _shown is); empty when it is not a blend.
+    private BlendPart[] _shownBlend = [];
     private ImmutableArray<Frame> _frames = [];
     private bool _drawFailureTold;
     private int _quickBlanks;
@@ -319,6 +325,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         // The wake event stays undisposed: the UI thread may still set it after the loop has gone.
         _shown?.Dispose();
         _shown = null;
+        _shownBlend = Release(_shownBlend);
         _swapChain = null;
     }
 
@@ -413,6 +420,8 @@ internal sealed class PreviewRenderLoop : IDisposable
         var view = ViewOf(state.Snapshot, reading is { } playing ? playing.Frame : state.Position);
         var frame = frames[index];
         var lookahead = Lookahead(state.Clock?.Rate ?? state.Snapshot.EffectiveRate.Rate);
+        var (before, after) = BlendReach(state.Snapshot);
+        _images.SetBlendWindow(before, after);
         if (reading is { } ahead)
         {
             _images.SetFocus(index, playing: true, state.UpcomingPhotos(ahead.Frame, lookahead));
@@ -423,6 +432,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         }
 
         var lease = _images.Acquire(frame.Id);
+        var blend = lease is null ? [] : AcquireBlend(state.Snapshot, index);
 
         // Only a photo that cannot be read has a failure here; a load that threw (a lost device, a bug) keeps the
         // previous picture, as a frame still loading does.
@@ -431,8 +441,10 @@ internal sealed class PreviewRenderLoop : IDisposable
         bool draw;
         if (lease is not null)
         {
-            // A new image for the same frame (better, or the photo changed on disk) is drawn too.
-            draw = settingsChanged || frame.Id != _shownId || _shownPlaceholder || !ReferenceEquals(lease.Image, _shown?.Image) || view != _shownView;
+            // A new image for the same frame (better, or the photo changed on disk) is drawn too, and so is a blend that
+            // has more of its photos now.
+            draw = settingsChanged || frame.Id != _shownId || _shownPlaceholder || !ReferenceEquals(lease.Image, _shown?.Image) || view != _shownView
+                || !SameBlend(blend, _shownBlend);
         }
         else if (failure is not null)
         {
@@ -451,7 +463,8 @@ internal sealed class PreviewRenderLoop : IDisposable
         draw |= animating;
         if (draw)
         {
-            Draw(chain, state.Snapshot, lease?.Image ?? (lease is null && failure is null ? _shown?.Image : null), lease is not null, failure, frame, view, look, now);
+            var held = lease is null && failure is null;
+            Draw(chain, state.Snapshot, lease?.Image ?? (held ? _shown?.Image : null), lease is not null, failure, frame, view, look, now, lease is not null ? blend : held ? _shownBlend : []);
             chain.Present();
             _shownView = view;
             var presented = Stopwatch.GetTimestamp();
@@ -463,6 +476,9 @@ internal sealed class PreviewRenderLoop : IDisposable
                 _shown?.Dispose();
                 _shown = lease;
                 lease = null;
+                Release(_shownBlend);
+                _shownBlend = blend;
+                blend = [];
                 _shownId = frame.Id;
                 _shownQuality = _shown.Quality;
                 _shownPlaceholder = false;
@@ -475,6 +491,7 @@ internal sealed class PreviewRenderLoop : IDisposable
             {
                 _shown?.Dispose();
                 _shown = null;
+                _shownBlend = Release(_shownBlend);
                 _shownId = frame.Id;
                 _shownQuality = FrameImageQuality.None;
                 _shownPlaceholder = true;
@@ -493,6 +510,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         }
 
         lease?.Dispose();
+        Release(blend);
         if (animating)
         {
             // The present waited for the blank; the next pass draws the next step.
@@ -527,8 +545,9 @@ internal sealed class PreviewRenderLoop : IDisposable
         }
     }
 
-    // image: the frame's own picture (current), or the previous frame's, held while this one loads.
-    private void Draw(CanvasSwapChain chain, ProjectSnapshot snapshot, CanvasBitmap? image, bool current, FrameLoadFailure? failure, Frame frame, Framing view, PreviewLook look, long now)
+    // image: the frame's own picture (current), or the previous frame's, held while this one loads; blend: the photos it is
+    // blended from (#47), its own among them, or empty.
+    private void Draw(CanvasSwapChain chain, ProjectSnapshot snapshot, CanvasBitmap? image, bool current, FrameLoadFailure? failure, Frame frame, Framing view, PreviewLook look, long now, BlendPart[] blend)
     {
         var video = snapshot.VideoSize;
         var fit = snapshot.FrameSettings.Fit;
@@ -543,6 +562,7 @@ internal sealed class PreviewRenderLoop : IDisposable
 
         var gate = new Rect(place.X, place.Y, place.Width, place.Height);
         var photoLook = LookOf(snapshot, current ? frame.Id : _shownId, view);
+        var photos = image is null ? null : Blended(snapshot, image, blend, view);
         var photo = image is null ? gate : PhotoRect(gate, video, fit, image, photoLook.View);
         var (shownGate, shownPhoto) = Reframing(gate, photo, image is not null, video, fit, size, now);
         var (opacity, blur, grow) = Developing(current, now);
@@ -579,7 +599,7 @@ internal sealed class PreviewRenderLoop : IDisposable
 
         if (blur <= 0)
         {
-            DrawPicture(session, snapshot, image, gate, shownGate, shownPhoto, develop, photoLook);
+            DrawPicture(session, snapshot, image, gate, shownGate, shownPhoto, develop, photoLook, photos);
             return;
         }
 
@@ -587,7 +607,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         using var picture = new CanvasCommandList(session);
         using (var inner = picture.CreateDrawingSession())
         {
-            DrawPicture(inner, snapshot, image, gate, shownGate, shownPhoto, Matrix3x2.Identity, photoLook);
+            DrawPicture(inner, snapshot, image, gate, shownGate, shownPhoto, Matrix3x2.Identity, photoLook, photos);
         }
 
         using var effect = new GaussianBlurEffect { Source = picture, BlurAmount = blur, BorderMode = EffectBorderMode.Hard };
@@ -597,13 +617,20 @@ internal sealed class PreviewRenderLoop : IDisposable
     // At rest the frame is FrameRenderer's, the export's own drawing. Only while the gate reshapes is the photo placed by
     // hand: the whole photo at its moving rectangle on the gate's black, inside the moving clip; the reframe's end is
     // FrameRenderer's picture again. Both draw the photo through FrameRenderer.DrawPhoto with its look (#45), so the
-    // 400 ms of a reframe show the same correction as the frames either side of it (STATUS, the reframe exception).
-    private void DrawPicture(CanvasDrawingSession session, ProjectSnapshot snapshot, CanvasBitmap image, Rect gate, Rect shownGate, Rect shownPhoto, Matrix3x2 develop, FrameLook look)
+    // 400 ms of a reframe show the same correction as the frames either side of it (STATUS, the reframe exception); a
+    // blend (#47, photos not null) through FrameRenderer.DrawBlend, each of its photos at the moving rectangle.
+    private void DrawPicture(CanvasDrawingSession session, ProjectSnapshot snapshot, CanvasBitmap image, Rect gate, Rect shownGate, Rect shownPhoto, Matrix3x2 develop, FrameLook look, BlendedPhoto[]? photos)
     {
         var video = snapshot.VideoSize;
         if (_reframe is not null)
         {
             session.Transform = develop;
+            if (photos is not null)
+            {
+                FrameRenderer.DrawBlend(session, shownGate, [.. photos.Select(part => new PlacedPhoto(part.Photo, shownPhoto, new Rect(0, 0, part.Photo.Size.Width, part.Photo.Size.Height), part.Stops, part.Weight))]);
+                return;
+            }
+
             session.FillRectangle(shownGate, FrameRenderer.Background);
             FrameRenderer.DrawPhoto(session, image, shownPhoto, new Rect(0, 0, image.Size.Width, image.Size.Height), look);
             return;
@@ -613,8 +640,109 @@ internal sealed class PreviewRenderLoop : IDisposable
         var frameDips = session.ConvertPixelsToDips(video.Width);
         var scale = (float)(gate.Width / frameDips);
         session.Transform = Matrix3x2.CreateScale(scale) * Matrix3x2.CreateTranslation((float)gate.X, (float)gate.Y) * develop;
+        if (photos is not null)
+        {
+            FrameRenderer.Draw(session, photos, snapshot.FrameSettings.Fit, video, look.View);
+            return;
+        }
+
         FrameRenderer.Draw(session, image, snapshot.FrameSettings, video, look);
     }
+
+    // Frame blending (#47): how many photos before and after the one on screen it is blended with, for the cache to keep
+    // them ready; none while the Look panel shows Before.
+    private (int Before, int After) BlendReach(ProjectSnapshot snapshot)
+    {
+        var blend = snapshot.Blend;
+        if (_showOriginals || !blend.Blends || snapshot.Frames.Length < 2)
+        {
+            return (0, 0);
+        }
+
+        return (blend.Frames / 2, blend.Frames - 1 - (blend.Frames / 2));
+    }
+
+    // The photos photo index is blended from (#47) that are in memory, leased, its own first among them with no lease (its
+    // image is the frame's); empty when it is not a blend or none of the others is there yet.
+    private BlendPart[] AcquireBlend(ProjectSnapshot snapshot, int index)
+    {
+        if (BlendReach(snapshot) == (0, 0))
+        {
+            return [];
+        }
+
+        var frames = snapshot.Frames;
+        var parts = new List<BlendPart>();
+        foreach (var layer in snapshot.Blend.Layers(index, frames.Length))
+        {
+            var id = frames[layer.Photo].Id;
+            if (layer.Photo == index)
+            {
+                parts.Insert(0, new BlendPart(null, id, layer.Weight));
+            }
+            else if (_images.Acquire(id) is { } lease)
+            {
+                parts.Add(new BlendPart(lease, id, layer.Weight));
+            }
+        }
+
+        if (parts.Count > 1)
+        {
+            return [.. parts];
+        }
+
+        return [];
+    }
+
+    // The photos to draw for a blend, with their shares among those in memory (so a blend still loading is as bright as the
+    // finished one), each with its own exposure; null when it is not a blend.
+    private BlendedPhoto[]? Blended(ProjectSnapshot snapshot, CanvasBitmap image, BlendPart[] blend, Framing view)
+    {
+        if (blend.Length < 2)
+        {
+            return null;
+        }
+
+        var total = blend.Sum(part => part.Weight);
+        return [.. blend.Select(part => new BlendedPhoto(
+            part.Lease?.Image ?? image,
+            LookOf(snapshot, part.Id, view).Stops,
+            (float)(part.Weight / total)))];
+    }
+
+    // Whether two blends are the same pictures with the same shares.
+    private static bool SameBlend(BlendPart[] a, BlendPart[] b)
+    {
+        if (a.Length != b.Length)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < a.Length; i++)
+        {
+            if (a[i].Id != b[i].Id || a[i].Weight != b[i].Weight || !ReferenceEquals(a[i].Lease?.Image, b[i].Lease?.Image))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Lets the cache free a blend's photos; returns the empty blend.
+    private static BlendPart[] Release(BlendPart[] blend)
+    {
+        foreach (var part in blend)
+        {
+            part.Lease?.Dispose();
+        }
+
+        return [];
+    }
+
+    // One photo of a blend on screen (#47): its lease (null for the frame's own photo, whose image the frame has), its id
+    // and its share.
+    private readonly record struct BlendPart(FrameImageLease<CanvasBitmap>? Lease, Guid Id, double Weight);
 
     // Crop and pan's framing of the video frame at position (#46, as FrameLook.For gives the export), or the whole frame while
     // the Frame panel edits a framing.
@@ -742,6 +870,7 @@ internal sealed class PreviewRenderLoop : IDisposable
     {
         _shown?.Dispose();
         _shown = null;
+        _shownBlend = Release(_shownBlend);
         _shownId = Guid.Empty;
         _shownQuality = FrameImageQuality.None;
         _shownPlaceholder = false;
@@ -816,6 +945,7 @@ internal sealed class PreviewRenderLoop : IDisposable
         _log.Report(new InvalidOperationException("The graphics device was lost; the preview starts again on a new one."), ProjectText.PreviewDrawFailed);
         _shown?.Dispose();
         _shown = null;
+        _shownBlend = Release(_shownBlend);
         _shownId = Guid.Empty;
         _shownPlaceholder = false;
         _drewAnything = false;

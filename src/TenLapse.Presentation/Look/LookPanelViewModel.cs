@@ -8,8 +8,9 @@ namespace TenLapse.Presentation.Look;
 
 /// <summary>
 /// The Look section of the inspector (#45, the canvas's Look section): the Deflicker switch, its strength, the progress
-/// of the exposure pass with Cancel, and the Before and After switch under the preview. Every change is one write to
-/// <see cref="Project.Look"/>; the preview and the export take the correction from the next snapshot. UI thread.
+/// of the exposure pass with Cancel, frame blending's switch with its photo count and strength (#47), and the Before and
+/// After switch under the preview. Every change is one write to <see cref="Project.Look"/> or <see cref="Project.Blend"/>;
+/// the preview and the export take them from the next snapshot. UI thread.
 /// </summary>
 /// <remarks>
 /// Cancel stops the measuring. When the pass is the one turning deflicker on started, it also turns deflicker off: the
@@ -18,7 +19,8 @@ namespace TenLapse.Presentation.Look;
 /// stops without touching the project, so the user's setting and the saved state stay as they were: the photos left
 /// take their correction from their measured neighbours, and "3 photos not measured" with Measure shows until they are
 /// measured. Before and After is the preview's alone, never saved and never exported: it shows the photos without the
-/// correction while it is on Before, and goes back to After whenever deflicker is turned off.
+/// correction and without blending while it is on Before, shows while either is on, and goes back to After whenever both
+/// are off.
 /// </remarks>
 public sealed class LookPanelViewModel : ObservableObject, IDisposable
 {
@@ -29,6 +31,9 @@ public sealed class LookPanelViewModel : ObservableObject, IDisposable
     private Project _project;
     private bool _deflicker;
     private int _strength = LookSettings.MaxStrength;
+    private bool _blend;
+    private int _blendFrames = BlendSettings.Default.Frames;
+    private int _blendStrength = BlendSettings.Default.Strength;
     private int _compareIndex = 1;
     private bool _disposed;
 
@@ -88,6 +93,56 @@ public sealed class LookPanelViewModel : ObservableObject, IDisposable
     /// <summary>The strength as text, "80%".</summary>
     public string StrengthText => LookText.Percent(_strength);
 
+    /// <summary>Frame blending on or off (#47). Setting it edits the project.</summary>
+    public bool IsBlendOn
+    {
+        get => _blend;
+        set
+        {
+            if (value != _blend)
+            {
+                EditBlend(blend => blend with { Enabled = value });
+            }
+        }
+    }
+
+    /// <summary>How many photos a frame blends, 2 to 16, as the slider's value; rounded to a whole photo. Setting it edits the project.</summary>
+    public double BlendFrames
+    {
+        get => _blendFrames;
+        set
+        {
+            var frames = (int)Math.Round(Math.Clamp(double.IsFinite(value) ? value : _blendFrames, BlendSettings.MinFrames, BlendSettings.MaxFrames));
+            if (frames != _blendFrames)
+            {
+                EditBlend(blend => blend with { Frames = frames });
+            }
+        }
+    }
+
+    /// <summary>The photo count as text, "4".</summary>
+    public string BlendFramesText => LookText.Count(_blendFrames);
+
+    /// <summary>Frame blending's strength in percent, 0 to 100, as the slider's value; rounded to a whole percent. Setting it edits the project.</summary>
+    public double BlendStrength
+    {
+        get => _blendStrength;
+        set
+        {
+            var strength = (int)Math.Round(Math.Clamp(double.IsFinite(value) ? value : _blendStrength, BlendSettings.MinStrength, BlendSettings.MaxStrength));
+            if (strength != _blendStrength)
+            {
+                EditBlend(blend => blend with { Strength = strength });
+            }
+        }
+    }
+
+    /// <summary>Frame blending's strength as text, "100%".</summary>
+    public string BlendStrengthText => LookText.Percent(_blendStrength);
+
+    /// <summary>True while deflicker or frame blending is on: the Before and After switch shows under the preview.</summary>
+    public bool HasLook => _deflicker || _blend;
+
     /// <summary>True while photos are being measured: the progress and Cancel show.</summary>
     public bool IsMeasuring => Analysis.IsMeasuring;
 
@@ -128,8 +183,8 @@ public sealed class LookPanelViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>True while the preview should draw the photos without deflicker: on, and Before chosen.</summary>
-    public bool ShowsOriginal => _deflicker && _compareIndex == 0;
+    /// <summary>True while the preview should draw the photos as they are, without deflicker or blending: one is on, and Before chosen.</summary>
+    public bool ShowsOriginal => HasLook && _compareIndex == 0;
 
     /// <summary>Stops following the project.</summary>
     public void Dispose()
@@ -176,7 +231,7 @@ public sealed class LookPanelViewModel : ObservableObject, IDisposable
 
     private void OnProjectChanged(object? sender, ProjectChangedEventArgs e)
     {
-        if ((e.Changes & ProjectChanges.Look) != 0)
+        if ((e.Changes & (ProjectChanges.Look | ProjectChanges.Blend)) != 0)
         {
             Refresh();
         }
@@ -208,26 +263,63 @@ public sealed class LookPanelViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(Strength));
     }
 
+    // The same for frame blending (#47).
+    private void EditBlend(Func<BlendSettings, BlendSettings> change)
+    {
+        _errors.Guard(
+            () =>
+            {
+                if (!_project.IsClosed)
+                {
+                    _project.Blend = change(_project.Blend);
+                }
+            },
+            LookText.ChangeFailed);
+        Refresh();
+        OnPropertyChanged(nameof(IsBlendOn));
+        OnPropertyChanged(nameof(BlendFrames));
+        OnPropertyChanged(nameof(BlendStrength));
+    }
+
     private void Refresh() =>
         _errors.Guard(
             () =>
             {
-                var look = _project.Snapshot.Look;
+                var snapshot = _project.Snapshot;
+                var look = snapshot.Look;
+                var blend = snapshot.Blend;
                 var before = ShowsOriginal;
+                var hadLook = HasLook;
                 if (SetProperty(ref _deflicker, look.Deflicker, nameof(IsDeflickerOn)))
                 {
                     OnPropertyChanged(nameof(HasUnmeasured));
-                    if (!look.Deflicker)
-                    {
-                        // Off: the next time it is on, the preview starts on After.
-                        _compareIndex = 1;
-                        OnPropertyChanged(nameof(CompareIndex));
-                    }
                 }
 
                 if (SetProperty(ref _strength, look.Strength, nameof(Strength)))
                 {
                     OnPropertyChanged(nameof(StrengthText));
+                }
+
+                SetProperty(ref _blend, blend.Enabled, nameof(IsBlendOn));
+                if (SetProperty(ref _blendFrames, blend.Frames, nameof(BlendFrames)))
+                {
+                    OnPropertyChanged(nameof(BlendFramesText));
+                }
+
+                if (SetProperty(ref _blendStrength, blend.Strength, nameof(BlendStrength)))
+                {
+                    OnPropertyChanged(nameof(BlendStrengthText));
+                }
+
+                if (HasLook != hadLook)
+                {
+                    OnPropertyChanged(nameof(HasLook));
+                    if (!HasLook)
+                    {
+                        // Both off: the next time one is on, the preview starts on After.
+                        _compareIndex = 1;
+                        OnPropertyChanged(nameof(CompareIndex));
+                    }
                 }
 
                 RaiseIfOriginalChanged(before);

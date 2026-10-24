@@ -94,6 +94,10 @@ public sealed class FrameImageCache<TImage> : IDisposable
 
     // The photos playback shows next, in order (#49), when the player gave them; null for the frames after the focus.
     private int[]? _ahead;
+
+    // Frame blending (#47): how many photos before and after each shown photo it is drawn with.
+    private int _blendBefore;
+    private int _blendAfter;
     private long _bytes;
     private long _useClock;
     private bool _disposed;
@@ -260,6 +264,29 @@ public sealed class FrameImageCache<TImage> : IDisposable
             _playing = playing;
             _lookahead = lookahead;
             _ahead = ahead;
+        }
+
+        Wake();
+    }
+
+    /// <summary>
+    /// The photos each shown photo is drawn with (#47, frame blending): <paramref name="before"/> photos before it and
+    /// <paramref name="after"/> after it are kept ready with it, nearest first, right after it: with the photo on screen,
+    /// and while playing with each photo it shows next. 0 and 0, the default, for none.
+    /// </summary>
+    public void SetBlendWindow(int before, int after)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(before);
+        ArgumentOutOfRangeException.ThrowIfNegative(after);
+        lock (_gate)
+        {
+            if (_disposed || (before == _blendBefore && after == _blendAfter))
+            {
+                return;
+            }
+
+            _blendBefore = before;
+            _blendAfter = after;
         }
 
         Wake();
@@ -614,8 +641,45 @@ public sealed class FrameImageCache<TImage> : IDisposable
     }
 
     // Under the lock: the frames to keep in memory, most wanted first: the playhead, then the frames ahead while playing
-    // (looping), or the neighbours on both sides while paused.
+    // (looping), or the neighbours on both sides while paused; each followed by the photos it is blended with (#47).
     private IEnumerable<int> Wanted()
+    {
+        if (_blendBefore == 0 && _blendAfter == 0)
+        {
+            foreach (var index in Shown())
+            {
+                yield return index;
+            }
+
+            yield break;
+        }
+
+        var count = _frames.Length;
+        var seen = new HashSet<int>();
+        foreach (var index in Shown())
+        {
+            if (seen.Add(index))
+            {
+                yield return index;
+            }
+
+            for (var step = 1; step <= Math.Max(_blendBefore, _blendAfter); step++)
+            {
+                if (step <= _blendBefore && index - step >= 0 && seen.Add(index - step))
+                {
+                    yield return index - step;
+                }
+
+                if (step <= _blendAfter && index + step < count && seen.Add(index + step))
+                {
+                    yield return index + step;
+                }
+            }
+        }
+    }
+
+    // Under the lock: the photos shown, most wanted first (Wanted without the blend).
+    private IEnumerable<int> Shown()
     {
         var count = _frames.Length;
         if (count == 0)

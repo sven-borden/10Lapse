@@ -138,7 +138,9 @@ public static class ProjectExporter
         var sequence = snapshot.Playback;
         var positions = PositionsFor(snapshot, settings);
         var frames = FramesFor(sequence, positions);
-        var source = new PhotoFileSource([.. frames.Select(index => snapshot.Frames[index].SourcePath)], settings.Fit, LooksFor(snapshot, frames, positions));
+        IFrameSource source = BlendsFrames(snapshot)
+            ? BlendedSourceFor(snapshot, frames, positions, settings)
+            : new PhotoFileSource([.. frames.Select(index => snapshot.Frames[index].SourcePath)], settings.Fit, LooksFor(snapshot, frames, positions));
 
         // Progress counts the video's frames (#49: holds, plays and the way back take as long to write as any frame), so
         // the percent and the time left are right; for a plain sequence those are the photos ("0312 of 0742"). A GIF that
@@ -199,8 +201,50 @@ public static class ProjectExporter
         return looks.All(look => look.IsNeutral) ? null : looks;
     }
 
+    /// <summary>
+    /// The most photo pixels a blended export (#47) holds decoded at once, by its blend's photo count: 16 photos at 4K.
+    /// A zoomed view (#46) decodes the photos larger, so a blend of many photos with a deep zoom is decoded at the zoom that
+    /// keeps within it (<see cref="BlendDecodeZoom"/>), and is a little softer than its zoom asks for.
+    /// </summary>
+    internal const long BlendBudgetPixels = 16L * 3840 * 2160;
+
+    /// <summary>True when the export draws blended frames (#47): blending is on at a strength above 0, with photos to blend.</summary>
+    internal static bool BlendsFrames(ProjectSnapshot snapshot) => snapshot.Blend.Blends && snapshot.Frames.Length > 1;
+
+    /// <summary>
+    /// The most a blended export decodes a photo enlarged for a zoomed view (#46): the zoom at which the blend's photos at
+    /// <paramref name="output"/> fit <see cref="BlendBudgetPixels"/>, never below 1.
+    /// </summary>
+    internal static double BlendDecodeZoom(BlendSettings blend, PixelSize output)
+    {
+        ArgumentNullException.ThrowIfNull(blend);
+        return Math.Max(1, Math.Sqrt(BlendBudgetPixels / ((double)blend.Frames * output.Width * output.Height)));
+    }
+
+    /// <summary>
+    /// The frames of a blended export (#47), exactly as the preview draws them: each exported frame is a blend of the photos
+    /// around the one it shows, each with its own look's exposure (<see cref="FrameLook.For(ProjectSnapshot, Guid)"/>,
+    /// keyed by the photo), through the frame's own crop and pan view (<see cref="FrameLook.For(ProjectSnapshot, Guid, int)"/>).
+    /// </summary>
+    internal static BlendedPhotoSource BlendedSourceFor(ProjectSnapshot snapshot, int[] frames, int[] positions, VideoExportSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(settings);
+        var photos = snapshot.Frames;
+        var stops = photos.Select(photo => FrameLook.For(snapshot, photo.Id).Stops).ToArray();
+        var views = frames.Select((photo, i) => FrameLook.For(snapshot, photos[photo].Id, positions[i]).View).ToArray();
+        return new BlendedPhotoSource(
+            [.. photos.Select(photo => photo.SourcePath)],
+            frames,
+            snapshot.Blend,
+            settings.Fit,
+            views,
+            stops,
+            BlendDecodeZoom(snapshot.Blend, new PixelSize(settings.Width, settings.Height)));
+    }
+
     private static async Task<ProjectExportResult> RunAsync(
-        PhotoFileSource source,
+        IFrameSource source,
         int[] frames,
         int[] positions,
         int videoFrames,
@@ -262,8 +306,8 @@ public static class ProjectExporter
             finally
             {
                 // The pipeline has stopped: a held photo's shared pixels go now, not at a collection, also when the export
-                // was cancelled or failed in the middle of a hold (review of PR #134).
-                source.Dispose();
+                // was cancelled or failed in the middle of a hold (review of PR #134), and so do a blend's photos (#47).
+                (source as IDisposable)?.Dispose();
             }
 
             tracker.Enter(ExportStage.Finishing);

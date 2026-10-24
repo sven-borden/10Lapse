@@ -112,7 +112,8 @@ internal static class GoldenExport
         SequenceSettings? sequence = null,
         LookSettings? look = null,
         CropSettings? crop = null,
-        MusicSettings? music = null)
+        MusicSettings? music = null,
+        BlendSettings? blend = null)
     {
         var project = new Project(
             timing,
@@ -122,7 +123,8 @@ internal static class GoldenExport
             sequence ?? SequenceSettings.Default,
             look ?? LookSettings.Default,
             crop ?? CropSettings.Default,
-            music ?? MusicSettings.Default);
+            music ?? MusicSettings.Default,
+            blend ?? BlendSettings.Default);
         project.AddFrames(frames);
         return project.Snapshot;
     }
