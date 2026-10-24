@@ -67,6 +67,18 @@ internal sealed class WindowExportFeedback(TaskbarProgress taskbar, ExportNotifi
         }
     }
 
+    /// <summary>
+    /// True while the window is the one the user works in: active and not minimized. The rating question's card (#139)
+    /// arrives only then.
+    /// </summary>
+    public bool InFront => !inBackground();
+
+    /// <summary>
+    /// Raised on the UI thread when the window may have come to the front (it was activated, or restored, shown or
+    /// resized); handlers read <see cref="InFront"/>. Handlers must not throw.
+    /// </summary>
+    public event EventHandler? FrontChanged;
+
     /// <summary>The window is active again: a failure's red goes.</summary>
     public void WindowActivated()
     {
@@ -74,5 +86,10 @@ internal sealed class WindowExportFeedback(TaskbarProgress taskbar, ExportNotifi
         {
             ClearProgress();
         }
+
+        FrontChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>The window was restored, minimized, shown or hidden: it may be in front now.</summary>
+    public void WindowChanged() => FrontChanged?.Invoke(this, EventArgs.Empty);
 }

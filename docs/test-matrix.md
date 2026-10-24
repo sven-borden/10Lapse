@@ -342,16 +342,33 @@ player at the right size; the Finished summary ("24.7 s . 4K . H.264 .
 - [ ] **5.10.3 Settings page** (#26). Expect: Back, Escape, Alt+Left and the
   mouse back button leave it; *Copy diagnostics* copies a report with the
   profile path and user name redacted.
-- [ ] **5.10.4 Rating ask** (#31, PR #93). Run: a flight build (the real call
-  needs package identity and the Store), on a machine that has not exported
-  with this version (fresh install, or delete `LocalState\settings.json`). Do:
-  two successful exports. Expect: 4 s after the second finished state, the
-  Store's rating dialog appears once, only while the window is active; not
-  after a failed or cancelled export; a restart does not ask again. The Store
-  may stay quiet (it rate-limits): the app counts it as asked. The export count
-  and the asked version persist across restarts and Reset to defaults, so a
-  tester who exported before never sees the ask. A later flight with a new
-  package version asks once more.
+- [ ] **5.10.4 Rating question** (#31 PR #93, #139). Run: a packaged build
+  (the Store's dialog needs package identity and the Store), on a machine that
+  has not exported with this version (fresh install, or delete
+  `LocalState\settings.json`). Do: two successful exports. Expect: the second
+  finished state shows a card under Back to editing, "Do you like 10Lapse?"
+  with Yes and No, rising in after the check; Narrator reads the question;
+  Tab from Back to editing reaches Yes, then No. Nothing appears by itself over
+  the premiere. Yes closes the card and the Store's rating dialog opens over
+  the window (if the Store cannot show it, the Store's review page opens;
+  if neither, one InfoBar says to open the Store and search for 10Lapse); No
+  closes the card and nothing opens. Either way focus lands on Back to
+  editing. Never after a failed or cancelled export. Leaving the card
+  unanswered (Back to editing, closing) counts: a restart or a third export
+  does not show it again. Minimize the window (or switch to another app)
+  during the second export: no card and no version recorded while it is
+  away; when the window comes back with the finished state still up, the card
+  rises in and Narrator reads it then. Back to editing before the window
+  comes back: no card, nothing recorded, and the next successful export asks.
+  Two 10Lapse windows: the card shows once per version across both. The export count and the asked version persist
+  across restarts and Reset to defaults, so a tester who exported before never
+  sees it. A later build with a new package version asks once more. Checked
+  unpackaged (PR for #139) with `--fake-rating`: card, Yes, No, wide and
+  narrow, light and dark, not again in the same version; and (review fixes)
+  minimized through UIA during the export: no card and no version until the
+  window was restored, then both; Back to editing while minimized: neither,
+  after the restore too; not checked: the
+  real Store dialog, Narrator's reading, real Tab and clicks.
 - [ ] **5.10.5 Feedback card** (#31). Expect: *Send feedback* opens the GitHub
   new-issue page, *Rate 10Lapse* opens the Store review page for
   `9NBN2XH6S4D8`; a launch failure gives one InfoBar that says what to do.

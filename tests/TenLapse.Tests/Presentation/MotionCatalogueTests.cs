@@ -43,6 +43,8 @@ public sealed class MotionCatalogueTests
         // Wrap: check stroke draws, 500 ms enter after 200 ms; title rises 6 px, 400 ms enter; premiere after 1.1 s.
         { "Finished.Check", 500, MotionEasing.Enter, 200, 0, true, MotionKind.None, 0, 0 },
         { "Finished.Title", 400, MotionEasing.Enter, 0, 0, true, MotionKind.Faded, 150, 0 },
+        // The rating question's card (#139): rises 6 px, 400 ms enter, once the check has drawn (200 + 500 ms).
+        { "Finished.Rating", 400, MotionEasing.Enter, 700, 0, true, MotionKind.Faded, 150, 0 },
         { "Finished.Premiere", 1100, MotionEasing.Linear, 0, 0, false, MotionKind.Waited, 1100, 0 },
 
         // InfoBar: in from -8 px, 250 ms enter; out to -8 px, 167 ms exit; detail list expands, 250 ms enter.

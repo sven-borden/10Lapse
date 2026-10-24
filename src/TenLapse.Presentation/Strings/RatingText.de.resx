@@ -39,4 +39,13 @@
   <data name="FeedbackFailed" xml:space="preserve">
     <value>Ihr Browser wurde nicht geöffnet. Senden Sie Ihr Feedback über github.com/sven-borden/10Lapse/issues.</value>
   </data>
+  <data name="Question" xml:space="preserve">
+    <value>Gefällt Ihnen 10Lapse?</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Ja</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Nein</value>
+  </data>
 </root>

@@ -4,11 +4,18 @@ using TenLapse.Presentation.Rating;
 namespace TenLapse.Debugging;
 
 /// <summary>
-/// Debug-only switch for the rating prompt (#31; this folder is not built in Release): <c>--fake-rating</c> replaces the
-/// Store with a stand-in that only writes to the log that it would have asked, so the flow (the second successful export,
-/// once per version) can be checked unpackaged and without the Store. The count and the version asked in are
-/// recorded as for a real ask, in the settings folder given by <c>--settings-folder</c>.
+/// Debug-only switch for the rating question (#31, #139; this folder is not built in Release): <c>--fake-rating</c>
+/// replaces the Store's rating dialog with a stand-in that only writes to the log that it would show it now, so the
+/// flow (the card in the second successful export's finished state, once per version, Yes) can be checked unpackaged
+/// without the Store. Without it, Yes in an unpackaged run opens the Store's review page (the dialog needs package
+/// identity), so a check by UI Automation passes this switch. The count and the version asked in are recorded as for a
+/// real run, in the settings folder given by <c>--settings-folder</c>.
 /// </summary>
+/// <remarks>
+/// To see the card after one export instead of two, start with a fresh settings folder whose <c>settings.json</c> is
+/// <c>{"version": 1, "successfulExports": 1}</c>, and export once with <c>--export-to=PATH --sample-frames=N</c> (DebugExport).
+/// A Debug build's version is <c>1.0.0+&lt;commit&gt;</c>, so each new commit may ask once more.
+/// </remarks>
 internal sealed class DebugRating(ILog log) : IRatingService
 {
     private static readonly string[] _args = Environment.GetCommandLineArgs();

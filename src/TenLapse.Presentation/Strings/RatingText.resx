@@ -50,4 +50,16 @@
     <value>Your browser didn't open. Go to github.com/sven-borden/10Lapse/issues to send your feedback.</value>
     <comment>A message bar when the browser would not open. Keep the address as it is.</comment>
   </data>
+  <data name="Question" xml:space="preserve">
+    <value>Do you like 10Lapse?</value>
+    <comment>The heading of a card in the finished state after an export, asking whether the user likes the app. Narrator reads it as the card appears.</comment>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Yes</value>
+    <comment>A button on that card: opens the Microsoft Store rating dialog.</comment>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>No</value>
+    <comment>A button on that card: closes it, nothing else.</comment>
+  </data>
 </root>

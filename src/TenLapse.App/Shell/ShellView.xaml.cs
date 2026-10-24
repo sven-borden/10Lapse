@@ -209,6 +209,9 @@ public sealed partial class ShellView : UserControl
     /// <summary>The export's view model (#24), for x:Bind and for the window's close check.</summary>
     public ExportViewModel Export { get; }
 
+    /// <summary>Gives the finished state its rating question's card (#139), which arrives only while <paramref name="window"/> is in front. Before the shell is loaded.</summary>
+    internal void AttachRating(Presentation.Rating.RatingPrompt rating, Services.WindowExportFeedback window) => ExportSection.AttachRating(rating, window);
+
     /// <summary>The theme crossfade (#35): the shell follows Windows' light or dark mode through it.</summary>
     internal ThemeCrossfade ThemeFade { get; }
 

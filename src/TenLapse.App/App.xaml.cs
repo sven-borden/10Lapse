@@ -293,8 +293,9 @@ public partial class App : Application
         // And the preview: its render thread, its loads and the frame images.
         window.Closed += (_, _) => logOnly.RunLogged(preview.Dispose, ProjectText.PreviewProjectFailed);
 
-        // The rating prompt (#31): after the second successful export, once per version, if the window is in front and
-        // nothing is open. Unpackaged it does nothing; Debug --fake-rating logs the ask instead of calling the Store.
+        // The rating question (#139): "Do you like 10Lapse?" in the finished state of the second successful export, once per
+        // version; Yes shows the Store's rating dialog, else its review page. Unpackaged the dialog cannot show, so Yes
+        // opens the review page; Debug --fake-rating logs the dialog instead of calling the Store.
         IRatingService ratingService = new StoreRatingService(() => window!.Handle, _log);
 #if DEBUG
         if (Debugging.DebugRating.Requested)
@@ -302,8 +303,9 @@ public partial class App : Application
             ratingService = new Debugging.DebugRating(_log);
         }
 #endif
-        var rating = new RatingPrompt(remembered, ratingService, () => window!.IsInForeground && !dialogs.HasOpenDialog && window.Export.IsFinished, AppDiagnostics.AppVersion(), _log, logOnly);
+        var rating = new RatingPrompt(remembered, ratingService, new LauncherService(), infoBars, AppDiagnostics.AppVersion(), _log, errors);
         rating.Attach(window.Export);
+        window.AttachRating(rating);
         window.Closed += (_, _) => rating.Dispose();
 #if DEBUG
         errors.Guard(() => Debugging.DebugLaunch.ApplyPreview(preview, window, _log), "Applying the preview's Debug switches failed.");
