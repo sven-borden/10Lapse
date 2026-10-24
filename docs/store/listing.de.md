@@ -1,6 +1,6 @@
-# 10Lapse 3.0 Store listing (German)
+# 10Lapse 3.1 Store listing (German)
 
-The text Sven pastes into Partner Center for the 3.0 update (#116): Apps and games, 10Lapse, the 3.0 submission,
+The text Sven pastes into Partner Center for the 3.1 update (#141; 3.0 was #116): Apps and games, 10Lapse, the 3.1 submission,
 Store listings, German (Deutsch). One `de` listing serves Germany, Austria and Switzerland, as the package's `de`
 resources do. It is `docs/store/listing.md` translated, with the same fields, limits and order; the notes around the
 boxes stay in English for Sven, the boxes are what the Store shows.
@@ -11,37 +11,51 @@ pages. Copy each field from inside its box: the boxes are plain text, without Ma
 
 The German follows the app: formal address ("Sie"), as Windows 11 writes German; the Store names of the extensions
 exactly as the German Store shows them (`HEIF-Bilderweiterung`, `HEVC-Videoerweiterungen`, `Raw-Bilderweiterung`);
-the app's own labels in „…“ where the text names one. As in English, the text says only what 3.0 does.
+the app's own labels in „…“ where the text names one. As in English, the text says only what 3.1 does, and no field
+has the Windows 10 sentence. The 3.1 features use the app's German names: Entflackern, Überlagern (frame blending),
+Zoomen und Schwenken (Sanft, Gleichmäßig), Standbild am Anfang / am Ende, Bumerang, Durchläufe, Animiertes GIF (Klein,
+Mittel, Groß), Musik, Zuletzt verwendete Projekte, Vorher / Nachher.
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 3,035.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,920.
 
 ```text
-Machen Sie aus einem Ordner voller Fotos ein flüssiges Zeitraffervideo, bis 4K.
+Machen Sie aus einem Ordner voller Fotos ein flüssiges Zeitraffervideo, bis 4K, oder ein animiertes GIF.
 
-Sie haben einen Sonnenuntergang, ein aufziehendes Gewitter oder eine Baustelle vom Stativ aus fotografiert, alle paar Sekunden ein Foto, und haben jetzt einen Ordner mit Hunderten oder Tausenden Fotos. 10Lapse spielt sie als Video ab: Ziehen Sie den Ordner auf das Fenster, prüfen Sie die Vorschau, und exportieren Sie ein MP4-Video.
+Sie haben einen Sonnenuntergang, ein aufziehendes Gewitter oder eine Baustelle vom Stativ aus fotografiert, alle paar Sekunden ein Foto, und haben jetzt einen Ordner mit Hunderten oder Tausenden Fotos. 10Lapse spielt sie als Video ab: Ziehen Sie den Ordner auf das Fenster, prüfen Sie die Vorschau, und exportieren Sie ein MP4-Video oder ein GIF.
 
 So funktioniert es
 1. Wählen Sie einen Ordner oder einzelne Fotos aus, oder ziehen Sie sie auf das Fenster. 10Lapse liest JPEG, PNG, TIFF, HEIC und die RAW-Dateien der meisten Kameras und ordnet sie nach Aufnahmezeit.
 2. Legen Sie das Tempo auf eine von drei Arten fest: Bilder pro Sekunde, die gewünschte Videodauer oder Sekunden pro Foto für eine Diashow. Die Zahlen sind immer zu sehen, zum Beispiel „742 Fotos → 24,7 s bei 30 fps“.
 3. Wählen Sie das Bildformat: wie Ihre Fotos, 16:9 für YouTube und Fernseher, 9:16 für Storys und Reels auf dem Smartphone, 1:1, 4:5 oder 4:3. „Anpassen“ zeigt das ganze Foto; „Ausfüllen“ schneidet die Ränder ab, sodass keine Balken entstehen.
-4. Exportieren Sie ein MP4-Video in 720p, 1080p, 1440p oder 4K, mit H.264 oder mit HEVC, wenn der PC es codieren und wiedergeben kann. Die Vorschau zeichnet jedes Bild mit demselben Code wie der Export, deshalb sieht das Video genauso aus wie die Vorschau.
+4. Exportieren Sie ein MP4-Video in 720p, 1080p, 1440p oder 4K, mit H.264 oder mit HEVC, wenn der PC es codieren und wiedergeben kann. Oder exportieren Sie ein animiertes GIF, das endlos läuft, in „Klein“, „Mittel“ oder „Groß“ (320, 480 oder 640 Pixel an der langen Seite), mit bis zu 10, 20 oder 25 Bildern pro Sekunde. Die Vorschau zeichnet jedes Bild mit demselben Code wie der Export, deshalb sieht das Video genauso aus wie die Vorschau.
+
+Der richtige Look
+- „Entflackern“ gleicht Belichtungssprünge zwischen Fotos aus. Haben Sie bei einem Sonnenuntergang Belichtungszeit, Blende oder ISO verstellt, liest es diese Einstellungen aus den Fotos und macht aus jeder Stufe einen sanften Übergang, während die Szene so dunkel wird, wie sie es wirklich wurde.
+- „Überlagern“ macht jedes Bild zum Durchschnitt von 2 bis 16 benachbarten Fotos, wie eine Langzeitbelichtung: Bewegte Lichter hinterlassen Lichtspuren, und Wolken ziehen weich vorbei.
+- „Zoomen und Schwenken“ wandert von einem Start- zu einem Endausschnitt, mit bis zu 4× Zoom, „Sanft“ oder „Gleichmäßig“. Ziehen Sie den Ausschnitt in der Vorschau an seinen Platz.
+- „Vorher“ und „Nachher“ in der Vorschau zeigen Ihre Fotos mit und ohne Entflackern und Überlagern.
+- Ein Standbild am Anfang und am Ende des Videos, je bis zu 10 Sekunden, bis zu fünf Durchläufe der Fotos oder ein „Bumerang“, vorwärts und wieder zurück.
+- Musik unter einem MP4-Video (MP3, M4A, WAV, WMA oder FLAC): Wählen Sie, an welcher Stelle des Songs das Video beginnt, und blenden Sie die Musik ein und aus. Der Song endet mit dem Video. Ein GIF hat keinen Ton.
 
 Bearbeiten und exportieren
 - Spulen Sie durch die Sequenz, gehen Sie Bild für Bild vor, und entfernen Sie ein unscharfes Foto oder ziehen Sie eines an seinen Platz. Strg+Z holt es zurück. Ein entferntes Foto verschwindet aus dem Video, nie von Ihrem Datenträger.
 - Lückenmarkierungen im Filmstreifen zeigen, wo anscheinend Fotos fehlen.
 - Die Bildraten sind exakt, auch 29,97, von 0,1 bis 120 Bildern pro Sekunde.
 - Der Bereich „Ausgabe“ schätzt die Dateigröße schon vor dem Export.
-- Der Export nutzt den Videoencoder der Grafikkarte, wenn der PC einen hat. Er hält den PC wach, bis das Video fertig ist, läuft weiter, wenn Sie das Fenster minimieren, und stoppt innerhalb einer Sekunde, wenn Sie abbrechen.
-- Ist das Video fertig, spielen Sie es direkt in der App ab oder öffnen seinen Ordner.
+- Ein MP4-Export nutzt den Videoencoder der Grafikkarte, wenn der PC einen hat. Der Export hält den PC wach, bis er fertig ist, läuft weiter, wenn Sie das Fenster minimieren, und stoppt innerhalb einer Sekunde, wenn Sie abbrechen.
+- Ist der Export fertig, spielen Sie das Ergebnis direkt in der App ab oder öffnen seinen Ordner.
 - Wenn etwas schiefgeht, sagt 10Lapse, was passiert ist und was Sie als Nächstes tun können.
 
+Projekte
+Speichern Sie ein Projekt als .10lapse-Datei, die die Liste der Fotos, ihre Reihenfolge und alle Einstellungen enthält, und öffnen Sie es später wieder oder per Doppelklick. Der Startbildschirm zeigt Ihre zuletzt verwendeten Projekte. Wird 10Lapse beendet, bevor Sie gespeichert haben, bietet es beim nächsten Start an, Ihre Änderungen wiederherzustellen. Fotos, die ein Projekt nicht findet, bleiben in seiner Datei und kommen zurück, sobald ihr Laufwerk wieder verbunden ist.
+
 Datenschutz von Grund auf
-10Lapse funktioniert offline. Es gibt kein Konto, keine Analysedaten und keinen Netzwerkzugriff: Ihre Fotos und Videos verlassen nie Ihren PC.
+10Lapse funktioniert offline. Es gibt kein Konto, keine Analysedaten und keinen Netzwerkzugriff: Ihre Fotos, Videos und Projekte verlassen nie Ihren PC.
 
 Für Windows 11 gemacht
-10Lapse 3.0 benötigt Windows 11 auf einem x64- oder ARM64-PC. Helles und dunkles Design sowie Kontrastdesigns folgen Windows, ebenso die Animationen. Alles lässt sich mit der Tastatur bedienen, und Screenreader sagen jedes Steuerelement und den Fortschritt des Exports an.
+10Lapse benötigt Windows 11 auf einem x64- oder ARM64-PC. Helles und dunkles Design sowie Kontrastdesigns folgen Windows, ebenso die Animationen. Alles lässt sich mit der Tastatur bedienen, und Screenreader sagen jedes Steuerelement und den Fortschritt des Exports an.
 
 Optionale Erweiterungen aus dem Microsoft Store fügen weitere Fotoformate hinzu: HEIC-Fotos benötigen die HEIF-Bilderweiterung (kostenlos) und die HEVC-Videoerweiterungen (kostenpflichtig), RAW-Dateien von Kameras die Raw-Bilderweiterung (kostenlos). 10Lapse nennt die fehlende Erweiterung und verlinkt auf ihre Store-Seite.
 ```
@@ -49,59 +63,59 @@ Optionale Erweiterungen aus dem Microsoft Store fügen weitere Fotoformate hinzu
 ## Short description
 
 Limit 1,000 characters; Microsoft recommends under 270, because some views cut it there. It shows above the
-description, so it says the same thing in other words. This draft: 236.
+description, so it says the same thing in other words. This draft: 260.
 
 ```text
-Machen Sie aus Hunderten Fotos einer Serie vom Stativ ein Zeitraffervideo: Tempo und Bildformat festlegen, Vorschau ansehen und als MP4 bis 4K exportieren. 10Lapse funktioniert offline, ohne Konto, und Ihre Fotos verlassen nie Ihren PC.
+Machen Sie aus Hunderten Fotos einer Serie vom Stativ ein Zeitraffervideo: Tempo und Bildformat festlegen, Flackern glätten und als MP4 bis 4K oder als animiertes GIF exportieren. 10Lapse funktioniert offline, ohne Konto, und Ihre Fotos verlassen nie Ihren PC.
 ```
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,440. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
-does; it does not claim a crash rate.
+Limit 1,500 characters. This draft: 1,391. As in English, it is what 3.0 users get with the update,
+and it leaves out the rating question.
 
 ```text
-10Lapse 3.0 wurde für Windows 11 von Grund auf neu entwickelt.
+10Lapse 3.1 bringt, was ein Zeitraffer nach der Aufnahme braucht.
 
-- Komplett neu geschrieben: Der Code hinter den Abstürzen von 2.1.1 ist weg. Wenn etwas schiefgeht, sagt 10Lapse, was passiert ist und was Sie als Nächstes tun können.
-- Importiert HEIC- und .jpeg-Fotos. HEIC benötigt die HEIF-Bilderweiterung (kostenlos) und die HEVC-Videoerweiterungen (kostenpflichtig) aus dem Microsoft Store; 10Lapse sagt Ihnen, was fehlt.
-- Export bis 4K, mit H.264 oder HEVC, wo der PC es unterstützt, mit Fortschritt, Restzeit und der Schaltfläche „Export abbrechen“, die den Export innerhalb einer Sekunde stoppt.
-- Arbeitet weiter, wenn Sie die App wechseln oder minimieren: Der Export läuft weiter, mit Fortschritt in der Taskleiste und einer Benachrichtigung, wenn das Video fertig ist.
-- Neues Tempo „Pro Foto“ für Diashows, neben Bildern pro Sekunde und Videodauer.
-- Live-Vorschau und Filmstreifen: durchspulen, Bild für Bild vorgehen, Fotos entfernen oder neu anordnen und rückgängig machen.
-- Bildformate für Fernseher, Smartphones und soziale Netzwerke: 16:9, 9:16, 1:1, 4:5, 4:3 oder das Format Ihrer Fotos.
-- Ihr letztes Tempo, Bildformat und Ihre letzte Ausgabe gelten auch im nächsten Projekt.
-- Helles und dunkles Design, Tastenkombinationen, Screenreader-Unterstützung und Kontrastdesigns.
-- Privat: kein Konto und jetzt gar kein Netzwerkzugriff; Ihre Fotos verlassen nie Ihren PC.
+- Entflackern: gleicht Belichtungssprünge zwischen Fotos aus. Haben Sie bei einem Sonnenuntergang Belichtungszeit, Blende oder ISO verstellt, wird aus jeder Stufe ein sanfter Übergang.
+- Überlagern: Jedes Bild ist der Durchschnitt von 2 bis 16 benachbarten Fotos, wie bei einer Langzeitbelichtung, für Lichtspuren und weich ziehende Wolken.
+- Zoomen und Schwenken: von einem Start- zu einem Endausschnitt, mit bis zu 4× Zoom, sanft oder gleichmäßig.
+- Animiertes GIF: ein GIF, das endlos läuft, in drei Größen, mit bis zu 25 Bildern pro Sekunde.
+- Musik unter einem MP4-Video: Wählen Sie, wo der Song beginnt, und blenden Sie ihn ein und aus. Er endet mit dem Video.
+- Standbild am Anfang und am Ende, bis zu 10 Sekunden, bis zu fünf Durchläufe der Fotos oder ein Bumerang.
+- Projekte speichern: Eine .10lapse-Projektdatei lässt sich später wieder öffnen, der Startbildschirm zeigt die zuletzt verwendeten Projekte, und wird 10Lapse vor dem Speichern beendet, bietet es an, Ihre Änderungen wiederherzustellen.
+- Strg+O öffnet jetzt ein Projekt; „Ordner auswählen“ liegt nun auf Strg+I.
+- „Vorher“ und „Nachher“ in der Vorschau vergleichen Ihre Fotos mit und ohne Entflackern und Überlagern.
 
-3.0 benötigt Windows 11 auf einem x64- oder ARM64-PC.
+Wie bisher funktioniert 10Lapse offline, und Ihre Fotos verlassen nie Ihren PC. Es benötigt Windows 11 auf einem x64- oder ARM64-PC.
 ```
 
 ## Product features
 
-Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 19 are 39
-to 106 characters each.
+Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 20 are 48
+to 131 characters each.
 
 ```text
-Macht aus einem Fotoordner ein Zeitraffervideo, bis 4K
-Import eines Ordners, ausgewählter Fotos oder per Ziehen auf das Fenster
+Macht aus einem Fotoordner ein Zeitraffervideo bis 4K oder ein animiertes GIF
+Import eines Ordners oder ausgewählter Fotos oder per Ziehen auf das Fenster; die Fotos ordnen sich nach Aufnahmezeit
 Liest JPEG, PNG und TIFF; HEIC und Kamera-RAW mit Erweiterungen aus dem Microsoft Store
-Ordnet Fotos nach Aufnahmezeit; eine Miniatur lässt sich per Ziehen verschieben
-Tempo nach Bildern pro Sekunde, nach Videodauer oder nach Sekunden pro Foto
+Tempo nach Bildern pro Sekunde, nach Videodauer oder nach Sekunden pro Foto, mit Fotoanzahl und Videodauer immer im Blick
 Exakte Bildraten von 0,1 bis 120 fps, auch 29,97
-Fotoanzahl, Tempo und Videodauer immer im Blick
 Bildformate: wie die Fotos, 16:9, 9:16, 1:1, 4:5 oder 4:3, mit „Anpassen“ oder „Ausfüllen“
-Live-Vorschau, die dem exportierten Video entspricht
-Filmstreifen mit Miniaturen, Lückenmarkierungen für fehlende Fotos, Entfernen und Rückgängig
-MP4 mit H.264 (oder HEVC, wo der PC es unterstützt) in 720p, 1080p, 1440p oder 4K, in drei Qualitätsstufen
-Schätzung der Dateigröße vor dem Export
-Exportiert mit dem Videoencoder der Grafikkarte, wenn der PC einen hat
-Exportiert auch minimiert weiter und hält den PC wach, bis das Video fertig ist
-Fertiges Video in der App abspielen oder seinen Ordner öffnen
+Live-Vorschau, die dem Export entspricht, und Filmstreifen mit Lückenmarkierungen: verschieben, entfernen, rückgängig machen
+Entflackern gleicht Belichtungssprünge aus und macht aus den Belichtungsstufen eines Sonnenuntergangs einen sanften Übergang
+Überlagern: Durchschnitt von 2 bis 16 benachbarten Fotos für Lichtspuren und weich ziehende Wolken
+Zoomen und Schwenken von einem Start- zu einem Endausschnitt, bis 4× Zoom, „Sanft“ oder „Gleichmäßig“
+Standbild am Anfang und am Ende, bis zu fünf Durchläufe der Fotos oder ein Bumerang
+Musik unter einem MP4-Video: Startpunkt im Song wählen, ein- und ausblenden; sie endet mit dem Video
+Projekte als .10lapse-Dateien speichern, zuletzt verwendete auf dem Startbildschirm, Änderungen nach einem Absturz wiederherstellen
+MP4 mit H.264 (oder HEVC, wo der PC es unterstützt) in 720p, 1080p, 1440p oder 4K, drei Qualitätsstufen, Dateigröße vorab geschätzt
+Animiertes GIF, das endlos läuft, in drei Größen, mit bis zu 10, 20 oder 25 Bildern pro Sekunde
+Exportiert MP4 mit dem Videoencoder der Grafikkarte, wenn es einen gibt; läuft minimiert weiter und hält den PC wach
+Fertiges Video oder GIF in der App abspielen oder seinen Ordner öffnen
 Klare Meldungen, die sagen, was schiefgelaufen ist und was als Nächstes zu tun ist
 Funktioniert offline: kein Konto, keine Analysedaten, Fotos verlassen nie Ihren PC
 Helles und dunkles Design, Kontrastdesigns, Tastenkombinationen, Screenreader-Unterstützung
-Merkt sich Ihr letztes Tempo, Bildformat und Ihre letzte Ausgabe
 ```
 
 ## Search terms
