@@ -105,6 +105,15 @@ public static class MotionCatalogue
     /// <summary>The finished title rises 6 px into place, 400 ms Enter.</summary>
     public static readonly MotionTransition FinishedTitle = new("Finished.Title", Scene, MotionEasing.Enter, MotionDirection.In, Moves: true, ReducedMotion.Fade, "rises 6 px");
 
+    /// <summary>
+    /// The rating question's card (#139) rises 6 px into place once the check has drawn (400 ms Enter after 700 ms); with
+    /// animations off it fades in short at once.
+    /// </summary>
+    public static readonly MotionTransition FinishedRating = new("Finished.Rating", Scene, MotionEasing.Enter, MotionDirection.In, Moves: true, ReducedMotion.Fade, "rises 6 px")
+    {
+        Delay = CheckDelay + CheckDraw,
+    };
+
     /// <summary>The preview premieres the finished video 1.1 s after the finished state arrives (a wait, not motion).</summary>
     public static readonly MotionTransition FinishedPremiere = new("Finished.Premiere", Premiere, MotionEasing.Linear, MotionDirection.Change, Moves: false, ReducedMotion.Same, "waits")
     {
@@ -152,7 +161,7 @@ public static class MotionCatalogue
         SegmentPill, RetimeReadout, RetimeLengthBar,
         ReframeGate, ReframePhoto,
         PanelOut, PanelIn, GateStrip, GateSample, ExportButtonDim,
-        FinishedCheck, FinishedTitle, FinishedPremiere,
+        FinishedCheck, FinishedTitle, FinishedRating, FinishedPremiere,
         InfoBarIn, InfoBarOut, InfoBarDetails,
         ThemeChange,
         DragLookIn, DragLookOut, DragLift, Daybreak,

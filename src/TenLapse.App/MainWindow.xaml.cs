@@ -160,11 +160,11 @@ public sealed partial class MainWindow : Window
     /// <summary>Raised once, as the first frame is drawn: the encoder probe begins then (#90).</summary>
     internal event EventHandler? FirstFrameRendered;
 
-    /// <summary>The export panel's view model (the rating prompt, #31, follows its starts and ends).</summary>
+    /// <summary>The export panel's view model (the rating question, #139, follows its ends and its state).</summary>
     internal ExportViewModel Export => _shell.Export;
 
-    /// <summary>True while this is the active window and not minimized: the rating prompt only asks then (#31).</summary>
-    internal bool IsInForeground => _active && !IsMinimized;
+    /// <summary>Gives the finished state its rating question's card (#139). Before the window is shown.</summary>
+    internal void AttachRating(Presentation.Rating.RatingPrompt rating) => _shell.AttachRating(rating);
 
     /// <summary>The window's handle, for the Store's rating dialog (#31).</summary>
     internal nint Handle => Win32Interop.GetWindowFromWindowId(AppWindow.Id);

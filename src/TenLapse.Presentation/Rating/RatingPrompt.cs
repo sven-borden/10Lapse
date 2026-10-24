@@ -1,24 +1,27 @@
+using System.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using TenLapse.Core.Diagnostics;
 using TenLapse.Presentation.Export;
 using TenLapse.Presentation.Services;
 
 namespace TenLapse.Presentation.Rating;
 
-/// <summary>Asks the Microsoft Store to show its rating dialog. The App implements it; tests use a fake.</summary>
+/// <summary>Shows the Microsoft Store's rating dialog. The App implements it; tests use a fake.</summary>
 public interface IRatingService
 {
     /// <summary>
-    /// Asks the Store. Returns true when the Store was asked (the user may have rated or dismissed it), false when it cannot
-    /// be asked here (no package identity, or the Store did not answer), so the prompt tries again later. Throws when the
-    /// request fails; the prompt logs that.
+    /// Shows the Store's dialog. Returns true when the Store showed it (the user may have rated or closed it), false when
+    /// it cannot be shown here (no package identity, or the Store answered with an error), so the question opens the
+    /// Store's review page instead. Throws when the request fails; the question then opens the review page too.
     /// </summary>
     Task<bool> RequestAsync();
 }
 
-/// <summary>Where the rating prompt keeps its count and the version it last asked in (#31). <see cref="RememberedSettings"/> implements it.</summary>
+/// <summary>Where the rating question keeps its count and the version it last asked in (#31, #139). <see cref="RememberedSettings"/> implements it.</summary>
 public interface IRatingMemory
 {
-    /// <summary>The app version the prompt was last shown in, or null.</summary>
+    /// <summary>The app version the question was last shown in, or null.</summary>
     string? RatingAskedVersion { get; set; }
 
     /// <summary>Counts one successful export, remembers the count, and returns it.</summary>
@@ -26,92 +29,85 @@ public interface IRatingMemory
 }
 
 /// <summary>
-/// The rating prompt (#31): after the second successful export, once per app version, it asks the Store to show its
-/// rating dialog. It hooks <see cref="ExportViewModel.Started"/> and <see cref="ExportViewModel.Ended"/> and nothing else.
+/// The rating question (#139, replacing #31's unasked Store dialog): a card in the finished state of the second successful
+/// export, "Do you like 10Lapse?" with Yes and No, once per app version. It follows <see cref="ExportViewModel.Ended"/> and
+/// <see cref="ExportViewModel.State"/> and nothing else.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Only <see cref="ExportOutcome.Succeeded"/> counts: a failed or cancelled export never counts and never asks. The ask
-/// waits <see cref="DefaultDelay"/> after the export, so the finished state and its premiere have been seen, then asks only
-/// if <c>canAsk</c> still holds (the window in front, the finished state still showing, no dialog open). If it does not
-/// hold, or a new export starts first, this attempt is dropped without recording anything and the next successful export
-/// tries again. Once the Store has been asked in a version, it is not asked again in that version.
+/// Only <see cref="ExportOutcome.Succeeded"/> counts: a failed or cancelled export never counts and never shows the card.
+/// The version is recorded as the card shows, so leaving it unanswered (Back to editing, a new export, a new project,
+/// closing the window) is an answer too, and it never comes back in that version. A new version may ask once more.
 /// </para>
 /// <para>
-/// A failure to ask is logged only: it is an unrequested courtesy the user could do nothing about, so an InfoBar would
-/// only nag. Everything runs on the UI thread (the delay's continuation returns to it), where the window can be read.
+/// <b>Yes</b> closes the card and shows the Store's rating dialog (<see cref="IRatingService"/>); when the Store cannot show
+/// it, the Store's review page opens instead (<see cref="SettingsViewModel.StoreReviewUri"/>, as Settings' Rate 10Lapse),
+/// and when that does not open either, one InfoBar says what to do: the user asked, so it is never silent. <b>No</b> closes
+/// the card and nothing else happens. Everything runs on the UI thread.
 /// </para>
 /// </remarks>
-public sealed class RatingPrompt : IDisposable
+public sealed partial class RatingPrompt : ObservableObject, IDisposable
 {
-    /// <summary>Successful exports before the first ask.</summary>
+    /// <summary>Successful exports before the question first shows.</summary>
     public const int AskAfterExports = 2;
-
-    /// <summary>The pause between the finished state appearing and the ask: after its check, title and premiere have started.</summary>
-    public static readonly TimeSpan DefaultDelay = TimeSpan.FromSeconds(4);
 
     private readonly IRatingMemory _memory;
     private readonly IRatingService _service;
-    private readonly Func<bool> _canAsk;
+    private readonly ILauncher _launcher;
+    private readonly IInfoBarService _infoBars;
     private readonly string _version;
     private readonly ILog _log;
-    private readonly IErrorSink _errors;
-    private readonly TimeProvider _time;
-    private readonly TimeSpan _delay;
+    private readonly IErrorPresenter _errors;
     private ExportViewModel? _export;
-    private CancellationTokenSource? _pending;
-    private Task _settled = Task.CompletedTask;
     private bool _disposed;
 
     /// <param name="memory">The count and the version asked in.</param>
-    /// <param name="service">Asks the Store.</param>
-    /// <param name="canAsk">True while asking would interrupt nothing: the window is in front, the finished state still shows, no dialog is open. Read on the UI thread.</param>
+    /// <param name="service">Shows the Store's rating dialog.</param>
+    /// <param name="launcher">Opens the Store's review page when its dialog cannot show.</param>
+    /// <param name="infoBars">Says so when neither opens.</param>
     /// <param name="appVersion">The running app version.</param>
-    /// <param name="log">Takes what the prompt decided.</param>
-    /// <param name="errors">Takes failures (log only).</param>
-    /// <param name="time">The clock the delay runs on; tests pass a fake.</param>
-    /// <param name="delay">The pause before the ask; <see cref="DefaultDelay"/> when null.</param>
-    public RatingPrompt(IRatingMemory memory, IRatingService service, Func<bool> canAsk, string appVersion, ILog log, IErrorSink errors, TimeProvider? time = null, TimeSpan? delay = null)
+    /// <param name="log">Takes what the question decided.</param>
+    /// <param name="errors">The error path: failures are logged; the commands' own failures become an InfoBar.</param>
+    public RatingPrompt(IRatingMemory memory, IRatingService service, ILauncher launcher, IInfoBarService infoBars, string appVersion, ILog log, IErrorPresenter errors)
     {
         ArgumentNullException.ThrowIfNull(memory);
         ArgumentNullException.ThrowIfNull(service);
-        ArgumentNullException.ThrowIfNull(canAsk);
+        ArgumentNullException.ThrowIfNull(launcher);
+        ArgumentNullException.ThrowIfNull(infoBars);
         ArgumentException.ThrowIfNullOrWhiteSpace(appVersion);
         ArgumentNullException.ThrowIfNull(log);
         ArgumentNullException.ThrowIfNull(errors);
         _memory = memory;
         _service = service;
-        _canAsk = canAsk;
+        _launcher = launcher;
+        _infoBars = infoBars;
         _version = appVersion;
         _log = log;
         _errors = errors;
-        _time = time ?? TimeProvider.System;
-        _delay = delay ?? DefaultDelay;
+        YesCommand = errors.AsyncCommand(YesAsync, RatingText.YesFailed);
+        NoCommand = errors.Command(No, RatingText.NoFailed);
     }
 
-    /// <summary>Completes when the ask in progress (its wait and its request) has ended; already complete when none is. For tests.</summary>
-    public Task WhenSettled => _settled;
+    /// <summary>True while the card shows in the finished state.</summary>
+    [ObservableProperty]
+    public partial bool IsShown { get; private set; }
 
-    /// <summary>Follows <paramref name="export"/>'s starts and ends.</summary>
+    /// <summary>Yes: the card closes, then the Store's rating dialog, or its review page, or an InfoBar.</summary>
+    public IAsyncRelayCommand YesCommand { get; }
+
+    /// <summary>No: the card closes. Nothing else.</summary>
+    public IRelayCommand NoCommand { get; }
+
+    /// <summary>Follows <paramref name="export"/>'s ends (to count and show) and its state (the card goes with the finished state).</summary>
     public void Attach(ExportViewModel export)
     {
         ArgumentNullException.ThrowIfNull(export);
         _export = export;
-        export.Started += OnStarted;
         export.Ended += OnEnded;
+        export.PropertyChanged += OnExportPropertyChanged;
     }
 
-    /// <summary>A new export started: a waiting ask is dropped, so the dialog never lands on a running export.</summary>
-    public void ExportStarted()
-    {
-        if (_pending is { } pending)
-        {
-            _log.Info(RatingText.Superseded);
-            Cancel(pending);
-        }
-    }
-
-    /// <summary>An export ended: counts a success, and when due, waits and asks. Never throws.</summary>
+    /// <summary>An export ended: counts a success, and when due, shows the card and records the version. Never throws.</summary>
     public void ExportEnded(ExportOutcome outcome)
     {
         if (outcome != ExportOutcome.Succeeded || _disposed)
@@ -134,13 +130,17 @@ public sealed class RatingPrompt : IDisposable
                 return;
             }
 
-            if (_pending is { } older)
+            // The finished state is up as an export succeeds (ExportViewModel.Finish sets it first); the card belongs to it.
+            if (_export is { IsFinished: false })
             {
-                Cancel(older);
+                _log.Info(RatingText.NotFinished);
+                return;
             }
 
-            var source = _pending = new CancellationTokenSource();
-            _settled = AskLaterAsync(source);
+            // Recorded as it shows: leaving it unanswered is an answer, and a crash or a close must not bring it back.
+            _memory.RatingAskedVersion = _version;
+            IsShown = true;
+            _log.Info(RatingText.Shown(_version));
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
@@ -148,7 +148,7 @@ public sealed class RatingPrompt : IDisposable
         }
     }
 
-    /// <summary>Stops following the export and drops a waiting ask.</summary>
+    /// <summary>Stops following the export and closes the card.</summary>
     public void Dispose()
     {
         if (_disposed)
@@ -159,86 +159,70 @@ public sealed class RatingPrompt : IDisposable
         _disposed = true;
         if (_export is { } export)
         {
-            export.Started -= OnStarted;
             export.Ended -= OnEnded;
+            export.PropertyChanged -= OnExportPropertyChanged;
         }
 
-        if (_pending is { } pending)
-        {
-            Cancel(pending);
-        }
+        IsShown = false;
     }
-
-    private void OnStarted(object? sender, EventArgs e) => ExportStarted();
 
     private void OnEnded(object? sender, ExportEndedEventArgs e) => ExportEnded(e.Outcome);
 
-    private void Cancel(CancellationTokenSource source)
+    // The finished state left (Back to editing, a new project): the card goes with it, unanswered.
+    private void OnExportPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (ReferenceEquals(_pending, source))
+        if (e.PropertyName == nameof(ExportViewModel.State) && IsShown && _export is { IsFinished: false })
         {
-            _pending = null;
+            IsShown = false;
+            _log.Info(RatingText.LeftUnanswered);
         }
-
-        source.Cancel();
     }
 
-    private async Task AskLaterAsync(CancellationTokenSource source)
+    private async Task YesAsync()
+    {
+        if (!IsShown)
+        {
+            return;
+        }
+
+        IsShown = false;
+        _log.Info(RatingText.AnsweredYes);
+        if (await ShowStoreDialogAsync())
+        {
+            return;
+        }
+
+        // As Settings' Rate 10Lapse: the review page, else one InfoBar that says what to do.
+        await SettingsViewModel.OpenAsync(_launcher, _errors, _infoBars, SettingsViewModel.StoreReviewUri, RatingText.RateFailed, RatingText.RateCommandFailed);
+    }
+
+    // True when the Store showed its dialog; false (logged) when it could not, so the review page opens instead.
+    private async Task<bool> ShowStoreDialogAsync()
     {
         try
         {
-            await Task.Delay(_delay, _time, source.Token);
-            if (source.IsCancellationRequested || _disposed)
-            {
-                return;
-            }
-
-            if (!_canAsk())
-            {
-                _log.Info(RatingText.Postponed);
-                return;
-            }
-
-            // Remembered before the Store is asked: a crash or a close during its dialog must not bring it back.
-            var before = _memory.RatingAskedVersion;
-            _memory.RatingAskedVersion = _version;
-            bool asked;
-            try
-            {
-                asked = await _service.RequestAsync();
-            }
-            catch
-            {
-                _memory.RatingAskedVersion = before;
-                throw;
-            }
-
-            if (asked)
+            if (await _service.RequestAsync())
             {
                 _log.Info(RatingText.Asked(_version));
+                return true;
             }
-            else
-            {
-                _memory.RatingAskedVersion = before;
-                _log.Info(RatingText.Unavailable);
-            }
+
+            _log.Info(RatingText.Unavailable);
         }
-        catch (OperationCanceledException)
-        {
-            // A new export started, or the window closed: the ask is dropped.
-        }
-        catch (Exception exception) when (exception is not OutOfMemoryException)
+        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
         {
             _errors.Report(exception, RatingText.RequestFailed);
         }
-        finally
-        {
-            if (ReferenceEquals(_pending, source))
-            {
-                _pending = null;
-            }
 
-            source.Dispose();
+        return false;
+    }
+
+    private void No()
+    {
+        if (IsShown)
+        {
+            IsShown = false;
+            _log.Info(RatingText.AnsweredNo);
         }
     }
 }

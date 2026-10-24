@@ -2,10 +2,13 @@ using System.ComponentModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using TenLapse.Core.Preview;
 using TenLapse.Presentation.Export;
 using TenLapse.Presentation.Motion;
+using TenLapse.Presentation.Rating;
 using TenLapse.Presentation.Services;
 using TenLapse.Themes;
 using Windows.Graphics.Imaging;
@@ -20,6 +23,7 @@ namespace TenLapse.Shell;
 public sealed partial class ExportPanel : UserControl
 {
     private IErrorSink? _log;
+    private RatingPrompt? _rating;
 
     // The check and title animation, kept so the next finished state starts undrawn (a stopped storyboard lets go of the
     // values it held; a finished one holds them over the local values).
@@ -53,6 +57,20 @@ public sealed partial class ExportPanel : UserControl
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
 
+    /// <summary>
+    /// Connects the rating question's card (#139) to its view model: the buttons' commands, and the card shows and goes
+    /// with <see cref="RatingPrompt.IsShown"/>.
+    /// </summary>
+    internal void AttachRating(RatingPrompt rating)
+    {
+        ArgumentNullException.ThrowIfNull(rating);
+        _rating = rating;
+        RatingYesButton.Command = rating.YesCommand;
+        RatingNoButton.Command = rating.NoCommand;
+        rating.PropertyChanged += OnRatingPropertyChanged;
+        RatingCard.Visibility = rating.IsShown ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     /// <summary>Lets go of the view model and stops the gate (the window closes).</summary>
     internal void Detach()
     {
@@ -60,6 +78,11 @@ public sealed partial class ExportPanel : UserControl
         {
             viewModel.Announced -= OnAnnounced;
             viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+
+        if (_rating is { } rating)
+        {
+            rating.PropertyChanged -= OnRatingPropertyChanged;
         }
 
         Gate.Detach();
@@ -123,9 +146,44 @@ public sealed partial class ExportPanel : UserControl
             _arrival.Children.Add(fade);
         }
 
+        // The rating question's card rises in once the check has drawn; with animations off it fades in short at once.
+        if (RatingCard.Visibility == Visibility.Visible)
+        {
+            ArriveRatingCard(_arrival);
+        }
+
         if (_arrival.Children.Count > 0)
         {
             _arrival.Begin();
+        }
+    }
+
+    // Unseen until its delay has passed, then it rises 6 px and fades in, as the title does.
+    private void ArriveRatingCard(Storyboard arrival)
+    {
+        var card = MotionTokens.Plan(MotionCatalogue.FinishedRating);
+        var end = card.Delay + card.Duration;
+        if (card.Moves)
+        {
+            var shift = new TranslateTransform { Y = MotionSpec.TitleRise };
+            RatingCard.RenderTransform = shift;
+            var rise = new DoubleAnimationUsingKeyFrames();
+            rise.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(card.Delay), Value = MotionSpec.TitleRise });
+            rise.KeyFrames.Add(MotionTokens.KeyFrame(0, end, card.Easing));
+            Storyboard.SetTarget(rise, shift);
+            Storyboard.SetTargetProperty(rise, nameof(TranslateTransform.Y));
+            arrival.Children.Add(rise);
+        }
+
+        if (card.Animates)
+        {
+            var fade = new DoubleAnimationUsingKeyFrames { FillBehavior = FillBehavior.Stop };
+            fade.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.Zero), Value = 0 });
+            fade.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(card.Delay), Value = 0 });
+            fade.KeyFrames.Add(MotionTokens.KeyFrame(1, end, card.Easing));
+            Storyboard.SetTarget(fade, RatingCard);
+            Storyboard.SetTargetProperty(fade, nameof(UIElement.Opacity));
+            arrival.Children.Add(fade);
         }
     }
 
@@ -137,6 +195,8 @@ public sealed partial class ExportPanel : UserControl
         CheckStroke.StrokeDashOffset = CheckDash;
         FinishedHeading.RenderTransform = null;
         FinishedHeading.Opacity = 1;
+        RatingCard.RenderTransform = null;
+        RatingCard.Opacity = 1;
     }
 
     // The stroke's dash in units of its thickness (28 px / 3 px), as in ExportPanel.xaml.
@@ -153,6 +213,50 @@ public sealed partial class ExportPanel : UserControl
         {
             log.RunLogged(() => Gate.Show(viewModel.ExportFrames, viewModel.GateFraction), ExportText.ProgressFailed);
         }
+    }
+
+    // The card shows with the question (its heading announced) and goes with an answer or with the finished state. An
+    // answer collapses the button that has the focus, which would drop it to the window's first control: it goes to
+    // Back to editing, the stop before the card.
+    private void OnRatingPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(RatingPrompt.IsShown) || _rating is not { } rating || _log is not { } log)
+        {
+            return;
+        }
+
+        log.RunLogged(
+            () =>
+            {
+                if (rating.IsShown)
+                {
+                    RatingCard.Visibility = Visibility.Visible;
+                    Announcer.Announce(this, RatingText.Question, AutomationNotificationProcessing.All, "Rating");
+                    return;
+                }
+
+                var hadFocus = HasFocusWithin(RatingCard);
+                RatingCard.Visibility = Visibility.Collapsed;
+                if (hadFocus)
+                {
+                    BackButton.Focus(FocusState.Programmatic);
+                }
+            },
+            RatingText.PromptFailed);
+    }
+
+    private bool HasFocusWithin(UIElement container)
+    {
+        var focused = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+        for (var node = focused; node is not null; node = VisualTreeHelper.GetParent(node))
+        {
+            if (node == container)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // Narrator hears the start, every ten percent at most, and the end (the view model decides when).

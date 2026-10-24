@@ -4,7 +4,7 @@ using TenLapse.Core.Text;
 namespace TenLapse.Presentation.Rating;
 
 /// <summary>
-/// Every word of the rating prompt and the Settings feedback card (#31): the card text and InfoBar sentences from
+/// Every word of the rating question (#139) and the Settings feedback card (#31): the card text and InfoBar sentences from
 /// <c>Strings/RatingText.resx</c> (#39), and the log lines, which stay here in English.
 /// </summary>
 public static class RatingText
@@ -46,36 +46,60 @@ public static class RatingText
     /// <summary>Error context: the Send feedback button failed.</summary>
     public static string FeedbackCommandFailed => "Opening the feedback page failed.";
 
-    // ---- The prompt
+    // ---- The question in the finished state (#139)
 
-    /// <summary>Error context (log only): the rating prompt could not count an export or schedule its question.</summary>
-    public static string PromptFailed => "The rating prompt failed.";
+    /// <summary>The card's heading, announced as it shows: "Do you like 10Lapse?".</summary>
+    public static string Question => _strings.Get();
 
-    /// <summary>Error context (log only): the Store's rating request failed; the next successful export tries again.</summary>
-    public static string RequestFailed => "Asking the Store to show its rating dialog failed.";
+    /// <summary>The Yes button, and its accessible name.</summary>
+    public static string Yes => _strings.Get();
 
-    /// <summary>Log line: an export succeeded and the prompt is not due yet.</summary>
+    /// <summary>The No button, and its accessible name.</summary>
+    public static string No => _strings.Get();
+
+    /// <summary>Error context: the Yes button failed.</summary>
+    public static string YesFailed => "Answering Yes to the rating question failed.";
+
+    /// <summary>Error context: the No button failed.</summary>
+    public static string NoFailed => "Answering No to the rating question failed.";
+
+    /// <summary>Error context (log only): the rating question could not count an export or show its card.</summary>
+    public static string PromptFailed => "The rating question failed.";
+
+    /// <summary>Error context (log only): the Store's rating dialog failed; the Store's review page opens instead.</summary>
+    public static string RequestFailed => "Showing the Store's rating dialog failed; opening its review page instead.";
+
+    /// <summary>Log line: an export succeeded and the question is not due yet.</summary>
     public static string NotYet(int exports) =>
-        string.Create(CultureInfo.InvariantCulture, $"Rating prompt: {exports} successful export(s) so far; it asks after {RatingPrompt.AskAfterExports}.");
+        string.Create(CultureInfo.InvariantCulture, $"Rating question: {exports} successful export(s) so far; it shows after {RatingPrompt.AskAfterExports}.");
 
-    /// <summary>Log line: the prompt was already shown in this version.</summary>
-    public static string AlreadyAsked(string version) => $"Rating prompt: already shown in version {version}.";
+    /// <summary>Log line: the question was already shown in this version.</summary>
+    public static string AlreadyAsked(string version) => $"Rating question: already shown in version {version}.";
 
-    /// <summary>Log line: the prompt was due but the window was busy; it waits for the next successful export.</summary>
-    public static string Postponed => "Rating prompt: due, but the window is in the background or busy; it waits for the next successful export.";
+    /// <summary>Log line: the question was due but the finished state was not up; the next successful export shows it.</summary>
+    public static string NotFinished => "Rating question: due, but the finished state is not showing; the next successful export shows it.";
 
-    /// <summary>Log line: the prompt was due, but a new export started first.</summary>
-    public static string Superseded => "Rating prompt: due, but another export started; it waits for the next successful export.";
+    /// <summary>Log line: the card shows, and the version is recorded.</summary>
+    public static string Shown(string version) => $"Rating question: shown in the finished state (version {version}).";
 
-    /// <summary>Log line: the Store was asked.</summary>
-    public static string Asked(string version) => $"Rating prompt: asked the Store to show its rating dialog (version {version}).";
+    /// <summary>Log line: the finished state left with the card unanswered; it does not come back in this version.</summary>
+    public static string LeftUnanswered => "Rating question: left unanswered.";
 
-    /// <summary>Log line: the Store could not be asked (no package identity, or it did not answer), so nothing was recorded.</summary>
-    public static string Unavailable => "Rating prompt: the Store cannot be asked here, so nothing was recorded.";
+    /// <summary>Log line: Yes.</summary>
+    public static string AnsweredYes => "Rating question: Yes.";
 
-    /// <summary>Log line, once per run: this unpackaged run has no Store identity, so the prompt does nothing.</summary>
-    public static string UnpackagedNoOp => "Rating prompt: this run has no package identity (unpackaged), so it never asks the Store.";
+    /// <summary>Log line: No.</summary>
+    public static string AnsweredNo => "Rating question: No.";
 
-    /// <summary>Log line (Debug switch): the faked prompt.</summary>
-    public static string FakeAsked => "Rating prompt (Debug --fake-rating): would show the Store's rating dialog now.";
+    /// <summary>Log line: the Store showed its rating dialog.</summary>
+    public static string Asked(string version) => $"Rating question: the Store showed its rating dialog (version {version}).";
+
+    /// <summary>Log line: the Store cannot show its dialog here (no package identity, or it answered with an error).</summary>
+    public static string Unavailable => "Rating question: the Store cannot show its rating dialog here; opening its review page instead.";
+
+    /// <summary>Log line, once per run: this unpackaged run has no Store identity, so the Store's dialog cannot show.</summary>
+    public static string UnpackagedNoOp => "Rating question: this run has no package identity (unpackaged), so the Store's rating dialog cannot show.";
+
+    /// <summary>Log line (Debug switch): the faked Store dialog.</summary>
+    public static string FakeAsked => "Rating question (Debug --fake-rating): would show the Store's rating dialog now.";
 }

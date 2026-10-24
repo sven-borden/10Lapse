@@ -9,7 +9,8 @@
               indicator color, a RangeValue for UI Automation), the film gate (frames slide past a Deep Amber Indicator
               frame as they are encoded), Frame / Speed / Output, the minimize hint, Cancel export.
     Finished  a Success check that draws in, "Harbor sunset.mp4 is ready" with length, resolution, codec and real size,
-              Exported in / Saved to, Play (the screen's one accent button), Show in folder, Back to editing (Ember Link).
+              Exported in / Saved to, Play (the screen's one accent button), Show in folder, Back to editing (Ember Link),
+              and once per version, after the second successful export, the rating question's card (#139).
 
   Narrow (#36): the panel sits in the 260 px strip under the stage, where one column would push Cancel export and Play
   below the fold. The two blocks of each part (RunningHead and RunningDetails, FinishedHead and FinishedDetails) then
@@ -23,6 +24,7 @@
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:export="using:TenLapse.Presentation.Export"
+  xmlns:rating="using:TenLapse.Presentation.Rating"
   xmlns:shell="using:TenLapse.Shell">
 
   <UserControl.Resources>
@@ -344,6 +346,46 @@
             AutomationProperties.Name="{x:Bind export:ExportText.BackToEditing}"
             Command="{x:Bind ViewModel.BackToEditingCommand}"
             Content="{x:Bind export:ExportText.BackToEditing}" />
+
+          <!--
+            The rating question (#139): "Do you like 10Lapse?" with Yes and No, in the finished state of the second
+            successful export, once per version (RatingPrompt). Last in the column and in Tab order, after Back to editing,
+            so nothing moves when it shows or goes; it rises in once the check has drawn. Both are standard buttons: amber
+            is Play's alone here. The code-behind shows it, gives the buttons their commands, announces the heading, and
+            puts focus back on Back to editing when an answer closes it.
+          -->
+          <Border
+            x:Name="RatingCard"
+            Padding="{StaticResource PaddingCard}"
+            Background="{ThemeResource CardBrush}"
+            BorderBrush="{ThemeResource DividerBrush}"
+            BorderThickness="1"
+            CornerRadius="{StaticResource RadiusCard}"
+            Visibility="Collapsed">
+            <StackPanel Spacing="{StaticResource SpacingMd}">
+              <TextBlock
+                AutomationProperties.HeadingLevel="Level3"
+                Style="{StaticResource BodyStrongTextStyle}"
+                Text="{x:Bind rating:RatingText.Question}"
+                TextWrapping="Wrap" />
+              <shell:WrapRow Spacing="{StaticResource SpacingSm}">
+                <Button
+                  x:Name="RatingYesButton"
+                  Height="{StaticResource ControlHeight}"
+                  Padding="{StaticResource PaddingButtonStandard}"
+                  AutomationProperties.HelpText="{x:Bind rating:RatingText.RateTip}"
+                  AutomationProperties.Name="{x:Bind rating:RatingText.Yes}"
+                  Content="{x:Bind rating:RatingText.Yes}"
+                  ToolTipService.ToolTip="{x:Bind rating:RatingText.RateTip}" />
+                <Button
+                  x:Name="RatingNoButton"
+                  Height="{StaticResource ControlHeight}"
+                  Padding="{StaticResource PaddingButtonStandard}"
+                  AutomationProperties.Name="{x:Bind rating:RatingText.No}"
+                  Content="{x:Bind rating:RatingText.No}" />
+              </shell:WrapRow>
+            </StackPanel>
+          </Border>
         </StackPanel>
       </Grid>
     </ScrollViewer>

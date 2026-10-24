@@ -60,8 +60,8 @@ public sealed class SettingsViewModel
     public IAsyncRelayCommand SendFeedbackCommand { get; }
 
     // A user-started hand-off to another app. A link that would not open ends in one InfoBar sentence that says what
-    // to do instead; the exception behind it goes to the log.
-    private static async Task OpenAsync(ILauncher launcher, IErrorPresenter errors, IInfoBarService infoBars, Uri uri, string failed, string context)
+    // to do instead; the exception behind it goes to the log. The rating question's Yes falls back to it too (#139).
+    internal static async Task OpenAsync(ILauncher launcher, IErrorPresenter errors, IInfoBarService infoBars, Uri uri, string failed, string context)
     {
         var opened = false;
         try

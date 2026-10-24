@@ -17,9 +17,6 @@ public sealed class ContentDialogService(Func<XamlRoot?> xamlRoot) : IDialogServ
     private static readonly Lazy<DataTemplate> _wrappingLabel = new(() => (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
         """<DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"><TextBlock Text="{Binding}" TextAlignment="Center" TextWrapping="Wrap" /></DataTemplate>"""));
 
-    /// <summary>True while a <see cref="ContentDialog"/> is open on the window (the rating prompt never lands on one).</summary>
-    public bool HasOpenDialog => xamlRoot() is { } root && VisualTreeHelper.GetOpenPopupsForXamlRoot(root).Any(popup => popup.Child is ContentDialog);
-
     /// <inheritdoc />
     public Task<bool> ConfirmAsync(Confirmation confirmation)
     {
