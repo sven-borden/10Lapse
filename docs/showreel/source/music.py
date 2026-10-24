@@ -468,12 +468,13 @@ SH = shutter()
 for t in (0.5, 1.0, 1.5, 2.0, 2.25, 2.5, 2.75):
     sfx.add(SH, t, gain=0.32, pan=0.1)
 sfx.add(SH, 58.3, gain=0.14, pan=0.1)     # the last photo of the evening
-# photo 1 pulls back into the tunnel, then the flight
+# photo 1 shrinks into the contact sheet, then the sheet fills
 sfx.add(whoosh(0.75, 2600, 700, peak=0.35, p0=0.2, p1=-0.2), 3.0, gain=0.18)
-sfx.add(riser(3.0, 300, 7000, tone=98), 3.75, gain=0.13)
+sfx.add(riser(2.5, 300, 7000, tone=98), 3.75, gain=0.13)
 
 
-# the riffle: one tick each time a ring of photos passes the camera (the same flight as scenes.js)
+# the contact sheet fills: a click for each photo while they can be counted, then a tick for each finished row
+# (the same fill as scenes.js: 1,440 photos from 3.75 s to 6.25 s)
 def travel(acc, dec, n=4000):
     u = (np.arange(n + 1) + 0.5) / n
     v = np.minimum(np.clip(u / acc, 0, 1), np.clip((1 - u) / dec, 0, 1))
@@ -482,22 +483,20 @@ def travel(acc, dec, n=4000):
     return P / P[-1]
 
 
-F, DZ, Z0, R = 980.0, 0.38, 3.2, 180
-D_CARD, D_END = F / 620, F / 960
-ZF = Z0 + (R - 1) * DZ + 1.8
-P = travel(0.3, 0.42)
-tt = np.linspace(3.75, 6.75, len(P))
-zc = -D_CARD + (ZF - D_END + D_CARD) * P
-rings = Z0 + np.arange(0, R * 2) * DZ / 2
-passes = np.interp(rings, zc, tt)
-speed = np.gradient(zc, tt)
-tk = spec(rng.standard_normal(int(0.012 * SR)), bp(2200, 0.9)) * np.exp(-T(0.012) / 0.0018)
-tk = norm(tk)
-for k, tp in enumerate(passes):
-    if tp <= 3.76 or tp >= 6.74:
-        continue
-    v = np.interp(tp, tt, speed) / speed.max()
-    sfx.add(tk, tp, gain=0.05 + 0.07 * v, pan=0.5 * np.sin(k * 2.39))
+P = travel(0.1, 0.25)
+tt = np.linspace(3.75, 6.25, len(P))
+land = np.interp(np.arange(1440) + 1, 1 + 1439 * P, tt)
+tk = norm(spec(rng.standard_normal(int(0.012 * SR)), bp(2200, 0.9)) * np.exp(-T(0.012) / 0.0018))
+prev = -1.0
+for i in range(1, 1440):
+    if land[i] - prev < 0.045:
+        break
+    sfx.add(tk, land[i], gain=0.07, pan=-0.5 + (i % 48) / 48)
+    prev = land[i]
+for r in range(30):
+    tr = land[min(1439, 48 * (r + 1) - 1)]
+    sfx.add(tk, tr, gain=0.06 + 0.05 * r / 29, pan=0.6 * np.sin(r * 2.39))
+    keysb.add(pluck(hz(('D6', 'E6', 'F#6', 'A6', 'B6')[r % 5]), 0.25, bright=0.2), tr, gain=0.012, pan=0.6 * np.sin(r * 2.39))
 sfx.add(whoosh(1.0, 400, 1600, peak=0.2, p0=-0.1, p1=0.1), 6.0, gain=0.1)
 sfx.add(reverse_swell(1.0), 6.0, gain=0.16)
 # the drop: five frames
@@ -509,22 +508,22 @@ for k, nm in enumerate(('D6', 'F#6', 'A6', 'E7')):
     bells.add(bell(hz(nm), 2.4, decay=0.7), 8.6 + 0.05 * k, gain=0.045, pan=-0.3 + 0.2 * k)
 # the wordmark, letter by letter (and again on the end card)
 WORD = ('D5', 'E5', 'F#5', 'A5', 'B5', 'D6', 'E6')
-for base in (8.85, 54.3):
+for base in (9.2, 54.1):
     for k, nm in enumerate(WORD):
         keysb.add(pluck(hz(nm), 0.7, bright=0.7), base + 0.04 * k + 0.12, gain=0.05, pan=-0.3 + 0.1 * k)
 # the icon flies into the title bar; the window opens
-sfx.add(whoosh(0.65, 3000, 900, peak=0.4, p0=0.3, p1=-0.6), 12.8, gain=0.12)
-sfx.add(shimmer(0.6, 900, 3000), 13.1, gain=0.05)
+sfx.add(whoosh(0.65, 3000, 900, peak=0.4, p0=0.3, p1=-0.6), 13.0, gain=0.12)
+sfx.add(shimmer(0.6, 900, 3000), 13.25, gain=0.05)
 # the drag, the drop, the photos landing
-sfx.add(whoosh(0.75, 500, 1400, peak=0.7, p0=0.6, p1=-0.2), 13.6, gain=0.08)
-sfx.add(ui_click(1400), 14.05, gain=0.08)
+sfx.add(whoosh(0.65, 500, 1400, peak=0.7, p0=0.6, p1=-0.2), 13.75, gain=0.08)
+sfx.add(ui_click(1400), 14.15, gain=0.08)
 sfx.add(thunk(), 14.5, gain=0.3)
 sfx.add(shimmer(0.7, 1200, 6000), 14.55, gain=0.06)
 LAND = ['D5', 'E5', 'F#5', 'A5', 'B5', 'D6', 'E6', 'F#6', 'A6']
 for i in range(18):
     keysb.add(pluck(hz(LAND[i % 9]) * (1 if i < 9 else 2), 0.35, bright=0.3), 14.6 + 0.05 * i + 0.05, gain=0.022, pan=-0.6 + 1.2 * i / 17)
-sfx.add(whoosh(0.6, 600, 2600, peak=0.6, p0=-0.3, p1=0.5), 14.58, gain=0.08)
-bells.add(bell(hz('A6'), 1.8, decay=0.5), 15.2, gain=0.06, pan=0.3)
+sfx.add(shimmer(0.4, 1500, 5000), 14.97, gain=0.05)
+bells.add(bell(hz('A6'), 1.8, decay=0.5), 15.05, gain=0.06, pan=0.3)
 # the whip into the sunset
 sfx.add(whoosh(0.55, 700, 4200, peak=0.45, bw=1.0, p0=-0.9, p1=0.9), 16.92, gain=0.3)
 # deflicker: the flicker you see is a pumping pad you hear, until the switch
@@ -580,11 +579,11 @@ for k in range(4):
     sfx.add(ui_click(1700 + 150 * k), 41.55 + 0.5 * k, gain=0.06, pan=0.4)
 for k, nm in enumerate(('A5', 'D6')):
     bells.add(bell(hz(nm), 1.6, decay=0.5), 44.2 + 0.08 * k, gain=0.06, pan=0.2)
-sfx.add(whoosh(0.7, 800, 5000, peak=0.85, p0=0.3, p1=0.0), 44.5, gain=0.18)
+sfx.add(whoosh(0.7, 800, 5000, peak=0.3, p0=0.3, p1=0.0), 44.95, gain=0.18)
 sfx.add(reverse_swell(0.55), 44.45, gain=0.16)
 sfx.add(impact(3.5), 45.0, gain=0.4)
 for k, nm in enumerate(('A5', 'D6', 'F#6')):
-    bells.add(bell(hz(nm), 2.2, decay=0.7), 45.65 + 0.07 * k, gain=0.06, pan=-0.2 + 0.2 * k)
+    bells.add(bell(hz(nm), 2.2, decay=0.7), 46.05 + 0.07 * k, gain=0.06, pan=-0.2 + 0.2 * k)
 # privacy: a low swell, the lock drawn, the shackle closes
 sfx.add(impact(4.0, f0=55, f1=28, decay=1.6), 49.0, gain=0.22)
 sfx.add(glide(hz('D4'), hz('A4'), 0.6), 49.35, gain=0.025)
@@ -595,7 +594,7 @@ for k, nm in enumerate(('D5', 'F#5', 'A5', 'B5', 'D6')):
 sfx.add(impact(4.5, f0=62, f1=28, decay=1.8), 53.0, gain=0.3)
 sfx.add(whoosh(0.6, 5000, 900, peak=0.85, p0=-0.3, p1=0.0), 53.45, gain=0.12)
 sfx.add(thunk(), 54.05, gain=0.12)
-sfx.add(shimmer(1.0, 1500, 6000), 54.8, gain=0.04)
+sfx.add(shimmer(1.0, 1500, 6000), 54.4, gain=0.04)
 
 
 # ---------------------------------------------------------------- mix
@@ -625,8 +624,8 @@ for k in kicks:
 duck = np.clip(duck, 0.45, 1)
 # the flicker: the pad pumps on every beat until deflicker is switched on at 19
 pump = np.ones(N)
-m = (tt >= 17.0) & (tt < 19.0)
-pump[m] = 1 - 0.62 * ((tt[m] - 17.0) * 2 % 1)
+m = (tt >= 17.5) & (tt < 19.0)
+pump[m] = 1 - 0.62 * ((tt[m] - 17.5) * 2 % 1)
 m = (tt >= 19.0) & (tt < 19.25)
 pump[m] = 0.69 + 0.31 * (tt[m] - 19.0) / 0.25
 # the hold beat: the drums stop while the hold holds, and nothing plays in the gap before Music

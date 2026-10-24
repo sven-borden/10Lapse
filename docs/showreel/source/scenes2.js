@@ -18,13 +18,23 @@ const camCss = c => `translate(${(960 - c.x * c.s).toFixed(2)}px,${(540 - c.y * 
 const DSUB = 'rgba(244,242,238,0.84)';
 
 // ================================================================ IMPORT  drop a folder; the math on screen  [12.85, 17.45)
+// Two copies of the window share one state: the wide one for the drop, a close one on the readout. A dissolve joins
+// them, because sweeping the camera across the window's photos and text right after the drop flashes (WCAG 2.3.1).
 const IMPORT = (() => {
-  const s = scene(12.85, 17.45, 30);
-  const cam = el('div', 'position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0', s.root);
-  const holder = el('div', `position:absolute;left:${WIN.x}px;top:${WIN.y}px;width:1440px;height:900px;transform-origin:24px 20px`, cam);
-  UI.theme(holder, 0);
-  const w = UI.buildWindow(holder);
-  const ghost = el('div', 'position:absolute;left:0;top:0;width:0;height:0', cam);
+  const s = scene(13.0, 17.45, 30);
+  function view() {
+    const cam = el('div', 'position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0', s.root);
+    const holder = el('div', `position:absolute;left:${WIN.x}px;top:${WIN.y}px;width:1440px;height:900px;transform-origin:24px 20px`, cam);
+    UI.theme(holder, 0);
+    const w = UI.buildWindow(holder);
+    w.gate.style.background = 'transparent';
+    w.gateCv.style.transformOrigin = '50% 50%';
+    return { cam, holder, w };
+  }
+  const A = view(), B = view();
+  WORLD.draw(A.w.gateCv.getContext('2d'), 1080, 608, 0.0, V169, { ripple: 0 });
+  B.w.gateCv.getContext('2d').drawImage(A.w.gateCv, 0, 0);
+  const ghost = el('div', 'position:absolute;left:0;top:0;width:0;height:0', A.cam);
   ghost.innerHTML = `
     <div data-r="ph" style="position:absolute;left:0;top:0;transform-origin:0 0">
       <div data-r="g3" style="position:absolute;left:-70px;top:-34px;width:150px;height:100px;border-radius:4px;overflow:hidden;box-shadow:0 10px 30px rgba(30,20,10,0.28);transform:rotate(-8deg)"></div>
@@ -32,37 +42,21 @@ const IMPORT = (() => {
       <div data-r="g1" style="position:absolute;left:-46px;top:-22px;width:150px;height:100px;border-radius:4px;overflow:hidden;box-shadow:0 10px 30px rgba(30,20,10,0.28)"></div>
       <div style="position:absolute;left:30px;top:88px;padding:4px 10px;border-radius:4px;background:#FEFDFC;border:1px solid #DCDAD5;color:#1C1B19;font-size:12px;line-height:16px;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.16)">+ Add 1,440 photos</div>
     </div>
-    <svg data-r="cur" style="position:absolute;left:0;top:0;overflow:visible" width="20" height="28" viewBox="0 0 20 28"><path d="M1 1 L1 22 L6.5 16.8 L10.5 25.5 L14 24 L10.2 15.6 L17.5 15.6 Z" fill="#FFFFFF" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+    <svg style="position:absolute;left:0;top:0;overflow:visible" width="20" height="28" viewBox="0 0 20 28"><path d="M1 1 L1 22 L6.5 16.8 L10.5 25.5 L14 24 L10.2 15.6 L17.5 15.6 Z" fill="#FFFFFF" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
   const gr = refs(ghost);
   [['g1', 0.0], ['g2', 0.25], ['g3', 0.5]].forEach(([k, T]) => { const c = canvas(300, 200, 'width:150px;height:100px', gr[k]); c.getContext('2d').drawImage(texAt(T), 0, 0, 300, 200); });
-  WORLD.draw(w.gateCv.getContext('2d'), 1080, 608, 0.0, V169, { ripple: 0 });
-  w.gateCv.style.transformOrigin = '50% 50%';
   // where things are, in layout px
   const DROP = { x: WIN.x + 360, y: WIN.y + 560 };
-  const camAt = camera([
-    [12.85, 1, 960, 540], [13.55, 1, 960, 540], [14.2, 1.5, WIN.x + 380, WIN.y + 430], [14.55, 1.5, WIN.x + 380, WIN.y + 430],
-    [15.15, 2.5, WIN.x + 1262, WIN.y + 262], [17.45, 2.5, WIN.x + 1262, WIN.y + 262],
-  ]);
-  HEAVY_MORE.push([13.5, 14.3, 6], [14.5, 15.3, 8], [16.9, 17.55, 14]);
-  s.update = t => {
-    const c = camAt(t);
-    cam.style.transform = camCss(c);
-    // the window opens around the icon as it lands in the title bar
-    const op = E.enter(prog(t, 13.1, 13.65));
-    holder.style.opacity = clamp(prog(t, 13.1, 13.4));
-    holder.style.transform = `scale(${lerp(0.93, 1, op)})`;
-    w.icon16.style.opacity = t >= 13.38 ? 1 : 0;
-    // the drag: three photos and the cursor come in, hover, and drop
-    const gu = E.glide(prog(t, 13.6, 14.3));
-    const gx = lerp(WIN.x + 1500, DROP.x, gu), gy = lerp(WIN.y + 980, DROP.y, gu);
-    const drop = E.enter(prog(t, 14.5, 14.8));
-    ghost.style.transform = `translate(${gx}px,${gy}px)`;
-    ghost.style.opacity = prog(t, 13.6, 13.75) * (1 - prog(t, 14.65, 14.85));
-    gr.ph.style.transform = `scale(${lerp(1, 0.25, drop)})`;
-    gr.ph.style.opacity = 1 - drop;
-    w.dropBg.style.opacity = prog(t, 14.05, 14.3) * (1 - prog(t, 14.5, 14.7));
+  const camAt = camera([[13.0, 1, 960, 540], [13.7, 1, 960, 540], [14.3, 1.5, WIN.x + 380, WIN.y + 430], [17.45, 1.5, WIN.x + 380, WIN.y + 430]]);
+  const CLOSE = { s: 2.5, x: WIN.x + 1262, y: WIN.y + 262 };
+  B.cam.style.transform = camCss(CLOSE);
+  HEAVY_MORE.push([13.5, 14.3, 6], [16.9, 17.55, 14]);
+
+  // the state both windows show
+  function apply(w, t) {
+    w.icon16.style.opacity = t >= 13.53 ? 1 : 0;
+    w.dropBg.style.opacity = prog(t, 14.15, 14.35) * (1 - prog(t, 14.5, 14.7));
     w.first.style.opacity = 1 - prog(t, 14.5, 14.75);
-    // the photos land
     w.projName.textContent = t >= 14.55 ? 'Mountain lake' : '';
     w.stage.style.opacity = prog(t, 14.5, 14.7);
     const ins = E.enter(prog(t, 14.55, 14.95));
@@ -76,12 +70,41 @@ const IMPORT = (() => {
       d.style.opacity = u; d.style.transform = `translateY(${(1 - u) * 8}px)`;
     });
     w.ring.style.opacity = prog(t, 14.85, 15.0);
-    const n = Math.round(1440 * E.sine(prog(t, 14.55, 15.2)));
+    const n = Math.round(1440 * E.sine(prog(t, 14.55, 15.05)));
     const len = n / 30;
     w.readout.textContent = n ? `${thousands(n)} photos → ${len.toFixed(1)} s` : '0 photos';
     w.lenBar.style.width = `${Math.min(1, len / 60) * 100}%`;
     w.frameLabel.textContent = `Frame 0001 of ${pad4(Math.max(1, n))}`;
     w.tc.innerHTML = `0001 / ${pad4(Math.max(1, n))}&nbsp;&nbsp;&nbsp;00:00.00 / 00:${len.toFixed(2).padStart(5, '0')}`;
+  }
+
+  s.update = t => {
+    const c = camAt(t);
+    A.cam.style.transform = camCss(c);
+    // a lens that softens while the camera moves: UI text sweeping past reads as stripes (WCAG 2.3.1)
+    const c2 = camAt(t + 1 / 60);
+    const sp = Math.abs(c2.s - c.s) / c.s * 900 + Math.hypot(c2.x - c.x, c2.y - c.y) * c.s;
+    A.cam.style.filter = sp * 0.5 > 0.15 ? `blur(${Math.min(10, sp * 0.5).toFixed(2)}px)` : 'none';
+    const whip = 2600 * (E.expoIn(prog(t + 1 / 60, 17.0, 17.42)) - E.expoIn(prog(t, 17.0, 17.42)));
+    B.cam.style.filter = whip / 6 > 0.15 ? `blur(${Math.min(22, whip / 6).toFixed(2)}px)` : 'none';
+    // the window opens around the icon as it lands in the title bar
+    const op = E.enter(prog(t, 13.25, 13.8));
+    A.holder.style.opacity = clamp(prog(t, 13.25, 13.55));
+    A.holder.style.transform = `scale(${lerp(0.93, 1, op)})`;
+    // the drag: three photos and the cursor come in, hover, and drop
+    const gu = E.glide(prog(t, 13.75, 14.35));
+    const drop = E.enter(prog(t, 14.5, 14.8));
+    ghost.style.transform = `translate(${lerp(WIN.x + 1500, DROP.x, gu)}px,${lerp(WIN.y + 980, DROP.y, gu)}px)`;
+    ghost.style.opacity = prog(t, 13.75, 13.9) * (1 - prog(t, 14.65, 14.85));
+    gr.ph.style.transform = `scale(${lerp(1, 0.25, drop)})`;
+    gr.ph.style.opacity = 1 - drop;
+    // the wide view dissolves into the readout
+    const x = E.sine(prog(t, 15.0, 15.2));
+    show(A.cam, x < 1); show(B.cam, x > 0);
+    A.cam.style.opacity = 1;
+    B.cam.style.opacity = x;
+    if (x < 1) apply(A.w, t);
+    if (x > 0) apply(B.w, t);
     // whip out
     s.root.style.transform = `translateX(${(-2600 * E.expoIn(prog(t, 17.0, 17.42))).toFixed(1)}px)`;
   };
@@ -91,12 +114,12 @@ const IMPORT = (() => {
 // ================================================================ DEFLICKER  [17.0, 23.45)
 // The sunset plays at 40 photos a second; the photographer opened up a third of a stop every 20 photos.
 const DEFLICKER = (() => {
-  const s = scene(17.0, 23.45, 40);
+  const s = scene(17.0, 23.45, 55);
   const slide = el('div', 'position:absolute;inset:0', s.root);
   const cv = canvas(W, H, 'position:absolute;left:0;top:0', slide);
   const ctx = cv.getContext('2d');
-  scrim(slide, 'left:0;top:0;width:1300px;height:560px;background:radial-gradient(ellipse 70% 80% at 18% 22%,rgba(14,10,24,0.5),rgba(14,10,24,0))');
-  scrim(slide, 'left:0;bottom:0;width:1920px;height:420px;background:linear-gradient(0deg,rgba(12,9,22,0.74),rgba(12,9,22,0))');
+  scrim(slide, 'left:0;top:0;width:1300px;height:560px;background:radial-gradient(ellipse 70% 80% at 18% 22%,rgba(14,10,24,0.5),rgba(14,10,24,0))').className = 'scr';
+  scrim(slide, 'left:0;bottom:0;width:1920px;height:420px;background:linear-gradient(0deg,rgba(12,9,22,0.74),rgba(12,9,22,0))').className = 'scr';
   const title = Title(slide, { x: 120, y: 112, kicker: 'Look', head: 'Deflicker.', sub: 'Exposure steps become a smooth ramp.', color: DINK, color2: DSUB, subDur: 0.5 });
   const cardWrap = el('div', 'position:absolute;left:1480px;top:150px', slide);
   UI.theme(cardWrap, 1);
@@ -130,19 +153,24 @@ const DEFLICKER = (() => {
   const ON = 19.0;
   HEAVY_MORE.push([16.95, 17.55, 14]);
   s.update = t => {
-    slide.style.transform = `translateX(${(1920 * (1 - E.expoOut(prog(t, 17.04, 17.5)))).toFixed(1)}px)`;
+    const sx = 1920 * (1 - E.expoOut(prog(t, 17.04, 17.5))), sx2 = 1920 * (1 - E.expoOut(prog(t + 1 / 60, 17.04, 17.5)));
+    slide.style.transform = `translateX(${sx.toFixed(1)}px)`;
+    const wb = Math.min(22, Math.abs(sx - sx2) / 6);
+    slide.style.filter = wb > 0.15 ? `blur(${wb.toFixed(2)}px)` : 'none';
     const p = P0 + (t - 17.0) * 40;
     const T = p / 1439;
     const z = 1.03 + 0.03 * prog(t, 17, 23.4);
     WORLD.draw(ctx, W, H, T, viewFor(W, H, 0.75, 0.5, z), { ripple: Math.floor(p) * 5 });
     // the flicker: a sawtooth of a third of a stop, gone once deflicker is on
     const on = E.move(prog(t, ON, ON + 0.25));
-    const saw = 0.25 - 0.5 * (((t - 17.0) * 2) % 1);
+    const saw = t < 17.5 ? 0 : 0.25 - 0.5 * (((t - 17.5) * 2) % 1);
     cv.style.filter = `brightness(${Math.pow(2, saw * (1 - on)).toFixed(4)})`;
     look.toggle.set(E.move(prog(t, ON - 0.08, ON + 0.09)));
     cardWrap.style.opacity = E.enter(prog(t, 17.55, 18.0));
     cardWrap.style.transform = `translateX(${(1 - E.enter(prog(t, 17.55, 18.05))) * 28}px)`;
-    title.set(t, 17.65, 22.9, 19.25);
+    title.set(t, 17.65, 23.0, 19.25);
+    const gone = t >= 23.0;
+    show(cv, !gone); slide.querySelectorAll('.scr').forEach(n => show(n, !gone));
     // graph
     const dr = prog(t, 17.35, 18.1);
     rawP.setAttribute('stroke-dashoffset', (1 - dr).toFixed(4));
@@ -155,11 +183,11 @@ const DEFLICKER = (() => {
     const yy = lerp(raw(p), base(p), on);
     dotC.setAttribute('cx', hx); dotC.setAttribute('cy', yy);
     dotC.setAttribute('fill', on > 0.5 ? AMBER_D : '#FFFFFF');
-    const ga = prog(t, 17.35, 17.6) * (1 - prog(t, 22.8, 23.05));
+    const ga = prog(t, 17.35, 17.6) * (t >= 23.0 ? 0 : 1);
     gsv.style.opacity = ga; cap.style.opacity = ga; leg.style.opacity = ga;
     labs.forEach(l => { l.style.visibility = ga > 0 ? 'visible' : 'hidden'; });
     legA.style.opacity = prog(t, ON + 0.1, ON + 0.4);
-    cardWrap.style.opacity = E.enter(prog(t, 17.55, 18.0)) * (1 - prog(t, 22.8, 23.05));
+    cardWrap.style.opacity = E.enter(prog(t, 17.55, 18.0)) * (1 - prog(t, 23.0, 23.25));
   };
   return s;
 })();
@@ -175,7 +203,7 @@ const CROP = (() => {
   const SV = V169, EV = { x: 0.735, y: 0.474, w: 0.5, h: 0.28125 };   // start and end framings, 3x
   const toScr = (v, R) => ({ x: R.x + v.x / 1.5 * R.w, y: R.y + v.y * R.h, w: v.w / 1.5 * R.w, h: v.h * R.h });
   const t1 = Title(s.root, { x: 120, y: 360, kicker: 'Frame', head: 'Crop and pan.', sub: 'Up to 4× zoom.', color: DINK, color2: DSUB, w: 560, subW: 470 });
-  const t2 = Title(s.root, { x: 120, y: 360, kicker: 'Frame', head: 'Any shape.', color: DINK, color2: DSUB, w: 560, subW: 470 });
+  const t2 = Title(s.root, { x: 120, y: 360, kicker: 'Frame', head: 'Any shape.', color: DINK, color2: DSUB, w: 560, subW: 470, dur: 0.5 });
   // the Preview shows control, and the Shape control
   const ui = el('div', 'position:absolute;left:0;top:0;font-family:var(--txt)', s.root);
   UI.theme(ui, 1);
@@ -269,8 +297,8 @@ const CROP = (() => {
     segShow.set(t < 24.4 ? 1 : t < 25.0 ? lerp(1, 2, E.move(prog(t, 24.4, 24.6))) : lerp(2, 0, E.move(prog(t, 25.0, 25.2))), t < 24.5 ? 1 : t < 25.1 ? 2 : 0);
     shapeW.style.opacity = prog(t, 27.15, 27.4) * (1 - prog(t, 28.95, 29.15));
     scr.style.opacity = 1 - back;
-    t1.set(t, 23.55, 26.85, 24.05);
-    t2.set(t, 27.05, 28.95, 27.35);
+    t1.set(t, 23.55, 27.0, 24.05);
+    t2.set(t, 27.3, 29.0);
   };
   return s;
 })();
@@ -332,10 +360,10 @@ const BLEND = (() => {
     }
     lab.style.opacity = (prog(t, 30.3, 30.5) * (1 - prog(t, 30.68, 30.88))).toFixed(3);
     lab.style.transform = `translate(${1250}px, ${250}px)`;
-    title.set(t, 30.9, 34.95, 31.2);
+    title.set(t, 31.0, 35.0, 31.3);
     scr.style.opacity = prog(t, 30.8, 31.2) * (1 - prog(t, 35.0, 35.3));
-    look.toggle.set(E.move(prog(t, 31.25, 31.42)));
-    cardWrap.style.opacity = E.enter(prog(t, 31.05, 31.5)) * (1 - prog(t, 34.95, 35.2));
+    look.toggle.set(E.move(prog(t, 31.35, 31.52)));
+    cardWrap.style.opacity = E.enter(prog(t, 31.05, 31.5)) * (1 - prog(t, 35.0, 35.25));
     cardWrap.style.transform = `translateX(${(1 - E.enter(prog(t, 31.05, 31.55))) * 28}px)`;
   };
   return s;

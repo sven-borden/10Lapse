@@ -48,7 +48,7 @@ const TIMING = (() => {
 
   function lay(t) {
     const hold = E.move(prog(t, 35.8, 36.3));
-    const boom = E.move(prog(t, 37.0, 37.55)) * (1 - E.move(prog(t, 38.85, 39.35)));
+    const boom = E.move(prog(t, 37.0, 37.55)) * (1 - E.move(prog(t, 39.0, 39.5)));
     const total = 48 + 6 * hold + 48 * boom;
     const k = (X1 - X0) / total;
     const hA = 3 * hold * k, fw = 48 * k, bk = 48 * boom * k;
@@ -158,16 +158,16 @@ const TIMING = (() => {
     place(lMus, X0, TY + TH + 140, prog(t, 39.6, 39.9));
     lenV.textContent = `${g.total.toFixed(1)} s`;
     lenBox.style.opacity = prog(t, 35.45, 35.75) * (1 - prog(t, 40.95, 41.25));
-    segW.style.opacity = prog(t, 36.8, 37.0) * (1 - prog(t, 39.1, 39.3));
-    seg.set(lerp(0, 1, E.move(prog(t, 37.0, 37.2))) * (1 - E.move(prog(t, 38.85, 39.05))), t >= 37.1 && t < 38.95 ? 1 : 0);
+    segW.style.opacity = prog(t, 36.8, 37.0) * (1 - prog(t, 39.15, 39.35));
+    seg.set(lerp(0, 1, E.move(prog(t, 37.0, 37.2))) * (1 - E.move(prog(t, 39.0, 39.2))), t >= 37.1 && t < 39.1 ? 1 : 0);
     // headline: one word per feature; the new word bright, the earlier ones dimmed
-    reveal(kw, t, 35.55, 38.95);
-    reveal(kwm, t, 39.05, 40.95);
-    reveal(H1, t, 35.75, 40.95);
-    reveal(H2, t, 36.95, 40.95);
-    reveal(H3, t, 39.05, 40.95);
-    H1[0].style.color = t >= 36.95 ? 'rgba(244,242,238,0.42)' : DINK;
-    H2[0].style.color = t >= 39.05 ? 'rgba(244,242,238,0.42)' : DINK;
+    reveal(kw, t, 35.55, 39.0);
+    reveal(kwm, t, 39.1, 41.0);
+    reveal(H1, t, 35.75, 41.0);
+    reveal(H2, t, 37.0, 41.0);
+    reveal(H3, t, 39.1, 41.0);
+    H1[0].style.color = t >= 37.0 ? 'rgba(244,242,238,0.42)' : DINK;
+    H2[0].style.color = t >= 39.1 ? 'rgba(244,242,238,0.42)' : DINK;
     // the strip leaves to the left, into the export gate
     const out = E.expoIn(prog(t, 41.0, 41.42));
     cv.style.transform = `translateX(${(-1400 * out).toFixed(1)}px)`;
@@ -177,7 +177,7 @@ const TIMING = (() => {
 
 // ================================================================ EXPORT  the film gate  [41.0, 45.45)
 const EXPORT = (() => {
-  const s = scene(41.0, 45.45, 80);
+  const s = scene(41.0, 45.7, 80);
   s.root.style.background = `radial-gradient(ellipse 80% 70% at 50% 55%,#141A33 0%,${NIGHT} 70%)`;
   const cv = canvas(W, H, 'position:absolute;left:0;top:0', s.root);
   const ctx = cv.getContext('2d');
@@ -194,8 +194,8 @@ const EXPORT = (() => {
   const SPEC = ['4K · 3840 × 2160', 'Encoded on the graphics card', 'MP4 · H.264 or HEVC', 'Or a looping GIF'];
   const specW = SPEC.map(x => { const d = el('div', '', specs); return words(d, x); });
   const GATE = { x: 1180, y: 300, w: 400, h: 225 };
-  const FR = 9;                         // frames in the row: under three a second pass each spot (WCAG 2.3.1)
-  HEAVY_MORE.push([40.95, 41.5, 10], [41.4, 44.4, 4], [44.55, 45.5, 8]);
+  const FR = 26;                        // frames in the row
+  HEAVY_MORE.push([40.95, 41.5, 10], [41.4, 44.4, 4], [44.95, 45.7, 8]);
   s.update = t => {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, W, H);
@@ -205,7 +205,7 @@ const EXPORT = (() => {
     const fw = 196, gap = 12, step = fw + gap;
     const pos = p * (FR - 1);
     const inn = E.expoOut(prog(t, 41.05, 41.55));
-    const grow = E.move(prog(t, 44.55, 45.25));
+    const grow = E.move(prog(t, 45.0, 45.6));
     ctx.save();
     const gx = GATE.x + GATE.w / 2;
     for (let i = 0; i < FR; i++) {
@@ -224,7 +224,7 @@ const EXPORT = (() => {
     ctx.save();
     ctx.globalAlpha = inn;
     // the last frame rendered, then the first frame of the finished file as the premiere begins
-    const back = prog(t, 44.42, 44.62);
+    const back = prog(t, 44.8, 45.0);
     const Tg = clamp(Math.round(pos) / (FR - 1));
     if (back < 1) worldInto(ctx, R.x, R.y, R.w, R.h, Tg, viewFor(R.w, R.h), { ripple: Tg * 7200 }, 6 * (1 - grow));
     if (back > 0) { ctx.globalAlpha = inn * back; worldInto(ctx, R.x, R.y, R.w, R.h, 0.0, viewFor(R.w, R.h), { ripple: 0 }, 6 * (1 - grow)); }
@@ -240,18 +240,18 @@ const EXPORT = (() => {
     fill.style.width = `${p * 100}%`;
     const secs = Math.ceil((1 - p) * 9);
     left.textContent = p >= 1 ? 'Finishing the file…' : p < 0.06 ? 'Working out the time left…' : `About ${secs} s left`;
-    const a = E.enter(prog(t, 41.1, 41.6)) * (1 - prog(t, 44.55, 44.85));
+    const a = E.enter(prog(t, 41.1, 41.6)) * (1 - prog(t, 45.0, 45.3));
     box.style.opacity = a;
-    reveal(kE, t, 41.15, 44.5);
-    reveal(fnW, t, 41.2, 44.5);
-    specW.forEach((wd, k) => reveal(wd, t, 41.4 + k * 0.3, 44.55, 0.03, 0.55));
+    reveal(kE, t, 41.15, 45.0);
+    reveal(fnW, t, 41.2, 45.0);
+    specW.forEach((wd, k) => reveal(wd, t, 41.4 + k * 0.3, 45.0, 0.03, 0.55));
   };
   return s;
 })();
 
 // ================================================================ PREMIERE  the evening in four seconds  [44.9, 49.45)
 const PREMIERE = (() => {
-  const s = scene(44.9, 49.45, 90);
+  const s = scene(45.5, 49.45, 90);
   const cv = canvas(W, H, 'position:absolute;left:0;top:0', s.root);
   const ctx = cv.getContext('2d');
   scrim(s.root, 'left:0;bottom:0;width:1300px;height:520px;background:radial-gradient(ellipse 70% 90% at 22% 100%,rgba(6,8,18,0.66),rgba(6,8,18,0))');
@@ -262,18 +262,18 @@ const PREMIERE = (() => {
     <div data-r="t" style="font:600 52px/62px var(--disp);letter-spacing:-0.02em;margin-top:18px">Mountain lake.mp4 is ready</div>
     <div data-r="d" style="font:400 28px/38px var(--txt);color:var(--text2);font-variant-numeric:tabular-nums;margin-top:6px">48.0 s · 4K · H.264 · 198 MB</div>`;
   const cr = refs(card);
-  HEAVY_MORE.push([45.2, 49.0, 6]);
+  HEAVY_MORE.push([45.6, 49.0, 6]);
   s.update = t => {
     // the finished file plays from daylight to night
-    const u = prog(t, 45.15, 48.85);
+    const u = prog(t, 45.6, 48.9);
     const T = clamp(lerp(0.0, 1.0, E.sine(u) * 0.35 + u * 0.65));
     const p = Math.floor(T * 1439);
     WORLD.draw(ctx, W, H, T, V169, { ripple: p * 5, cloudX: T * 1.25 });
-    cv.style.opacity = prog(t, 44.9, 45.25);
-    const a = E.enter(prog(t, 45.45, 45.95)) * (1 - prog(t, 48.7, 48.95));
+    cv.style.opacity = prog(t, 45.5, 45.62);
+    const a = E.enter(prog(t, 45.85, 46.35));
     card.style.opacity = a;
-    card.style.transform = `translateY(${(1 - E.enter(prog(t, 45.45, 46.0))) * 20}px)`;
-    cr.ck.setAttribute('stroke-dashoffset', (28 * (1 - E.enter(prog(t, 45.65, 46.15)))).toFixed(2));
+    card.style.transform = `translateY(${(1 - E.enter(prog(t, 45.85, 46.4))) * 20}px)`;
+    cr.ck.setAttribute('stroke-dashoffset', (28 * (1 - E.enter(prog(t, 46.05, 46.55)))).toFixed(2));
   };
   s.cv = cv;
   return s;
@@ -281,7 +281,7 @@ const PREMIERE = (() => {
 
 // ================================================================ PRIVATE  [48.9, 53.45)
 const PRIVATE = (() => {
-  const s = scene(48.9, 53.45, 100);
+  const s = scene(49.0, 53.45, 100);
   s.root.style.background = NIGHT;
   const bg = canvas(W, H, 'position:absolute;left:0;top:0', s.root);
   WORLD.draw(bg.getContext('2d'), W, H, 1.0, V169, { ripple: 7195 });
@@ -291,7 +291,7 @@ const PRIVATE = (() => {
   const t1 = Title(s.root, { x: 0, y: 420, w: 1920, align: 'center', head: 'Your photos never leave your PC.', sub: 'No account. No analytics.', color: DINK, color2: DSUB, headSize: 88, dur: 0.6, subDur: 0.55 });
   s.update = t => {
     // the last frame of the premiere, sinking back behind the words
-    const d = E.move(prog(t, 48.9, 49.6));
+    const d = E.move(prog(t, 49.0, 49.7));
     bg.style.filter = `blur(${(14 * d).toFixed(2)}px) brightness(${(1 - 0.6 * d).toFixed(3)})`;
     bg.style.transform = `scale(${1 + 0.04 * d})`;
     const lu = E.move(prog(t, 49.35, 49.95));
@@ -299,8 +299,8 @@ const PRIVATE = (() => {
     shack.setAttribute('stroke-dashoffset', (1 - E.move(prog(t, 49.6, 50.1))).toFixed(4));
     // the shackle closes
     shack.setAttribute('transform', `translate(0 ${(-1.2 * (1 - E.enter(prog(t, 50.05, 50.35)))).toFixed(3)})`);
-    lk.style.opacity = prog(t, 49.3, 49.5) * (1 - prog(t, 52.85, 53.1));
-    t1.set(t, 49.3, 52.9, 49.85);
+    lk.style.opacity = prog(t, 49.3, 49.5);
+    t1.set(t, 49.3, null, 49.85);
   };
   return s;
 })();
@@ -308,7 +308,6 @@ const PRIVATE = (() => {
 // ================================================================ END  five frames, the wordmark  [52.95, 59]
 const END = (() => {
   const s = scene(52.95, DUR + 0.01, 110);
-  s.root.style.background = NIGHT;
   const cv = canvas(W, H, 'position:absolute;left:0;top:0', s.root);
   const ctx = cv.getContext('2d');
   const word = el('div', `position:absolute;left:0;top:0;color:${DINK};white-space:nowrap`, s.root);
@@ -325,12 +324,13 @@ const END = (() => {
   HEAVY_MORE.push([52.95, 54.2, 8]);
   s.update = t => {
     if (!wordW) wordW = word.getBoundingClientRect().width;
+    s.root.style.background = t >= 53.42 ? NIGHT : 'transparent';
     const lx = (W - (LOCK.icon + LOCK.gap + wordW)) / 2;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, W, H);
     // five bars sweep up across the frame, then gather into the icon
     const g = E.move(prog(t, 53.42, 54.05));
-    const side = E.move(prog(t, 53.95, 54.6));
+    const side = E.move(prog(t, 53.9, 54.45));
     const size = LOCK.icon;
     const cx = lerp(W / 2, lx + size / 2, side), cy = LOCK.cy;
     const tile = { x: cx - size / 2, y: cy - size / 2, w: size, h: size };
@@ -353,10 +353,10 @@ const END = (() => {
       ctx.fillStyle = sg; ctx.fillRect(tile.x, tile.y, size, size); ctx.restore();
     }
     word.style.transform = `translate(${cx + size / 2 + LOCK.gap}px, ${LOCK.cy - LOCK.size * 0.62}px)`;
-    reveal(wl, t, 54.3, null, 0.04, 0.7, 115);
-    reveal(tw, t, 54.85, null, 0.035);
-    reveal(sw, t, 55.2, null, 0.04);
-    reveal(cw, t, 56.1, null, 0.04);
+    reveal(wl, t, 54.1, null, 0.04, 0.7, 115);
+    reveal(tw, t, 54.45, null, 0.02, 0.5);
+    reveal(sw, t, 55.1, null, 0.04);
+    reveal(cw, t, 55.9, null, 0.04);
   };
   return s;
 })();
