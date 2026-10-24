@@ -80,7 +80,7 @@ out the rating question.
 ```text
 10Lapse 3.1 trae lo que un timelapse necesita después de la sesión.
 
-- Antiparpadeo: suaviza los saltos de exposición entre fotos. Si cambiaste la velocidad de obturación, la apertura o el ISO durante una puesta de sol, cada escalón se vuelve una rampa suave.
+- Antiparpadeo: suaviza los saltos de exposición entre fotos. Si cambiaste la velocidad de obturación, la apertura o el ISO durante una puesta de sol, lee esos ajustes en las fotos y convierte cada escalón en una rampa suave.
 - Fusión de fotogramas: cada fotograma es el promedio de 2 a 16 fotos cercanas, como una exposición larga, para estelas de luz y nubes suaves.
 - Recorte y paneo: pasa de un encuadre inicial a uno final, con un zoom de hasta 4×, suave o lineal.
 - GIF animado: exporta un GIF que se repite, en tres tamaños, con hasta 25 fotogramas por segundo.
@@ -106,7 +106,7 @@ Velocidad en fotogramas por segundo, por duración del video o en segundos por f
 Velocidades de fotogramas exactas de 0,1 a 120 fps, 29,97 incluida
 Proporciones: la de las fotos, 16:9, 9:16, 1:1, 4:5 o 4:3, con “Ajustar” o “Rellenar”
 Vista previa en tiempo real igual a la exportación, y tira de fotogramas con marcas donde faltan fotos: arrastrar, quitar y deshacer
-Antiparpadeo: suaviza los saltos de exposición y convierte los escalones de una puesta de sol en una rampa suave
+Antiparpadeo: suaviza los saltos de exposición y, con los ajustes de exposición de las fotos, convierte los escalones de una puesta de sol en una rampa suave
 Fusión de fotogramas: promedio de 2 a 16 fotos cercanas para estelas de luz y nubes suaves
 Recorte y paneo de un encuadre inicial a uno final, zoom de hasta 4×, “Suave” o “Lineal”
 Imagen fija al inicio y al final, hasta cinco reproducciones de las fotos, o modo Bumerán

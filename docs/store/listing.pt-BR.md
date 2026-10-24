@@ -79,7 +79,7 @@ Limit 1,500 characters. This draft: 1,310. Like the English one, it is what 3.0 
 ```text
 O 10Lapse 3.1 traz o que um timelapse precisa depois da sessão de fotos.
 
-- Anticintilação: suaviza os saltos de exposição entre as fotos. Se você mudou a velocidade do obturador, a abertura ou o ISO durante um pôr do sol, cada degrau vira uma rampa suave.
+- Anticintilação: suaviza os saltos de exposição entre as fotos. Se você mudou a velocidade do obturador, a abertura ou o ISO durante um pôr do sol, ela lê essas configurações nas fotos e transforma cada degrau em uma rampa suave.
 - Fusão de quadros: cada quadro é a média de 2 a 16 fotos próximas, como uma longa exposição, para rastros de luz e nuvens suaves.
 - Corte e movimento: vá de um enquadramento inicial a um final, com zoom de até 4×, suave ou linear.
 - GIF animado: exporte um GIF que se repete sem parar, em três tamanhos, com até 25 quadros por segundo.
@@ -105,7 +105,7 @@ Velocidade em quadros por segundo, pela duração do vídeo ou em segundos por f
 Taxas de quadros exatas de 0,1 a 120 fps, inclusive 29,97
 Proporções: igual às fotos, 16:9, 9:16, 1:1, 4:5 ou 4:3, com Ajustar ou Preencher
 Visualização ao vivo igual à exportação e tira de filme com marcadores de fotos faltando: arraste, remova e desfaça
-Anticintilação: suaviza os saltos de exposição e transforma os degraus de um pôr do sol em uma rampa suave
+Anticintilação: suaviza os saltos de exposição e, com as configurações de exposição das fotos, transforma os degraus de um pôr do sol em uma rampa suave
 Fusão de quadros: a média de 2 a 16 fotos próximas, para rastros de luz e nuvens suaves
 Corte e movimento de um enquadramento inicial a um final, zoom de até 4×, Suave ou Linear
 Imagem congelada no início e no fim, até cinco reproduções das fotos ou modo Bumerangue

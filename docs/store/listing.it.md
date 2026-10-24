@@ -79,7 +79,7 @@ out the rating question.
 ```text
 10Lapse 3.1 aggiunge ciò che serve a un timelapse dopo lo scatto.
 
-- Antisfarfallio: attenua i salti di esposizione tra le foto. Se durante un tramonto hai cambiato tempo di scatto, diaframma o ISO, ogni gradino diventa una rampa graduale.
+- Antisfarfallio: attenua i salti di esposizione tra le foto. Se durante un tramonto hai cambiato tempo di scatto, diaframma o ISO, legge queste impostazioni dalle foto e trasforma ogni gradino in una rampa graduale.
 - Fusione di fotogrammi: ogni fotogramma è la media delle foto vicine, da 2 a 16, come una lunga esposizione, per scie luminose e nuvole fluide.
 - Ritaglio animato: passa da un'inquadratura iniziale a una finale, con uno zoom fino a 4×, morbido o lineare.
 - GIF animata: esporta una GIF che si ripete all'infinito, in tre misure, fino a 25 fotogrammi al secondo.
@@ -105,7 +105,7 @@ Velocità in fotogrammi al secondo, in base alla durata del video o in secondi p
 Frequenze fotogrammi esatte da 0,1 a 120 fps, 29,97 compreso
 Proporzioni: come le foto, 16:9, 9:16, 1:1, 4:5 o 4:3, con “Adatta” o “Riempi”
 Anteprima dal vivo fedele all'esportazione, e pellicola con segni dove mancano foto: sposta, rimuovi e annulla
-Antisfarfallio: attenua i salti di esposizione e trasforma i gradini di un tramonto in una rampa graduale
+Antisfarfallio: attenua i salti di esposizione e, in base alle impostazioni di scatto delle foto, trasforma i gradini di un tramonto in una rampa graduale
 Fusione di fotogrammi: la media delle foto vicine, da 2 a 16, per scie luminose e nuvole fluide
 Ritaglio animato da un'inquadratura iniziale a una finale, zoom fino a 4×, “Morbido” o “Lineare”
 Fermo immagine all'inizio e alla fine, fino a cinque riproduzioni delle foto, oppure modalità Boomerang

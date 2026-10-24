@@ -80,7 +80,7 @@ Limit 1,500 characters. This draft: 1,220. It is what 3.0 users get with the upd
 ```text
 10Lapse 3.1 adds what a timelapse needs after the shoot.
 
-- Deflicker: smooths the exposure jumps between photos. Where you changed the shutter speed, aperture or ISO during a sunset, it turns each step into a smooth ramp.
+- Deflicker: smooths the exposure jumps between photos. Where you changed the shutter speed, aperture or ISO during a sunset, it reads those settings from the photos and turns each step into a smooth ramp.
 - Frame blending: each frame is the average of 2 to 16 nearby photos, like a long exposure, for light trails and smooth clouds.
 - Crop and pan: move from a start framing to an end framing, zooming in up to 4×, smoothly or at an even speed.
 - Animated GIF: export a GIF that loops, in three sizes, at up to 25 frames per second.
@@ -108,7 +108,7 @@ Speed by frames per second, by video length, or by seconds per photo, with the p
 Exact frame rates from 0.1 to 120 fps, 29.97 included
 Frame shapes: match the photos, 16:9, 9:16, 1:1, 4:5 or 4:3, with Fit or Fill
 Live preview that matches the export, and a filmstrip with gap markers: drag, remove and undo
-Deflicker smooths exposure jumps, and turns the exposure steps of a sunset shoot into a smooth ramp
+Deflicker smooths exposure jumps and reads the photos' exposure settings to turn a sunset's steps into a smooth ramp
 Frame blending averages 2 to 16 nearby photos for light trails and smooth clouds
 Crop and pan from a start framing to an end framing, zooming in up to 4×, Smooth or Linear
 Hold at start and at end, play the photos up to five times, or play them as a boomerang

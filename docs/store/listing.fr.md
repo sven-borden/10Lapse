@@ -78,7 +78,7 @@ Limit 1,500 characters. This draft: 1,415. Like the English one, it is what 3.0 
 ```text
 10Lapse 3.1 apporte ce qu’il faut à un timelapse après la prise de vue.
 
-- Anti-scintillement : atténue les sauts d’exposition entre les photos. Si vous avez changé la vitesse d’obturation, l’ouverture ou l’ISO pendant un coucher de soleil, chaque palier devient une rampe douce.
+- Anti-scintillement : atténue les sauts d’exposition entre les photos. Si vous avez changé la vitesse d’obturation, l’ouverture ou l’ISO pendant un coucher de soleil, il lit ces réglages dans les photos et change chaque palier en rampe douce.
 - Fusion d’images : chaque image est la moyenne de 2 à 16 photos voisines, comme une pose longue, pour des filés de lumière et des nuages fluides.
 - Recadrage animé : passez d’un cadrage de début à un cadrage de fin, avec un zoom jusqu’à 4 ×, en mouvement doux ou linéaire.
 - GIF animé : exportez un GIF qui tourne en boucle, en trois tailles, jusqu’à 25 images par seconde.
@@ -104,7 +104,7 @@ Vitesse en images par seconde, par durée de la vidéo ou en secondes par photo,
 Cadences exactes de 0,1 à 120 i/s, y compris 29,97
 Formats d’image : comme les photos, 16:9, 9:16, 1:1, 4:5 ou 4:3, en mode Ajuster ou Remplir
 Aperçu en direct fidèle à l’exportation, et pellicule avec repères de photos manquantes : déplacez, retirez, annulez
-Anti-scintillement : atténue les sauts d’exposition et change les paliers d’un coucher de soleil en rampe douce
+Anti-scintillement : atténue les sauts d’exposition et, d’après les réglages des photos, change les paliers d’un coucher de soleil en rampe douce
 Fusion d’images : la moyenne de 2 à 16 photos voisines, pour des filés de lumière et des nuages fluides
 Recadrage animé d’un cadrage de début à un cadrage de fin, zoom jusqu’à 4 ×, mouvement Doux ou Linéaire
 Arrêt sur image au début et à la fin, jusqu’à cinq lectures des photos, ou mode Boomerang

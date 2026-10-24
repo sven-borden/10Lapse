@@ -77,7 +77,7 @@ and it leaves out the rating question.
 ```text
 10Lapse 3.1 bringt, was ein Zeitraffer nach der Aufnahme braucht.
 
-- Entflackern: gleicht Belichtungssprünge zwischen Fotos aus. Haben Sie bei einem Sonnenuntergang Belichtungszeit, Blende oder ISO verstellt, wird aus jeder Stufe ein sanfter Übergang.
+- Entflackern: gleicht Belichtungssprünge zwischen Fotos aus. Haben Sie bei einem Sonnenuntergang Belichtungszeit, Blende oder ISO verstellt, liest es die Werte aus den Fotos und macht aus jeder Stufe einen sanften Übergang.
 - Überlagern: Jedes Bild ist der Durchschnitt von 2 bis 16 benachbarten Fotos, wie bei einer Langzeitbelichtung, für Lichtspuren und weich ziehende Wolken.
 - Zoomen und Schwenken: von einem Start- zu einem Endausschnitt, mit bis zu 4× Zoom, sanft oder gleichmäßig.
 - Animiertes GIF: ein GIF, das endlos läuft, in drei Größen, mit bis zu 25 Bildern pro Sekunde.
@@ -103,7 +103,7 @@ Tempo nach Bildern pro Sekunde, nach Videodauer oder nach Sekunden pro Foto, mit
 Exakte Bildraten von 0,1 bis 120 fps, auch 29,97
 Bildformate: wie die Fotos, 16:9, 9:16, 1:1, 4:5 oder 4:3, mit „Anpassen“ oder „Ausfüllen“
 Live-Vorschau, die dem Export entspricht, und Filmstreifen mit Lückenmarkierungen: verschieben, entfernen, rückgängig machen
-Entflackern gleicht Belichtungssprünge aus und macht aus den Belichtungsstufen eines Sonnenuntergangs einen sanften Übergang
+Entflackern gleicht Belichtungssprünge aus und macht anhand der Belichtungswerte der Fotos aus den Stufen eines Sonnenuntergangs einen sanften Übergang
 Überlagern: Durchschnitt von 2 bis 16 benachbarten Fotos für Lichtspuren und weich ziehende Wolken
 Zoomen und Schwenken von einem Start- zu einem Endausschnitt, bis 4× Zoom, „Sanft“ oder „Gleichmäßig“
 Standbild am Anfang und am Ende, bis zu fünf Durchläufe der Fotos oder ein Bumerang
