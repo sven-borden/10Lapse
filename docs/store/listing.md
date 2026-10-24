@@ -1,8 +1,8 @@
-# 10Lapse 3.0 Store listing (English, United States)
+# 10Lapse 3.1 Store listing (English, United States)
 
-The text Sven pastes into Partner Center for the 3.0 update (#42): Apps and games, 10Lapse, the 3.0 submission,
-Store listings, English (United States). The package is English only, so the listing is too (#62, #39); a listing
-in another language comes with that language's resource files.
+The text Sven pastes into Partner Center for the 3.1 update (#141; 3.0 was #42): Apps and games, 10Lapse, the 3.1
+submission, Store listings, English (United States). The five translations (`listing.{fr,de,es,it,pt-BR}.md`) have
+the same fields and order.
 
 Each field below says its limit and this draft's length. The limits come from Microsoft Learn, checked 2026-10-20:
 [Add and edit Store listing info](https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/add-and-edit-store-listing-info),
@@ -11,41 +11,54 @@ and the [Store Policies](https://learn.microsoft.com/en-us/windows/apps/publish/
 **verify** is not on those pages; check it against the form. Lengths count characters as Partner Center does, a line
 break as one. Copy each field from inside its box: the boxes are plain text, without Markdown.
 
-The Windows 10 sentence of the first submission ("the Store offers 2.1.1") is gone from this file: Windows 10 is not supported (2026-10-21). The submitted listings still have it; drop it in the next listing update.
+The Windows 10 sentence of the first submission ("the Store offers 2.1.1") is in none of the six files: Windows 10 is
+not supported (2026-10-21). The live listings still have it, so the 3.1 paste replaces every field in all six
+languages, the description included, even where only a few words changed.
 
-The text says only what 3.0 does. Not in 3.0, so not in the listing: music or sound, deflicker, stabilization, GIF
-output, saving a project, a watch folder, 8K, a sample sequence (#30). Those belong to 3.1 issues; add them here when
-they ship.
+The text says only what 3.1 does. Not in 3.1, so not in the listing: stabilization, a stamp or title (#48, not
+planned), a watch folder, 8K, a sample sequence (#30), music in a GIF (a GIF has no sound). The rating question
+(#139) is not a feature and is not named.
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,541.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,166.
 
 ```text
-Turn a folder of photos into a smooth timelapse video, up to 4K.
+Turn a folder of photos into a smooth timelapse video, up to 4K, or an animated GIF.
 
-You shot a sunset, a storm rolling in or a build from a tripod, one photo every few seconds, and now you have a folder of hundreds or thousands of photos. 10Lapse plays them back as a video: drop the folder on the window, check the preview, and export an MP4.
+You shot a sunset, a storm rolling in or a build from a tripod, one photo every few seconds, and now you have a folder of hundreds or thousands of photos. 10Lapse plays them back as a video: drop the folder on the window, check the preview, and export an MP4 or a GIF.
 
 How it works
 1. Choose a folder, pick photos, or drag them onto the window. 10Lapse reads JPEG, PNG, TIFF, HEIC and the RAW files of most cameras, and puts them in the order they were taken.
 2. Set the speed one of three ways: frames per second, the length the video should have, or seconds per photo for a slideshow. The numbers are always on screen, for example "742 photos → 24.7 s at 30 fps".
 3. Pick the shape: match your photos, 16:9 for YouTube and TV, 9:16 for phone stories and reels, 1:1, 4:5 or 4:3. Fit keeps the whole photo; Fill crops the edges so there are no bars.
-4. Export an MP4 at 720p, 1080p, 1440p or 4K, in H.264, or in HEVC where the PC can encode and play it. The preview draws every frame with the same code as the export, so the video looks like the preview.
+4. Export an MP4 at 720p, 1080p, 1440p or 4K, in H.264, or in HEVC where the PC can encode and play it. Or export an animated GIF that loops, Small, Medium or Large (320, 480 or 640 pixels on the long side), at up to 10, 20 or 25 frames per second. The preview draws every frame with the same code as the export, so the video looks like the preview.
+
+Make it look right
+- Deflicker smooths the exposure jumps between photos. Where you changed the shutter speed, aperture or ISO during a sunset, it reads those settings from the photos and turns each step into a smooth ramp, while the scene still darkens as it did.
+- Frame blending makes each frame the average of 2 to 16 nearby photos, like a long exposure: moving lights leave trails and clouds move smoothly.
+- Crop and pan moves from a start framing to an end framing, zooming in up to 4×, smoothly or at an even speed. Drag the framing on the preview to set it.
+- Before and After in the preview shows your photos with and without deflicker and frame blending.
+- Hold the video's first and last frames for up to 10 seconds each, play the photos up to five times, or play them as a boomerang, out and back.
+- Add music under an MP4 (MP3, M4A, WAV, WMA or FLAC): choose where in the song the video starts, and fade it in and out. The song is cut where the video ends; a shorter song leaves the rest silent. A GIF has no sound.
 
 Editing and export
 - Scrub through the sequence, step frame by frame, and remove a blurry photo or drag one into place. Ctrl+Z puts it back. Removing a photo takes it out of the video, never off your disk.
 - Gap markers in the filmstrip show where photos seem to be missing.
 - Frame rates are exact, 29.97 included, from 0.1 to 120 frames per second.
 - The Output panel estimates the file size before you export.
-- The export uses the graphics card's video encoder where the PC has one. It keeps the PC awake until the video is done, keeps going when you minimize the window, and stops within a second when you cancel.
-- When the video is ready, play it right there or open its folder.
+- An MP4 export uses the graphics card's video encoder where the PC has one. The export keeps the PC awake until it is done, keeps going when you minimize the window, and stops within a second when you cancel.
+- When the export is ready, play it right there or open its folder.
 - If something goes wrong, 10Lapse says what happened and what to do next.
 
+Projects
+Save a project as a .10lapse file, which keeps the list of photos, their order and every setting, and open it again later or with a double-click. The start screen lists your recent projects. If 10Lapse closes unexpectedly before you saved, it offers to restore your changes the next time it starts. Photos a project can't find stay in its file, so they come back once their drive is connected again.
+
 Private by design
-10Lapse works offline. There is no account, no analytics and no network access: your photos and videos never leave your PC.
+10Lapse works offline. There is no account, no analytics and no network access: your photos, videos and projects never leave your PC.
 
 Made for Windows 11
-10Lapse 3.0 needs Windows 11 on an x64 or ARM64 PC. Light, dark and high contrast themes follow Windows, and so do animations. Everything works from the keyboard, and screen readers announce every control and the export's progress.
+10Lapse needs Windows 11 on an x64 or ARM64 PC. Light, dark and high contrast themes follow Windows, and so do animations. Everything works from the keyboard, and screen readers announce every control and the export's progress.
 
 Optional extensions from the Microsoft Store add more photo formats: HEIC photos need HEIF Image Extension (free) and HEVC Video Extensions (paid), and camera RAW files need Raw Image Extension (free). 10Lapse names the one that is missing and links to its Store page.
 ```
@@ -53,59 +66,61 @@ Optional extensions from the Microsoft Store add more photo formats: HEIC photos
 ## Short description
 
 Limit 1,000 characters; Microsoft recommends under 270, because some views cut it there. It shows above the
-description, so it says the same thing in other words. This draft: 218.
+description, so it says the same thing in other words. This draft: 241.
 
 ```text
-Make a timelapse video from the hundreds of photos of a tripod shoot: set the speed and the shape, watch it play, and export an MP4 up to 4K. 10Lapse works offline, with no account, and your photos never leave your PC.
+Make a timelapse video from the hundreds of photos of a tripod shoot: set the speed and the shape, smooth the flicker and export an MP4 up to 4K or an animated GIF. 10Lapse works offline, with no account, and your photos never leave your PC.
 ```
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,241. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
-does; it does not claim a crash rate.
+Limit 1,500 characters. This draft: 1,316. It is what 3.0 users get with the update, newest first; it says only what
+3.1 does and leaves out the rating question (#139).
 
 ```text
-10Lapse 3.0 is rebuilt from the ground up for Windows 11.
+10Lapse 3.1 adds what a timelapse needs after the shoot.
 
-- Rewritten from scratch, so the code behind the 2.1.1 crashes is gone. When something goes wrong, 10Lapse says what happened and what to do next.
-- Imports HEIC and .jpeg photos. HEIC needs HEIF Image Extension (free) and HEVC Video Extensions (paid) from the Microsoft Store; 10Lapse tells you which one is missing.
-- Export up to 4K, in H.264, or HEVC where the PC supports it, with progress, the time left and a Cancel button that stops the export within a second.
-- Keeps working when you switch away or minimize: the export goes on, with progress on the taskbar and a notification when the video is ready.
-- A new Per photo speed for slideshows, beside frames per second and video length.
-- A live preview and a filmstrip: scrub, step, remove or reorder photos, and undo.
-- Frame shapes for TVs, phones and social posts: 16:9, 9:16, 1:1, 4:5, 4:3 or the shape of your photos.
-- Your last speed, frame shape and output are remembered for the next project.
-- Light and dark themes, keyboard shortcuts, screen reader support and high contrast.
-- Private: no account, and now no network access at all; your photos never leave your PC.
+- Deflicker: smooths the exposure jumps between photos. Where you changed the shutter speed, aperture or ISO during a sunset, it reads those settings from the photos and turns each step into a smooth ramp.
+- Frame blending: each frame is the average of 2 to 16 nearby photos, like a long exposure, for light trails and smooth clouds.
+- Crop and pan: move from a start framing to an end framing, zooming in up to 4×, smoothly or at an even speed.
+- Animated GIF: export a GIF that loops, in three sizes, at up to 25 frames per second.
+- Music under an MP4: choose where the song starts and fade it in and out. It is cut where the video ends.
+- Hold the first and last frames for up to 10 seconds, play the photos up to five times, or play them as a boomerang.
+- Save your work: a .10lapse project file opens again later, the start screen lists recent projects, and if 10Lapse closes unexpectedly before you saved, it offers to restore your changes.
+- Ctrl+O now opens a project; Choose folder moved to Ctrl+I and Choose photos to Ctrl+Shift+I.
+- Before and After in the preview compares your photos with and without deflicker and frame blending.
 
-3.0 needs Windows 11 on an x64 or ARM64 PC.
+As before, 10Lapse works offline and your photos never leave your PC. It needs Windows 11 on an x64 or ARM64 PC.
 ```
 
 ## Product features
 
-Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 19 are 36
-to 100 characters each.
+Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 20 are 53
+to 118 characters each. 3.1's seven features took the room of 3.0's lines merged in pairs (speed with the numbers on
+screen, preview with the filmstrip, the MP4 line with the size estimate, the encoder with minimized export) and of
+"Remembers your last speed, frame shape and output", which the description does not need either.
 
 ```text
-Turns a folder of photos into a timelapse video, up to 4K
-Import a folder, chosen photos, or drag them onto the window
+Turns a folder of photos into a timelapse video up to 4K, or an animated GIF
+Import a folder or chosen photos, or drag them onto the window; they line up in the order they were taken
 Reads JPEG, PNG and TIFF; HEIC and camera RAW with Microsoft Store extensions
-Puts photos in the order they were taken; drag a thumbnail to move it
-Speed by frames per second, by video length, or by seconds per photo
+Speed by frames per second, by video length, or by seconds per photo, with the photo count and video length on screen
 Exact frame rates from 0.1 to 120 fps, 29.97 included
-Photo count, speed and video length always on screen
 Frame shapes: match the photos, 16:9, 9:16, 1:1, 4:5 or 4:3, with Fit or Fill
-Live preview that matches the exported video
-Filmstrip with thumbnails, gap markers for missing photos, remove and undo
-MP4 in H.264 (or HEVC where the PC supports it) at 720p, 1080p, 1440p or 4K, in three quality levels
-File size estimate before you export
-Exports on the graphics card's video encoder where the PC has one
-Keeps exporting when minimized, and keeps the PC awake until it is done
-Play the finished video in the app or open its folder
+Live preview that matches the exported video, and a filmstrip with gap markers: drag, remove and undo
+Deflicker smooths exposure jumps and reads the photos' exposure settings to turn a sunset's steps into a smooth ramp
+Frame blending averages 2 to 16 nearby photos for light trails and smooth clouds
+Crop and pan from a start framing to an end framing, zooming in up to 4×, Smooth or Linear
+Hold at start and at end, play the photos up to five times, or play them as a boomerang
+Music under an MP4: choose where the song starts, fade it in and out; it is cut where the video ends
+Save projects as .10lapse files, reopen recent ones from the start screen, restore unsaved changes after a crash
+MP4 in H.264 (or HEVC where the PC supports it) at 720p, 1080p, 1440p or 4K, three quality levels, size estimate first
+Animated GIF that loops, in three sizes, at up to 10, 20 or 25 frames per second
+Exports MP4 on the graphics card's video encoder where there is one; keeps going when minimized, with the PC awake
+Play the finished video or GIF in the app, or open its folder
 Clear messages that say what went wrong and what to do next
 Works offline: no account, no analytics, photos never leave your PC
 Light and dark themes, high contrast, keyboard shortcuts, screen reader support
-Remembers your last speed, frame shape and output
 ```
 
 ## Search terms
@@ -182,16 +197,6 @@ Upload six, in this order; captions are 55 to 91 characters.
 The editing shot leads because it shows the job; the start screen comes last because it shows no photos. The script
 also makes 07-settings and 08-narrow; do not upload them (Settings shows no photos; the narrow shot is portrait at
 768 x 1366, below #42's 1920 x 1080).
-
-## Until 3.0 is public (#7)
-
-A listing-only edit to the 2.1.1 description, no package needed: replace its last line, "BETA REALEASE! SOME
-FUNCTIONALITIES MAY NOT WORK CORRECTLY", with the line below. The 3.0 description above replaces the whole text once
-3.0 ships. This draft: 63 characters.
-
-```text
-10Lapse 3.0 is being rebuilt from the ground up for Windows 11.
-```
 
 ## Copyright and trademark info
 
