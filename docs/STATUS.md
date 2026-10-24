@@ -5,10 +5,10 @@ Updated 2026-10-24. Roadmap: the pinned #59 and the milestones. Working agreemen
 ## Now
 
 2026-10-21: **3.0 is live on the Store at full rollout** (tag `v3.0.0`, on
-`7c63de5`). Now: 3.1, wave 28 done 2026-10-24 (#47 frame blending, PR #138),
-then #139 rating question (PR #140); wave 29, #48 stamp and title, is next when
-Sven says so. `docs/test-matrix.md`
-is a checklist for the live build (5.22 crop and pan, 5.23 music, 5.24 frame
+`7c63de5`). Now: 3.1's features are merged (last #47 frame blending, PR #138,
+and #139 rating question, PR #140); milestone 6 keeps only #30, which waits for
+Sven's photos. Next: what Health and the first reviews bring up.
+`docs/test-matrix.md` is a checklist for the live build (5.22 crop and pan, 5.23 music, 5.24 frame
 blending: nobody has seen or heard them on real shoots yet).
 
 ## Waves
@@ -20,10 +20,8 @@ Waves 0 to 24 (3.0) are done; milestone 4 stays open only for the #90 watch.
 
 3.1 (milestone 6), planned 2026-10-21. Every 3.1 feature adds a settings group
 to `ProjectSettings`/`Project`; two issues may run together when that additive
-change is their only overlap (the second PR to merge rebases). #52 goes first so
-each later feature adds its group to the `.10lapse` format with a round-trip
-test; #51 gives the encode stage a second format, which #50's audio stream
-builds on. Every new string ships in all six languages. Read first: PR #66
+change is their only overlap (the second PR to merge rebases). A new group goes
+into the `.10lapse` format with a round-trip test. Every new string ships in all six languages. Read first: PR #66
 (`Project`, snapshot, single writer), #83 and #111 (`settings.json`,
 `AppFolders`: every path the app writes), #133 (`.10lapse`: how a settings
 group is added; `settings.json` is read-merge-write across windows), #65, #74
@@ -35,18 +33,15 @@ measuring pass and the export's wait for it), #136 (`Framing`, the `crop` group,
 `FrameLook.View`, a geometry step in `Draw`, the export's zoomed decode), #137
 (`MusicTrack` on the export settings, the AAC stream interleaved per frame, the
 preview's music, the inspector's fifth section), #138 (`BlendSettings`, the
-`blend` group, `FrameRenderer.DrawBlend`, `BlendedPhotoSource`, a stamp's place
-for #48).
+`blend` group, `FrameRenderer.DrawBlend`, `BlendedPhotoSource`).
 
 - Wave 25: done. #51 GIF export (PR #132), #52 save and reopen (PR #133).
-- Wave 26: done. #49 hold, loop, boomerang (PR #134), #45 deflicker (PR #135,
-  merged 2026-10-24 after master was merged in; gate 3,710 passed).
+- Wave 26: done. #49 hold, loop, boomerang (PR #134), #45 deflicker (PR #135).
 - Wave 27: done. #46 crop and pan (PR #136), #50 music (PR #137).
 - Wave 28: done. #47 frame blending (PR #138).
 - Between waves: done. #139 rating question (PR #140, Sven 2026-10-24; gate
   3,822 passed; checked minimized and restored in the real app).
-- Wave 29: #48 stamp and title (O). #45 to #48 all draw in `FrameRenderer`, so
-  they never run together.
+- #48 stamp and title: closed, not planned (Sven, 2026-10-24).
 - #30 sample sequence once Sven picks the photos.
 
 ## Owner items (Sven)
@@ -75,8 +70,8 @@ Nothing blocks the build loop.
   `PreviewRenderLoop.DrawPicture` draws the photo by hand, with geometry from
   `FrameRenderer.Layout`, instead of `FrameRenderer.Draw`. #45's correction
   shows there (it calls `FrameRenderer.DrawPhoto`; tested by
-  `FrameLookTests.TheReframePathAppliesTheSameLook`); #46 to #48 must go through
-  that call too or update the path. #46 did: `PhotoRect` takes the framed
+  `FrameLookTests.TheReframePathAppliesTheSameLook`); a new drawing step must go
+  through that call too or update the path. #46 did: `PhotoRect` takes the framed
   placement (`FrameRenderer.Placement`), so the reframe moves the framed photo.
 - 2026-10-24 (#45, PR #135): exposure measurements live on the frame
   (`Frame.Exposure`, saved in `.10lapse`), never in an app-data cache; the
