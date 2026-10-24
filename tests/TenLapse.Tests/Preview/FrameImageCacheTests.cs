@@ -105,6 +105,54 @@ public sealed class FrameImageCacheTests
     }
 
     [Fact]
+    public void WhilePausedThePhotosABlendTakesLoadRightAfterThePhotoOnScreen()
+    {
+        // Frame blending of 4 photos (#47): two before the photo and one after, nearest first.
+        var source = new FakeFrameImageSource();
+        using var cache = new FrameImageCache<FakeImage>(source, _one);
+        var frames = Frames("a", 10);
+
+        cache.SetBlendWindow(2, 1);
+        cache.SetFocus(5, playing: false, lookahead: 0);
+        cache.SetFrames(frames);
+
+        var order = new List<(int, FrameImageQuality)>();
+        for (var i = 0; i < 5; i++)
+        {
+            var call = source.Next();
+            order.Add((frames.IndexOf(call.Frame), call.Quality));
+            call.Succeed();
+        }
+
+        Assert.Equal([(5, FrameImageQuality.Quick), (5, FrameImageQuality.Proxy), (4, FrameImageQuality.Quick), (6, FrameImageQuality.Quick), (3, FrameImageQuality.Quick)], order);
+        Assert.True(source.Quiet());
+    }
+
+    [Fact]
+    public void WhilePlayingEachPhotoAheadBringsThePhotosItIsBlendedWith()
+    {
+        // Each photo the player shows next is followed by its blend's photos (#47), across the loop and never twice.
+        var source = new FakeFrameImageSource();
+        using var cache = new FrameImageCache<FakeImage>(source, _one);
+        var frames = Frames("a", 10);
+
+        cache.SetBlendWindow(1, 1);
+        cache.SetFocus(8, playing: true, lookahead: 2);
+        cache.SetFrames(frames);
+
+        var order = new List<int>();
+        for (var i = 0; i < 5; i++)
+        {
+            var call = source.Next();
+            order.Add(frames.IndexOf(call.Frame));
+            call.Succeed();
+        }
+
+        Assert.Equal([8, 7, 9, 0, 1], order);
+        Assert.True(source.Quiet());
+    }
+
+    [Fact]
     public void ARemovedFramesResultIsFreedAndNeverShown()
     {
         var source = new FakeFrameImageSource();

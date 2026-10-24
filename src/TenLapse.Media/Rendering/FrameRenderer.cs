@@ -189,8 +189,10 @@ public static class FrameRenderer
     /// <remarks>
     /// sRGB to linear and back go through 256-entry <see cref="TableTransferEffect"/> tables (Win2D 1.4 has no sRGB gamma
     /// effect). To linear the entries fall on the 8-bit codes, so it is exact for a photo's pixels, its exposure table
-    /// folded in (<see cref="LinearTable"/>); back to sRGB the curve between entries is interpolated, within a fifth of a
-    /// level (<see cref="EncodeTable"/>).
+    /// folded in (<see cref="LinearTable"/>). Back to sRGB the light is first raised to the power 1/2.4 (a
+    /// <see cref="GammaTransferEffect"/>, exact), where the sRGB curve is nearly straight, and the table interpolated there
+    /// (<see cref="EncodeTable"/>) is within a hundredth of a level; on linear light itself it was half a level off in the
+    /// shadows.
     /// </remarks>
     public static void DrawBlend(CanvasDrawingSession session, Rect area, IReadOnlyList<PlacedPhoto> photos)
     {
@@ -255,10 +257,20 @@ public static class FrameRenderer
                 sum = weighted;
             }
 
+            var warped = new GammaTransferEffect
+            {
+                Source = sum,
+                RedExponent = EncodeExponent,
+                GreenExponent = EncodeExponent,
+                BlueExponent = EncodeExponent,
+                AlphaDisable = true,
+                BufferPrecision = CanvasBufferPrecision.Precision16Float,
+            };
+            made.Add(warped);
             var encode = EncodeTable;
             var encoded = new TableTransferEffect
             {
-                Source = sum,
+                Source = warped,
                 RedTable = encode,
                 GreenTable = encode,
                 BlueTable = encode,
@@ -295,10 +307,16 @@ public static class FrameRenderer
         return table;
     }
 
-    /// <summary>The table that takes linear light back to sRGB (#47): entry n is the sRGB encoding of n / 255. A copy.</summary>
+    /// <summary>The power linear light is raised to before <see cref="EncodeTable"/> (#47).</summary>
+    public const float EncodeExponent = 1 / 2.4f;
+
+    /// <summary>
+    /// The table that takes linear light raised to <see cref="EncodeExponent"/> back to sRGB (#47): entry n is the sRGB
+    /// encoding of (n / 255)^2.4. A copy.
+    /// </summary>
     public static float[] EncodeTable => (float[])_encodeTable.Clone();
 
-    private static readonly float[] _encodeTable = [.. Enumerable.Range(0, 256).Select(level => (float)LuminanceMeter.LinearToSrgb(level / 255.0))];
+    private static readonly float[] _encodeTable = [.. Enumerable.Range(0, 256).Select(level => (float)LuminanceMeter.LinearToSrgb(Math.Pow(level / 255.0, 2.4)))];
 
     // Where a photo goes in the frame, in DIPs: the destination in the session's, the source in the photo's own, and the
     // whole frame. DrawImage takes the source rectangle in the bitmap's own DIPs: a photo that declares 95.9866 DPI (a

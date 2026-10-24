@@ -220,6 +220,43 @@ public sealed class ProjectFileJsonTests
     }
 
     [Fact]
+    public void TheBlendGroupSurvivesAWriteAndARead()
+    {
+        // #47: on, 9 photos a frame, 60 %.
+        var blend = new BlendSettings(true, 9, 60);
+
+        Assert.Equal(blend, RoundTrip(new ProjectFileContent { Blend = blend }).Blend);
+        Assert.Equal(BlendSettings.Default, RoundTrip(new ProjectFileContent()).Blend);
+        Assert.Contains("\"frames\": 9", ProjectFileJson.Write(new ProjectFileContent { Blend = blend }), StringComparison.Ordinal);
+
+        var project = new ProjectFileContent { Blend = blend }.CreateEmptyProject();
+        Assert.Equal(blend, project.Blend);
+        Assert.False(project.Snapshot.IsDirty);
+        Assert.Equal(blend, ProjectFileContent.From(project.Snapshot, null).Blend);
+    }
+
+    [Fact]
+    public void AFileWithoutTheBlendOrWithABadOneDoesNotBlend()
+    {
+        var written = ProjectFileJson.Write(new ProjectFileContent { Blend = new BlendSettings(true, 6, 80) });
+        var root = System.Text.Json.Nodes.JsonNode.Parse(written)!.AsObject();
+
+        // A file from before #47 has no blend group: no blending, without a word.
+        root.Remove("blend");
+        var before = ProjectFileJson.Read(root.ToJsonString());
+        Assert.Equal(BlendSettings.Default, before.Content!.Blend);
+        Assert.Empty(before.Problems);
+
+        // A hand-edited one keeps the default for each field it spoils (a count or a strength out of range, a switch that
+        // is not one), and says so.
+        root["blend"] = new System.Text.Json.Nodes.JsonObject { ["enabled"] = "yes", ["frames"] = 40, ["strength"] = -5 };
+        var spoiled = ProjectFileJson.Read(root.ToJsonString());
+        Assert.Equal(BlendSettings.Default, spoiled.Content!.Blend);
+        Assert.Equal(3, spoiled.Problems.Count);
+        Assert.Contains(spoiled.Problems, problem => problem.Contains("blend.frames", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void AStrengthOutsideItsRangeTakesTheDefaultAndSaysSo()
     {
         var result = ProjectFileJson.Read("""
@@ -448,6 +485,7 @@ public sealed class ProjectFileJsonTests
             (LookSettings.Default, value => new ProjectFileContent { Look = (LookSettings)value }, content => content.Look),
             (CropSettings.Default, value => new ProjectFileContent { Crop = (CropSettings)value }, content => content.Crop),
             (MusicSettings.Default, value => new ProjectFileContent { Music = (MusicSettings)value }, content => content.Music),
+            (BlendSettings.Default, value => new ProjectFileContent { Blend = (BlendSettings)value }, content => content.Blend),
         ];
         var walked = new List<string>();
         foreach (var (defaults, make, take) in groups)
@@ -473,6 +511,9 @@ public sealed class ProjectFileJsonTests
         Assert.Contains("CropSettings.Easing", walked);
         Assert.Contains("MusicSettings.Path", walked);
         Assert.Contains("MusicSettings.FadeOut", walked);
+        Assert.Contains("BlendSettings.Enabled", walked);
+        Assert.Contains("BlendSettings.Frames", walked);
+        Assert.Contains("BlendSettings.Strength", walked);
     }
 
     // Every settable property of a settings record, recursing into the records it holds.
@@ -526,10 +567,16 @@ public sealed class ProjectFileJsonTests
             return [TimeSpan.FromSeconds(2.5), TimeSpan.FromSeconds(10)];
         }
 
-        if (type == typeof(int) && path.StartsWith("LookSettings.", StringComparison.Ordinal))
+        if (type == typeof(int) && (path.StartsWith("LookSettings.", StringComparison.Ordinal) || path == "BlendSettings.Strength"))
         {
-            // #45's strength, 0 to 100: its ends and a value between, other than the current one.
+            // #45's and #47's strength, 0 to 100: its ends and a value between, other than the current one.
             return new object[] { 0, 40, 100 }.Where(value => !value.Equals(current));
+        }
+
+        if (type == typeof(int) && path == "BlendSettings.Frames")
+        {
+            // #47's photos a frame, 2 to 16.
+            return new object[] { 2, 9, 16 }.Where(value => !value.Equals(current));
         }
 
         if (type == typeof(int))

@@ -14,7 +14,7 @@ namespace TenLapse.Tests.Presentation;
 /// <summary>
 /// Deflicker's exposure pass and the Look panel (#45): the photos are measured in the background while deflicker is on,
 /// the results land on their frames, a clean project stays clean, a failure is told once, Cancel stops at once and turns
-/// deflicker off, and an export waits for the finished curve.
+/// deflicker off, and an export waits for the finished curve. And frame blending's switch, count and strength (#47).
 /// </summary>
 public sealed class LookPanelTests
 {
@@ -215,6 +215,59 @@ public sealed class LookPanelTests
         app.On(() => app.Project.Look = new LookSettings(true, 20));
         Assert.True(app.On(() => app.Panel.IsDeflickerOn));
         Assert.Equal(20, app.On(() => app.Panel.Strength));
+    }
+
+    [Fact]
+    public void FrameBlendingsSwitchCountAndStrengthEditTheProjectAndFollowIt()
+    {
+        using var app = new LookHarness(frames: 2);
+
+        app.On(() => app.Panel.IsBlendOn = true);
+        app.On(() => app.Panel.BlendFrames = 8.6);
+        app.On(() => app.Panel.BlendStrength = 42.4);
+        Assert.Equal(new BlendSettings(true, 9, 42), app.On(() => app.Project.Blend));
+        Assert.Equal("9", app.On(() => app.Panel.BlendFramesText));
+        Assert.Equal("42%", app.On(() => app.Panel.BlendStrengthText));
+
+        // The slider's ends hold: no 1 or 17 photos.
+        app.On(() => app.Panel.BlendFrames = 40);
+        Assert.Equal(16, app.On(() => app.Project.Blend.Frames));
+        app.On(() => app.Panel.BlendFrames = 0);
+        Assert.Equal(2, app.On(() => app.Project.Blend.Frames));
+
+        app.On(() => app.Project.Blend = new BlendSettings(false, 12, 70));
+        Assert.False(app.On(() => app.Panel.IsBlendOn));
+        Assert.Equal(12, app.On(() => app.Panel.BlendFrames));
+        Assert.Equal(70, app.On(() => app.Panel.BlendStrength));
+
+        // Deflicker is not touched by any of it.
+        Assert.Equal(LookSettings.Default, app.On(() => app.Project.Look));
+        Assert.Empty(app.Ui.Failures);
+    }
+
+    [Fact]
+    public void BeforeShowsTheOriginalsWhileFrameBlendingOrDeflickerIsOnAndResetsWhenBothAreOff()
+    {
+        using var app = new LookHarness(frames: 2);
+        var raised = 0;
+        app.On(() => app.Panel.ShowsOriginalChanged += (_, _) => raised++);
+
+        app.On(() => app.Panel.IsBlendOn = true);
+        Assert.True(app.On(() => app.Panel.HasLook));
+        app.On(() => app.Panel.CompareIndex = 0);
+        Assert.True(app.On(() => app.Panel.ShowsOriginal));
+
+        // Deflicker on and off again while blending stays on: still Before.
+        app.On(() => app.Panel.IsDeflickerOn = true);
+        app.On(() => app.Panel.IsDeflickerOn = false);
+        Assert.True(app.On(() => app.Panel.ShowsOriginal));
+        Assert.Equal(0, app.On(() => app.Panel.CompareIndex));
+
+        app.On(() => app.Panel.IsBlendOn = false);
+        Assert.False(app.On(() => app.Panel.HasLook));
+        Assert.False(app.On(() => app.Panel.ShowsOriginal));
+        Assert.Equal(1, app.On(() => app.Panel.CompareIndex));
+        Assert.Equal(2, raised);
     }
 
     [Fact]
