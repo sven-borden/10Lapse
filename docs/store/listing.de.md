@@ -179,15 +179,6 @@ Upload six, in this order; captions are 71 to 109 characters.
 
 Do not upload 07-settings and 08-narrow, as in English.
 
-## Until 3.0 is public (#7)
-
-Only if the 2.1.1 listing has a German page: the same listing-only edit as in English, replacing the "BETA REALEASE!"
-line with the line below. This draft: 61 characters.
-
-```text
-10Lapse 3.0 wird für Windows 11 von Grund auf neu entwickelt.
-```
-
 ## Copyright and trademark info
 
 **Verify** the limit (it has been 200 characters). This draft: 44.

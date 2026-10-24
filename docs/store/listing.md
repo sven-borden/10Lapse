@@ -198,16 +198,6 @@ The editing shot leads because it shows the job; the start screen comes last bec
 also makes 07-settings and 08-narrow; do not upload them (Settings shows no photos; the narrow shot is portrait at
 768 x 1366, below #42's 1920 x 1080).
 
-## Until 3.0 is public (#7)
-
-A listing-only edit to the 2.1.1 description, no package needed: replace its last line, "BETA REALEASE! SOME
-FUNCTIONALITIES MAY NOT WORK CORRECTLY", with the line below. The 3.0 description above replaces the whole text once
-3.0 ships. This draft: 63 characters.
-
-```text
-10Lapse 3.0 is being rebuilt from the ground up for Windows 11.
-```
-
 ## Copyright and trademark info
 
 **Verify** the limit (it has been 200 characters). This draft: 40. The repo has no license file and reserves all

@@ -182,15 +182,6 @@ Upload six, in this order; captions are 56 to 111 characters.
 
 Do not upload 07-settings and 08-narrow, as in English.
 
-## Until 3.0 is public (#7)
-
-Only if the 2.1.1 listing has an Italian page: the same listing-only edit as in English, replacing the "BETA
-REALEASE!" line with the line below. This draft: 62 characters.
-
-```text
-10Lapse 3.0 è in fase di ricostruzione da zero per Windows 11.
-```
-
 ## Copyright and trademark info
 
 **Verify** the limit (it has been 200 characters). This draft: 46.
