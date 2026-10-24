@@ -286,6 +286,13 @@ public sealed class ExposureCurveTests(ITestOutputHelper output)
         project.Look = new LookSettings(true, 100);
         var first = project.Snapshot;
 
+        // Every edit before the await: the test may go on on another thread, and a project is changed only on its own.
+        // A new name is a new snapshot with the same frames and look; a new strength changes the look.
+        project.Name = "Harbor";
+        var renamed = project.Snapshot;
+        project.Look = new LookSettings(true, 50);
+        var weaker = project.Snapshot;
+
         var ready = new TaskCompletionSource();
         if (!ExposureCurve.TryGet(first, () => ready.TrySetResult(), out var curve))
         {
@@ -297,13 +304,10 @@ public sealed class ExposureCurveTests(ITestOutputHelper output)
         Assert.Equal(4, curve.Count);
         Assert.Same(curve, ExposureCurve.For(first));
 
-        // A new name is a new snapshot with the same frames and look: the same curve, nothing computed.
-        project.Name = "Harbor";
-        Assert.NotSame(first, project.Snapshot);
-        Assert.Same(curve, ExposureCurve.For(project.Snapshot));
-
-        project.Look = new LookSettings(true, 50);
-        Assert.NotSame(curve, ExposureCurve.For(project.Snapshot));
+        // The renamed snapshot has the same curve, nothing computed; the weaker look has another.
+        Assert.NotSame(first, renamed);
+        Assert.Same(curve, ExposureCurve.For(renamed));
+        Assert.NotSame(curve, ExposureCurve.For(weaker));
     }
 
     [Fact]
