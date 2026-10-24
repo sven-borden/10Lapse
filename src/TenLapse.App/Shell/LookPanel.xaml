@@ -6,9 +6,11 @@
   (Music, #50, follows it).
 
   Beyond the prototype: while deflicker is on, the strength (a label, its percentage and a slider); while the photos are
-  being measured, the progress line with Cancel and a 4 px progress bar under it. The switch is the one amber indicator
-  here (DESIGN.md: toggles that are on); the slider's filled part is Ink Secondary, as the filmstrip's size slider, so the
-  section does not compete with Export. The progress bar is amber, as every progress indicator is.
+  being measured, the progress line with Cancel and a 4 px progress bar under it. Then Frame blending (#47), a second row
+  like Deflicker's, and while it is on how many photos each frame blends (2 to 16) and its strength, each a label, its
+  value and a slider. The switches are the amber indicators here (DESIGN.md: toggles that are on); the sliders' filled
+  part is Ink Secondary, as the filmstrip's size slider, so the section does not compete with Export. The progress bar is
+  amber, as every progress indicator is.
 -->
 <UserControl
   x:Class="TenLapse.Shell.LookPanel"
@@ -175,6 +177,84 @@
           Command="{x:Bind ViewModel.MeasureCommand}"
           Content="{x:Bind look:LookText.MeasureButton}" />
       </Grid>
+
+      <!-- Frame blending (#47): the switch, with what it does under its label. -->
+      <Grid ColumnSpacing="{StaticResource SpacingMd}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Style="{StaticResource BodyTextStyle}" Text="{x:Bind look:LookText.BlendLabel}" TextWrapping="Wrap" />
+          <TextBlock
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTextStyle}"
+            Text="{x:Bind look:LookText.BlendHint}"
+            TextWrapping="Wrap" />
+        </StackPanel>
+        <ToggleSwitch
+          x:Name="BlendSwitch"
+          Grid.Column="1"
+          MinWidth="0"
+          VerticalAlignment="Center"
+          AutomationProperties.HelpText="{x:Bind look:LookText.BlendHint}"
+          AutomationProperties.Name="{x:Bind look:LookText.BlendLabel}"
+          IsOn="{x:Bind ViewModel.IsBlendOn, Mode=TwoWay}"
+          OffContent=""
+          OnContent="" />
+      </Grid>
+
+      <!-- How many photos each frame blends, and how strongly, while frame blending is on. -->
+      <StackPanel x:Name="BlendRows" Spacing="{StaticResource SpacingMd}" Visibility="{x:Bind ViewModel.IsBlendOn, Mode=OneWay}">
+        <StackPanel Spacing="{StaticResource SpacingXs}">
+          <Grid>
+            <TextBlock
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind look:LookText.BlendFramesLabel}" />
+            <TextBlock
+              x:Name="BlendFramesValue"
+              HorizontalAlignment="Right"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTabularTextStyle}"
+              Text="{x:Bind ViewModel.BlendFramesText, Mode=OneWay}" />
+          </Grid>
+          <Slider
+            x:Name="BlendFramesSlider"
+            AutomationProperties.Name="{x:Bind look:LookText.BlendFramesName}"
+            IsThumbToolTipEnabled="False"
+            LargeChange="4"
+            Maximum="16"
+            Minimum="2"
+            SmallChange="1"
+            StepFrequency="1"
+            Value="{x:Bind ViewModel.BlendFrames, Mode=TwoWay}" />
+        </StackPanel>
+        <StackPanel Spacing="{StaticResource SpacingXs}">
+          <Grid>
+            <TextBlock
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTextStyle}"
+              Text="{x:Bind look:LookText.StrengthLabel}" />
+            <TextBlock
+              x:Name="BlendStrengthValue"
+              HorizontalAlignment="Right"
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTabularTextStyle}"
+              Text="{x:Bind ViewModel.BlendStrengthText, Mode=OneWay}" />
+          </Grid>
+          <Slider
+            x:Name="BlendStrengthSlider"
+            AutomationProperties.Name="{x:Bind look:LookText.BlendStrengthName}"
+            IsThumbToolTipEnabled="False"
+            LargeChange="25"
+            Maximum="100"
+            Minimum="0"
+            SmallChange="5"
+            StepFrequency="5"
+            Value="{x:Bind ViewModel.BlendStrength, Mode=TwoWay}" />
+        </StackPanel>
+      </StackPanel>
     </StackPanel>
   </Border>
 </UserControl>

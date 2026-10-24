@@ -67,12 +67,27 @@
     <value>Mesurer les photos pas encore mesurées</value>
   </data>
   <data name="CompareName" xml:space="preserve">
-    <value>Avant ou après l’anti-scintillement</value>
+    <value>Avant ou après l’anti-scintillement et la fusion d’images</value>
   </data>
   <data name="CompareBefore" xml:space="preserve">
     <value>Avant</value>
   </data>
   <data name="CompareAfter" xml:space="preserve">
     <value>Après</value>
+  </data>
+  <data name="BlendLabel" xml:space="preserve">
+    <value>Fusion d’images</value>
+  </data>
+  <data name="BlendHint" xml:space="preserve">
+    <value>Fusionne les photos proches : filés de lumière</value>
+  </data>
+  <data name="BlendFramesLabel" xml:space="preserve">
+    <value>Photos fusionnées</value>
+  </data>
+  <data name="BlendFramesName" xml:space="preserve">
+    <value>Photos fusionnées dans chaque image</value>
+  </data>
+  <data name="BlendStrengthName" xml:space="preserve">
+    <value>Intensité de la fusion d’images</value>
   </data>
 </root>

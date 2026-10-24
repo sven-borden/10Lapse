@@ -67,12 +67,27 @@
     <value>Medir las fotos que aún no se han medido</value>
   </data>
   <data name="CompareName" xml:space="preserve">
-    <value>Antes o después del antiparpadeo</value>
+    <value>Antes o después del antiparpadeo y la fusión de fotogramas</value>
   </data>
   <data name="CompareBefore" xml:space="preserve">
     <value>Antes</value>
   </data>
   <data name="CompareAfter" xml:space="preserve">
     <value>Después</value>
+  </data>
+  <data name="BlendLabel" xml:space="preserve">
+    <value>Fusión de fotogramas</value>
+  </data>
+  <data name="BlendHint" xml:space="preserve">
+    <value>Fusiona fotos cercanas para estelas de luz</value>
+  </data>
+  <data name="BlendFramesLabel" xml:space="preserve">
+    <value>Fotos fusionadas</value>
+  </data>
+  <data name="BlendFramesName" xml:space="preserve">
+    <value>Fotos fusionadas en cada fotograma</value>
+  </data>
+  <data name="BlendStrengthName" xml:space="preserve">
+    <value>Intensidad de la fusión de fotogramas</value>
   </data>
 </root>

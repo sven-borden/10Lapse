@@ -66,4 +66,19 @@
   <data name="CompareAfter" xml:space="preserve">
     <value>Nachher</value>
   </data>
+  <data name="BlendLabel" xml:space="preserve">
+    <value>Überlagern</value>
+  </data>
+  <data name="BlendHint" xml:space="preserve">
+    <value>Überlagert nahe Fotos für Lichtspuren</value>
+  </data>
+  <data name="BlendFramesLabel" xml:space="preserve">
+    <value>Überlagerte Fotos</value>
+  </data>
+  <data name="BlendFramesName" xml:space="preserve">
+    <value>Fotos, die in jedem Bild überlagert werden</value>
+  </data>
+  <data name="BlendStrengthName" xml:space="preserve">
+    <value>Stärke des Überlagerns</value>
+  </data>
 </root>

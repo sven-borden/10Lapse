@@ -64,12 +64,27 @@
     <value>Misura le foto non ancora misurate</value>
   </data>
   <data name="CompareName" xml:space="preserve">
-    <value>Prima o dopo l'antisfarfallio</value>
+    <value>Prima o dopo l'antisfarfallio e la fusione di fotogrammi</value>
   </data>
   <data name="CompareBefore" xml:space="preserve">
     <value>Prima</value>
   </data>
   <data name="CompareAfter" xml:space="preserve">
     <value>Dopo</value>
+  </data>
+  <data name="BlendLabel" xml:space="preserve">
+    <value>Fusione di fotogrammi</value>
+  </data>
+  <data name="BlendHint" xml:space="preserve">
+    <value>Fonde le foto vicine per scie luminose</value>
+  </data>
+  <data name="BlendFramesLabel" xml:space="preserve">
+    <value>Foto fuse</value>
+  </data>
+  <data name="BlendFramesName" xml:space="preserve">
+    <value>Foto fuse in ogni fotogramma</value>
+  </data>
+  <data name="BlendStrengthName" xml:space="preserve">
+    <value>Intensità della fusione di fotogrammi</value>
   </data>
 </root>
