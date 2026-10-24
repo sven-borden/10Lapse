@@ -355,7 +355,12 @@ player at the right size; the Finished summary ("24.7 s . 4K . H.264 .
   closes the card and nothing opens. Either way focus lands on Back to
   editing. Never after a failed or cancelled export. Leaving the card
   unanswered (Back to editing, closing) counts: a restart or a third export
-  does not show it again. The export count and the asked version persist
+  does not show it again. Minimize the window (or switch to another app)
+  during the second export: no card and no version recorded while it is
+  away; when the window comes back with the finished state still up, the card
+  rises in and Narrator reads it then. Back to editing before the window
+  comes back: no card, nothing recorded, and the next successful export asks.
+  Two 10Lapse windows: the card shows once per version across both. The export count and the asked version persist
   across restarts and Reset to defaults, so a tester who exported before never
   sees it. A later build with a new package version asks once more. Checked
   unpackaged (PR for #139) with `--fake-rating`: card, Yes, No, wide and
