@@ -237,6 +237,26 @@ public sealed class ProjectFilesTests
         Assert.True(saved.IsDirty);
     }
 
+    [Fact]
+    public void TheSongIsFoundAtItsPathElseBesideTheProjectElseKeptAsItWas()
+    {
+        // #50, as the photos: saved as D:\Trip\Trip.10lapse with D:\Trip\Music\Sunrise.mp3.
+        var music = MusicSettings.Default with { Path = @"D:\Trip\Music\Sunrise.mp3" };
+        var content = new ProjectFileContent { Music = music, MusicRelativePath = @"Music\Sunrise.mp3" };
+
+        var there = SavedFrames.Resolve(content, @"D:\Trip\Trip.10lapse", new FakeDisk { [@"D:\Trip\Music\Sunrise.mp3"] = new(10, _written) });
+        Assert.Equal(music, there.Music);
+
+        // The folder moved to E:\Archive\Trip with its project: the song is found beside it.
+        var moved = SavedFrames.Resolve(content, @"E:\Archive\Trip\Trip.10lapse", new FakeDisk { [@"E:\Archive\Trip\Music\Sunrise.mp3"] = new(10, _written) });
+        Assert.Equal(@"E:\Archive\Trip\Music\Sunrise.mp3", moved.Music!.Path);
+
+        // Nowhere: the project keeps the saved path, and the Music section says the file is missing.
+        var gone = SavedFrames.Resolve(content, @"E:\Archive\Trip\Trip.10lapse", new FakeDisk());
+        Assert.Equal(music, gone.Music);
+        Assert.Equal(MusicSettings.Default, SavedFrames.Resolve(new ProjectFileContent(), null, new FakeDisk()).Music);
+    }
+
     private sealed class FakeDisk : Dictionary<string, FileFacts>, IProjectFileSystem
     {
         public FakeDisk()
