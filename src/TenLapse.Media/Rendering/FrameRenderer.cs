@@ -11,8 +11,8 @@ namespace TenLapse.Media.Rendering;
 
 /// <summary>
 /// The processing <see cref="FrameRenderer"/> applies to one frame (#45 onward): the exposure correction deflicker gives
-/// the photo, in stops, and the part of the frame crop and pan shows (#46). The default is no change. #47 and #48 add
-/// their steps here.
+/// the photo, in stops, and the part of the frame crop and pan shows (#46). The default is no change. Frame blending (#47)
+/// draws several photos into one frame, each with its own stops (<see cref="BlendedPhoto"/>); #48 adds its step here.
 /// </summary>
 /// <param name="Stops">The exposure change in stops, applied in linear light: +1 doubles the light, 0 changes nothing.</param>
 /// <param name="View">The part of the frame the video shows, enlarged to fill it (#46); <see cref="Framing.Whole"/> (the default) for all of it.</param>
@@ -44,6 +44,20 @@ public readonly record struct FrameLook(float Stops, Framing View = default)
         return For(snapshot, frameId) with { View = snapshot.Crop.At(snapshot.Playback, position) };
     }
 }
+
+/// <summary>One photo of a blended frame (#47) as <see cref="FrameRenderer"/> draws it.</summary>
+/// <param name="Photo">The decoded photo, any size (it is placed as a frame places it).</param>
+/// <param name="Stops">Its own exposure change (<see cref="FrameLook.Stops"/>, deflicker's correction of that photo).</param>
+/// <param name="Weight">Its share of the frame's light (<see cref="BlendLayer.Weight"/>); a frame's shares add up to 1.</param>
+public readonly record struct BlendedPhoto(CanvasBitmap Photo, float Stops, float Weight);
+
+/// <summary>One photo of a blended frame (#47) placed by hand, for <see cref="FrameRenderer.DrawBlend"/>.</summary>
+/// <param name="Photo">The decoded photo.</param>
+/// <param name="Destination">Where it goes, in the session's DIPs.</param>
+/// <param name="Source">The part of it drawn, in its own DIPs.</param>
+/// <param name="Stops">Its exposure change.</param>
+/// <param name="Weight">Its share of the light.</param>
+public readonly record struct PlacedPhoto(CanvasBitmap Photo, Rect Destination, Rect Source, float Stops, float Weight);
 
 /// <summary>
 /// The processing stage that preview (#19) and export (#22) share: given a decoded photo and the frame settings,
@@ -117,25 +131,189 @@ public static class FrameRenderer
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(photo);
-        var pixels = photo.SizeInPixels;
-        var (source, destination) = Layout(new PixelSize((int)pixels.Width, (int)pixels.Height), output, fit, look.View);
-
-        // DrawImage takes the source rectangle in the bitmap's own DIPs: a photo that declares 95.9866 DPI (a PNG's
-        // 3779 pixels a metre) would otherwise be resampled by 0.014 %. The destination is in the session's DIPs.
-        // (Switching the session to CanvasUnits.Pixels resampled such a photo too, by up to 2 levels.)
-        var dips = photo.Size;
-        var (x, y) = (dips.Width / pixels.Width, dips.Height / pixels.Height);
-        source = new Rect(source.X * x, source.Y * y, source.Width * x, source.Height * y);
-        var scale = session.Units == CanvasUnits.Pixels ? 1.0 : session.ConvertPixelsToDips(1 << 20) / (double)(1 << 20);
-        destination = new Rect(destination.X * scale, destination.Y * scale, destination.Width * scale, destination.Height * scale);
+        var (destination, source, frame) = Placed(session, photo, fit, output, look.View);
 
         // Filled, not cleared: the preview may draw the frame into part of a larger surface.
-        session.FillRectangle(new Rect(0, 0, output.Width * scale, output.Height * scale), Background);
+        session.FillRectangle(frame, Background);
         if (destination.Width > 0 && destination.Height > 0)
         {
             // Empty only when a Fit frame's view shows nothing but a bar (#46).
             DrawPhoto(session, photo, destination, source, look);
         }
+    }
+
+    /// <summary>
+    /// Draws a blended frame (#47): each of <paramref name="photos"/> placed as <paramref name="fit"/> and
+    /// <paramref name="view"/> place a photo into the <paramref name="output"/>-pixel frame (each by its own size, bars
+    /// included), with its own exposure, then all of them averaged by their weights in linear light
+    /// (<see cref="DrawBlend"/>). One photo is <see cref="Draw(CanvasDrawingSession, CanvasBitmap, FitMode, PixelSize, FrameLook)"/>
+    /// with its look, to the bit.
+    /// </summary>
+    /// <param name="session">As for <see cref="Draw(CanvasDrawingSession, CanvasBitmap, FrameSettings, PixelSize)"/>.</param>
+    /// <param name="photos">The frame's photos (<see cref="BlendSettings.Layers"/>), at least one, on the session's device.</param>
+    /// <param name="fit">How each photo is placed.</param>
+    /// <param name="output">The frame's size in the target's pixels.</param>
+    /// <param name="view">The part of the frame the video shows (#46), the same for every photo.</param>
+    public static void Draw(CanvasDrawingSession session, IReadOnlyList<BlendedPhoto> photos, FitMode fit, PixelSize output, Framing view)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(photos);
+        ArgumentOutOfRangeException.ThrowIfZero(photos.Count);
+        if (photos.Count == 1)
+        {
+            Draw(session, photos[0].Photo, fit, output, new FrameLook(photos[0].Stops, view));
+            return;
+        }
+
+        var placed = new PlacedPhoto[photos.Count];
+        var frame = default(Rect);
+        for (var i = 0; i < photos.Count; i++)
+        {
+            var photo = photos[i];
+            ArgumentNullException.ThrowIfNull(photo.Photo, nameof(photos));
+            (var destination, var source, frame) = Placed(session, photo.Photo, fit, output, view);
+            placed[i] = new PlacedPhoto(photo.Photo, destination, source, photo.Stops, photo.Weight);
+        }
+
+        DrawBlend(session, frame, placed);
+    }
+
+    /// <summary>
+    /// Draws photos blended (#47): each one over <see cref="Background"/> filling <paramref name="area"/>, placed where it
+    /// says, with its exposure (<see cref="ExposureTable"/>), taken to linear light, weighted, summed and encoded back to
+    /// sRGB, so a light in one photo of eight leaves an eighth of its light, as in a long exposure. The images between are
+    /// 16-bit floating point, so the shadows do not band. <see cref="Draw(CanvasDrawingSession, IReadOnlyList{BlendedPhoto}, FitMode, PixelSize, Framing)"/>
+    /// calls it, and so does the preview's reframe, which places the photos by hand (#35). One photo is the area filled and
+    /// <see cref="DrawPhoto"/>, to the bit.
+    /// </summary>
+    /// <remarks>
+    /// sRGB to linear and back go through 256-entry <see cref="TableTransferEffect"/> tables (Win2D 1.4 has no sRGB gamma
+    /// effect). To linear the entries fall on the 8-bit codes, so it is exact for a photo's pixels, its exposure table
+    /// folded in (<see cref="LinearTable"/>); back to sRGB the curve between entries is interpolated, within a fifth of a
+    /// level (<see cref="EncodeTable"/>).
+    /// </remarks>
+    public static void DrawBlend(CanvasDrawingSession session, Rect area, IReadOnlyList<PlacedPhoto> photos)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(photos);
+        ArgumentOutOfRangeException.ThrowIfZero(photos.Count);
+        if (photos.Count == 1)
+        {
+            var only = photos[0];
+            session.FillRectangle(area, Background);
+            if (only.Destination.Width > 0 && only.Destination.Height > 0)
+            {
+                DrawPhoto(session, only.Photo, only.Destination, only.Source, new FrameLook(only.Stops));
+            }
+
+            return;
+        }
+
+        var made = new List<IDisposable>(photos.Count * 3);
+        try
+        {
+            ICanvasImage? sum = null;
+            foreach (var photo in photos)
+            {
+                ArgumentNullException.ThrowIfNull(photo.Photo, nameof(photos));
+                var placed = new CanvasCommandList(session);
+                made.Add(placed);
+                using (var inner = placed.CreateDrawingSession())
+                {
+                    inner.FillRectangle(area, Background);
+                    if (photo.Destination.Width > 0 && photo.Destination.Height > 0)
+                    {
+                        inner.DrawImage(photo.Photo, photo.Destination, photo.Source, 1f, CanvasImageInterpolation.HighQualityCubic);
+                    }
+                }
+
+                var table = LinearTable(photo.Stops);
+                var linear = new TableTransferEffect
+                {
+                    Source = placed,
+                    RedTable = table,
+                    GreenTable = table,
+                    BlueTable = table,
+                    AlphaDisable = true,
+                    BufferPrecision = CanvasBufferPrecision.Precision16Float,
+                };
+                made.Add(linear);
+
+                // The first photo weighted; each next one added to the sum with its weight. On premultiplied pixels, so the
+                // alpha of the area adds up to 1 as the weights do.
+                var weighted = new ArithmeticCompositeEffect
+                {
+                    Source1 = sum ?? linear,
+                    Source2 = linear,
+                    MultiplyAmount = 0,
+                    Source1Amount = sum is null ? 0 : 1,
+                    Source2Amount = photo.Weight,
+                    Offset = 0,
+                    BufferPrecision = CanvasBufferPrecision.Precision16Float,
+                };
+                made.Add(weighted);
+                sum = weighted;
+            }
+
+            var encode = EncodeTable;
+            var encoded = new TableTransferEffect
+            {
+                Source = sum,
+                RedTable = encode,
+                GreenTable = encode,
+                BlueTable = encode,
+                AlphaDisable = true,
+                ClampOutput = true,
+                BufferPrecision = CanvasBufferPrecision.Precision16Float,
+            };
+            made.Add(encoded);
+            session.DrawImage(encoded);
+        }
+        finally
+        {
+            for (var i = made.Count - 1; i >= 0; i--)
+            {
+                made[i].Dispose();
+            }
+        }
+    }
+
+    /// <summary>
+    /// The table that takes a photo's 8-bit code to linear light with an exposure change of <paramref name="stops"/> (#47):
+    /// entry n is <see cref="ExposureTable"/>'s entry n decoded from sRGB, so a blended photo is corrected exactly as it is
+    /// when it is drawn alone.
+    /// </summary>
+    public static float[] LinearTable(float stops)
+    {
+        var exposed = ExposureTable(stops);
+        var table = new float[exposed.Length];
+        for (var code = 0; code < table.Length; code++)
+        {
+            table[code] = (float)LuminanceMeter.SrgbToLinear(exposed[code]);
+        }
+
+        return table;
+    }
+
+    /// <summary>The table that takes linear light back to sRGB (#47): entry n is the sRGB encoding of n / 255. A copy.</summary>
+    public static float[] EncodeTable => (float[])_encodeTable.Clone();
+
+    private static readonly float[] _encodeTable = [.. Enumerable.Range(0, 256).Select(level => (float)LuminanceMeter.LinearToSrgb(level / 255.0))];
+
+    // Where a photo goes in the frame, in DIPs: the destination in the session's, the source in the photo's own, and the
+    // whole frame. DrawImage takes the source rectangle in the bitmap's own DIPs: a photo that declares 95.9866 DPI (a
+    // PNG's 3779 pixels a metre) would otherwise be resampled by 0.014 %. (Switching the session to CanvasUnits.Pixels
+    // resampled such a photo too, by up to 2 levels.)
+    private static (Rect Destination, Rect Source, Rect Frame) Placed(CanvasDrawingSession session, CanvasBitmap photo, FitMode fit, PixelSize output, Framing view)
+    {
+        var pixels = photo.SizeInPixels;
+        var (source, destination) = Layout(new PixelSize((int)pixels.Width, (int)pixels.Height), output, fit, view);
+        var dips = photo.Size;
+        var (x, y) = (dips.Width / pixels.Width, dips.Height / pixels.Height);
+        source = new Rect(source.X * x, source.Y * y, source.Width * x, source.Height * y);
+        var scale = session.Units == CanvasUnits.Pixels ? 1.0 : session.ConvertPixelsToDips(1 << 20) / (double)(1 << 20);
+        destination = new Rect(destination.X * scale, destination.Y * scale, destination.Width * scale, destination.Height * scale);
+        return (destination, source, new Rect(0, 0, output.Width * scale, output.Height * scale));
     }
 
     /// <summary>

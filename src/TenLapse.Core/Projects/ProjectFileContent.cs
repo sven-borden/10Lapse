@@ -114,6 +114,9 @@ public sealed record ProjectFileContent
     /// </summary>
     public string? MusicRelativePath { get; init; }
 
+    /// <summary>The blend group (<see cref="ProjectSnapshot.Blend"/>, #47). A file from before #47 has none: no blending.</summary>
+    public BlendSettings Blend { get; init; } = BlendSettings.Default;
+
     /// <summary>A recovery copy only: the project's name, which a project that was never saved has no file to take it from.</summary>
     public string? RecoveredName { get; init; }
 
@@ -140,6 +143,7 @@ public sealed record ProjectFileContent
             Crop = snapshot.Crop,
             Music = snapshot.Music,
             MusicRelativePath = SavedMusic.Relative(snapshot.Music.Path, folder),
+            Blend = snapshot.Blend,
         };
     }
 
@@ -202,5 +206,5 @@ public sealed record ProjectFileContent
     }
 
     /// <summary>A new, empty, clean project with these settings, owned by the calling thread; the caller adds the frames.</summary>
-    public Project CreateEmptyProject() => new(Timing, Frame, Output, SortMode, Sequence, Look, Crop, Music);
+    public Project CreateEmptyProject() => new(Timing, Frame, Output, SortMode, Sequence, Look, Crop, Music, Blend);
 }

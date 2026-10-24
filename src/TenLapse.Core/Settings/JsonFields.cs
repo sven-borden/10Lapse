@@ -115,6 +115,24 @@ internal static class JsonFields
             Field(section, $"{name}.strength", fallback.Strength, node => (LookSettings.Default with { Strength = node.GetValue<int>() }).Strength, problems));
     }
 
+    /// <summary>The blend group (#47): on or off, how many photos a frame blends, and the strength. Project files only.</summary>
+    public static JsonObject WriteBlend(BlendSettings blend) => new()
+    {
+        ["enabled"] = blend.Enabled,
+        ["frames"] = blend.Frames,
+        ["strength"] = blend.Strength,
+    };
+
+    /// <summary>Reads the blend group named <paramref name="name"/>, field by field; a count outside 2 to 16 or a strength outside 0 to 100 keeps the fallback's.</summary>
+    public static BlendSettings ReadBlend(JsonObject root, string name, BlendSettings fallback, List<string> problems)
+    {
+        var section = Section(root, name, problems);
+        return new BlendSettings(
+            Field(section, $"{name}.enabled", fallback.Enabled, node => node.GetValue<bool>(), problems),
+            Field(section, $"{name}.frames", fallback.Frames, node => (BlendSettings.Default with { Frames = node.GetValue<int>() }).Frames, problems),
+            Field(section, $"{name}.strength", fallback.Strength, node => (BlendSettings.Default with { Strength = node.GetValue<int>() }).Strength, problems));
+    }
+
     /// <summary>
     /// The crop group (#46): on or off, each framing as its size and centre in shares of the frame (decimal numbers, so a
     /// framing reads back exactly), and the easing by name. Project files only: a new project starts with the whole frame.

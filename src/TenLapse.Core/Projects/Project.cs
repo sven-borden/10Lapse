@@ -48,6 +48,9 @@ public enum ProjectChanges
 
     /// <summary><see cref="Project.Music"/> changed (#50: the music under the video).</summary>
     Music = 1 << 12,
+
+    /// <summary><see cref="Project.Blend"/> changed (#47: frame blending).</summary>
+    Blend = 1 << 13,
 }
 
 /// <summary>The kind of a <see cref="FrameChange"/>.</summary>
@@ -186,6 +189,9 @@ public sealed record ProjectSnapshot
 
     /// <summary>The music (#50): the song under the video, where in it the video starts, its fades. MP4 only.</summary>
     public MusicSettings Music { get; internal init; } = MusicSettings.Default;
+
+    /// <summary>Frame blending (#47): each photo is drawn from <see cref="BlendSettings.Layers"/>, the photos around it.</summary>
+    public BlendSettings Blend { get; internal init; } = BlendSettings.Default;
 
     /// <summary>True after any change since the project was created, opened, saved or (while it has no file) exported.</summary>
     public bool IsDirty { get; internal init; }
@@ -328,11 +334,20 @@ public sealed class Project
     }
 
     /// <summary>
-    /// Creates an empty, clean project with every project-only group, the music (#50) too, as an opened project file has
-    /// them (<see cref="ProjectFileContent.CreateEmptyProject"/>). Owned by the calling thread; not an edit. A later
-    /// project-only group adds a parameter here.
+    /// Creates an empty, clean project with the project-only groups up to the music (#50), and no frame blending. Owned by
+    /// the calling thread; not an edit.
     /// </summary>
     public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode, SequenceSettings sequence, LookSettings look, CropSettings crop, MusicSettings music)
+        : this(timing, frameSettings, output, sortMode, sequence, look, crop, music, BlendSettings.Default)
+    {
+    }
+
+    /// <summary>
+    /// Creates an empty, clean project with every project-only group, frame blending (#47) too, as an opened project file
+    /// has them (<see cref="ProjectFileContent.CreateEmptyProject"/>). Owned by the calling thread; not an edit. A later
+    /// project-only group adds a parameter here.
+    /// </summary>
+    public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode, SequenceSettings sequence, LookSettings look, CropSettings crop, MusicSettings music, BlendSettings blend)
     {
         ArgumentNullException.ThrowIfNull(timing);
         ArgumentNullException.ThrowIfNull(frameSettings);
@@ -341,12 +356,13 @@ public sealed class Project
         ArgumentNullException.ThrowIfNull(look);
         ArgumentNullException.ThrowIfNull(crop);
         ArgumentNullException.ThrowIfNull(music);
+        ArgumentNullException.ThrowIfNull(blend);
         if (!Enum.IsDefined(sortMode))
         {
             throw new ArgumentOutOfRangeException(nameof(sortMode), sortMode, "Unknown sort mode.");
         }
 
-        _state = ProjectSnapshot.Empty with { Timing = timing, FrameSettings = frameSettings, Output = output, SortMode = sortMode, Sequence = sequence, Look = look, Crop = crop, Music = music };
+        _state = ProjectSnapshot.Empty with { Timing = timing, FrameSettings = frameSettings, Output = output, SortMode = sortMode, Sequence = sequence, Look = look, Crop = crop, Music = music, Blend = blend };
     }
 
     /// <summary>Raised after every mutation, once per call, on the owner thread.</summary>
@@ -472,6 +488,19 @@ public sealed class Project
             if (Changes(_state.Music, value))
             {
                 Commit(_state with { Music = value }, ProjectChanges.Music);
+            }
+        }
+    }
+
+    /// <summary>Frame blending (#47): on or off, how many photos a frame blends, the strength.</summary>
+    public BlendSettings Blend
+    {
+        get => _state.Blend;
+        set
+        {
+            if (Changes(_state.Blend, value))
+            {
+                Commit(_state with { Blend = value }, ProjectChanges.Blend);
             }
         }
     }
