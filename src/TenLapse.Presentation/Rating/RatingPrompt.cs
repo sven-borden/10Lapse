@@ -21,8 +21,14 @@ public interface IRatingService
 /// <summary>Where the rating question keeps its count and the version it last asked in (#31, #139). <see cref="RememberedSettings"/> implements it.</summary>
 public interface IRatingMemory
 {
-    /// <summary>The app version the question was last shown in, or null.</summary>
-    string? RatingAskedVersion { get; set; }
+    /// <summary>The app version the question was last shown in, or null, as this process knows it.</summary>
+    string? RatingAskedVersion { get; }
+
+    /// <summary>
+    /// Records <paramref name="version"/> as shown unless it is recorded already, reading what is stored (another 10Lapse
+    /// window may have shown it) under the lock every window takes. True when this call recorded it.
+    /// </summary>
+    bool TryRecordRatingAsked(string version);
 
     /// <summary>Counts one successful export, remembers the count, and returns it.</summary>
     int CountSuccessfulExport();
@@ -36,8 +42,12 @@ public interface IRatingMemory
 /// <remarks>
 /// <para>
 /// Only <see cref="ExportOutcome.Succeeded"/> counts: a failed or cancelled export never counts and never shows the card.
-/// The version is recorded as the card shows, so leaving it unanswered (Back to editing, a new export, a new project,
-/// closing the window) is an answer too, and it never comes back in that version. A new version may ask once more.
+/// When it is due the card waits (<see cref="IsDue"/>) until the view says it can arrive (<see cref="Arrive"/>: the
+/// finished state is on screen, the window is in front, the entrance delay has passed). Only then is the version recorded,
+/// reading what is stored so another 10Lapse window that showed it in this version wins, and the card shows. Leaving the
+/// finished state before that records nothing, and the next successful export tries again. Once shown, leaving it
+/// unanswered (Back to editing, a new export, a new project, closing the window) is an answer too, and it never comes back
+/// in that version. A new version may ask once more.
 /// </para>
 /// <para>
 /// <b>Yes</b> closes the card and shows the Store's rating dialog (<see cref="IRatingService"/>); when the Store cannot show
@@ -92,6 +102,13 @@ public sealed partial class RatingPrompt : ObservableObject, IDisposable
     [ObservableProperty]
     public partial bool IsShown { get; private set; }
 
+    /// <summary>
+    /// True while the card is due in this finished state but has not arrived: nothing is recorded yet. The view calls
+    /// <see cref="Arrive"/> once the card can be seen.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool IsDue { get; private set; }
+
     /// <summary>Yes: the card closes, then the Store's rating dialog, or its review page, or an InfoBar.</summary>
     public IAsyncRelayCommand YesCommand { get; }
 
@@ -107,7 +124,7 @@ public sealed partial class RatingPrompt : ObservableObject, IDisposable
         export.PropertyChanged += OnExportPropertyChanged;
     }
 
-    /// <summary>An export ended: counts a success, and when due, shows the card and records the version. Never throws.</summary>
+    /// <summary>An export ended: counts a success, and when the question is due, makes the card wait to arrive (<see cref="IsDue"/>). Never throws.</summary>
     public void ExportEnded(ExportOutcome outcome)
     {
         if (outcome != ExportOutcome.Succeeded || _disposed)
@@ -137,14 +154,47 @@ public sealed partial class RatingPrompt : ObservableObject, IDisposable
                 return;
             }
 
-            // Recorded as it shows: leaving it unanswered is an answer, and a crash or a close must not bring it back.
-            _memory.RatingAskedVersion = _version;
-            IsShown = true;
-            _log.Info(RatingText.Shown(_version));
+            // Not recorded yet: the window may be minimized or behind, and a card nobody saw is not an answer.
+            IsDue = true;
+            _log.Info(RatingText.Due);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             _errors.Report(exception, RatingText.PromptFailed);
+        }
+    }
+
+    /// <summary>
+    /// The view: the card can be seen now (the finished state is on screen with the window in front, and its entrance
+    /// delay has passed). When it is due, records the version, unless this or another 10Lapse window recorded it already,
+    /// and shows the card. Returns whether it shows. Never throws.
+    /// </summary>
+    public bool Arrive()
+    {
+        if (!IsDue || _disposed)
+        {
+            return false;
+        }
+
+        IsDue = false;
+        try
+        {
+            // What is stored decides, not this process's copy: another window may have shown it since this one read it.
+            if (!_memory.TryRecordRatingAsked(_version))
+            {
+                _log.Info(RatingText.AlreadyAsked(_version));
+                return false;
+            }
+
+            // Recorded as it shows: leaving it unanswered is an answer, and a crash or a close must not bring it back.
+            IsShown = true;
+            _log.Info(RatingText.Shown(_version));
+            return true;
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            _errors.Report(exception, RatingText.PromptFailed);
+            return false;
         }
     }
 
@@ -163,15 +213,28 @@ public sealed partial class RatingPrompt : ObservableObject, IDisposable
             export.PropertyChanged -= OnExportPropertyChanged;
         }
 
+        IsDue = false;
         IsShown = false;
     }
 
     private void OnEnded(object? sender, ExportEndedEventArgs e) => ExportEnded(e.Outcome);
 
-    // The finished state left (Back to editing, a new project): the card goes with it, unanswered.
+    // The finished state left (Back to editing, a new project): the card goes with it, unanswered; a card that had not
+    // arrived yet was never seen, so nothing is recorded and the next successful export tries again.
     private void OnExportPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ExportViewModel.State) && IsShown && _export is { IsFinished: false })
+        if (e.PropertyName != nameof(ExportViewModel.State) || _export is not { IsFinished: false })
+        {
+            return;
+        }
+
+        if (IsDue)
+        {
+            IsDue = false;
+            _log.Info(RatingText.LeftBeforeArrival);
+        }
+
+        if (IsShown)
         {
             IsShown = false;
             _log.Info(RatingText.LeftUnanswered);

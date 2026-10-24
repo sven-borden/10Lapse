@@ -85,6 +85,12 @@ public static class RatingText
     /// <summary>Log line: the finished state left with the card unanswered; it does not come back in this version.</summary>
     public static string LeftUnanswered => "Rating question: left unanswered.";
 
+    /// <summary>Log line: the card is due; it arrives once the finished state shows with the window in front.</summary>
+    public static string Due => "Rating question: due; the card arrives once the finished state shows with the window in front.";
+
+    /// <summary>Log line: the finished state was left before the card arrived; nothing recorded.</summary>
+    public static string LeftBeforeArrival => "Rating question: the finished state was left before the card arrived; nothing recorded, the next successful export tries again.";
+
     /// <summary>Log line: Yes.</summary>
     public static string AnsweredYes => "Rating question: Yes.";
 

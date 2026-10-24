@@ -123,7 +123,10 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
         set => Update(Current with { ExportFolder = value });
     }
 
-    /// <summary>The app version the rating prompt was last shown in (#31), or null. Setting it saves it.</summary>
+    /// <summary>
+    /// The app version the rating question was last shown in (#31, #139), or null, as this process knows it. Setting it
+    /// saves it after the pause; the question itself records it with <see cref="TryRecordRatingAsked"/>.
+    /// </summary>
     public string? RatingAskedVersion
     {
         get => Current.RatingAskedVersion;
@@ -217,6 +220,54 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
         next = next with { SuccessfulExports = next.SuccessfulExports == int.MaxValue ? int.MaxValue : next.SuccessfulExports + 1 };
         Update(next);
         return next.SuccessfulExports;
+    }
+
+    /// <summary>
+    /// Records <paramref name="version"/> as the version the rating question was shown in (#139), unless it is recorded
+    /// already, here or by another 10Lapse window: it reads what is stored, not this process's copy, and writes under the
+    /// lock every window takes (<see cref="ISettingsStore.Update"/>), so two windows cannot both show it in one version.
+    /// Returns true when this call recorded it (show the question), false when it was recorded before. Waits for the
+    /// file at most <see cref="FinalWriteLimit"/>; when it cannot be written then (a failure is reported as any write's),
+    /// this process's copy decides and the version is written with the next write. On the UI thread.
+    /// </summary>
+    public bool TryRecordRatingAsked(string version)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(version);
+        var recorded = false;
+        UserSettings Record(UserSettings merged)
+        {
+            recorded = !string.Equals(merged.RatingAskedVersion, version, StringComparison.Ordinal);
+            return recorded ? merged with { RatingAskedVersion = version } : merged;
+        }
+
+        try
+        {
+            var write = Task.Run(() => Write(final: false, Record));
+            if (!write.Wait(_finalWriteLimit))
+            {
+                _log.Warning(ProjectText.SettingsSaveTimedOut);
+            }
+            else if (write.Result)
+            {
+                return recorded;
+            }
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            _log.Error(ProjectText.SettingsSaveFailed, exception);
+        }
+
+        // Not written: this process's copy decides, and the next write takes the version.
+        lock (_gate)
+        {
+            if (_disposed || string.Equals(_current.RatingAskedVersion, version, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        Update(Current with { RatingAskedVersion = version });
+        return true;
     }
 
     /// <summary>
@@ -432,8 +483,9 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
 
     // Writes the pending settings. A failure leaves them pending, so the next change tries again. The first failure
     // is shown to the user; while it keeps failing, the repeats go to the log only. Closing cannot show an InfoBar.
-    // Returns false only when the write failed (nothing pending counts as written).
-    private bool Write(bool final)
+    // Returns false only when the write failed (nothing pending counts as written). With a change (the rating question's
+    // record) it writes even when nothing is pending, and the change applies to the merged settings under the store's lock.
+    private bool Write(bool final, Func<UserSettings, UserSettings>? change = null)
     {
         // One write at a time, in the order of the snapshots: the timer's thread and the UI thread (reset, closing).
         lock (_saveGate)
@@ -443,7 +495,7 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
             Func<PathList, PathList>[] steps;
             lock (_gate)
             {
-                if (!_pending)
+                if (!_pending && change is null)
                 {
                     return true;
                 }
@@ -458,7 +510,11 @@ public sealed class RememberedSettings : IImportFolderMemory, Export.IExportFold
             try
             {
                 // This process's changes onto what is stored now, under the lock the other windows take too.
-                var written = _store.Update(stored => Merge(stored, baseline, snapshot, steps));
+                var written = _store.Update(stored =>
+                {
+                    var merged = Merge(stored, baseline, snapshot, steps);
+                    return change is null ? merged : change(merged);
+                });
                 lock (_gate)
                 {
                     // The other windows' changes come in too, except where this process changed a field since the snapshot.
