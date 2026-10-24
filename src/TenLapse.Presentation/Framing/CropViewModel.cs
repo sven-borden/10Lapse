@@ -31,6 +31,11 @@ public sealed class CropViewModel : ObservableObject, IDisposable
     /// <summary>What plus or minus zooms it by, as a factor.</summary>
     public const double ZoomStep = 1.1;
 
+    // The parts of the Video, Start and End switch.
+    private const int ShowsVideo = 0;
+    private const int ShowsStart = 1;
+    private const int ShowsEnd = 2;
+
     private static readonly string[] _showLabels = [CropText.ShowVideo, CropText.ShowStart, CropText.ShowEnd];
 
     private static readonly CropEasing[] _easings = [CropEasing.Smooth, CropEasing.Linear];
@@ -95,24 +100,24 @@ public sealed class CropViewModel : ObservableObject, IDisposable
         get => _showIndex;
         set
         {
-            if (value is >= 0 and <= 2 && value != _showIndex)
+            if (value is >= ShowsVideo and <= ShowsEnd && value != _showIndex)
             {
                 Show(value);
-                if (value != 0 && _player is { } player)
+                if (value != ShowsVideo && _player is { } player)
                 {
                     // Each framing is set on the photo it frames.
                     player.Pause();
-                    player.SeekPosition(value == 1 ? 0 : player.LastPosition);
+                    player.SeekPosition(value == ShowsStart ? 0 : player.LastPosition);
                 }
             }
         }
     }
 
     /// <summary>True while the preview shows the whole frame with a framing over it to adjust: on, and Start or End chosen.</summary>
-    public bool IsEditing => _crop.Enabled && _showIndex != 0;
+    public bool IsEditing => _crop.Enabled && _showIndex != ShowsVideo;
 
     /// <summary>True while the framing adjusted is the start framing (false for the end one).</summary>
-    public bool EditsStart => _showIndex == 1;
+    public bool EditsStart => _showIndex == ShowsStart;
 
     /// <summary>The framing adjusted: the start or the end framing; the whole frame while <see cref="IsEditing"/> is false.</summary>
     public Framing EditedFraming => !IsEditing ? Framing.Whole : EditsStart ? _crop.Start : _crop.End;
@@ -213,9 +218,9 @@ public sealed class CropViewModel : ObservableObject, IDisposable
     // Play shows the move: back to the video.
     private void OnPlayerPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(PlayerViewModel.IsPlaying) && _player is { IsPlaying: true } && _showIndex != 0)
+        if (e.PropertyName == nameof(PlayerViewModel.IsPlaying) && _player is { IsPlaying: true } && _showIndex != ShowsVideo)
         {
-            Show(0);
+            Show(ShowsVideo);
         }
     }
 
@@ -238,7 +243,7 @@ public sealed class CropViewModel : ObservableObject, IDisposable
         _project.Changed -= OnProjectChanged;
         _project = e.Current.Model;
         _project.Changed += OnProjectChanged;
-        _showIndex = 0;
+        _showIndex = ShowsVideo;
         OnPropertyChanged(nameof(ShowIndex));
         Refresh();
     }
@@ -277,7 +282,7 @@ public sealed class CropViewModel : ObservableObject, IDisposable
                 if (wasOn && !crop.Enabled)
                 {
                     // Off: the next time it is on, the preview starts on the video.
-                    _showIndex = 0;
+                    _showIndex = ShowsVideo;
                     OnPropertyChanged(nameof(ShowIndex));
                 }
 

@@ -242,6 +242,7 @@ internal static class GoldenExport
             DecodeThreads = settings.DecodeThreads,
             StallTimeout = settings.StallTimeout,
             RenderTargets = settings.RenderTargets,
+            DecodeZoom = settings.DecodeZoom,
         };
 
     private static void DeleteFolder(string folder)

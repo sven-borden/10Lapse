@@ -158,9 +158,9 @@ public sealed class CropViewModelTests
         var grown = FramingDrag.Resized(start, FramingCorner.TopLeft, -1, -1);
         Assert.Equal(new Framing(0.75, 0.375, 0.375), grown);
 
-        // Dragged across the anchor or to a point: never below the smallest framing.
+        // Dragged across the anchor: never below the smallest framing; to no point at all: as it was.
         Assert.Equal(Framing.MinSize, FramingDrag.Resized(start, FramingCorner.TopRight, 0.1, 0.9).Size);
-        Assert.Equal(Framing.MinSize, FramingDrag.Resized(start, FramingCorner.BottomLeft, double.NaN, double.NaN).Size, 12);
+        Assert.Equal(start, FramingDrag.Resized(start, FramingCorner.BottomLeft, double.NaN, double.NaN));
     }
 
     [Fact]
