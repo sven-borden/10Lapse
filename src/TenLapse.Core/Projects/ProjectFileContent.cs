@@ -28,6 +28,9 @@ public sealed record SavedFrame(string? Path)
     /// <summary>The camera's offset from UTC (<see cref="Frame.CaptureUtcOffset"/>).</summary>
     public TimeSpan? CaptureUtcOffset { get; init; }
 
+    /// <summary>The exposure pass's measurement (<see cref="Frame.Exposure"/>, #45), kept so a reopened project is not measured again.</summary>
+    public PhotoExposure? Exposure { get; init; }
+
     /// <summary>
     /// <paramref name="frame"/> as a project file in <paramref name="projectFolder"/> stores it: its full path, and the
     /// path relative to that folder when both are on the same drive (a share counts as a drive).
@@ -43,6 +46,7 @@ public sealed record SavedFrame(string? Path)
             PixelSize = frame.PixelSize,
             CaptureTime = frame.CaptureTime,
             CaptureUtcOffset = frame.CaptureUtcOffset,
+            Exposure = frame.Exposure,
         };
     }
 
@@ -95,6 +99,8 @@ public sealed record ProjectFileContent
 
     /// <summary>The sequence group (<see cref="ProjectSnapshot.Sequence"/>, #49): a file from before it plays the photos once, forward, with no holds.</summary>
     public SequenceSettings Sequence { get; init; } = SequenceSettings.Default;
+    /// <summary>The look group (<see cref="ProjectSnapshot.Look"/>, #45). A file from before #45 has none: deflicker off.</summary>
+    public LookSettings Look { get; init; } = LookSettings.Default;
 
     /// <summary>A recovery copy only: the project's name, which a project that was never saved has no file to take it from.</summary>
     public string? RecoveredName { get; init; }
@@ -118,6 +124,7 @@ public sealed record ProjectFileContent
             Output = snapshot.Output,
             SortMode = snapshot.SortMode,
             Sequence = snapshot.Sequence,
+            Look = snapshot.Look,
         };
     }
 
@@ -180,5 +187,5 @@ public sealed record ProjectFileContent
     }
 
     /// <summary>A new, empty, clean project with these settings, owned by the calling thread; the caller adds the frames.</summary>
-    public Project CreateEmptyProject() => new(Timing, Frame, Output, SortMode, Sequence);
+    public Project CreateEmptyProject() => new(Timing, Frame, Output, SortMode, Sequence, Look);
 }

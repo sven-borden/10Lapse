@@ -99,6 +99,22 @@ internal static class JsonFields
             Field(section, $"{name}.boomerang", fallback.Boomerang, node => node.GetValue<bool>(), problems));
     }
 
+    /// <summary>The look group (#45): deflicker and its strength.</summary>
+    public static JsonObject WriteLook(LookSettings look) => new()
+    {
+        ["deflicker"] = look.Deflicker,
+        ["strength"] = look.Strength,
+    };
+
+    /// <summary>Reads the look group named <paramref name="name"/>, field by field; a strength outside 0 to 100 keeps the fallback's.</summary>
+    public static LookSettings ReadLook(JsonObject root, string name, LookSettings fallback, List<string> problems)
+    {
+        var section = Section(root, name, problems);
+        return new LookSettings(
+            Field(section, $"{name}.deflicker", fallback.Deflicker, node => node.GetValue<bool>(), problems),
+            Field(section, $"{name}.strength", fallback.Strength, node => (LookSettings.Default with { Strength = node.GetValue<int>() }).Strength, problems));
+    }
+
     /// <summary>The object named <paramref name="name"/>, or null when it is missing (quietly) or not an object (a problem).</summary>
     public static JsonObject? Section(JsonObject root, string name, List<string> problems)
     {

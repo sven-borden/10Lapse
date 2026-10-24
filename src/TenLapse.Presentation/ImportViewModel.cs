@@ -241,25 +241,27 @@ public sealed partial class ImportViewModel : ObservableObject, ProjectFiles.IFr
         }
     }
 
-    // UI thread. The frames still in the project with the same path take their details; a clean project stays clean.
-    private static void ApplyDetails(Project target, IReadOnlyList<FrameReading> readings)
+    // UI thread. The frames still in the project with the same path take their details; a clean project stays clean. A
+    // reading was made from the frame as it was before the read: a deflicker measurement (#45) that landed on the frame
+    // meanwhile is the frame's own and is kept, so it is neither lost nor measured a second time.
+    internal static void ApplyDetails(Project target, IReadOnlyList<FrameReading> readings)
     {
         if (target.IsClosed)
         {
             return;
         }
 
-        var present = new Dictionary<Guid, string>(target.Frames.Length);
+        var present = new Dictionary<Guid, Frame>(target.Frames.Length);
         foreach (var frame in target.Frames)
         {
-            present[frame.Id] = frame.SourcePath;
+            present[frame.Id] = frame;
         }
 
         var updates = readings
             .Where(reading => reading.Skipped is null
-                && present.TryGetValue(reading.Frame.Id, out var path)
-                && string.Equals(path, reading.Frame.SourcePath, StringComparison.Ordinal))
-            .Select(reading => reading.Frame)
+                && present.TryGetValue(reading.Frame.Id, out var current)
+                && string.Equals(current.SourcePath, reading.Frame.SourcePath, StringComparison.Ordinal))
+            .Select(reading => reading.Frame with { Exposure = present[reading.Frame.Id].Exposure })
             .ToList();
         if (updates.Count == 0)
         {

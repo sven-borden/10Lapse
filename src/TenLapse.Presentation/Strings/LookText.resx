@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The user-visible text of LookText.cs (#45), read through TextResources: the Look panel (deflicker, its strength and the
+  measuring of the photos) and the Before and After switch under the preview. Deflicker evens out the brightness of the
+  photos of a timelapse: the flicker between frames, and the exposure steps of a sunset shot by hand.
+  English is the neutral language. A translation is a copy of this file named LookText.<culture>.resx with the values
+  translated. Keep every {0} placeholder (you may move it); each entry is whole. The panel is 280 px wide.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Look</value>
+    <comment>The heading of the Look panel, which changes how the photos look in the video (today deflicker). Keep it to about 14 characters: it is also a tab in a narrow window, beside Timing, Frame and Output.</comment>
+  </data>
+  <data name="DeflickerLabel" xml:space="preserve">
+    <value>Deflicker</value>
+    <comment>The label of the switch that turns deflicker on: it evens out the brightness of the photos, so the video does not flicker, and turns the exposure steps of a sunset into a smooth darkening. Also the switch's screen reader name. Keep it to about 22 characters.</comment>
+  </data>
+  <data name="DeflickerHint" xml:space="preserve">
+    <value>Smooths exposure jumps between photos</value>
+    <comment>The line under Deflicker, saying what it does. No final period, as the prototype has it. Keep it to about 44 characters: it wraps to a second line after that.</comment>
+  </data>
+  <data name="StrengthLabel" xml:space="preserve">
+    <value>Strength</value>
+    <comment>The label above the slider that sets how much of the deflicker correction is applied, from 0 to 100 %. Shown only while deflicker is on.</comment>
+  </data>
+  <data name="StrengthName" xml:space="preserve">
+    <value>Deflicker strength</value>
+    <comment>The screen reader name of the strength slider.</comment>
+  </data>
+  <data name="Measuring_one" xml:space="preserve">
+    <value>Measuring {1} photo…</value>
+    <comment>The progress line while deflicker measures the brightness of the photos, when there is one. {0} the photos measured so far: English leaves {0} out because with one photo it says nothing the progress bar does not; leave it out too. {1} all of them ("1"; also "0" in languages whose _one form covers 0). Keep it to about 30 characters.</comment>
+  </data>
+  <data name="Measuring_other" xml:space="preserve">
+    <value>Measuring {0} of {1} photos…</value>
+    <comment>The progress line while deflicker measures the brightness of the photos; the form follows {1}. {0} the photos measured so far ("1,240"), {1} all of them ("5,000"). Keep it to about 30 characters with numbers: it wraps to a second line after that.</comment>
+  </data>
+  <data name="MeasureCancelName" xml:space="preserve">
+    <value>Stop measuring the photos</value>
+    <comment>The screen reader name of the Cancel button beside the measuring progress. Right after deflicker was turned on, stopping turns it off again; otherwise deflicker stays on and the photos left are counted as not measured.</comment>
+  </data>
+  <data name="MeasureFailed_one" xml:space="preserve">
+    <value>{0} photo couldn't be measured, so deflicker takes its correction from the photos beside it. Check that the file opens, then choose Measure in the Look section.</value>
+    <comment>The InfoBar when deflicker could not measure a photo (unreadable, gone), after trying twice: its correction is the one between the photos before and after it. The InfoBar's list names the photo. "Measure" is the MeasureButton text and "Look" the Heading: use your translations of them. {0} the count ("1").</comment>
+  </data>
+  <data name="MeasureFailed_other" xml:space="preserve">
+    <value>{0} photos couldn't be measured, so deflicker takes their correction from the photos beside them. Check that the files open, then choose Measure in the Look section.</value>
+    <comment>The same, for several photos. {0} the count ("3").</comment>
+  </data>
+  <data name="NotMeasured_one" xml:space="preserve">
+    <value>{0} photo not measured</value>
+    <comment>In the Look panel while deflicker is on, beside the Measure button: a photo has no measurement (it could not be read, or measuring was stopped). Its correction comes from the photos beside it. {0} the count ("1"). Keep it to about 26 characters.</comment>
+  </data>
+  <data name="NotMeasured_other" xml:space="preserve">
+    <value>{0} photos not measured</value>
+    <comment>The same, for several photos. {0} the count ("1,240"). Keep it to about 26 characters with the number.</comment>
+  </data>
+  <data name="MeasureButton" xml:space="preserve">
+    <value>Measure</value>
+    <comment>The button beside "3 photos not measured": measures those photos now. A verb. Keep it to about 12 characters.</comment>
+  </data>
+  <data name="MeasureName" xml:space="preserve">
+    <value>Measure the photos not measured yet</value>
+    <comment>The screen reader name of the Measure button.</comment>
+  </data>
+  <data name="CompareName" xml:space="preserve">
+    <value>Before or after deflicker</value>
+    <comment>The screen reader name of the two-part switch under the preview that shows the photos without deflicker (Before) or with it (After). Shown only while deflicker is on.</comment>
+  </data>
+  <data name="CompareBefore" xml:space="preserve">
+    <value>Before</value>
+    <comment>The first part of the switch under the preview: the photos as they are, without deflicker. Keep it to about 10 characters.</comment>
+  </data>
+  <data name="CompareAfter" xml:space="preserve">
+    <value>After</value>
+    <comment>The second part: the photos with deflicker, as the video will have them. Keep it to about 10 characters.</comment>
+  </data>
+</root>

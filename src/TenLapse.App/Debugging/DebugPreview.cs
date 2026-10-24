@@ -13,6 +13,7 @@ using Microsoft.UI.Xaml.Media;
 using TenLapse.Core.Diagnostics;
 using TenLapse.Core.Preview;
 using TenLapse.Core.Projects;
+using TenLapse.Media.Rendering;
 using TenLapse.Preview;
 using TenLapse.Presentation.Services;
 using TenLapse.Services;
@@ -26,7 +27,9 @@ namespace TenLapse.Debugging;
 /// <item><c>--sample-frames=N</c> (parsed in DebugLaunch.cs) generates N photos of a sunset with their frame number
 /// burnt in, <c>--sample-size=WxH</c> (default 2400x1600), and adds them in batches of 100 as they are written.
 /// <c>--sample-plain</c> leaves out the frame number and the bar along the bottom and draws water below the horizon
-/// (the Store screenshots, #42). They go into a folder named after the count, the look and the size
+/// (the Store screenshots, #42). <c>--sample-flicker=STOPS</c> (#45) makes each photo brighter or darker by up to that
+/// many stops, a fixed pseudo-random amount per photo, as a flickering timelapse is: deflicker's material. They go into a
+/// folder named after the count, the look, the flicker and the size
 /// (<c>Harbor sunset 742 grain 2400x1600</c>, or <c>Harbor sunset 742 plain 2400x1600</c>) under
 /// <c>--sample-folder=PATH</c> (default %TEMP%\10Lapse debug samples). Files already there are reused, so the folder
 /// grows with every count and size tried (up to about 4 GB for 10,000 photos) until <c>--sample-clean</c> deletes it
@@ -83,9 +86,10 @@ internal static partial class DebugLaunch
         var (width, height) = SampleSize();
         var root = Value("--sample-folder=") ?? Path.Combine(Path.GetTempPath(), "10Lapse debug samples");
         var plain = _args.Contains("--sample-plain", StringComparer.OrdinalIgnoreCase);
+        var flicker = float.TryParse(Value("--sample-flicker="), NumberStyles.Float, CultureInfo.InvariantCulture, out var stops) ? Math.Clamp(stops, 0, 2) : 0;
 
         // Each photo is drawn from its place in the sequence (index / count), so a folder holds one count and one look only.
-        var look = plain ? "plain" : "grain";
+        var look = (plain ? "plain" : "grain") + (flicker > 0 ? string.Create(CultureInfo.InvariantCulture, $" flicker {flicker:0.##}") : string.Empty);
         var folder = Path.Combine(root, string.Create(CultureInfo.InvariantCulture, $"Harbor sunset {count} {look} {width}x{height}"));
         _sampleFolder = folder;
         var stop = _closing.Token;
@@ -113,7 +117,7 @@ internal static partial class DebugLaunch
                             var path = Path.Combine(folder, string.Create(CultureInfo.InvariantCulture, $"IMG_{index + 1:0000}.JPG"));
                             if (!File.Exists(path) || new FileInfo(path).Length == 0)
                             {
-                                await DrawSampleAsync(path, index, count, width, height, ramp, land, plain);
+                                await DrawSampleAsync(path, index, count, width, height, ramp, land, plain, flicker * Flicker(index));
                             }
 
                             var info = new FileInfo(path);
@@ -174,7 +178,7 @@ internal static partial class DebugLaunch
     // A sunset in the brand's ramp: the sky darkens through the sequence, the sun sinks, the frame number sits top left
     // and a bar along the bottom grows, so a wrong or late frame shows at a glance. Plain leaves out the number and the bar
     // and draws water instead of land.
-    private static async Task DrawSampleAsync(string path, int index, int count, int width, int height, Color[] ramp, Color land, bool plain)
+    private static async Task DrawSampleAsync(string path, int index, int count, int width, int height, Color[] ramp, Color land, bool plain, float stops)
     {
         var t = count <= 1 ? 0f : (float)index / (count - 1);
         var device = CanvasDevice.GetSharedDevice();
@@ -246,9 +250,29 @@ internal static partial class DebugLaunch
         // A name of its own: two runs on the same folder never write the same file, and never move a half-written one
         // into place.
         var temporary = string.Create(CultureInfo.InvariantCulture, $"{path}.{Guid.NewGuid():N}.tmp");
-        await target.SaveAsync(temporary, CanvasBitmapFileFormat.Jpeg, 0.9f);
+        if (stops != 0)
+        {
+            // The flicker (#45): the whole photo brighter or darker in linear light, as an exposure that came out off.
+            using var flickered = new CanvasRenderTarget(device, width, height, 96);
+            using (var session = flickered.CreateDrawingSession())
+            {
+                var table = FrameRenderer.ExposureTable(stops);
+                using var exposed = new TableTransferEffect { Source = target, RedTable = table, GreenTable = table, BlueTable = table, AlphaDisable = true };
+                session.DrawImage(exposed);
+            }
+
+            await flickered.SaveAsync(temporary, CanvasBitmapFileFormat.Jpeg, 0.9f);
+        }
+        else
+        {
+            await target.SaveAsync(temporary, CanvasBitmapFileFormat.Jpeg, 0.9f);
+        }
+
         File.Move(temporary, path, overwrite: true);
     }
+
+    // A fixed pseudo-random value in -1 to 1 for each photo, the same on every run.
+    private static float Flicker(int index) => (float)((Math.Sin((index + 1) * 12.9898) * 43758.5453 % 1) * 2 % 1);
 
     private static Color Darker(Color color, float factor) =>
         Color.FromArgb(255, (byte)(color.R * factor), (byte)(color.G * factor), (byte)(color.B * factor));

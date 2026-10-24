@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Look section of the inspector (#45), after the prototype's Look section in docs/design/canvas/Main.dc.html (its
+  "Coming in 3.1" badge dropped now that it is built): a Body strong heading, then Deflicker with its Caption Secondary
+  line on the left and the 40 x 20 switch on the right, 16 px of padding above and below and no divider at the bottom
+  (it is the last section).
+
+  Beyond the prototype: while deflicker is on, the strength (a label, its percentage and a slider); while the photos are
+  being measured, the progress line with Cancel and a 4 px progress bar under it. The switch is the one amber indicator
+  here (DESIGN.md: toggles that are on); the slider's filled part is Ink Secondary, as the filmstrip's size slider, so the
+  section does not compete with Export. The progress bar is amber, as every progress indicator is.
+-->
+<UserControl
+  x:Class="TenLapse.Shell.LookPanel"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:look="using:TenLapse.Presentation.Look"
+  xmlns:presentation="using:TenLapse.Presentation">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <!-- The switch is only its 40 x 20 pill: no room kept for On and Off text it does not show. -->
+      <x:Double x:Key="ToggleSwitchThemeMinWidth">0</x:Double>
+      <x:Double x:Key="ToggleSwitchPreContentMargin">0</x:Double>
+      <x:Double x:Key="ToggleSwitchPostContentMargin">0</x:Double>
+      <x:Double x:Key="ProgressBarTrackHeight">4</x:Double>
+      <x:Double x:Key="ProgressBarMinHeight">4</x:Double>
+      <CornerRadius x:Key="ProgressBarCornerRadius">2</CornerRadius>
+      <CornerRadius x:Key="ProgressBarTrackCornerRadius">2</CornerRadius>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="SliderTrackValueFill" Color="{ThemeResource InkSecondaryColor}" />
+          <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource InkSecondaryColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{ThemeResource InkColor}" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="SliderTrackValueFill" Color="{ThemeResource InkSecondaryColor}" />
+          <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource InkSecondaryColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{ThemeResource InkColor}" />
+          <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{ThemeResource InkColor}" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+
+  <Border Padding="0,16,0,16">
+    <StackPanel Spacing="{StaticResource SpacingMd}">
+      <TextBlock
+        AutomationProperties.HeadingLevel="Level2"
+        Style="{StaticResource BodyStrongTextStyle}"
+        Text="{x:Bind look:LookText.Heading}" />
+
+      <Grid ColumnSpacing="{StaticResource SpacingMd}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Style="{StaticResource BodyTextStyle}" Text="{x:Bind look:LookText.DeflickerLabel}" TextWrapping="Wrap" />
+          <TextBlock
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTextStyle}"
+            Text="{x:Bind look:LookText.DeflickerHint}"
+            TextWrapping="Wrap" />
+        </StackPanel>
+        <ToggleSwitch
+          x:Name="DeflickerSwitch"
+          Grid.Column="1"
+          MinWidth="0"
+          VerticalAlignment="Center"
+          AutomationProperties.HelpText="{x:Bind look:LookText.DeflickerHint}"
+          AutomationProperties.Name="{x:Bind look:LookText.DeflickerLabel}"
+          IsOn="{x:Bind ViewModel.IsDeflickerOn, Mode=TwoWay}"
+          OffContent=""
+          OnContent="" />
+      </Grid>
+
+      <!-- How much of the correction, while deflicker is on. -->
+      <StackPanel x:Name="StrengthRow" Spacing="{StaticResource SpacingXs}" Visibility="{x:Bind ViewModel.IsDeflickerOn, Mode=OneWay}">
+        <Grid>
+          <TextBlock
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTextStyle}"
+            Text="{x:Bind look:LookText.StrengthLabel}" />
+          <TextBlock
+            x:Name="StrengthValue"
+            HorizontalAlignment="Right"
+            Foreground="{ThemeResource InkSecondaryBrush}"
+            Style="{StaticResource CaptionTabularTextStyle}"
+            Text="{x:Bind ViewModel.StrengthText, Mode=OneWay}" />
+        </Grid>
+        <Slider
+          x:Name="StrengthSlider"
+          AutomationProperties.Name="{x:Bind look:LookText.StrengthName}"
+          IsThumbToolTipEnabled="False"
+          LargeChange="25"
+          Maximum="100"
+          Minimum="0"
+          SmallChange="5"
+          StepFrequency="5"
+          Value="{x:Bind ViewModel.Strength, Mode=TwoWay}" />
+      </StackPanel>
+
+      <!-- The exposure pass: "Measuring 1,240 of 5,000 photos…", Cancel, and the bar. Absent when nothing is measured. -->
+      <Grid
+        x:Name="MeasuringRow"
+        ColumnSpacing="{StaticResource SpacingSm}"
+        RowSpacing="{StaticResource SpacingSm}"
+        Visibility="{x:Bind ViewModel.IsMeasuring, Mode=OneWay}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock
+          x:Name="MeasuringText"
+          VerticalAlignment="Center"
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource CaptionTabularTextStyle}"
+          Text="{x:Bind ViewModel.MeasuringText, Mode=OneWay}"
+          TextWrapping="Wrap" />
+        <Button
+          x:Name="CancelMeasuringButton"
+          Grid.Column="1"
+          Height="{StaticResource ControlHeight}"
+          Padding="{StaticResource PaddingButtonSubtle}"
+          AutomationProperties.Name="{x:Bind look:LookText.MeasureCancelName}"
+          Command="{x:Bind ViewModel.CancelMeasuringCommand}"
+          Content="{x:Bind presentation:ProjectText.Cancel}" />
+        <ProgressBar
+          x:Name="MeasuringBar"
+          Grid.Row="1"
+          Grid.ColumnSpan="2"
+          AutomationProperties.Name="{x:Bind ViewModel.MeasuringText, Mode=OneWay}"
+          Maximum="100"
+          Value="{x:Bind ViewModel.MeasuringPercent, Mode=OneWay}" />
+      </Grid>
+
+      <!--
+        Photos deflicker has no measurement for while nothing measures them (they could not be read, or measuring a pass
+        that started by itself was stopped): "3 photos not measured" and Measure. Their correction comes from their
+        neighbours meanwhile. Absent otherwise.
+      -->
+      <Grid
+        x:Name="UnmeasuredRow"
+        ColumnSpacing="{StaticResource SpacingSm}"
+        Visibility="{x:Bind ViewModel.HasUnmeasured, Mode=OneWay}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBlock
+          x:Name="UnmeasuredText"
+          VerticalAlignment="Center"
+          Foreground="{ThemeResource InkSecondaryBrush}"
+          Style="{StaticResource CaptionTabularTextStyle}"
+          Text="{x:Bind ViewModel.UnmeasuredText, Mode=OneWay}"
+          TextWrapping="Wrap" />
+        <Button
+          x:Name="MeasureButton"
+          Grid.Column="1"
+          Height="{StaticResource ControlHeight}"
+          Padding="{StaticResource PaddingButtonSubtle}"
+          AutomationProperties.Name="{x:Bind look:LookText.MeasureName}"
+          Command="{x:Bind ViewModel.MeasureCommand}"
+          Content="{x:Bind look:LookText.MeasureButton}" />
+      </Grid>
+    </StackPanel>
+  </Border>
+</UserControl>

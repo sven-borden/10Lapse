@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TenLapse.Core.Projects;
 using TenLapse.Presentation.Filmstrip;
+using TenLapse.Presentation.Look;
 using TenLapse.Presentation.Preview;
 using TenLapse.Presentation.Services;
 
@@ -133,6 +134,7 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         PercentText = ExportText.Percent(0);
         TimeLeftText = string.Empty;
         FramesText = string.Empty;
+        MeasuringText = string.Empty;
         SpeedText = string.Empty;
         OutputSummary = string.Empty;
         RenderingText = string.Empty;
@@ -238,6 +240,18 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
     /// <summary>"0312 of 0742".</summary>
     [ObservableProperty]
     public partial string FramesText { get; private set; }
+
+    /// <summary>True while the export waits for deflicker to measure the photos (#45): the panel says so, with a bar.</summary>
+    [ObservableProperty]
+    public partial bool IsWaitingForMeasuring { get; private set; }
+
+    /// <summary>"Deflicker is measuring the photos first: 1,240 of 5,000" while <see cref="IsWaitingForMeasuring"/>.</summary>
+    [ObservableProperty]
+    public partial string MeasuringText { get; private set; }
+
+    /// <summary>The share of the photos measured, 0 to 100, while <see cref="IsWaitingForMeasuring"/>.</summary>
+    [ObservableProperty]
+    public partial double MeasuringPercent { get; private set; }
 
     /// <summary>"4.3 frames per second".</summary>
     [ObservableProperty]
@@ -434,6 +448,47 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         await RunAsync(project, project.Model.Snapshot.WithOutput(output), output, path, cancellationToken);
     }
 
+    /// <summary>
+    /// Deflicker's exposure pass (#45), when the window has one: an export with deflicker on waits in its Preparing stage
+    /// until the photos are measured, then takes the snapshot again, so the video has the finished curve the preview shows.
+    /// The panel says why it waits, with the count and a bar of its own (<see cref="IsWaitingForMeasuring"/>); Cancel
+    /// export stops the wait.
+    /// </summary>
+    public ExposureAnalysis? Measuring { get; init; }
+
+    // Inside RunAsync's try: Cancel export ends the wait as it ends an export.
+    private async Task WaitForMeasuringAsync(ExposureAnalysis measuring, CancellationToken cancellationToken)
+    {
+        void Follow(object? sender, PropertyChangedEventArgs e) => ShowMeasuring(measuring);
+
+        ShowMeasuring(measuring);
+        IsWaitingForMeasuring = true;
+        TimeLeftText = ExportText.WaitingForDeflicker;
+        measuring.PropertyChanged += Follow;
+        try
+        {
+            Announced?.Invoke(this, ExportText.MeasuringFirstAnnouncement);
+            await measuring.WhenMeasuredAsync(cancellationToken);
+        }
+        finally
+        {
+            measuring.PropertyChanged -= Follow;
+            IsWaitingForMeasuring = false;
+            MeasuringText = string.Empty;
+            MeasuringPercent = 0;
+            TimeLeftText = ExportText.GettingReady;
+        }
+    }
+
+    private void ShowMeasuring(ExposureAnalysis measuring)
+    {
+        if (measuring.IsMeasuring)
+        {
+            MeasuringText = ExportText.MeasuringFirst(measuring.Measured, measuring.ToMeasure);
+            MeasuringPercent = measuring.ToMeasure == 0 ? 0 : 100.0 * measuring.Measured / measuring.ToMeasure;
+        }
+    }
+
     private async Task RunAsync(ProjectViewModel project, ProjectSnapshot snapshot, OutputSettings output, string path, CancellationToken cancellationToken)
     {
         var run = ++_run;
@@ -445,6 +500,13 @@ public sealed partial class ExportViewModel : ObservableObject, IDisposable
         ExportedVideo video;
         try
         {
+            if (Measuring is { IsMeasuring: true } measuring && snapshot.Look.Deflicker)
+            {
+                // The edits are closed (Begin): only the measurements can still arrive, and the frames stay the same.
+                await WaitForMeasuringAsync(measuring, cancellationToken);
+                snapshot = project.Model.Snapshot.WithOutput(output);
+            }
+
             video = await _services.Exporter.ExportAsync(snapshot, path, progress, cancellationToken);
         }
         catch (Exception exception) when (ErrorMessages.IsCancellation(exception) && cancellationToken.IsCancellationRequested)

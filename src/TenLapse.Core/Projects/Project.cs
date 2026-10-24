@@ -40,6 +40,8 @@ public enum ProjectChanges
 
     /// <summary><see cref="Project.Sequence"/> changed (#49: holds, plays, boomerang).</summary>
     Sequence = 1 << 9,
+    /// <summary><see cref="Project.Look"/> changed (#45: deflicker and its strength).</summary>
+    Look = 1 << 10,
 }
 
 /// <summary>The kind of a <see cref="FrameChange"/>.</summary>
@@ -170,6 +172,9 @@ public sealed record ProjectSnapshot
     /// <summary>The order the user chose.</summary>
     public SortMode SortMode { get; internal init; } = SortMode.CaptureTime;
 
+    /// <summary>The Look section (#45): deflicker and its strength. The correction it gives each photo is <see cref="Look.ExposureCurve.For"/>.</summary>
+    public LookSettings Look { get; internal init; } = LookSettings.Default;
+
     /// <summary>True after any change since the project was created, opened, saved or (while it has no file) exported.</summary>
     public bool IsDirty { get; internal init; }
 
@@ -277,10 +282,8 @@ public sealed class Project
     /// plays and boomerang), owned by the calling thread. Like the constructor without it, this is not an edit.
     /// </summary>
     public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode, SequenceSettings sequence)
-        : this(timing, frameSettings, output, sortMode)
+        : this(timing, frameSettings, output, sortMode, sequence, LookSettings.Default)
     {
-        ArgumentNullException.ThrowIfNull(sequence);
-        _state = _state with { Sequence = sequence };
     }
 
     /// <summary>
@@ -289,16 +292,36 @@ public sealed class Project
     /// makes the project dirty; this constructor does not.
     /// </summary>
     public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode)
+        : this(timing, frameSettings, output, sortMode, SequenceSettings.Default, LookSettings.Default)
+    {
+    }
+
+    /// <summary>
+    /// Creates an empty, clean project that starts with these settings and this look (#45), owned by the calling thread.
+    /// </summary>
+    public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode, LookSettings look)
+        : this(timing, frameSettings, output, sortMode, SequenceSettings.Default, look)
+    {
+    }
+
+    /// <summary>
+    /// Creates an empty, clean project with every project-only group too: <paramref name="sequence"/> (#49: holds, plays,
+    /// boomerang) and <paramref name="look"/> (#45: deflicker), as an opened project file has them
+    /// (<see cref="ProjectFileContent.CreateEmptyProject"/>). Owned by the calling thread; like the others, not an edit.
+    /// </summary>
+    public Project(TimingSettings timing, FrameSettings frameSettings, OutputSettings output, SortMode sortMode, SequenceSettings sequence, LookSettings look)
     {
         ArgumentNullException.ThrowIfNull(timing);
         ArgumentNullException.ThrowIfNull(frameSettings);
         ArgumentNullException.ThrowIfNull(output);
+        ArgumentNullException.ThrowIfNull(sequence);
+        ArgumentNullException.ThrowIfNull(look);
         if (!Enum.IsDefined(sortMode))
         {
             throw new ArgumentOutOfRangeException(nameof(sortMode), sortMode, "Unknown sort mode.");
         }
 
-        _state = ProjectSnapshot.Empty with { Timing = timing, FrameSettings = frameSettings, Output = output, SortMode = sortMode };
+        _state = ProjectSnapshot.Empty with { Timing = timing, FrameSettings = frameSettings, Output = output, SortMode = sortMode, Sequence = sequence, Look = look };
     }
 
     /// <summary>Raised after every mutation, once per call, on the owner thread.</summary>
@@ -385,6 +408,19 @@ public sealed class Project
             if (Changes(_state.Output, value))
             {
                 Commit(_state with { Output = value }, ProjectChanges.Output);
+            }
+        }
+    }
+
+    /// <summary>The Look section (#45): deflicker and its strength.</summary>
+    public LookSettings Look
+    {
+        get => _state.Look;
+        set
+        {
+            if (Changes(_state.Look, value))
+            {
+                Commit(_state with { Look = value }, ProjectChanges.Look);
             }
         }
     }

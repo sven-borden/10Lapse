@@ -81,6 +81,7 @@ public static class ProjectFileJson
         nameof(ProjectSnapshot.Output),
         nameof(ProjectSnapshot.SortMode),
         nameof(ProjectSnapshot.Sequence),
+        nameof(ProjectSnapshot.Look),
     };
 
     /// <inheritdoc cref="StoredSnapshotProperties"/>
@@ -113,6 +114,7 @@ public static class ProjectFileJson
             ["output"] = JsonFields.WriteOutput(content.Output),
             ["sortMode"] = content.SortMode.ToString(),
             ["sequence"] = JsonFields.WriteSequence(content.Sequence),
+            ["look"] = JsonFields.WriteLook(content.Look),
         };
 
         if (content.RecoveredName is not null || content.RecoveredFilePath is not null)
@@ -184,6 +186,7 @@ public static class ProjectFileJson
             Output = JsonFields.ReadOutput(root, "output", OutputSettings.Default, problems),
             SortMode = JsonFields.Field(root, "sortMode", SortMode.CaptureTime, JsonFields.ReadEnum<SortMode>, problems),
             Sequence = JsonFields.ReadSequence(root, "sequence", SequenceSettings.Default, problems),
+            Look = JsonFields.ReadLook(root, "look", LookSettings.Default, problems),
             RecoveredName = JsonFields.Field(recovered, "recovered.name", null, ReadText, problems),
             RecoveredFilePath = JsonFields.Field(recovered, "recovered.projectFile", null, ReadFullPath, problems),
             Frames = ReadFrames(root, problems),
@@ -224,6 +227,11 @@ public static class ProjectFileJson
         if (frame.CaptureUtcOffset is { } offset)
         {
             entry["utcOffsetMinutes"] = (int)offset.TotalMinutes;
+        }
+
+        if (frame.Exposure is { } exposure)
+        {
+            entry["exposure"] = WriteExposure(exposure);
         }
 
         return entry;
@@ -287,8 +295,50 @@ public static class ProjectFileJson
                 DateTime.SpecifyKind(DateTime.Parse(node.GetValue<string>(), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind), DateTimeKind.Unspecified)),
             CaptureUtcOffset = Optional<TimeSpan?>(entry, "utcOffsetMinutes", node =>
                 node.GetValue<int>() is >= -18 * 60 and <= 18 * 60 and var minutes ? TimeSpan.FromMinutes(minutes) : throw new FormatException()),
+            Exposure = Optional(entry, "exposure", ReadExposure),
         };
     }
+
+    // The exposure pass's measurement (#45): the luminance in stops, and the Exif settings the photo has.
+    private static JsonObject WriteExposure(PhotoExposure exposure)
+    {
+        var entry = new JsonObject { ["luminance"] = exposure.Luminance };
+        if (exposure.ExposureTime is { } time)
+        {
+            entry["exposureTime"] = time;
+        }
+
+        if (exposure.FNumber is { } fNumber)
+        {
+            entry["fNumber"] = fNumber;
+        }
+
+        if (exposure.Iso is { } iso)
+        {
+            entry["iso"] = iso;
+        }
+
+        return entry;
+    }
+
+    // A measurement without a usable luminance is none (the photo is measured again); a bad Exif value is unknown.
+    private static PhotoExposure? ReadExposure(JsonNode node)
+    {
+        if (node is not JsonObject entry)
+        {
+            return null;
+        }
+
+        return new PhotoExposure(entry["luminance"]!.GetValue<double>())
+        {
+            ExposureTime = Optional<double?>(entry, "exposureTime", PositiveNumber),
+            FNumber = Optional<double?>(entry, "fNumber", PositiveNumber),
+            Iso = Optional<double?>(entry, "iso", PositiveNumber),
+        };
+    }
+
+    private static double? PositiveNumber(JsonNode node) =>
+        node.GetValue<double>() is var value && double.IsFinite(value) && value > 0 ? value : throw new FormatException("not a positive number");
 
     // A frame's detail that is missing or unusable is unknown, as it is for a photo whose file lacks it.
     private static T? Optional<T>(JsonObject entry, string name, Func<JsonNode, T> read)

@@ -434,6 +434,50 @@ public sealed class ProjectFilesViewModelTests : IDisposable
     }
 
     [Fact]
+    public void AStreamOfChangesStillGetsACopyWithinTheMaximumWait()
+    {
+        // Deflicker's measurements (#45) change the project every 250 ms for minutes: the 2 s pause alone would never run
+        // out, so the copy is written no later than 10 s after the first change it has not copied.
+        var (shell, _) = Create();
+        var time = new ManualTimeProvider();
+        var autosave = _ui.Run(() =>
+        {
+            var created = new ProjectAutosave(shell, _recovery, _errors, time);
+            created.Attach();
+            return created;
+        });
+
+        var tick = TimeSpan.FromMilliseconds(250);
+        var elapsed = TimeSpan.Zero;
+        TimeSpan? firstCopy = null;
+        var copies = 0;
+        string? last = null;
+        for (var i = 0; i < 100; i++)
+        {
+            var photo = new Frame($@"C:\Photos\Stream\IMG_{i:D4}.jpg", 10, _written);
+            _ui.Run(() => shell.CurrentProject.Model.AddFrames([photo]));
+            time.Advance(tick);
+            elapsed += tick;
+            if (!ReferenceEquals(_recovery.Saved, last) && _recovery.Saved is not null)
+            {
+                last = _recovery.Saved;
+                copies++;
+                firstCopy ??= elapsed;
+            }
+        }
+
+        Assert.Equal(ProjectAutosave.DefaultMaxWait, firstCopy);
+        Assert.InRange(copies, 2, 3);
+
+        // A quiet moment still writes after the short pause.
+        var lastPhoto = new Frame(@"C:\Photos\Stream\Last.jpg", 10, _written);
+        _ui.Run(() => shell.CurrentProject.Model.AddFrames([lastPhoto]));
+        time.Advance(ProjectAutosave.DefaultDebounce);
+        Assert.Equal(101, ProjectFileJson.Read(_recovery.Saved).Content!.Frames.Length);
+        _ui.Run(() => { autosave.Dispose(); return 0; });
+    }
+
+    [Fact]
     public void AfterAFailedCloseQuestionTheCopyIsWrittenAndKept()
     {
         var (shell, _) = Create();

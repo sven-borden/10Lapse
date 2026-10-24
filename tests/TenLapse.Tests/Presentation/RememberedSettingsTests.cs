@@ -14,6 +14,9 @@ internal sealed class ManualTimeProvider : TimeProvider
     private readonly List<ManualTimer> _timers = [];
     private TimeSpan _now;
 
+    // The wall clock moves with Advance too, from a fixed start.
+    public override DateTimeOffset GetUtcNow() => new DateTimeOffset(2026, 10, 21, 12, 0, 0, TimeSpan.Zero) + _now;
+
     public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
     {
         var timer = new ManualTimer(this, callback, state);

@@ -514,7 +514,7 @@ public static class VideoExporter
                 _live.TryAdd(target, 0);
                 using (var session = target.CreateDrawingSession())
                 {
-                    FrameRenderer.Draw(session, bitmap, _settings.Fit, _output);
+                    FrameRenderer.Draw(session, bitmap, _settings.Fit, _output, _source.LookOf(index));
                 }
 
                 return target;

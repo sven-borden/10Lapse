@@ -1,4 +1,6 @@
 using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.Effects;
+using TenLapse.Core.Look;
 using TenLapse.Core.Projects;
 using TenLapse.Media.Decoding;
 using Windows.Foundation;
@@ -7,9 +9,31 @@ using Windows.UI;
 namespace TenLapse.Media.Rendering;
 
 /// <summary>
+/// The per-photo processing <see cref="FrameRenderer"/> applies after placing a photo (#45 onward). Today the exposure
+/// correction deflicker gives the photo, in stops; the default is no change. #46 to #48 add their steps here.
+/// </summary>
+/// <param name="Stops">The exposure change in stops, applied in linear light: +1 doubles the light, 0 changes nothing.</param>
+public readonly record struct FrameLook(float Stops)
+{
+    /// <summary>No processing: the photo exactly as decoded.</summary>
+    public static FrameLook None => default;
+
+    /// <summary>True when drawing with this look is drawing the photo as it is.</summary>
+    public bool IsNeutral => Stops == 0;
+
+    /// <summary>
+    /// The look of the photo <paramref name="frameId"/> in <paramref name="snapshot"/>: its deflicker correction
+    /// (<see cref="ExposureCurve.For"/>, none while deflicker is off). Keyed by photo, so a photo shown twice looks the same.
+    /// </summary>
+    public static FrameLook For(ProjectSnapshot snapshot, Guid frameId) =>
+        new((float)ExposureCurve.For(snapshot).Correction(frameId));
+}
+
+/// <summary>
 /// The processing stage that preview (#19) and export (#22) share: given a decoded photo and the frame settings,
 /// it draws one output frame. Fill is a centred cover crop; Fit shows the whole photo, centred, with black bars.
-/// Deterministic, and with no shortcut for either caller, so a preview frame always matches the exported one.
+/// Deterministic, and with no shortcut for either caller, so a preview frame always matches the exported one. The
+/// photo's <see cref="FrameLook"/> (deflicker's exposure, #45) is applied to it in the same call.
 /// </summary>
 /// <remarks>
 /// Decode with <see cref="DecodeOptions"/> for the same output size: the photo then arrives at the size the frame
@@ -39,14 +63,23 @@ public static class FrameRenderer
     /// place and scale the frame with it). <paramref name="output"/> is in the target's pixels: on a 96 DPI target
     /// (the export's) that is DIPs too; on a display at 150 % the frame covers output × 96 / 144 DIPs.
     /// </param>
-    public static void Draw(CanvasDrawingSession session, CanvasBitmap photo, FrameSettings settings, PixelSize output)
+    public static void Draw(CanvasDrawingSession session, CanvasBitmap photo, FrameSettings settings, PixelSize output) =>
+        Draw(session, photo, settings, output, FrameLook.None);
+
+    /// <inheritdoc cref="Draw(CanvasDrawingSession, CanvasBitmap, FrameSettings, PixelSize)"/>
+    /// <param name="look">The photo's processing (<see cref="FrameLook.For"/>).</param>
+    public static void Draw(CanvasDrawingSession session, CanvasBitmap photo, FrameSettings settings, PixelSize output, FrameLook look)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        Draw(session, photo, settings.Fit, output);
+        Draw(session, photo, settings.Fit, output, look);
     }
 
     /// <inheritdoc cref="Draw(CanvasDrawingSession, CanvasBitmap, FrameSettings, PixelSize)"/>
-    public static void Draw(CanvasDrawingSession session, CanvasBitmap photo, FitMode fit, PixelSize output)
+    public static void Draw(CanvasDrawingSession session, CanvasBitmap photo, FitMode fit, PixelSize output) =>
+        Draw(session, photo, fit, output, FrameLook.None);
+
+    /// <inheritdoc cref="Draw(CanvasDrawingSession, CanvasBitmap, FrameSettings, PixelSize, FrameLook)"/>
+    public static void Draw(CanvasDrawingSession session, CanvasBitmap photo, FitMode fit, PixelSize output, FrameLook look)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(photo);
@@ -64,7 +97,99 @@ public static class FrameRenderer
 
         // Filled, not cleared: the preview may draw the frame into part of a larger surface.
         session.FillRectangle(new Rect(0, 0, output.Width * scale, output.Height * scale), Background);
-        session.DrawImage(photo, destination, source, 1f, CanvasImageInterpolation.HighQualityCubic);
+        DrawPhoto(session, photo, destination, source, look);
+    }
+
+    /// <summary>
+    /// Draws the <paramref name="source"/> part of <paramref name="photo"/> (in its own DIPs) into
+    /// <paramref name="destination"/> (the session's DIPs) with high-quality cubic filtering, then applies
+    /// <paramref name="look"/> to what it drew, pixel by pixel: the one place a photo's processing happens. <see cref="Draw(CanvasDrawingSession, CanvasBitmap, FitMode, PixelSize, FrameLook)"/>
+    /// calls it, and so does the preview's reframe, which places the photo by hand (#35), so the 400 ms of a reframe show
+    /// the same correction.
+    /// </summary>
+    /// <remarks>
+    /// The exposure is applied in linear light: each 8-bit sRGB code maps to sRGB(2^stops × linear(code)) through a
+    /// 256-entry <see cref="TableTransferEffect"/> whose entries fall on the codes (<see cref="ExposureTable"/>, which also
+    /// rolls brightened highlights off into white and limits how far apart brightened shadows spread). The photo is placed
+    /// first into a command list, so the effect works on the drawn pixels at the target's resolution and the placement (and
+    /// its DPI handling) is the same call as without a look. A neutral look draws the photo directly, as before #45, so
+    /// every existing frame is unchanged to the bit.
+    /// </remarks>
+    public static void DrawPhoto(CanvasDrawingSession session, CanvasBitmap photo, Rect destination, Rect source, FrameLook look)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(photo);
+        if (look.IsNeutral)
+        {
+            session.DrawImage(photo, destination, source, 1f, CanvasImageInterpolation.HighQualityCubic);
+            return;
+        }
+
+        using var placed = new CanvasCommandList(session);
+        using (var inner = placed.CreateDrawingSession())
+        {
+            inner.DrawImage(photo, destination, source, 1f, CanvasImageInterpolation.HighQualityCubic);
+        }
+
+        var table = ExposureTable(look.Stops);
+        using var exposed = new TableTransferEffect
+        {
+            Source = placed,
+            RedTable = table,
+            GreenTable = table,
+            BlueTable = table,
+            AlphaDisable = true,
+            ClampOutput = true,
+        };
+        session.DrawImage(exposed);
+    }
+
+    /// <summary>
+    /// The linear level from which a brightened photo rolls off into white instead of clipping (sRGB code 231).
+    /// </summary>
+    public const double ShoulderKnee = 0.8;
+
+    /// <summary>
+    /// The steepest a brightened table rises, in output levels per input level. An 8-bit photo has one level per step;
+    /// +2 stops would spread its darkest levels 4 apart (bands in a night sky). Binds only past +1.58 stops.
+    /// </summary>
+    public const double MaxShadowSlope = 3;
+
+    /// <summary>
+    /// The transfer table for an exposure change of <paramref name="stops"/>: entry n is the 8-bit code n / 255 decoded
+    /// from sRGB, multiplied by 2^stops in linear light and encoded again. Darkening is exact. Brightening keeps every
+    /// level below <see cref="ShoulderKnee"/> exact and rolls the levels above it off into white along a soft shoulder
+    /// (they stay apart instead of clipping into a flat patch), and rises at most <see cref="MaxShadowSlope"/> levels per
+    /// level in the shadows. Both fade in with the gain: at 0 stops the table is the identity.
+    /// </summary>
+    public static float[] ExposureTable(float stops)
+    {
+        var gain = Math.Pow(2, stops);
+        var table = new float[256];
+        for (var code = 0; code < table.Length; code++)
+        {
+            var linear = gain * LuminanceMeter.SrgbToLinear(code / 255.0);
+            var encoded = gain > 1
+                ? Math.Min(LuminanceMeter.LinearToSrgb(Shoulder(linear, gain)), MaxShadowSlope * code / 255.0)
+                : LuminanceMeter.LinearToSrgb(linear);
+            table[code] = (float)Math.Clamp(encoded, 0, 1);
+        }
+
+        return table;
+    }
+
+    // The shoulder of a gain above 1: the identity up to the knee, then a rational curve from (knee, knee) with slope 1 to
+    // (gain, 1), so white stays white and nothing above the knee clips. At a gain of 1 it is the identity.
+    private static double Shoulder(double linear, double gain)
+    {
+        if (linear <= ShoulderKnee)
+        {
+            return linear;
+        }
+
+        var slope = (gain - ShoulderKnee) / (1 - ShoulderKnee);
+        var t = Math.Min(1, (linear - ShoulderKnee) / (gain - ShoulderKnee));
+        return ShoulderKnee + ((1 - ShoulderKnee) * (slope * t / (1 + ((slope - 1) * t))));
     }
 
     /// <summary>

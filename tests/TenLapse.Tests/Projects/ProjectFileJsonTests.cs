@@ -99,6 +99,75 @@ public sealed class ProjectFileJsonTests
     }
 
     [Fact]
+    public void TheLookGroupSurvivesAWriteAndARead()
+    {
+        // #45: deflicker on at 60 %.
+        var look = new LookSettings(true, 60);
+
+        Assert.Equal(look, RoundTrip(new ProjectFileContent { Look = look }).Look);
+        Assert.Equal(LookSettings.Default, RoundTrip(new ProjectFileContent()).Look);
+    }
+
+    [Fact]
+    public void AnOpenedFileKeepsBothTheSequenceAndTheLook()
+    {
+        // #49 and #45 each add a project-only group; one file carries both and the opened project starts with both, clean.
+        var sequence = new SequenceSettings(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(0.5), 3, boomerang: true);
+        var look = new LookSettings(true, 40);
+
+        var read = RoundTrip(new ProjectFileContent { Sequence = sequence, Look = look });
+        Assert.Equal(sequence, read.Sequence);
+        Assert.Equal(look, read.Look);
+
+        var project = read.CreateEmptyProject();
+        Assert.Equal(sequence, project.Sequence);
+        Assert.Equal(look, project.Look);
+        Assert.False(project.Snapshot.IsDirty);
+    }
+
+    [Fact]
+    public void AStrengthOutsideItsRangeTakesTheDefaultAndSaysSo()
+    {
+        var result = ProjectFileJson.Read("""
+            { "format": "10Lapse project", "version": 1, "look": { "deflicker": true, "strength": 250 } }
+            """);
+
+        Assert.True(result.Content!.Look.Deflicker);
+        Assert.Equal(LookSettings.MaxStrength, result.Content.Look.Strength);
+        Assert.Contains(result.Problems, problem => problem.Contains("look.strength", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void AFrameKeepsItsExposureMeasurement()
+    {
+        // #45: the measurement travels with the photo, so a reopened project is not measured again.
+        var measured = new SavedFrame(@"C:\Shoot\IMG_0003.jpg")
+        {
+            Exposure = new PhotoExposure(-3.2512) { ExposureTime = 1.0 / 250, FNumber = 8, Iso = 400 },
+        };
+        var withoutExif = new SavedFrame(@"C:\Shoot\IMG_0004.jpg") { Exposure = new PhotoExposure(-1.5) };
+
+        Assert.Equal([measured, withoutExif], RoundTrip(new ProjectFileContent { Frames = [measured, withoutExif] }).Frames);
+    }
+
+    [Fact]
+    public void AnUnusableExposureIsNoMeasurement()
+    {
+        // A damaged luminance means the photo is measured again; a damaged Exif value is unknown.
+        var result = ProjectFileJson.Read("""
+            { "format": "10Lapse project", "version": 1, "frames": [
+              { "path": "C:\\Shoot\\A.jpg", "exposure": { "luminance": 5 } },
+              { "path": "C:\\Shoot\\B.jpg", "exposure": { "luminance": -2, "fNumber": -4, "iso": "x" } },
+              { "path": "C:\\Shoot\\C.jpg", "exposure": [1, 2] } ] }
+            """);
+
+        var frames = result.Content!.Frames;
+        Assert.Null(frames[0].Exposure);
+        Assert.Equal(new PhotoExposure(-2), frames[1].Exposure);
+        Assert.Null(frames[2].Exposure);
+    }
+
+    [Fact]
     public void EveryFrameDetailSurvivesInOrder()
     {
         var first = new SavedFrame(@"C:\Shoot\IMG_0002.jpg")
@@ -282,6 +351,7 @@ public sealed class ProjectFileJsonTests
             (FrameSettings.Default, value => new ProjectFileContent { Frame = (FrameSettings)value }, content => content.Frame),
             (OutputSettings.Default, value => new ProjectFileContent { Output = (OutputSettings)value }, content => content.Output),
             (SequenceSettings.Default, value => new ProjectFileContent { Sequence = (SequenceSettings)value }, content => content.Sequence),
+            (LookSettings.Default, value => new ProjectFileContent { Look = (LookSettings)value }, content => content.Look),
         ];
         var walked = new List<string>();
         foreach (var (defaults, make, take) in groups)
@@ -289,7 +359,7 @@ public sealed class ProjectFileJsonTests
             foreach (var leaf in Leaves(defaults.GetType(), defaults.GetType().Name + "."))
             {
                 walked.Add(leaf.Path);
-                foreach (var value in OtherValues(leaf.Type, leaf.Get(defaults)))
+                foreach (var value in OtherValues(leaf.Path, leaf.Type, leaf.Get(defaults)))
                 {
                     var changed = leaf.With(defaults, value);
                     Assert.True(Equals(value, leaf.Get(take(RoundTrip(make(changed))))), $"{leaf.Path} = {value} did not survive a write and a read.");
@@ -301,6 +371,8 @@ public sealed class ProjectFileJsonTests
         Assert.Contains("OutputSettings.Gif.Rate", walked);
         Assert.Contains("SequenceSettings.HoldStart", walked);
         Assert.Contains("SequenceSettings.Boomerang", walked);
+        Assert.Contains("LookSettings.Deflicker", walked);
+        Assert.Contains("LookSettings.Strength", walked);
     }
 
     // Every settable property of a settings record, recursing into the records it holds.
@@ -336,7 +408,7 @@ public sealed class ProjectFileJsonTests
     }
 
     // Values other than the default for a setting: every other enum value, or another fraction.
-    private static IEnumerable<object> OtherValues(Type type, object? current)
+    private static IEnumerable<object> OtherValues(string path, Type type, object? current)
     {
         if (type.IsEnum)
         {
@@ -352,6 +424,12 @@ public sealed class ProjectFileJsonTests
         if (type == typeof(TimeSpan))
         {
             return [TimeSpan.FromSeconds(2.5), TimeSpan.FromSeconds(10)];
+        }
+
+        if (type == typeof(int) && path.StartsWith("LookSettings.", StringComparison.Ordinal))
+        {
+            // #45's strength, 0 to 100: its ends and a value between, other than the current one.
+            return new object[] { 0, 40, 100 }.Where(value => !value.Equals(current));
         }
 
         if (type == typeof(int))

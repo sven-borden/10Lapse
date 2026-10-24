@@ -654,6 +654,62 @@ real key presses, Narrator and other players need a human. Run: once, packaged.
   boomerang, three plays and holds, close, open it. Expect: all four come back;
   a new project starts plain (forward, once, no holds) whatever the last one had.
 
+### 5.21 Deflicker (#45, 3.1)
+
+The dev PC has no real flickering timelapse and no real sunset shot by hand;
+the algorithm was proven on synthetic sequences (`ExposureCurveTests`,
+`GoldenLookTests`) and the Debug app's `--sample-flicker`. These need real
+photos and a human eye. Run: once, on the Store or a sideloaded 3.1 build.
+
+- [ ] **5.21.1 A flickering sequence** (#45). Do: import a daytime timelapse
+  shot in aperture priority or with a lens that flickers (a few hundred JPEGs or
+  RAW files), turn Deflicker on, wait for "Measuring … photos" to finish, play.
+  Expect: the brightness no longer pumps from frame to frame; slow changes
+  (a cloud passing, the light falling) stay. Before shows the flicker again,
+  After removes it, on the frame that is on screen, while playing too.
+- [ ] **5.21.2 A sunset shot by hand** (#45). Do: a sunset or sunrise where the
+  shutter, aperture or ISO was changed by hand in steps (holy grail), Deflicker
+  on at 100 %. Expect: no visible jump at any step; the evening still gets darker
+  (or the morning lighter) overall, as the photographer's steps intended. Try
+  50 %: the steps show again, softened.
+- [ ] **5.21.3 Export matches the preview** (#45). Do: export the sequences of
+  5.21.1 and 5.21.2 as MP4 and as GIF. Expect: the video looks like the preview
+  on After, frame for frame, also right after changing the shape (the 400 ms
+  reframe keeps the correction). An export started while photos are still being
+  measured waits: the panel reads "Waiting for deflicker…" and "Deflicker is
+  measuring the photos first: … of …" with its own bar, Cancel export stops the
+  wait, and once measured it exports the finished curve. Then 5.21.1 again as a
+  boomerang played twice with 1 s held at each end (5.20): in the preview and
+  the MP4, each photo looks the same every time it comes back (the holds, the
+  second play, the way back); no showing of a photo flickers against another.
+- [ ] **5.21.4 Reopen and edit** (#45). Do: save the project with Deflicker on,
+  close, open it again. Expect: no measuring (the file keeps the measurements)
+  and no unsaved-changes dot; edit one photo on disk (any change), open again:
+  only that photo is measured, and the project stays clean.
+- [ ] **5.21.5 Cancel and failures** (#45). Do: on 5,000 photos, turn Deflicker
+  on and Cancel during the measuring. Expect: it stops at once, Deflicker turns
+  off; on again, it goes on from where it stopped. Then save with Deflicker on,
+  change a few hundred photos on disk (or import more), open the project and
+  Cancel the measuring that starts by itself. Expect: Deflicker stays on, no
+  unsaved-changes dot, the Look section reads "… photos not measured" with
+  Measure, and those photos do not flash in the preview or the export; Measure
+  measures them. A photo that cannot be read (rename it away mid-measuring) is
+  tried twice, then gets one Caution InfoBar ("… couldn't be measured, so
+  deflicker takes its correction from the photos beside it …") with its name;
+  it does not flash. Removing photos during the measuring lowers the count.
+- [ ] **5.21.6 Keyboard and Narrator** (#45). Do: Tab to the switch (Space
+  toggles it), the strength slider (arrows step 5 %), Cancel, and Before and
+  After under the preview (arrows). Expect: Narrator reads "Deflicker, toggle
+  switch" with its line, "Deflicker strength, 80", the progress text, and
+  "Before or after deflicker"; after Cancel the focus lands on the switch (on
+  Measure when photos are left unmeasured). In a narrow window the fourth tab is
+  Look.
+- [ ] **5.21.7 Bright and dark frames** (#45). Do: a sequence whose corrected
+  frames are brightened (+0.5 stop or more) with a sun or a bright sky, and a
+  night sequence brightened toward +2 stops. Expect: the sky round the sun keeps
+  its gradation (no flat white patch that grows and shrinks), and a night sky
+  shows no stronger banding than the photos themselves have.
+
 ## 6. Per-machine measurements
 
 - [ ] **6.1 Bench on each machine** (#34, PR #89). Run: all, with the repo and

@@ -15,17 +15,27 @@ namespace TenLapse.Presentation.ProjectFiles;
 /// It follows the shell's project on the UI thread and writes from a timer on a pool thread, reading the project's
 /// immutable snapshot, so a large project never holds the UI. The first failed write is shown (crash recovery is not
 /// working); repeats go to the log only.
+/// <para>
+/// The pause restarts with every change, but never past <see cref="DefaultMaxWait"/> from the first change not yet
+/// copied: a stream of changes (deflicker's measurements land every 250 ms for minutes, #45) still gets a copy at least
+/// that often.
+/// </para>
 /// </remarks>
 public sealed class ProjectAutosave : IDisposable
 {
     /// <summary>How long after the last change the copy is written.</summary>
     public static readonly TimeSpan DefaultDebounce = TimeSpan.FromSeconds(2);
 
+    /// <summary>The longest a change waits for its copy while more changes keep coming: 10 s from the first one.</summary>
+    public static readonly TimeSpan DefaultMaxWait = TimeSpan.FromSeconds(10);
+
     private readonly ShellViewModel _shell;
     private readonly IRecoveryStore _store;
     private readonly IErrorPresenter _errors;
     private readonly ITimer _timer;
     private readonly TimeSpan _debounce;
+    private readonly TimeSpan _maxWait;
+    private readonly TimeProvider _time;
     private readonly Func<Project, ProjectSnapshot, ProjectFileContent> _content;
     private readonly Lock _gate = new();
     private volatile Project? _project;
@@ -33,17 +43,21 @@ public sealed class ProjectAutosave : IDisposable
     private bool _disposed;
     private bool _keep;
 
+    // UTC ticks of the first change not yet copied; 0 when none waits. Set on the UI thread, cleared by the write.
+    private long _pendingSince;
+
     /// <param name="shell">The window's project, followed from <see cref="Attach"/>.</param>
     /// <param name="store">Where the copy goes.</param>
     /// <param name="errors">Takes a failed write: the first is shown, repeats are logged.</param>
     /// <param name="time">The clock the pause runs on; tests pass a fake.</param>
     /// <param name="debounce">The pause after the last change; <see cref="DefaultDebounce"/> when null.</param>
+    /// <param name="maxWait">The longest a change waits while more keep coming; <see cref="DefaultMaxWait"/> when null.</param>
     /// <param name="content">
     /// What the copy of a project's snapshot holds (<see cref="ProjectFilesViewModel.RecoveryContent"/>: with the photos its
     /// file could not find, so a restored project still writes them back); <see cref="ProjectFileContent.Recovery"/> when
     /// null. Called on the timer's thread.
     /// </param>
-    public ProjectAutosave(ShellViewModel shell, IRecoveryStore store, IErrorPresenter errors, TimeProvider? time = null, TimeSpan? debounce = null, Func<Project, ProjectSnapshot, ProjectFileContent>? content = null)
+    public ProjectAutosave(ShellViewModel shell, IRecoveryStore store, IErrorPresenter errors, TimeProvider? time = null, TimeSpan? debounce = null, Func<Project, ProjectSnapshot, ProjectFileContent>? content = null, TimeSpan? maxWait = null)
     {
         ArgumentNullException.ThrowIfNull(shell);
         ArgumentNullException.ThrowIfNull(store);
@@ -52,8 +66,10 @@ public sealed class ProjectAutosave : IDisposable
         _store = store;
         _errors = errors;
         _debounce = debounce ?? DefaultDebounce;
+        _maxWait = maxWait ?? DefaultMaxWait;
         _content = content ?? ((_, snapshot) => ProjectFileContent.Recovery(snapshot));
-        _timer = (time ?? TimeProvider.System).CreateTimer(OnTimer, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        _time = time ?? TimeProvider.System;
+        _timer = _time.CreateTimer(OnTimer, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
     }
 
     /// <summary>Starts following the current project and each one that replaces it. On the UI thread.</summary>
@@ -117,14 +133,21 @@ public sealed class ProjectAutosave : IDisposable
 
     private void OnProjectChanged(object? sender, ProjectChangedEventArgs e) => Schedule();
 
-    // Restarts the pause: a burst of changes (an import's batches, a stepper held down) is one write after the last.
-    // Never waits for a write in progress (that holds _gate on the timer's thread).
+    // Restarts the pause: a burst of changes (an import's batches, a stepper held down) is one write after the last, but
+    // no later than the maximum wait after the first change not yet copied. Never waits for a write in progress (that
+    // holds _gate on the timer's thread).
     private void Schedule()
     {
-        if (!Volatile.Read(ref _disposed))
+        if (Volatile.Read(ref _disposed))
         {
-            _timer.Change(_debounce, Timeout.InfiniteTimeSpan);
+            return;
         }
+
+        var now = _time.GetUtcNow().UtcTicks;
+        var since = Interlocked.CompareExchange(ref _pendingSince, now, 0);
+        var left = since == 0 ? _maxWait : _maxWait - TimeSpan.FromTicks(now - since);
+        var due = left < _debounce ? (left > TimeSpan.Zero ? left : TimeSpan.Zero) : _debounce;
+        _timer.Change(due, Timeout.InfiniteTimeSpan);
     }
 
     // A pool thread. A throwing timer callback would end the process, so nothing escapes.
@@ -144,6 +167,8 @@ public sealed class ProjectAutosave : IDisposable
     {
         lock (_gate)
         {
+            // What this write copies; a change from here on waits for the next one.
+            Interlocked.Exchange(ref _pendingSince, 0);
             if (_disposed || _project is not { } project)
             {
                 return;

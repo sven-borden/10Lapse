@@ -134,6 +134,27 @@
               Value="{x:Bind ViewModel.Percent, Mode=OneWay}" />
           </StackPanel>
 
+          <!--
+            #45: an export started while deflicker measures the photos waits for it; this says so, with the count and a bar
+            of its own (amber, a progress indicator). Cancel export stops the wait. Absent otherwise.
+          -->
+          <StackPanel
+            x:Name="MeasuringFirst"
+            Spacing="{StaticResource SpacingSm}"
+            Visibility="{x:Bind ViewModel.IsWaitingForMeasuring, Mode=OneWay}">
+            <TextBlock
+              Foreground="{ThemeResource InkSecondaryBrush}"
+              Style="{StaticResource CaptionTabularTextStyle}"
+              Text="{x:Bind ViewModel.MeasuringText, Mode=OneWay}"
+              TextWrapping="Wrap" />
+            <ProgressBar
+              x:Name="MeasuringFirstBar"
+              AutomationProperties.Name="{x:Bind export:ExportText.MeasuringFirstName}"
+              IsTabStop="False"
+              Maximum="100"
+              Value="{x:Bind ViewModel.MeasuringPercent, Mode=OneWay}" />
+          </StackPanel>
+
           <!-- The film gate: decoration for the eye; the numbers say the same to a screen reader. -->
           <shell:FilmGate x:Name="Gate" AutomationProperties.AccessibilityView="Raw" />
         </StackPanel>

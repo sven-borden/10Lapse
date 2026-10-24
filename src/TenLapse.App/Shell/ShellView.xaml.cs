@@ -12,6 +12,7 @@ using TenLapse.Presentation;
 using TenLapse.Presentation.Export;
 using TenLapse.Presentation.FirstLaunch;
 using TenLapse.Presentation.Keyboard;
+using TenLapse.Presentation.Look;
 using TenLapse.Presentation.Motion;
 using TenLapse.Presentation.ProjectFiles;
 using TenLapse.Presentation.Services;
@@ -48,6 +49,8 @@ public sealed partial class ShellView : UserControl
     private readonly long _emptyRegionVisibilityToken;
     private readonly TimingPanelViewModel _timing;
     private readonly FramePanelViewModel _frame;
+    private readonly ExposureAnalysis _exposure;
+    private readonly LookPanelViewModel _look;
     private readonly Presentation.Filmstrip.FilmstripViewModel _filmstrip;
     private readonly PanelSwap _inspectorSwap;
     private readonly ScreenMotion? _screens;
@@ -101,9 +104,15 @@ public sealed partial class ShellView : UserControl
         TimingSection.ViewModel = _timing;
         _frame = new FramePanelViewModel(viewModel, presenter, output);
         FrameSection.ViewModel = _frame;
+
+        // The Look section (#45): deflicker's exposure pass measures the photos in the background, the panel turns it on.
+        _exposure = new ExposureAnalysis(viewModel, new Media.Look.ExposureMeter(), new DispatcherQueueUiDispatcher(DispatcherQueue, errors), presenter, infoBars);
+        _look = new LookPanelViewModel(viewModel, _exposure, presenter);
+        LookSection.ViewModel = _look;
 #if DEBUG
         Debugging.DebugTiming.Apply(_timing);
         Debugging.DebugFrame.Apply(_frame);
+        Debugging.DebugLook.Apply(_look);
 #endif
         FirstLaunch.Attach(import, recent, presenter, errors);
         _emptyRegionVisibilityToken = EmptyRegion.RegisterPropertyChangedCallback(VisibilityProperty, OnEmptyRegionVisibilityChanged);
@@ -120,7 +129,9 @@ public sealed partial class ShellView : UserControl
         ArgumentNullException.ThrowIfNull(preview);
         _player = preview.Player;
         PreviewSurface.Attach(preview);
+        PreviewSurface.AttachLook(_look);
         Transport.Attach(preview.Player, presenter);
+        Transport.AttachLook(_look);
         ShellRoot.KeyDown += OnShellKeyDown;
 
         // The filmstrip (#20): thumbnails, selection, removal and undo, reorder and gap markers. Its Delete and Ctrl+Z
@@ -135,7 +146,7 @@ public sealed partial class ShellView : UserControl
         // place, the pill and the premiere over the preview. The filmstrip dims what is not written yet, and its
         // thumbnails pass through the film gate.
         ArgumentNullException.ThrowIfNull(exportServices);
-        Export = new ExportViewModel(viewModel, output, preview.Player, _filmstrip, () => Import.IsImporting, exportServices, presenter);
+        Export = new ExportViewModel(viewModel, output, preview.Player, _filmstrip, () => Import.IsImporting, exportServices, presenter) { Measuring = _exposure };
         ExportSection.Attach(Export, Filmstrip.Thumbnails, errors);
         ExportOverlay.Attach(Export, preview.Player, presenter, errors, infoBars);
         _inspectorSwap = new PanelSwap([InspectorSections, ExportSection.Running, ExportSection.Finished], DispatcherQueue, errors);
@@ -308,6 +319,8 @@ public sealed partial class ShellView : UserControl
         _infoBarShadow.Dispose();
         _timing.Dispose();
         _frame.Dispose();
+        _look.Dispose();
+        _exposure.Dispose();
         Filmstrip.Detach();
         _filmstrip.Dispose();
     }
@@ -343,7 +356,7 @@ public sealed partial class ShellView : UserControl
         PreviewSurface.Develop();
         Filmstrip.BeginArrival();
         var index = 0;
-        foreach (var section in new UIElement[] { TimingSection, FrameSection, OutputSection }.Where(section => section.Visibility == Visibility.Visible))
+        foreach (var section in new UIElement[] { TimingSection, FrameSection, OutputSection, LookSection }.Where(section => section.Visibility == Visibility.Visible))
         {
             Reveal(section, MotionTokens.Plan(MotionCatalogue.ArrivalInspector, index++));
         }
@@ -538,6 +551,7 @@ public sealed partial class ShellView : UserControl
             {
                 InspectorTab.Timing => (UIElement)TimingSection,
                 InspectorTab.Frame => FrameSection,
+                InspectorTab.Look => LookSection,
                 _ => OutputSection,
             };
             DispatcherQueue.TryEnqueueGuarded(
@@ -594,6 +608,11 @@ public sealed partial class ShellView : UserControl
         if (IsWithin(node, FrameSection))
         {
             return InspectorTab.Frame;
+        }
+
+        if (IsWithin(node, LookSection))
+        {
+            return InspectorTab.Look;
         }
 
         return IsWithin(node, OutputSection) ? InspectorTab.Output : null;

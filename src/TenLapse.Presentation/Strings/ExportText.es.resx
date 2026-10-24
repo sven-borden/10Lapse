@@ -42,6 +42,18 @@
   <data name="GettingReady" xml:space="preserve">
     <value>Preparando…</value>
   </data>
+  <data name="WaitingForDeflicker" xml:space="preserve">
+    <value>Esperando al antiparpadeo…</value>
+  </data>
+  <data name="MeasuringFirstFormat" xml:space="preserve">
+    <value>El antiparpadeo mide primero las fotos: {0} de {1}</value>
+  </data>
+  <data name="MeasuringFirstName" xml:space="preserve">
+    <value>Progreso de la medición del antiparpadeo</value>
+  </data>
+  <data name="MeasuringFirstAnnouncement" xml:space="preserve">
+    <value>El antiparpadeo mide primero las fotos. La exportación empieza después.</value>
+  </data>
   <data name="EstimatingTimeLeft" xml:space="preserve">
     <value>Calculando el tiempo restante…</value>
   </data>

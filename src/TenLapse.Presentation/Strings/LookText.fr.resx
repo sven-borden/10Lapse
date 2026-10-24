@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  French (fr) translation of LookText.resx (#45). The English file's comments are the brief for each key. Vous, Windows typography.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Rendu</value>
+  </data>
+  <data name="DeflickerLabel" xml:space="preserve">
+    <value>Anti-scintillement</value>
+  </data>
+  <data name="DeflickerHint" xml:space="preserve">
+    <value>Atténue les sauts d’exposition entre les photos</value>
+  </data>
+  <data name="StrengthLabel" xml:space="preserve">
+    <value>Intensité</value>
+  </data>
+  <data name="StrengthName" xml:space="preserve">
+    <value>Intensité de l’anti-scintillement</value>
+  </data>
+  <data name="Measuring_one" xml:space="preserve">
+    <value>Mesure de {1} photo…</value>
+  </data>
+  <data name="Measuring_other" xml:space="preserve">
+    <value>Mesure de {0} sur {1} photos…</value>
+  </data>
+  <data name="Measuring_many" xml:space="preserve">
+    <value>Mesure de {0} sur {1} de photos…</value>
+  </data>
+  <data name="MeasureCancelName" xml:space="preserve">
+    <value>Arrêter la mesure des photos</value>
+  </data>
+  <data name="MeasureFailed_one" xml:space="preserve">
+    <value>{0} photo n’a pas pu être mesurée : l’anti-scintillement lui donne la correction des photos voisines. Vérifiez que le fichier s’ouvre, puis choisissez Mesurer dans la section Rendu.</value>
+  </data>
+  <data name="MeasureFailed_other" xml:space="preserve">
+    <value>{0} photos n’ont pas pu être mesurées : l’anti-scintillement leur donne la correction des photos voisines. Vérifiez que les fichiers s’ouvrent, puis choisissez Mesurer dans la section Rendu.</value>
+  </data>
+  <data name="MeasureFailed_many" xml:space="preserve">
+    <value>{0} de photos n’ont pas pu être mesurées : l’anti-scintillement leur donne la correction des photos voisines. Vérifiez que les fichiers s’ouvrent, puis choisissez Mesurer dans la section Rendu.</value>
+  </data>
+  <data name="NotMeasured_one" xml:space="preserve">
+    <value>{0} photo non mesurée</value>
+  </data>
+  <data name="NotMeasured_other" xml:space="preserve">
+    <value>{0} photos non mesurées</value>
+  </data>
+  <data name="NotMeasured_many" xml:space="preserve">
+    <value>{0} de photos non mesurées</value>
+  </data>
+  <data name="MeasureButton" xml:space="preserve">
+    <value>Mesurer</value>
+  </data>
+  <data name="MeasureName" xml:space="preserve">
+    <value>Mesurer les photos pas encore mesurées</value>
+  </data>
+  <data name="CompareName" xml:space="preserve">
+    <value>Avant ou après l’anti-scintillement</value>
+  </data>
+  <data name="CompareBefore" xml:space="preserve">
+    <value>Avant</value>
+  </data>
+  <data name="CompareAfter" xml:space="preserve">
+    <value>Après</value>
+  </data>
+</root>

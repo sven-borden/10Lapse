@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Brazilian Portuguese (pt-BR) translation of LookText.resx (#45). The English file's comments are the brief for each key. Você.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Visual</value>
+  </data>
+  <data name="DeflickerLabel" xml:space="preserve">
+    <value>Anticintilação</value>
+  </data>
+  <data name="DeflickerHint" xml:space="preserve">
+    <value>Suaviza os saltos de exposição entre as fotos</value>
+  </data>
+  <data name="StrengthLabel" xml:space="preserve">
+    <value>Intensidade</value>
+  </data>
+  <data name="StrengthName" xml:space="preserve">
+    <value>Intensidade da anticintilação</value>
+  </data>
+  <data name="Measuring_one" xml:space="preserve">
+    <value>Medindo {1} foto…</value>
+  </data>
+  <data name="Measuring_other" xml:space="preserve">
+    <value>Medindo {0} de {1} fotos…</value>
+  </data>
+  <data name="Measuring_many" xml:space="preserve">
+    <value>Medindo {0} de {1} de fotos…</value>
+  </data>
+  <data name="MeasureCancelName" xml:space="preserve">
+    <value>Parar de medir as fotos</value>
+  </data>
+  <data name="MeasureFailed_one" xml:space="preserve">
+    <value>Não foi possível medir {0} foto, então a anticintilação usa a correção das fotos ao lado dela. Verifique se o arquivo abre e escolha Medir na seção Visual.</value>
+  </data>
+  <data name="MeasureFailed_other" xml:space="preserve">
+    <value>Não foi possível medir {0} fotos, então a anticintilação usa a correção das fotos ao lado delas. Verifique se os arquivos abrem e escolha Medir na seção Visual.</value>
+  </data>
+  <data name="MeasureFailed_many" xml:space="preserve">
+    <value>Não foi possível medir {0} de fotos, então a anticintilação usa a correção das fotos ao lado delas. Verifique se os arquivos abrem e escolha Medir na seção Visual.</value>
+  </data>
+  <data name="NotMeasured_one" xml:space="preserve">
+    <value>{0} foto não medida</value>
+  </data>
+  <data name="NotMeasured_other" xml:space="preserve">
+    <value>{0} fotos não medidas</value>
+  </data>
+  <data name="NotMeasured_many" xml:space="preserve">
+    <value>{0} de fotos não medidas</value>
+  </data>
+  <data name="MeasureButton" xml:space="preserve">
+    <value>Medir</value>
+  </data>
+  <data name="MeasureName" xml:space="preserve">
+    <value>Medir as fotos ainda não medidas</value>
+  </data>
+  <data name="CompareName" xml:space="preserve">
+    <value>Antes ou depois da anticintilação</value>
+  </data>
+  <data name="CompareBefore" xml:space="preserve">
+    <value>Antes</value>
+  </data>
+  <data name="CompareAfter" xml:space="preserve">
+    <value>Depois</value>
+  </data>
+</root>
