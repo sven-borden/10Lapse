@@ -105,6 +105,15 @@ public sealed record ProjectFileContent
     /// <summary>The crop group (<see cref="ProjectSnapshot.Crop"/>, #46). A file from before #46 has none: the whole frame.</summary>
     public CropSettings Crop { get; init; } = CropSettings.Default;
 
+    /// <summary>The music group (<see cref="ProjectSnapshot.Music"/>, #50). A file from before #50 has none: no music.</summary>
+    public MusicSettings Music { get; init; } = MusicSettings.Default;
+
+    /// <summary>
+    /// The music file's path relative to the project file's folder (#50), or null on another drive: the file is looked for
+    /// there when it is not at its full path (<see cref="SavedMusic.Resolve"/>), as the photos are.
+    /// </summary>
+    public string? MusicRelativePath { get; init; }
+
     /// <summary>A recovery copy only: the project's name, which a project that was never saved has no file to take it from.</summary>
     public string? RecoveredName { get; init; }
 
@@ -129,6 +138,8 @@ public sealed record ProjectFileContent
             Sequence = snapshot.Sequence,
             Look = snapshot.Look,
             Crop = snapshot.Crop,
+            Music = snapshot.Music,
+            MusicRelativePath = SavedMusic.Relative(snapshot.Music.Path, folder),
         };
     }
 
@@ -191,5 +202,5 @@ public sealed record ProjectFileContent
     }
 
     /// <summary>A new, empty, clean project with these settings, owned by the calling thread; the caller adds the frames.</summary>
-    public Project CreateEmptyProject() => new(Timing, Frame, Output, SortMode, Sequence, Look, Crop);
+    public Project CreateEmptyProject() => new(Timing, Frame, Output, SortMode, Sequence, Look, Crop, Music);
 }

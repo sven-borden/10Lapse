@@ -83,6 +83,7 @@ public static class ProjectFileJson
         nameof(ProjectSnapshot.Sequence),
         nameof(ProjectSnapshot.Look),
         nameof(ProjectSnapshot.Crop),
+        nameof(ProjectSnapshot.Music),
     };
 
     /// <inheritdoc cref="StoredSnapshotProperties"/>
@@ -117,6 +118,7 @@ public static class ProjectFileJson
             ["sequence"] = JsonFields.WriteSequence(content.Sequence),
             ["look"] = JsonFields.WriteLook(content.Look),
             ["crop"] = JsonFields.WriteCrop(content.Crop),
+            ["music"] = JsonFields.WriteMusic(content.Music, content.MusicRelativePath),
         };
 
         if (content.RecoveredName is not null || content.RecoveredFilePath is not null)
@@ -190,6 +192,8 @@ public static class ProjectFileJson
             Sequence = JsonFields.ReadSequence(root, "sequence", SequenceSettings.Default, problems),
             Look = JsonFields.ReadLook(root, "look", LookSettings.Default, problems),
             Crop = JsonFields.ReadCrop(root, "crop", CropSettings.Default, problems),
+            Music = JsonFields.ReadMusic(root, "music", MusicSettings.Default, problems, out var musicRelativePath),
+            MusicRelativePath = musicRelativePath,
             RecoveredName = JsonFields.Field(recovered, "recovered.name", null, ReadText, problems),
             RecoveredFilePath = JsonFields.Field(recovered, "recovered.projectFile", null, ReadFullPath, problems),
             Frames = ReadFrames(root, problems),

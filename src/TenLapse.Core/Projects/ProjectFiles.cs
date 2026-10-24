@@ -103,6 +103,12 @@ public sealed record ResolvedFrames(ImmutableArray<Frame> Frames, ImmutableArray
 
     /// <summary>The size of those online-only photos, in bytes.</summary>
     public long CloudOnlyBytes { get; init; }
+
+    /// <summary>
+    /// The project file's music with its song looked up (#50, <see cref="SavedMusic.Resolve"/>), or null when it was not
+    /// looked up: the content's music stands then.
+    /// </summary>
+    public MusicSettings? Music { get; init; }
 }
 
 /// <summary>
@@ -193,6 +199,7 @@ public static class SavedFrames
             ToRead = toRead.ToImmutable(),
             CloudOnly = cloudOnly,
             CloudOnlyBytes = cloudOnlyBytes,
+            Music = SavedMusic.Resolve(content.Music, content.MusicRelativePath, projectFilePath, disk),
         };
     }
 

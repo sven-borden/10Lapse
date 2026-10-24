@@ -75,8 +75,8 @@ public static class ProjectExporter
 
     /// <summary>
     /// The export settings for a snapshot: <see cref="ProjectSnapshot.VideoSize"/>, the effective rate, the fit mode,
-    /// the codec and <see cref="ExportBitrate.For"/> of the quality. A GIF (#51) has no bitrate, and plays at
-    /// <see cref="GifOutput.EffectiveRate"/>: its preset, or the video's own rate when that is slower.
+    /// the codec, <see cref="ExportBitrate.For"/> of the quality and the music (#50). A GIF (#51) has no bitrate and no
+    /// sound, and plays at <see cref="GifOutput.EffectiveRate"/>: its preset, or the video's own rate when that is slower.
     /// </summary>
     public static VideoExportSettings SettingsFor(ProjectSnapshot snapshot)
     {
@@ -95,10 +95,11 @@ public static class ProjectExporter
 
         return new VideoExportSettings(size.Width, size.Height, rate)
         {
-                Format = snapshot.Output.Format,
+            Format = snapshot.Output.Format,
             Fit = snapshot.FrameSettings.Fit,
             Bitrate = ExportBitrate.For(size, rate, snapshot.Output.Format, snapshot.Output.Quality),
             DecodeZoom = snapshot.Crop.MaxZoom,
+            Music = Audio.MusicTrack.For(snapshot),
         };
     }
 

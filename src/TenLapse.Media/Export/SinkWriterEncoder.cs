@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Graphics.Canvas;
 using TenLapse.Core.Projects;
 using TenLapse.Core.Timing;
+using TenLapse.Media.Audio;
 using TenLapse.Media.Inspection;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -24,6 +25,14 @@ namespace TenLapse.Media.Export;
 /// Not <c>MediaTranscoder</c>: on D3D surfaces it dropped frames, and on CPU
 /// buffers one 4K run took 8 GB (benchmark in PR #65).
 /// </para>
+/// <para>
+/// <b>Music (#50).</b> With <see cref="VideoExportSettings.Music"/> a second stream carries it as AAC (stereo, 192 kbit/s,
+/// the song's 44.1 or 48 kHz), written from 16-bit PCM (<see cref="MusicMixer"/>). The MP4 sink interleaves the streams
+/// and holds a stream that runs ahead of the other, so the audio is written up to each video frame's start just before
+/// that frame: the stream written is never ahead of the other, and neither can block waiting for the other. The audio
+/// lasts exactly as long as the video (silence after a song that ends first), so the sink never waits for audio that
+/// will not come.
+/// </para>
 /// </remarks>
 internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
 {
@@ -38,6 +47,10 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
     private readonly int _height;
     private readonly VideoFormat _format;
     private readonly Fraction _nominalRate;
+    private readonly MusicMixer? _music;
+    private readonly string? _musicPath;
+    private readonly uint _audioStream;
+    private short[] _pcm = [];
     private bool _disposed;
 
     /// <param name="lowLatency">
@@ -53,6 +66,9 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
         _nominalRate = NominalFrameRate(settings.FrameRate);
         try
         {
+            // The song first, so a file that cannot be read fails the export before the output file exists.
+            _musicPath = settings.Music?.Music.Path;
+            _music = OpenMusic(settings.Music);
             PInvoke.MFCreateDXGIDeviceManager(out var token, out _manager).ThrowOnFailure();
             _manager.ResetDevice(device.Direct3D, token);
 
@@ -105,6 +121,11 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
                 Marshal.ReleaseComObject(input);
             }
 
+            if (_music is { } music)
+            {
+                _audioStream = AddAudioStream(music);
+            }
+
             if (lowLatency)
             {
                 DisableBFrames();
@@ -135,9 +156,14 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
     /// <summary>The encoder transform the sink writer loaded, read from its attributes.</summary>
     public VideoEncoderInfo? Encoder { get; }
 
-    /// <summary>Queues one frame. The sink writer keeps its own reference to the texture until it has encoded it.</summary>
+    /// <summary>
+    /// Queues one frame, after the music up to its start (see the remarks). The sink writer keeps its own reference to the
+    /// texture until it has encoded it.
+    /// </summary>
+    /// <exception cref="VideoExportException">The song failed to decode partway (<see cref="VideoExportFailure.MusicUnreadable"/>).</exception>
     public void Write(CanvasRenderTarget target, long time, long duration)
     {
+        WriteMusicUntil(time);
         var texture = VideoDevice.TextureOf(target);
         IMFMediaBuffer? buffer = null;
         IMFSample? sample = null;
@@ -171,6 +197,7 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
     /// <exception cref="VideoExportException">The first frame is not at time 0 (<see cref="VideoExportFailure.EncoderFailed"/>).</exception>
     public void Finish()
     {
+        WriteMusicUntil(long.MaxValue);
         _writer.Finalize();
         CheckStartsAtZero(_path, _format);
     }
@@ -200,8 +227,160 @@ internal sealed unsafe class SinkWriterEncoder : IVideoEncoder
         _disposed = true;
         Release(_writer);
         Release(_manager);
+        _music?.Dispose();
         _session.Dispose();
     }
+
+    // The song for an MP4's sound, or null without music. A song that cannot be read fails the export as MusicUnreadable.
+    private static MusicMixer? OpenMusic(MusicTrack? track)
+    {
+        if (track is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return new MusicMixer(track);
+        }
+        catch (InvalidDataException exception)
+        {
+            throw MusicFailed(exception, track.Music.Path);
+        }
+    }
+
+    private static VideoExportException MusicFailed(InvalidDataException exception, string? path) =>
+        new($"{ExportFailures.Summary(VideoExportFailure.MusicUnreadable, VideoFormat.Mp4H264)}: {exception.Message}", VideoExportFailure.MusicUnreadable, exception)
+        {
+            SourcePath = path,
+        };
+
+    // The AAC stream: stereo at the mixer's rate, 192 kbit/s (24000 bytes a second, one of the four rates the Microsoft AAC
+    // encoder takes), AAC-LC in raw payloads as MP4 stores them; 16-bit PCM in.
+    private uint AddAudioStream(MusicMixer music)
+    {
+        var rate = (uint)music.SampleRate;
+        var channels = (uint)MusicMixer.Channels;
+        PInvoke.MFCreateMediaType(out var output).ThrowOnFailure();
+        uint stream;
+        try
+        {
+            output.SetGUID(PInvoke.MF_MT_MAJOR_TYPE, PInvoke.MFMediaType_Audio);
+            output.SetGUID(PInvoke.MF_MT_SUBTYPE, PInvoke.MFAudioFormat_AAC);
+            output.SetUINT32(PInvoke.MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
+            output.SetUINT32(PInvoke.MF_MT_AUDIO_SAMPLES_PER_SECOND, rate);
+            output.SetUINT32(PInvoke.MF_MT_AUDIO_NUM_CHANNELS, channels);
+            output.SetUINT32(PInvoke.MF_MT_AUDIO_AVG_BYTES_PER_SECOND, AacBytesPerSecond);
+            output.SetUINT32(PInvoke.MF_MT_AAC_PAYLOAD_TYPE, 0);
+            output.SetUINT32(PInvoke.MF_MT_AAC_AUDIO_PROFILE_LEVEL_INDICATION, AacLowComplexityLevel2);
+            _writer.AddStream(output, out stream);
+        }
+        finally
+        {
+            Release(output);
+        }
+
+        PInvoke.MFCreateMediaType(out var input).ThrowOnFailure();
+        try
+        {
+            input.SetGUID(PInvoke.MF_MT_MAJOR_TYPE, PInvoke.MFMediaType_Audio);
+            input.SetGUID(PInvoke.MF_MT_SUBTYPE, PInvoke.MFAudioFormat_PCM);
+            input.SetUINT32(PInvoke.MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
+            input.SetUINT32(PInvoke.MF_MT_AUDIO_SAMPLES_PER_SECOND, rate);
+            input.SetUINT32(PInvoke.MF_MT_AUDIO_NUM_CHANNELS, channels);
+            input.SetUINT32(PInvoke.MF_MT_AUDIO_BLOCK_ALIGNMENT, channels * 2);
+            input.SetUINT32(PInvoke.MF_MT_AUDIO_AVG_BYTES_PER_SECOND, rate * channels * 2);
+            input.SetUINT32(PInvoke.MF_MT_ALL_SAMPLES_INDEPENDENT, 1);
+            _writer.SetInputMediaType(stream, input, null);
+        }
+        finally
+        {
+            Release(input);
+        }
+
+        return stream;
+    }
+
+    // Writes the music up to the video time `until` (every audio frame that starts before it), in pieces of
+    // AudioPieceFrames; long.MaxValue writes the rest of the track.
+    private void WriteMusicUntil(long until)
+    {
+        if (_music is not { } music)
+        {
+            return;
+        }
+
+        var target = until == long.MaxValue ? music.FrameCount : Math.Min(music.FrameCount, music.FrameAt(until));
+        while (music.Position < target)
+        {
+            var count = (int)Math.Min(AudioPieceFrames, target - music.Position);
+            if (_pcm.Length < count * MusicMixer.Channels)
+            {
+                _pcm = new short[AudioPieceFrames * MusicMixer.Channels];
+            }
+
+            var first = music.Position;
+            int rendered;
+            try
+            {
+                rendered = music.Render(_pcm.AsSpan(0, count * MusicMixer.Channels));
+            }
+            catch (InvalidDataException exception)
+            {
+                throw MusicFailed(exception, _musicPath);
+            }
+
+            if (rendered == 0)
+            {
+                return;
+            }
+
+            var time = music.TimeOf(first);
+            WriteAudioSample(_pcm.AsSpan(0, rendered * MusicMixer.Channels), time, music.TimeOf(first + rendered) - time);
+        }
+    }
+
+    private void WriteAudioSample(ReadOnlySpan<short> pcm, long time, long duration)
+    {
+        var bytes = (uint)(pcm.Length * sizeof(short));
+        IMFMediaBuffer? buffer = null;
+        IMFSample? sample = null;
+        try
+        {
+            PInvoke.MFCreateMemoryBuffer(bytes, out buffer).ThrowOnFailure();
+            byte* data;
+            buffer.Lock(&data, null, null);
+            try
+            {
+                MemoryMarshal.AsBytes(pcm).CopyTo(new Span<byte>(data, (int)bytes));
+            }
+            finally
+            {
+                buffer.Unlock();
+            }
+
+            buffer.SetCurrentLength(bytes);
+            PInvoke.MFCreateSample(out sample).ThrowOnFailure();
+            sample.AddBuffer(buffer);
+            sample.SetSampleTime(time);
+            sample.SetSampleDuration(duration);
+            _writer.WriteSample(_audioStream, sample);
+        }
+        finally
+        {
+            Release(sample);
+            Release(buffer);
+        }
+    }
+
+    // About 85 ms at 48 kHz.
+    private const int AudioPieceFrames = 4096;
+
+    // 192 kbit/s.
+    private const uint AacBytesPerSecond = 24_000;
+
+    // AAC Profile, level 2 (ISO/IEC 14496-3): what the Microsoft encoder writes by default.
+    private const uint AacLowComplexityLevel2 = 0x29;
 
     // MF_LOW_LATENCY already keeps NVENC and the Microsoft encoder from using B-frames; this asks for it outright,
     // for encoders that ignore low latency. One that refuses is tolerated: CheckStartsAtZero catches what matters.

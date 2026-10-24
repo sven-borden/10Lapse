@@ -274,7 +274,10 @@ public static class VideoExporter
             {
                 encoder = await GuardAsync(opening, "opening the encoder", frame: null).ConfigureAwait(false);
             }
-            catch (Exception exception) when (exception is not OperationCanceledException && !ExportFailures.IsBug(exception) && StuckElsewhere(exception))
+            catch (Exception exception) when (
+                exception is not (OperationCanceledException or VideoExportException { Failure: VideoExportFailure.MusicUnreadable })
+                && !ExportFailures.IsBug(exception)
+                && StuckElsewhere(exception))
             {
                 throw new VideoExportException(
                     $"{ExportFailures.Summary(VideoExportFailure.EncoderStuck, _settings.Format)} ({StuckEncoderCalls} call(s)): {exception.Message}",

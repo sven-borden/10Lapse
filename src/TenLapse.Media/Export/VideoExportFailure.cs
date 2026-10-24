@@ -58,6 +58,12 @@ public enum VideoExportFailure
     /// ends, and consumer GPUs allow only a few sessions. Restarting the app frees them.
     /// </summary>
     EncoderStuck,
+
+    /// <summary>
+    /// The music under the video (#50) could not be read: the file is gone, locked, damaged, or in a format Windows cannot
+    /// decode. <see cref="VideoExportException.SourcePath"/> names it when the failure came as the export started.
+    /// </summary>
+    MusicUnreadable,
 }
 
 /// <summary>An export failed for a reason the app can explain; <see cref="Failure"/> says which.</summary>
@@ -182,6 +188,7 @@ internal static class ExportFailures
         VideoExportFailure.FrameUnreadable => "A frame's photo could not be loaded",
         VideoExportFailure.DrawingFailed => "Drawing a frame failed",
         VideoExportFailure.EncoderStuck => $"The {EncoderText.CodecName(format)} encoder could not open while an earlier export's encoder is still stuck",
+        VideoExportFailure.MusicUnreadable => "The music file could not be read",
         _ => $"The {EncoderText.CodecName(format)} encoder failed",
     };
 
