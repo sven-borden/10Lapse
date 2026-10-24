@@ -5,8 +5,9 @@ Updated 2026-10-24. Roadmap: the pinned #59 and the milestones. Working agreemen
 ## Now
 
 2026-10-21: **3.0 is live on the Store at full rollout** (tag `v3.0.0`, on
-`7c63de5`). Now: 3.1, wave 28 done 2026-10-24 (#47 frame blending, PR #138);
-wave 29, #48 stamp and title, is next when Sven says so. `docs/test-matrix.md`
+`7c63de5`). Now: 3.1, wave 28 done 2026-10-24 (#47 frame blending, PR #138),
+then #139 rating question (PR #140); wave 29, #48 stamp and title, is next when
+Sven says so. `docs/test-matrix.md`
 is a checklist for the live build (5.22 crop and pan, 5.23 music, 5.24 frame
 blending: nobody has seen or heard them on real shoots yet).
 
@@ -42,6 +43,8 @@ for #48).
   merged 2026-10-24 after master was merged in; gate 3,710 passed).
 - Wave 27: done. #46 crop and pan (PR #136), #50 music (PR #137).
 - Wave 28: done. #47 frame blending (PR #138).
+- Between waves: done. #139 rating question (PR #140, Sven 2026-10-24; gate
+  3,822 passed; checked minimized and restored in the real app).
 - Wave 29: #48 stamp and title (O). #45 to #48 all draw in `FrameRenderer`, so
   they never run together.
 - #30 sample sequence once Sven picks the photos.
@@ -109,6 +112,12 @@ Nothing blocks the build loop.
   group of its own (`blend`, bit 13; the full `Project` constructor ends with
   `blend`). A blended export decodes each photo once and holds at most 16 4K
   photos' pixels (a deep zoom is decoded softer to stay within it).
+- 2026-10-24 (#139, PR #140): the rating ask is an inline card in the finished
+  state, "Do you like 10Lapse?"; the Store is called only after Yes (its dialog,
+  then the review page, then an InfoBar), No closes it. Once per version,
+  recorded only when the card arrives with the window in front
+  (`RatingPrompt.Arrive`; `RememberedSettings.TryRecordRatingAsked` reads the
+  stored value, so a second window never asks again).
 - Timing tests (PR #102): prove a timeout by its effect and give ceilings a wide
   margin. If one flakes, look first at `ImportPerformanceTests` and the
   `EncoderProbeTests` cached-load ratio.
