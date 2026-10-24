@@ -126,6 +126,52 @@ public sealed class ProjectFileJsonTests
     }
 
     [Fact]
+    public void TheCropGroupSurvivesAWriteAndARead()
+    {
+        // #46: both framings exactly, as decimal shares of the frame, and the easing; the opened project starts with it, clean.
+        var crop = new CropSettings(true, new Framing(0.4, 0.3, 0.71), new Framing(0.875, 0.5625, 0.4375), CropEasing.Linear);
+
+        var read = RoundTrip(new ProjectFileContent { Crop = crop, Look = new LookSettings(true, 40) });
+        Assert.Equal(crop, read.Crop);
+        Assert.Equal(CropSettings.Default, RoundTrip(new ProjectFileContent()).Crop);
+        Assert.Contains("\"easing\": \"Linear\"", ProjectFileJson.Write(new ProjectFileContent { Crop = crop }), StringComparison.Ordinal);
+
+        var project = read.CreateEmptyProject();
+        Assert.Equal(crop, project.Crop);
+        Assert.True(project.Look.Deflicker);
+        Assert.False(project.Snapshot.IsDirty);
+    }
+
+    [Fact]
+    public void AFileWithoutTheCropOrWithABadOneShowsTheWholeFrame()
+    {
+        var written = ProjectFileJson.Write(new ProjectFileContent { Crop = new CropSettings(true, new Framing(0.5, 0.5, 0.5), Framing.Whole, CropEasing.Linear) });
+        var root = System.Text.Json.Nodes.JsonNode.Parse(written)!.AsObject();
+
+        // A file from before #46 has no crop group: the whole frame, without a word.
+        root.Remove("crop");
+        var before = ProjectFileJson.Read(root.ToJsonString());
+        Assert.Equal(CropSettings.Default, before.Content!.Crop);
+        Assert.Empty(before.Problems);
+
+        // A hand-edited one keeps the default for each field it spoils (a view outside the frame, a size out of range, a
+        // framing that is not an object, an easing this build does not know), and says so.
+        root["crop"] = new System.Text.Json.Nodes.JsonObject
+        {
+            ["enabled"] = true,
+            ["start"] = new System.Text.Json.Nodes.JsonObject { ["size"] = 0.5, ["x"] = 0.9, ["y"] = 0.5 },
+            ["end"] = "zoomed",
+            ["easing"] = "Bounce",
+        };
+        var spoiled = ProjectFileJson.Read(root.ToJsonString());
+        Assert.Equal(CropSettings.Default with { Enabled = true }, spoiled.Content!.Crop);
+        Assert.Equal(3, spoiled.Problems.Count);
+
+        root["crop"]!["start"] = new System.Text.Json.Nodes.JsonObject { ["size"] = 0.1, ["x"] = 0.5, ["y"] = 0.5 };
+        Assert.Contains(ProjectFileJson.Read(root.ToJsonString()).Problems, problem => problem.Contains("crop.start", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void AStrengthOutsideItsRangeTakesTheDefaultAndSaysSo()
     {
         var result = ProjectFileJson.Read("""
@@ -352,6 +398,7 @@ public sealed class ProjectFileJsonTests
             (OutputSettings.Default, value => new ProjectFileContent { Output = (OutputSettings)value }, content => content.Output),
             (SequenceSettings.Default, value => new ProjectFileContent { Sequence = (SequenceSettings)value }, content => content.Sequence),
             (LookSettings.Default, value => new ProjectFileContent { Look = (LookSettings)value }, content => content.Look),
+            (CropSettings.Default, value => new ProjectFileContent { Crop = (CropSettings)value }, content => content.Crop),
         ];
         var walked = new List<string>();
         foreach (var (defaults, make, take) in groups)
@@ -373,6 +420,8 @@ public sealed class ProjectFileJsonTests
         Assert.Contains("SequenceSettings.Boomerang", walked);
         Assert.Contains("LookSettings.Deflicker", walked);
         Assert.Contains("LookSettings.Strength", walked);
+        Assert.Contains("CropSettings.Start", walked);
+        Assert.Contains("CropSettings.Easing", walked);
     }
 
     // Every settable property of a settings record, recursing into the records it holds.
@@ -440,6 +489,12 @@ public sealed class ProjectFileJsonTests
         if (type == typeof(bool))
         {
             return [!(bool)current!];
+        }
+
+        // #46's framings: zoomed in off centre, and a size whose decimal text is long.
+        if (type == typeof(Framing))
+        {
+            return [new Framing(0.5, 0.3, 0.7), new Framing(1 / 3.0, 0.2, 0.8)];
         }
 
         throw new InvalidOperationException($"No test values for a setting of type {type.Name}: add some here.");

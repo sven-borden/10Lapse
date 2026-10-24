@@ -115,6 +115,45 @@ internal static class JsonFields
             Field(section, $"{name}.strength", fallback.Strength, node => (LookSettings.Default with { Strength = node.GetValue<int>() }).Strength, problems));
     }
 
+    /// <summary>
+    /// The crop group (#46): on or off, each framing as its size and centre in shares of the frame (decimal numbers, so a
+    /// framing reads back exactly), and the easing by name. Project files only: a new project starts with the whole frame.
+    /// </summary>
+    public static JsonObject WriteCrop(CropSettings crop) => new()
+    {
+        ["enabled"] = crop.Enabled,
+        ["start"] = WriteFraming(crop.Start),
+        ["end"] = WriteFraming(crop.End),
+        ["easing"] = crop.Easing.ToString(),
+    };
+
+    /// <summary>Reads the crop group named <paramref name="name"/>, field by field; a framing that is not one (a size out of range, a view outside the frame) keeps the fallback's.</summary>
+    public static CropSettings ReadCrop(JsonObject root, string name, CropSettings fallback, List<string> problems)
+    {
+        var section = Section(root, name, problems);
+        return new CropSettings(
+            Field(section, $"{name}.enabled", fallback.Enabled, node => node.GetValue<bool>(), problems),
+            Field(section, $"{name}.start", fallback.Start, ReadFraming, problems),
+            Field(section, $"{name}.end", fallback.End, ReadFraming, problems),
+            Field(section, $"{name}.easing", fallback.Easing, ReadEnum<CropEasing>, problems));
+    }
+
+    private static JsonObject WriteFraming(Framing framing) => new()
+    {
+        ["size"] = framing.Size,
+        ["x"] = framing.CenterX,
+        ["y"] = framing.CenterY,
+    };
+
+    // A framing is read whole: its size and centre only mean something together (the centre must keep the view inside).
+    private static Framing ReadFraming(JsonNode node) =>
+        node is JsonObject framing
+            ? new Framing(Number(framing["size"]), Number(framing["x"]), Number(framing["y"]))
+            : throw new FormatException("A framing is an object with a size, an x and a y.");
+
+    private static double Number(JsonNode? node) =>
+        node?.GetValue<double>() ?? throw new FormatException("A framing needs its size, x and y.");
+
     /// <summary>The object named <paramref name="name"/>, or null when it is missing (quietly) or not an object (a problem).</summary>
     public static JsonObject? Section(JsonObject root, string name, List<string> problems)
     {
