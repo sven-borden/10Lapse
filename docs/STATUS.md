@@ -5,10 +5,10 @@ Updated 2026-10-24. Roadmap: the pinned #59 and the milestones. Working agreemen
 ## Now
 
 2026-10-21: **3.0 is live on the Store at full rollout** (tag `v3.0.0`, on
-`7c63de5`). Now: 3.1, wave 27 done 2026-10-24 (#46 PR #136, #50 PR #137); wave
-28, #47 frame blending, is next when Sven says so. `docs/test-matrix.md` is a
-checklist for the live build (5.22 crop and pan, 5.23 music: nobody has seen
-or heard them yet).
+`7c63de5`). Now: 3.1, wave 28 done 2026-10-24 (#47 frame blending, PR #138);
+wave 29, #48 stamp and title, is next when Sven says so. `docs/test-matrix.md`
+is a checklist for the live build (5.22 crop and pan, 5.23 music, 5.24 frame
+blending: nobody has seen or heard them on real shoots yet).
 
 ## Waves
 
@@ -33,14 +33,17 @@ held photo), #135 (the `look` group, per-photo exposure on the frame, the
 measuring pass and the export's wait for it), #136 (`Framing`, the `crop` group,
 `FrameLook.View`, a geometry step in `Draw`, the export's zoomed decode), #137
 (`MusicTrack` on the export settings, the AAC stream interleaved per frame, the
-preview's music, the inspector's fifth section).
+preview's music, the inspector's fifth section), #138 (`BlendSettings`, the
+`blend` group, `FrameRenderer.DrawBlend`, `BlendedPhotoSource`, a stamp's place
+for #48).
 
 - Wave 25: done. #51 GIF export (PR #132), #52 save and reopen (PR #133).
 - Wave 26: done. #49 hold, loop, boomerang (PR #134), #45 deflicker (PR #135,
   merged 2026-10-24 after master was merged in; gate 3,710 passed).
 - Wave 27: done. #46 crop and pan (PR #136), #50 music (PR #137).
-- Wave 28: #47 frame blending (O). Wave 29: #48 stamp and title (O). #45 to
-  #48 all draw in `FrameRenderer`, so they never run together.
+- Wave 28: done. #47 frame blending (PR #138).
+- Wave 29: #48 stamp and title (O). #45 to #48 all draw in `FrameRenderer`, so
+  they never run together.
 - #30 sample sequence once Sven picks the photos.
 
 ## Owner items (Sven)
@@ -83,7 +86,7 @@ Nothing blocks the build loop.
 - 2026-10-24 (Sven): #46 built by the main session ("no agent, do yourself"),
   no tests run while building and no review pass ("just commit, push, gate,
   merge"); the gate before the merge still runs every test. #50 ("go with
-  next") was built the same way.
+  next") and #47 ("let's resume where we are") were built the same way.
 - 2026-10-24 (#46, PR #136): a framing is a rectangle of the frame's shape in
   shares of the frame (any aspect or resolution), 4x zoom at most; the move
   runs over the photos' frames, holds stand still, plays and a boomerang are
@@ -98,6 +101,14 @@ Nothing blocks the build loop.
   not wait on either stream). The file stores the song's full and relative
   paths and its length. `ProjectChanges` bit 12 (`Music`) is taken; the full
   `Project` constructor ends with `music`.
+- 2026-10-24 (#47, PR #138): a blend is of photos, not video frames: each
+  photo is the average in linear light of the 2 to 16 photos around it
+  (centred, one more before when even, fewer at the ends), each with its own
+  deflicker stops, so holds, plays and the boomerang repeat blended photos and
+  crop and pan frames the blend. Strength mixes the blend with the photo. A
+  group of its own (`blend`, bit 13; the full `Project` constructor ends with
+  `blend`). A blended export decodes each photo once and holds at most 16 4K
+  photos' pixels (a deep zoom is decoded softer to stay within it).
 - Timing tests (PR #102): prove a timeout by its effect and give ceilings a wide
   margin. If one flakes, look first at `ImportPerformanceTests` and the
   `EncoderProbeTests` cached-load ratio.
