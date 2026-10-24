@@ -21,7 +21,7 @@ Boomerang, GIF animé (Petite, Moyenne, Grande), Musique, Projets récents, Avan
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,881.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,964.
 
 ```text
 Transformez un dossier de photos en vidéo timelapse fluide, jusqu’en 4K, ou en GIF animé.
@@ -73,7 +73,7 @@ Créez un timelapse avec les centaines de photos d’une prise de vue au trépie
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,415. Like the English one, it is what 3.0 users get, and it leaves out the rating question.
+Limit 1,500 characters. This draft: 1,493. Like the English one, it is what 3.0 users get, and it leaves out the rating question.
 
 ```text
 10Lapse 3.1 apporte ce qu’il faut à un timelapse après la prise de vue.
@@ -94,7 +94,7 @@ Comme avant, 10Lapse fonctionne hors connexion et vos photos ne quittent jamais 
 ## Product features
 
 Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 20 are
-50 to 131 characters each.
+50 to 145 characters each.
 
 ```text
 Transforme un dossier de photos en vidéo timelapse jusqu’en 4K, ou en GIF animé

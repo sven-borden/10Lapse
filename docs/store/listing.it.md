@@ -20,7 +20,7 @@ Musica, Progetti recenti, Prima / Dopo. "In tre misure" stands for the three siz
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,678.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,744.
 
 ```text
 Trasforma una cartella di foto in un video timelapse fluido, fino a 4K, o in una GIF animata.
@@ -73,7 +73,7 @@ Crea un video timelapse dalle centinaia di foto scattate dal treppiede: imposta 
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,352. As in English, it is what 3.0 users get with the update, and it leaves
+Limit 1,500 characters. This draft: 1,463. As in English, it is what 3.0 users get with the update, and it leaves
 out the rating question.
 
 ```text
@@ -95,7 +95,7 @@ Come prima, 10Lapse funziona offline e le tue foto non lasciano mai il PC. Richi
 ## Product features
 
 Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 20 are 59
-to 136 characters each.
+to 157 characters each.
 
 ```text
 Trasforma una cartella di foto in un video timelapse fino a 4K o in una GIF animata

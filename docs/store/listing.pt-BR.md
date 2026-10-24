@@ -22,7 +22,7 @@ recentes, Antes / Depois.
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,562.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,628.
 
 ```text
 Transforme uma pasta de fotos em um vídeo timelapse suave, em até 4K, ou em um GIF animado.
@@ -74,7 +74,7 @@ Crie um vídeo timelapse com as centenas de fotos de uma sessão no tripé: defi
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,310. Like the English one, it is what 3.0 users get, and it leaves out the rating question.
+Limit 1,500 characters. This draft: 1,415. Like the English one, it is what 3.0 users get, and it leaves out the rating question.
 
 ```text
 O 10Lapse 3.1 traz o que um timelapse precisa depois da sessão de fotos.
@@ -95,7 +95,7 @@ Como antes, o 10Lapse funciona offline e suas fotos nunca saem do seu PC. Ele re
 ## Product features
 
 Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 20 are
-57 to 130 characters each.
+57 to 152 characters each.
 
 ```text
 Transforma uma pasta de fotos em um vídeo timelapse em até 4K ou em um GIF animado

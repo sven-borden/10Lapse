@@ -21,7 +21,7 @@ planned), a watch folder, 8K, a sample sequence (#30), music in a GIF (a GIF has
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,112.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,166.
 
 ```text
 Turn a folder of photos into a smooth timelapse video, up to 4K, or an animated GIF.
@@ -66,7 +66,7 @@ Optional extensions from the Microsoft Store add more photo formats: HEIC photos
 ## Short description
 
 Limit 1,000 characters; Microsoft recommends under 270, because some views cut it there. It shows above the
-description, so it says the same thing in other words. This draft: 257.
+description, so it says the same thing in other words. This draft: 241.
 
 ```text
 Make a timelapse video from the hundreds of photos of a tripod shoot: set the speed and the shape, smooth the flicker and export an MP4 up to 4K or an animated GIF. 10Lapse works offline, with no account, and your photos never leave your PC.
@@ -74,7 +74,7 @@ Make a timelapse video from the hundreds of photos of a tripod shoot: set the sp
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,220. It is what 3.0 users get with the update, newest first; it says only what
+Limit 1,500 characters. This draft: 1,316. It is what 3.0 users get with the update, newest first; it says only what
 3.1 does and leaves out the rating question (#139).
 
 ```text

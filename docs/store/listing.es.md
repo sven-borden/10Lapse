@@ -21,7 +21,7 @@ Música, Proyectos recientes, Antes / Después.
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,666.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,732.
 
 ```text
 Convierte una carpeta de fotos en un video timelapse fluido, hasta 4K, o en un GIF animado.
@@ -74,7 +74,7 @@ Crea un video timelapse con los cientos de fotos de una sesión con trípode: fi
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,348 / 1,500. As in English, it is what 3.0 users get with the update, and it leaves
+Limit 1,500 characters. This draft: 1,447 / 1,500. As in English, it is what 3.0 users get with the update, and it leaves
 out the rating question.
 
 ```text
@@ -96,7 +96,7 @@ Como antes, 10Lapse funciona sin conexión y tus fotos nunca salen de tu equipo.
 ## Product features
 
 Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 20 are
-62 to 139 characters each.
+62 to 157 characters each.
 
 ```text
 Convierte una carpeta de fotos en un video timelapse de hasta 4K o en un GIF animado

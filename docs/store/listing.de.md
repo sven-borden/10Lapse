@@ -18,7 +18,7 @@ Mittel, Groß), Musik, Zuletzt verwendete Projekte, Vorher / Nachher.
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,920.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,987.
 
 ```text
 Machen Sie aus einem Ordner voller Fotos ein flüssiges Zeitraffervideo, bis 4K, oder ein animiertes GIF.
@@ -71,7 +71,7 @@ Machen Sie aus Hunderten Fotos einer Serie vom Stativ ein Zeitraffervideo: Tempo
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,391. As in English, it is what 3.0 users get with the update,
+Limit 1,500 characters. This draft: 1,485. As in English, it is what 3.0 users get with the update,
 and it leaves out the rating question.
 
 ```text
@@ -93,7 +93,7 @@ Wie bisher funktioniert 10Lapse offline, und Ihre Fotos verlassen nie Ihren PC. 
 ## Product features
 
 Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 20 are 48
-to 131 characters each.
+to 151 characters each.
 
 ```text
 Macht aus einem Fotoordner ein Zeitraffervideo bis 4K oder ein animiertes GIF
