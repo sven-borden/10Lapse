@@ -69,7 +69,7 @@ Limit 1,000 characters; Microsoft recommends under 270, because some views cut i
 description, so it says the same thing in other words. This draft: 257.
 
 ```text
-Make a timelapse video from the hundreds of photos of a tripod shoot: set the speed and the shape, smooth the flicker, watch it play, and export an MP4 up to 4K or an animated GIF. 10Lapse works offline, with no account, and your photos never leave your PC.
+Make a timelapse video from the hundreds of photos of a tripod shoot: set the speed and the shape, smooth the flicker and export an MP4 up to 4K or an animated GIF. 10Lapse works offline, with no account, and your photos never leave your PC.
 ```
 
 ## What's new in this version
