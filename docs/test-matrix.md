@@ -678,7 +678,10 @@ photos and a human eye. Run: once, on the Store or a sideloaded 3.1 build.
   reframe keeps the correction). An export started while photos are still being
   measured waits: the panel reads "Waiting for deflicker…" and "Deflicker is
   measuring the photos first: … of …" with its own bar, Cancel export stops the
-  wait, and once measured it exports the finished curve.
+  wait, and once measured it exports the finished curve. Then 5.21.1 again as a
+  boomerang played twice with 1 s held at each end (5.20): in the preview and
+  the MP4, each photo looks the same every time it comes back (the holds, the
+  second play, the way back); no showing of a photo flickers against another.
 - [ ] **5.21.4 Reopen and edit** (#45). Do: save the project with Deflicker on,
   close, open it again. Expect: no measuring (the file keeps the measurements)
   and no unsaved-changes dot; edit one photo on disk (any change), open again:
