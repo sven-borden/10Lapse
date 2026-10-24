@@ -107,7 +107,7 @@ Reads JPEG, PNG and TIFF; HEIC and camera RAW with Microsoft Store extensions
 Speed by frames per second, by video length, or by seconds per photo, with the photo count and video length on screen
 Exact frame rates from 0.1 to 120 fps, 29.97 included
 Frame shapes: match the photos, 16:9, 9:16, 1:1, 4:5 or 4:3, with Fit or Fill
-Live preview that matches the export, and a filmstrip with gap markers: drag, remove and undo
+Live preview that matches the exported video, and a filmstrip with gap markers: drag, remove and undo
 Deflicker smooths exposure jumps and reads the photos' exposure settings to turn a sunset's steps into a smooth ramp
 Frame blending averages 2 to 16 nearby photos for light trails and smooth clouds
 Crop and pan from a start framing to an end framing, zooming in up to 4×, Smooth or Linear

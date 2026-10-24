@@ -104,7 +104,7 @@ Legge JPEG, PNG e TIFF; HEIC e RAW delle fotocamere con le estensioni di Microso
 Velocità in fotogrammi al secondo, in base alla durata del video o in secondi per foto, con numero di foto e durata sempre sullo schermo
 Frequenze fotogrammi esatte da 0,1 a 120 fps, 29,97 compreso
 Proporzioni: come le foto, 16:9, 9:16, 1:1, 4:5 o 4:3, con “Adatta” o “Riempi”
-Anteprima dal vivo fedele all'esportazione, e pellicola con segni dove mancano foto: sposta, rimuovi e annulla
+Anteprima dal vivo fedele al video esportato, e pellicola con segni dove mancano foto: sposta, rimuovi e annulla
 Antisfarfallio: attenua i salti di esposizione e, in base alle impostazioni di scatto delle foto, trasforma i gradini di un tramonto in una rampa graduale
 Fusione di fotogrammi: la media delle foto vicine, da 2 a 16, per scie luminose e nuvole fluide
 Ritaglio animato da un'inquadratura iniziale a una finale, zoom fino a 4×, “Morbido” o “Lineare”

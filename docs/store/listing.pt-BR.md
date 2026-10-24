@@ -104,7 +104,7 @@ Lê JPEG, PNG e TIFF; HEIC e RAW de câmera com extensões da Microsoft Store
 Velocidade em quadros por segundo, pela duração do vídeo ou em segundos por foto, com o número de fotos e a duração sempre na tela
 Taxas de quadros exatas de 0,1 a 120 fps, inclusive 29,97
 Proporções: igual às fotos, 16:9, 9:16, 1:1, 4:5 ou 4:3, com Ajustar ou Preencher
-Visualização ao vivo igual à exportação e tira de filme com marcadores de fotos faltando: arraste, remova e desfaça
+Visualização ao vivo igual ao vídeo exportado e tira de filme com marcadores de fotos faltando: arraste, remova e desfaça
 Anticintilação: suaviza os saltos de exposição e, com as configurações de exposição das fotos, transforma os degraus de um pôr do sol em uma rampa suave
 Fusão de quadros: a média de 2 a 16 fotos próximas, para rastros de luz e nuvens suaves
 Corte e movimento de um enquadramento inicial a um final, zoom de até 4×, Suave ou Linear

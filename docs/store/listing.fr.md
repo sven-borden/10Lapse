@@ -103,7 +103,7 @@ Lit JPEG, PNG et TIFF ; HEIC et RAW avec des extensions du Microsoft Store
 Vitesse en images par seconde, par durée de la vidéo ou en secondes par photo, avec le nombre de photos et la durée à l’écran
 Cadences exactes de 0,1 à 120 i/s, y compris 29,97
 Formats d’image : comme les photos, 16:9, 9:16, 1:1, 4:5 ou 4:3, en mode Ajuster ou Remplir
-Aperçu en direct fidèle à l’exportation, et pellicule avec repères de photos manquantes : déplacez, retirez, annulez
+Aperçu en direct fidèle à la vidéo exportée, et pellicule avec repères de photos manquantes : déplacez, retirez, annulez
 Anti-scintillement : atténue les sauts d’exposition et, d’après les réglages des photos, change les paliers d’un coucher de soleil en rampe douce
 Fusion d’images : la moyenne de 2 à 16 photos voisines, pour des filés de lumière et des nuages fluides
 Recadrage animé d’un cadrage de début à un cadrage de fin, zoom jusqu’à 4 ×, mouvement Doux ou Linéaire

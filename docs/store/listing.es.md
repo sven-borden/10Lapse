@@ -105,7 +105,7 @@ Lee JPEG, PNG y TIFF; HEIC y RAW de cámara con extensiones de Microsoft Store
 Velocidad en fotogramas por segundo, por duración del video o en segundos por foto, con el número de fotos y la duración siempre a la vista
 Velocidades de fotogramas exactas de 0,1 a 120 fps, 29,97 incluida
 Proporciones: la de las fotos, 16:9, 9:16, 1:1, 4:5 o 4:3, con “Ajustar” o “Rellenar”
-Vista previa en tiempo real igual a la exportación, y tira de fotogramas con marcas donde faltan fotos: arrastrar, quitar y deshacer
+Vista previa en tiempo real igual al video exportado, y tira de fotogramas con marcas donde faltan fotos: arrastrar, quitar y deshacer
 Antiparpadeo: suaviza los saltos de exposición y, con los ajustes de exposición de las fotos, convierte los escalones de una puesta de sol en una rampa suave
 Fusión de fotogramas: promedio de 2 a 16 fotos cercanas para estelas de luz y nubes suaves
 Recorte y paneo de un encuadre inicial a uno final, zoom de hasta 4×, “Suave” o “Lineal”

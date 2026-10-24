@@ -102,7 +102,7 @@ Liest JPEG, PNG und TIFF; HEIC und Kamera-RAW mit Erweiterungen aus dem Microsof
 Tempo nach Bildern pro Sekunde, nach Videodauer oder nach Sekunden pro Foto, mit Fotoanzahl und Videodauer immer im Blick
 Exakte Bildraten von 0,1 bis 120 fps, auch 29,97
 Bildformate: wie die Fotos, 16:9, 9:16, 1:1, 4:5 oder 4:3, mit „Anpassen“ oder „Ausfüllen“
-Live-Vorschau, die dem Export entspricht, und Filmstreifen mit Lückenmarkierungen: verschieben, entfernen, rückgängig machen
+Live-Vorschau, die dem exportierten Video entspricht, und Filmstreifen mit Lückenmarkierungen: verschieben, entfernen, rückgängig machen
 Entflackern gleicht Belichtungssprünge aus und macht anhand der Belichtungswerte der Fotos aus den Stufen eines Sonnenuntergangs einen sanften Übergang
 Überlagern: Durchschnitt von 2 bis 16 benachbarten Fotos für Lichtspuren und weich ziehende Wolken
 Zoomen und Schwenken von einem Start- zu einem Endausschnitt, bis 4× Zoom, „Sanft“ oder „Gleichmäßig“
