@@ -5,9 +5,10 @@ Updated 2026-10-24. Roadmap: the pinned #59 and the milestones. Working agreemen
 ## Now
 
 2026-10-21: **3.0 is live on the Store at full rollout** (tag `v3.0.0`, on
-`7c63de5`). Now: 3.1, wave 27: #46 merged 2026-10-24 (PR #136), #50 music is
-next when Sven says so. `docs/test-matrix.md` is a checklist for the live build
-(5.22 for crop and pan, which nobody has seen on screen yet).
+`7c63de5`). Now: 3.1, wave 27 done 2026-10-24 (#46 PR #136, #50 PR #137); wave
+28, #47 frame blending, is next when Sven says so. `docs/test-matrix.md` is a
+checklist for the live build (5.22 crop and pan, 5.23 music: nobody has seen
+or heard them yet).
 
 ## Waves
 
@@ -30,13 +31,14 @@ export with the effective output), #77 (preview), #100 (motion, the reframe
 exception), #134 (`FrameSequence`: holds, loop, boomerang, shared decode of a
 held photo), #135 (the `look` group, per-photo exposure on the frame, the
 measuring pass and the export's wait for it), #136 (`Framing`, the `crop` group,
-`FrameLook.View`, a geometry step in `Draw`, the export's zoomed decode).
+`FrameLook.View`, a geometry step in `Draw`, the export's zoomed decode), #137
+(`MusicTrack` on the export settings, the AAC stream interleaved per frame, the
+preview's music, the inspector's fifth section).
 
 - Wave 25: done. #51 GIF export (PR #132), #52 save and reopen (PR #133).
 - Wave 26: done. #49 hold, loop, boomerang (PR #134), #45 deflicker (PR #135,
   merged 2026-10-24 after master was merged in; gate 3,710 passed).
-- Wave 27: #46 crop and pan done (PR #136). #50 music (O, after #49 so the
-  music fits the final length).
+- Wave 27: done. #46 crop and pan (PR #136), #50 music (PR #137).
 - Wave 28: #47 frame blending (O). Wave 29: #48 stamp and title (O). #45 to
   #48 all draw in `FrameRenderer`, so they never run together.
 - #30 sample sequence once Sven picks the photos.
@@ -80,7 +82,8 @@ Nothing blocks the build loop.
   "Decisions".
 - 2026-10-24 (Sven): #46 built by the main session ("no agent, do yourself"),
   no tests run while building and no review pass ("just commit, push, gate,
-  merge"); the gate before the merge still runs every test.
+  merge"); the gate before the merge still runs every test. #50 ("go with
+  next") was built the same way.
 - 2026-10-24 (#46, PR #136): a framing is a rectangle of the frame's shape in
   shares of the frame (any aspect or resolution), 4x zoom at most; the move
   runs over the photos' frames, holds stand still, plays and a boomerang are
@@ -88,6 +91,13 @@ Nothing blocks the build loop.
   and End are the preview's alone. A zoomed export decodes larger and fewer
   frames ahead (by the zoom squared, at least 2). `ProjectChanges` bit 11
   (`Crop`) is taken; the full `Project` constructor ends with `crop`.
+- 2026-10-24 (#50, PR #137): music is MP4 only (a GIF has no sound); it starts
+  with the video at a chosen point of the song, never loops (silence after a
+  short song), fades on square curves up to 10 s; the audio track is as long as
+  the video and written up to each frame's start before it (the MP4 sink must
+  not wait on either stream). The file stores the song's full and relative
+  paths and its length. `ProjectChanges` bit 12 (`Music`) is taken; the full
+  `Project` constructor ends with `music`.
 - Timing tests (PR #102): prove a timeout by its effect and give ceilings a wide
   margin. If one flakes, look first at `ImportPerformanceTests` and the
   `EncoderProbeTests` cached-load ratio.
