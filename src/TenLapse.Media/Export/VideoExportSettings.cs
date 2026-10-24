@@ -82,6 +82,17 @@ public sealed record VideoExportSettings
     public int? DecodeThreads { get; init; }
 
     /// <summary>
+    /// The most any frame enlarges the picture (#46, crop and pan: <see cref="Core.Projects.CropSettings.MaxZoom"/>), 1 or
+    /// more. Such a frame is decoded that much larger on each side, so the default decode depth shrinks by its square
+    /// (<see cref="DecodeFor"/>) to keep the decoded pixels in flight, and the memory target, as they were.
+    /// </summary>
+    public double DecodeZoom
+    {
+        get;
+        init => field = double.IsFinite(value) && value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The decode zoom must be 1 or more.");
+    } = 1;
+
+    /// <summary>
     /// The decode depth and concurrency an export uses: <see cref="DecodeAhead"/> and <see cref="DecodeThreads"/>
     /// when set, otherwise the defaults for the PC. Measured on a dedicated GPU (16 threads, 24 MP JPEGs to 4K):
     /// 6 threads and 8 ahead gave 36 fps at 487 MB peak, against 23 fps for 4 and 6. On an integrated GPU the
@@ -92,7 +103,8 @@ public sealed record VideoExportSettings
     /// <param name="tightMemory">True on an integrated GPU or with 8 GB of RAM or less (<see cref="IsTightMemory"/>).</param>
     public (int Ahead, int Threads) DecodeFor(bool tightMemory)
     {
-        var ahead = Math.Max(1, DecodeAhead ?? (tightMemory ? 4 : 8));
+        // A zoomed export (#46) decodes up to DecodeZoom² the pixels a frame: as many fewer frames ahead, at least 2.
+        var ahead = Math.Max(1, DecodeAhead ?? Math.Max(2, (int)((tightMemory ? 4 : 8) / (DecodeZoom * DecodeZoom))));
         var threads = DecodeThreads ?? Math.Clamp(Environment.ProcessorCount / 2, 1, tightMemory ? 3 : 6);
         return (ahead, Math.Clamp(threads, 1, ahead));
     }

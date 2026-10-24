@@ -12,7 +12,11 @@ namespace TenLapse.Media.Export;
 /// </summary>
 /// <param name="paths">Absolute paths, one per frame, in frame order.</param>
 /// <param name="fit">How the frames are drawn, which sets the decode size; the export's <see cref="VideoExportSettings.Fit"/> must agree.</param>
-/// <param name="looks">Each frame's processing (#45), in frame order; null for none.</param>
+/// <param name="looks">
+/// Each frame's processing (#45), in frame order; null for none. A frame whose view enlarges the picture (#46, crop and
+/// pan) is decoded larger by its zoom (<see cref="FrameRenderer.DecodeOptions(FitMode, PixelSize, double)"/>), so the part
+/// in view keeps its detail.
+/// </param>
 /// <remarks>
 /// A photo that cannot be decoded throws a <see cref="PhotoDecodeException"/> naming the frame and the
 /// <see cref="SkipReason"/>; the export fails with it (as the inner exception of a
@@ -116,7 +120,7 @@ public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = F
             if (!_shared.TryGetValue(first, out shared!))
             {
                 // Started on the pool: a decode's first steps run synchronously, and must not hold the gate.
-                shared = new SharedDecode(last - first + 1, Task.Run(() => DecodeSharedAsync(first, device, outputSize, cancellationToken), cancellationToken), () => Interlocked.Decrement(ref _heldDecodes));
+                shared = new SharedDecode(last - first + 1, Task.Run(() => DecodeSharedAsync(first, last, device, outputSize, cancellationToken), cancellationToken), () => Interlocked.Decrement(ref _heldDecodes));
                 _shared[first] = shared;
             }
         }
@@ -163,9 +167,9 @@ public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = F
     }
 
     // A decode a run shares; counted while its pixels are held.
-    private async Task<PhotoResult<DecodedPhoto>> DecodeSharedAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken)
+    private async Task<PhotoResult<DecodedPhoto>> DecodeSharedAsync(int index, int last, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken)
     {
-        var options = FrameRenderer.DecodeOptions(Fit, outputSize) with { MaxSide = device.MaximumBitmapSizeInPixels };
+        var options = FrameRenderer.DecodeOptions(Fit, outputSize, ZoomOf(index, last)) with { MaxSide = device.MaximumBitmapSizeInPixels };
         var result = await PhotoDecoder.DecodeAsync(_paths[index], options, cancellationToken).ConfigureAwait(false);
         if (result.Succeeded)
         {
@@ -178,7 +182,7 @@ public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = F
     private async Task<CanvasBitmap> DecodeAsync(int index, CanvasDevice device, PixelSize outputSize, CancellationToken cancellationToken)
     {
         // The device's largest bitmap bounds a photo far narrower than the output's aspect (a 30,000 px panorama).
-        var options = FrameRenderer.DecodeOptions(Fit, outputSize) with { MaxSide = device.MaximumBitmapSizeInPixels };
+        var options = FrameRenderer.DecodeOptions(Fit, outputSize, ZoomOf(index, index)) with { MaxSide = device.MaximumBitmapSizeInPixels };
         var result = await PhotoDecoder.DecodeAsync(_paths[index], options, cancellationToken).ConfigureAwait(false);
         if (!result.Succeeded)
         {
@@ -187,6 +191,19 @@ public sealed class PhotoFileSource(IReadOnlyList<string> paths, FitMode fit = F
 
         using var photo = result.Value;
         return CanvasBitmap.CreateFromSoftwareBitmap(device, photo.Pixels);
+    }
+
+    // The zoom frames first to last are decoded for (#46): the largest of their views', so one decode serves every frame of
+    // a run that shares it.
+    private double ZoomOf(int first, int last)
+    {
+        var zoom = 1.0;
+        for (var index = first; _looks is not null && index <= last; index++)
+        {
+            zoom = Math.Max(zoom, _looks[index].View.Zoom);
+        }
+
+        return zoom;
     }
 
     private sealed class SharedDecode(int frames, Task<PhotoResult<DecodedPhoto>> decode, Action released)
