@@ -43,3 +43,6 @@ dist/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Python bytecode (the showreel scripts)
+__pycache__/

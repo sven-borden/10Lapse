@@ -691,6 +691,7 @@ if len(sys.argv) > 2:
     n = len(mono) // hop
     rms = np.sqrt((mono[:n * hop].reshape(n, hop) ** 2).mean(axis=1))
     v = np.sqrt(rms / rms.max())
-    with open(sys.argv[2], 'w', encoding='utf-8') as f:
+    with open(sys.argv[2], 'w', encoding='utf-8', newline='
+') as f:
         f.write('// Written by music.py: the soundtrack\'s loudness, 100 values a second, for the Music beat.\n')
         f.write('window.WAVE = { rate: 100, peaks: [' + ','.join(f'{x:.2f}'.rstrip('0').rstrip('.') if x > 0 else '0' for x in v) + '] };\n')
