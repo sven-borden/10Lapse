@@ -1,6 +1,6 @@
-# 10Lapse 3.0 Store listing (Spanish)
+# 10Lapse 3.1 Store listing (Spanish)
 
-The text Sven pastes into Partner Center for the 3.0 update (#117): Apps and games, 10Lapse, the 3.0 submission,
+The text Sven pastes into Partner Center for the 3.1 update (#141; 3.0 was #117): Apps and games, 10Lapse, the 3.1 submission,
 Store listings, Spanish (español). One `es` listing serves Spain and Latin America, as the package's `es` resources
 do. It is `docs/store/listing.md` translated, with the same fields, limits and order; the notes around the boxes stay
 in English for Sven, the boxes are what the Store shows.
@@ -14,37 +14,51 @@ share ("equipo" for the PC, "teléfono", "en tiempo real"), and "video" without 
 listing also serves Mexico, the US and the rest of Latin America (about 90 % of Spanish speakers) and the RAE accepts
 "video" in Spain too; the Store names of the extensions exactly as the Mexican Store (market MX) shows them, which
 match that spelling (`Extensión de imágenes HEIF`, `Extensiones de video HEVC`, `Extensión de imagen RAW`); the app's
-own labels in “…” where the text names one. As in English, the text says only what 3.0 does.
+own labels in “…” where the text names one. As in English, the text says only what 3.1 does, and no field has the
+Windows 10 sentence. The 3.1 features use the app's Spanish names: Antiparpadeo, Fusión de fotogramas, Recorte y paneo
+(Suave, Lineal), Imagen fija al inicio / al final, Bumerán, Reproducciones, GIF animado (Pequeño, Mediano, Grande),
+Música, Proyectos recientes, Antes / Después.
 
 ## Description
 
-Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 2,881.
+Limit 10,000 characters, plain text (no HTML, no URLs). This draft: 4,666.
 
 ```text
-Convierte una carpeta de fotos en un video timelapse fluido, hasta 4K.
+Convierte una carpeta de fotos en un video timelapse fluido, hasta 4K, o en un GIF animado.
 
-Fotografiaste una puesta de sol, una tormenta que se acerca o una obra desde un trípode, una foto cada pocos segundos, y ahora tienes una carpeta con cientos o miles de fotos. 10Lapse las reproduce como un video: suelta la carpeta en la ventana, revisa la vista previa y exporta un MP4.
+Fotografiaste una puesta de sol, una tormenta que se acerca o una obra desde un trípode, una foto cada pocos segundos, y ahora tienes una carpeta con cientos o miles de fotos. 10Lapse las reproduce como un video: suelta la carpeta en la ventana, revisa la vista previa y exporta un MP4 o un GIF.
 
 Cómo funciona
 1. Elige una carpeta, selecciona fotos o arrástralas a la ventana. 10Lapse lee JPEG, PNG, TIFF, HEIC y los archivos RAW de la mayoría de las cámaras, y los ordena según el momento en que se tomaron.
 2. Fija la velocidad de una de estas tres formas: fotogramas por segundo, la duración que debe tener el video o segundos por foto para una presentación. Las cifras siempre están a la vista, por ejemplo “742 fotos → 24,7 s a 30 fps”.
 3. Elige la proporción: la de tus fotos, 16:9 para YouTube y la televisión, 9:16 para historias y reels en el teléfono, 1:1, 4:5 o 4:3. “Ajustar” muestra la foto entera; “Rellenar” recorta los bordes para que no haya franjas.
-4. Exporta un MP4 en 720p, 1080p, 1440p o 4K, en H.264, o en HEVC si el equipo puede codificarlo y reproducirlo. La vista previa dibuja cada fotograma con el mismo código que la exportación, así que el video se ve igual que la vista previa.
+4. Exporta un MP4 en 720p, 1080p, 1440p o 4K, en H.264, o en HEVC si el equipo puede codificarlo y reproducirlo. O exporta un GIF animado que se repite, en tamaño “Pequeño”, “Mediano” o “Grande” (320, 480 o 640 píxeles en el lado largo), con hasta 10, 20 o 25 fotogramas por segundo. La vista previa dibuja cada fotograma con el mismo código que la exportación, así que el video se ve igual que la vista previa.
+
+El aspecto justo
+- “Antiparpadeo” suaviza los saltos de exposición entre fotos. Si cambiaste la velocidad de obturación, la apertura o el ISO durante una puesta de sol, lee esos ajustes en las fotos y convierte cada escalón en una rampa suave, mientras la escena se oscurece como lo hizo.
+- “Fusión de fotogramas” hace de cada fotograma el promedio de 2 a 16 fotos cercanas, como una exposición larga: las luces en movimiento dejan estelas y las nubes se mueven con suavidad.
+- “Recorte y paneo” pasa de un encuadre inicial a uno final, con un zoom de hasta 4×, “Suave” o “Lineal”. Arrastra el encuadre en la vista previa para colocarlo.
+- “Antes” y “Después”, en la vista previa, muestran tus fotos con y sin antiparpadeo y fusión de fotogramas.
+- Una imagen fija al inicio y al final del video, de hasta 10 segundos cada una, hasta cinco reproducciones de las fotos, o un “Bumerán”, de ida y vuelta.
+- Agrega música bajo un MP4 (MP3, M4A, WAV, WMA o FLAC): elige en qué punto de la canción empieza el video, con fundido de entrada y de salida. La canción termina donde termina el video. Un GIF no tiene sonido.
 
 Edición y exportación
 - Recorre la secuencia, avanza fotograma a fotograma, y quita una foto borrosa (Ctrl+Z la devuelve) o arrastra otra a su sitio. Quitar una foto la saca del video, nunca de tu disco.
 - Las marcas de la tira de fotogramas muestran dónde parece que faltan fotos.
 - Las velocidades de fotogramas son exactas, 29,97 incluida, de 0,1 a 120 fotogramas por segundo.
 - El panel Salida calcula el tamaño del archivo antes de exportar.
-- La exportación usa el codificador de video de la tarjeta gráfica si el equipo tiene uno. Mantiene el equipo activo hasta que el video está listo, sigue adelante si minimizas la ventana y se detiene en menos de un segundo si la cancelas.
-- Cuando el video está listo, puedes reproducirlo ahí mismo o abrir su carpeta.
+- La exportación a MP4 usa el codificador de video de la tarjeta gráfica si el equipo tiene uno. La exportación mantiene el equipo activo hasta terminar, sigue adelante si minimizas la ventana y se detiene en menos de un segundo si la cancelas.
+- Cuando la exportación termina, puedes reproducir el resultado ahí mismo o abrir su carpeta.
 - Si algo falla, 10Lapse te dice qué pasó y qué hacer a continuación.
 
+Proyectos
+Guarda un proyecto como archivo .10lapse, que conserva la lista de fotos, su orden y todos los ajustes, y vuelve a abrirlo más tarde o con un doble clic. La pantalla de inicio muestra tus proyectos recientes. Si 10Lapse se cierra antes de que guardes, te ofrece restaurar tus cambios la próxima vez que se inicia. Las fotos que un proyecto no encuentra siguen en su archivo, así que vuelven en cuanto su unidad se conecta de nuevo.
+
 Privacidad desde el diseño
-10Lapse funciona sin conexión. No hay cuenta, ni análisis, ni acceso a la red: tus fotos y videos nunca salen de tu equipo.
+10Lapse funciona sin conexión. No hay cuenta, ni análisis, ni acceso a la red: tus fotos, videos y proyectos nunca salen de tu equipo.
 
 Hecho para Windows 11
-10Lapse 3.0 necesita Windows 11 en un equipo x64 o ARM64. Los temas claro, oscuro y de contraste siguen la configuración de Windows, igual que las animaciones. Todo funciona con el teclado, y los lectores de pantalla anuncian cada control y el progreso de la exportación.
+10Lapse necesita Windows 11 en un equipo x64 o ARM64. Los temas claro, oscuro y de contraste siguen la configuración de Windows, igual que las animaciones. Todo funciona con el teclado, y los lectores de pantalla anuncian cada control y el progreso de la exportación.
 
 Las extensiones opcionales de Microsoft Store agregan más formatos de foto. Las fotos HEIC necesitan dos: Extensión de imágenes HEIF (gratis) y Extensiones de video HEVC (de pago). Los archivos RAW de cámara necesitan una: Extensión de imagen RAW (gratis). 10Lapse indica cuál falta y enlaza a su página de Microsoft Store.
 ```
@@ -52,59 +66,59 @@ Las extensiones opcionales de Microsoft Store agregan más formatos de foto. Las
 ## Short description
 
 Limit 1,000 characters; Microsoft recommends under 270, because some views cut it there. It shows above the
-description, so it says the same thing in other words. This draft: 248.
+description, so it says the same thing in other words. This draft: 259.
 
 ```text
-Crea un video timelapse con los cientos de fotos de una sesión con trípode: fija la velocidad y la proporción, míralo en la vista previa y exporta un MP4 de hasta 4K. 10Lapse funciona sin conexión y sin cuenta, y tus fotos nunca salen de tu equipo.
+Crea un video timelapse con los cientos de fotos de una sesión con trípode: fija la velocidad y la proporción, suaviza el parpadeo y exporta un MP4 de hasta 4K o un GIF animado. 10Lapse funciona sin conexión y sin cuenta, y tus fotos nunca salen de tu equipo.
 ```
 
 ## What's new in this version
 
-Limit 1,500 characters. This draft: 1,428 / 1,500. It names what the reviews of 2.1.1 reported (#44) and says only what 3.0
-does; it does not claim a crash rate.
+Limit 1,500 characters. This draft: 1,348 / 1,500. As in English, it is what 3.0 users get with the update, and it leaves
+out the rating question.
 
 ```text
-10Lapse 3.0 se ha rehecho desde cero para Windows 11.
+10Lapse 3.1 trae lo que un timelapse necesita después de la sesión.
 
-- Reescrito por completo: el código de los cierres inesperados de la 2.1.1 ya no existe. Si algo falla, 10Lapse te dice qué pasó y qué hacer a continuación.
-- Importa fotos HEIC y .jpeg. HEIC necesita dos extensiones de Microsoft Store, Extensión de imágenes HEIF (gratis) y Extensiones de video HEVC (de pago); 10Lapse te dice cuál falta.
-- Exporta hasta 4K, en H.264, o en HEVC si el equipo lo admite, con el progreso, el tiempo restante y un botón “Cancelar exportación” que la detiene en menos de un segundo.
-- Sigue funcionando si cambias de ventana o la minimizas: la exportación continúa, con el progreso en la barra de tareas y una notificación cuando el video está listo.
-- Una nueva velocidad “Por foto” para presentaciones, junto a fotogramas por segundo y duración del video.
-- Vista previa en tiempo real y tira de fotogramas: recorre, avanza, quita o reordena fotos, y deshaz los cambios.
-- Proporciones para televisores, teléfonos y redes sociales: 16:9, 9:16, 1:1, 4:5, 4:3 o la de tus fotos.
-- Recuerda la velocidad, el encuadre y la salida que usaste por última vez para el siguiente proyecto.
-- Temas claro y oscuro, métodos abreviados de teclado, compatibilidad con lectores de pantalla y temas de contraste.
-- Privado: sin cuenta y ahora sin ningún acceso a la red; tus fotos nunca salen de tu equipo.
+- Antiparpadeo: suaviza los saltos de exposición entre fotos. Si cambiaste la velocidad de obturación, la apertura o el ISO durante una puesta de sol, cada escalón se vuelve una rampa suave.
+- Fusión de fotogramas: cada fotograma es el promedio de 2 a 16 fotos cercanas, como una exposición larga, para estelas de luz y nubes suaves.
+- Recorte y paneo: pasa de un encuadre inicial a uno final, con un zoom de hasta 4×, suave o lineal.
+- GIF animado: exporta un GIF que se repite, en tres tamaños, con hasta 25 fotogramas por segundo.
+- Música bajo un MP4: elige dónde empieza la canción, con fundido de entrada y de salida. Termina con el video.
+- Imagen fija al inicio y al final, de hasta 10 segundos, hasta cinco reproducciones de las fotos, o el modo Bumerán.
+- Guarda tu trabajo: un archivo de proyecto .10lapse se vuelve a abrir más tarde, la pantalla de inicio muestra los proyectos recientes y, si 10Lapse se cierra antes de que guardes, te ofrece restaurar tus cambios.
+- Ctrl+O ahora abre un proyecto; “Elegir carpeta” pasó a Ctrl+I.
+- “Antes” y “Después”, en la vista previa, comparan tus fotos con y sin antiparpadeo y fusión de fotogramas.
 
-3.0 necesita Windows 11 en un equipo x64 o ARM64.
+Como antes, 10Lapse funciona sin conexión y tus fotos nunca salen de tu equipo. Necesita Windows 11 en un equipo x64 o ARM64.
 ```
 
 ## Product features
 
-Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 19 are
-44 to 112 characters each.
+Up to 20 features, 200 characters each; the Store adds the bullets. Paste one line per feature box. These 20 are
+62 to 139 characters each.
 
 ```text
-Convierte una carpeta de fotos en un video timelapse, hasta 4K
-Importa una carpeta o las fotos que elijas, o arrástralas a la ventana
+Convierte una carpeta de fotos en un video timelapse de hasta 4K o en un GIF animado
+Importa una carpeta o las fotos que elijas, o arrástralas a la ventana; se ordenan según el momento en que se tomaron
 Lee JPEG, PNG y TIFF; HEIC y RAW de cámara con extensiones de Microsoft Store
-Ordena las fotos según el momento en que se tomaron; arrastra una miniatura para moverla
-Velocidad en fotogramas por segundo, por duración del video o en segundos por foto
+Velocidad en fotogramas por segundo, por duración del video o en segundos por foto, con el número de fotos y la duración siempre a la vista
 Velocidades de fotogramas exactas de 0,1 a 120 fps, 29,97 incluida
-Número de fotos, velocidad y duración del video siempre a la vista
 Proporciones: la de las fotos, 16:9, 9:16, 1:1, 4:5 o 4:3, con “Ajustar” o “Rellenar”
-Vista previa en tiempo real igual al video exportado
-Tira de fotogramas con miniaturas, marcas donde faltan fotos, quitar y deshacer
-MP4 en H.264 (o HEVC si el equipo lo admite) en 720p, 1080p, 1440p o 4K, con tres niveles de calidad
-Tamaño de archivo estimado antes de exportar
-Exporta con el codificador de video de la tarjeta gráfica si el equipo tiene uno
-Sigue exportando con la ventana minimizada y mantiene el equipo activo hasta terminar
-Reproduce el video terminado en la aplicación o abre su carpeta
+Vista previa en tiempo real igual a la exportación, y tira de fotogramas con marcas donde faltan fotos: arrastrar, quitar y deshacer
+Antiparpadeo: suaviza los saltos de exposición y convierte los escalones de una puesta de sol en una rampa suave
+Fusión de fotogramas: promedio de 2 a 16 fotos cercanas para estelas de luz y nubes suaves
+Recorte y paneo de un encuadre inicial a uno final, zoom de hasta 4×, “Suave” o “Lineal”
+Imagen fija al inicio y al final, hasta cinco reproducciones de las fotos, o modo Bumerán
+Música bajo un MP4: elige dónde empieza la canción, con fundido de entrada y de salida; termina con el video
+Guarda proyectos como archivos .10lapse, abre los recientes desde la pantalla de inicio y restaura los cambios tras un cierre inesperado
+MP4 en H.264 (o HEVC si el equipo lo admite) en 720p, 1080p, 1440p o 4K, con tres niveles de calidad y tamaño estimado antes de exportar
+GIF animado que se repite, en tres tamaños, con hasta 10, 20 o 25 fotogramas por segundo
+Exporta MP4 con el codificador de video de la tarjeta gráfica si hay uno; sigue con la ventana minimizada y mantiene el equipo activo
+Reproduce el video o el GIF terminado en la aplicación, o abre su carpeta
 Mensajes claros que dicen qué falló y qué hacer a continuación
 Funciona sin conexión: sin cuenta, sin análisis, las fotos nunca salen de tu equipo
 Temas claro y oscuro, temas de contraste, métodos abreviados de teclado, compatibilidad con lectores de pantalla
-Recuerda la velocidad, el encuadre y la salida que usaste por última vez
 ```
 
 ## Search terms
