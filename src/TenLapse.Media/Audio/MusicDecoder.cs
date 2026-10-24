@@ -368,3 +368,14 @@ internal sealed unsafe class MusicDecoder : IDisposable
         public int BlockAlign => Channels * BitsPerSample / 8;
     }
 }
+
+/// <summary>What the app reads of an audio file the user chooses for the music (#50).</summary>
+public static class MusicFile
+{
+    /// <summary>The song's length, after decoding its first samples (<see cref="MusicDecoder.Probe"/>).</summary>
+    /// <exception cref="InvalidDataException">The file has no audio Windows can decode, or cannot be read.</exception>
+    public static MusicFileInfo Read(string path) => MusicDecoder.Probe(path);
+
+    /// <summary>The file types the music's file dialog offers: what Windows decodes without an extension from the Store.</summary>
+    public static IReadOnlyList<string> Extensions { get; } = [".mp3", ".m4a", ".aac", ".wav", ".wma", ".flac"];
+}

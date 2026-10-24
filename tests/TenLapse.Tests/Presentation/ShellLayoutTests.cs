@@ -70,6 +70,7 @@ public sealed class ShellLayoutTests
         Assert.True(layout.ShowsFrame);
         Assert.True(layout.ShowsOutput);
         Assert.True(layout.ShowsLook);
+        Assert.True(layout.ShowsMusic);
     }
 
     [Fact]
@@ -99,6 +100,14 @@ public sealed class ShellLayoutTests
         Assert.Equal(InspectorTab.Look, layout.Tab);
         Assert.False(layout.ShowsOutput);
         Assert.True(layout.ShowsLook);
+        Assert.False(layout.ShowsMusic);
+
+        // #50: Music has the fifth.
+        layout.SelectedTabIndex = 4;
+
+        Assert.Equal(InspectorTab.Music, layout.Tab);
+        Assert.False(layout.ShowsLook);
+        Assert.True(layout.ShowsMusic);
     }
 
     [Fact]
@@ -110,6 +119,7 @@ public sealed class ShellLayoutTests
         Assert.True(layout.ShowsTiming);
         Assert.True(layout.ShowsFrame);
         Assert.True(layout.ShowsOutput);
+        Assert.True(layout.ShowsMusic);
     }
 
     [Fact]
@@ -193,8 +203,8 @@ public sealed class ShellLayoutTests
     }
 
     [Fact]
-    public void TheTabsAreTheFourSectionsInTheCanvasOrder() =>
-        Assert.Equal(new[] { "Timing", "Frame", "Output", "Look" }, ShellLayout.TabLabels);
+    public void TheTabsAreTheSectionsInTheirOrder() =>
+        Assert.Equal(new[] { "Timing", "Frame", "Output", "Look", "Music" }, ShellLayout.TabLabels);
 
     [Theory]
     [InlineData(800, 260)] // the default window: the full panel

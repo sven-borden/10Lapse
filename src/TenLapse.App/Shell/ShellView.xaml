@@ -682,10 +682,11 @@
       </shell:Region>
 
       <!--
-        Inspector (#17, #18, #23, #45; #24 swaps in the export panel): 320 px, one divider on its left. The 1 px
+        Inspector (#17, #18, #23, #45, #50; #24 swaps in the export panel): 320 px, one divider on its left. The 1 px
         top margin clears the Layer's divider; the Narrow state sets Margin to 0 along with the rest. The sections
-        (Timing #17, Frame #18, Output #23, Look #45) stack in InspectorRegion, which scrolls when the window is short.
-        Narrow, the tab row above it picks one section (the canvas's "Panel" tabs; Look, built, has the fourth).
+        (Timing #17, Frame #18, Output #23, Look #45, Music #50) stack in InspectorRegion, which scrolls when the window
+        is short. Narrow, the tab row above it picks one section (the canvas's "Panel" tabs; Look and Music, built, have
+        the fourth and the fifth).
       -->
       <Border
         x:Name="InspectorPane"
@@ -723,6 +724,7 @@
                 <shell:FramePanel x:Name="FrameSection" Visibility="{x:Bind Layout.ShowsFrame, Mode=OneWay}" />
                 <shell:OutputPanel x:Name="OutputSection" Visibility="{x:Bind Layout.ShowsOutput, Mode=OneWay}" />
                 <shell:LookPanel x:Name="LookSection" Visibility="{x:Bind Layout.ShowsLook, Mode=OneWay}" />
+                <shell:MusicPanel x:Name="MusicSection" Visibility="{x:Bind Layout.ShowsMusic, Mode=OneWay}" />
               </StackPanel>
             </ScrollViewer>
           </Grid>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The user-visible text of MusicText.cs (#50), read through TextResources: the Music section of the inspector. The user
+  picks a song (an audio file); the video starts at a chosen point of it, the music fades in at the start and out where
+  it ends, and it is cut where the video ends (it never repeats). Only MP4 videos carry it: a GIF has no sound.
+  English is the neutral language. A translation is a copy of this file named MusicText.<culture>.resx with the values
+  translated. Keep every {0} and {1} placeholder; each entry is whole. The panel is 280 px wide.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Heading" xml:space="preserve">
+    <value>Music</value>
+    <comment>The Music section's heading in the inspector, also its tab in a narrow window. One short word.</comment>
+  </data>
+  <data name="EmptyHint" xml:space="preserve">
+    <value>A song under the video, cut and faded to fit its length. MP4 only.</value>
+    <comment>The line under the heading while the project has no music: what the section does. The song is cut where the video ends and faded in and out; only MP4 videos carry sound (a GIF has none).</comment>
+  </data>
+  <data name="AddButton" xml:space="preserve">
+    <value>Add music…</value>
+    <comment>The button that opens the file dialog to choose a song (an audio file) for the video. The ellipsis says a dialog opens.</comment>
+  </data>
+  <data name="AddName" xml:space="preserve">
+    <value>Add music</value>
+    <comment>The Add button's screen reader name.</comment>
+  </data>
+  <data name="ReplaceButton" xml:space="preserve">
+    <value>Replace…</value>
+    <comment>The button beside the chosen song that opens the file dialog to choose another song in its place.</comment>
+  </data>
+  <data name="ReplaceName" xml:space="preserve">
+    <value>Replace the music</value>
+    <comment>The Replace button's screen reader name.</comment>
+  </data>
+  <data name="RemoveButton" xml:space="preserve">
+    <value>Remove</value>
+    <comment>The button that takes the song out of the project. It never deletes the file from the disk: use the word for "remove", not "delete".</comment>
+  </data>
+  <data name="RemoveName" xml:space="preserve">
+    <value>Remove the music from the project</value>
+    <comment>The Remove button's screen reader name: the music leaves the project, the file stays on the disk.</comment>
+  </data>
+  <data name="SongName" xml:space="preserve">
+    <value>{0}, {1} long</value>
+    <comment>The screen reader name of the chosen song: {0} is the file's name (Sunrise.mp3), {1} its length, already formatted (3 min 42 s).</comment>
+  </data>
+  <data name="StartLabel" xml:space="preserve">
+    <value>Video starts at</value>
+    <comment>The label above the slider that picks where in the song the video starts (to skip a slow intro).</comment>
+  </data>
+  <data name="StartName" xml:space="preserve">
+    <value>Where the video starts in the song</value>
+    <comment>The start slider's screen reader name.</comment>
+  </data>
+  <data name="FadeInLabel" xml:space="preserve">
+    <value>Fade in</value>
+    <comment>The label above the slider for how long the music takes to rise from silence at the start of the video.</comment>
+  </data>
+  <data name="FadeOutLabel" xml:space="preserve">
+    <value>Fade out</value>
+    <comment>The label above the slider for how long the music takes to fall to silence where it ends.</comment>
+  </data>
+  <data name="FadeInName" xml:space="preserve">
+    <value>Fade in length</value>
+    <comment>The fade in slider's screen reader name.</comment>
+  </data>
+  <data name="FadeOutName" xml:space="preserve">
+    <value>Fade out length</value>
+    <comment>The fade out slider's screen reader name.</comment>
+  </data>
+  <data name="FitsVideo" xml:space="preserve">
+    <value>The song plays under the whole video and fades out as it ends.</value>
+    <comment>Under the sliders when the song is longer than the video: it is cut where the video ends, with the fade out just before.</comment>
+  </data>
+  <data name="EndsEarly" xml:space="preserve">
+    <value>The song ends {0} before the video does; the rest is silent.</value>
+    <comment>Under the sliders when the song ends before the video: {0} is how much earlier, already formatted (6.2 s, 1 min 12 s). The music is never repeated.</comment>
+  </data>
+  <data name="StartsAfterEnd" xml:space="preserve">
+    <value>The video starts after the song ends, so it has no music. Move the start back.</value>
+    <comment>Under the sliders when the start point is at or past the end of the song: the video has no music until the start is moved back.</comment>
+  </data>
+  <data name="GifSilent" xml:space="preserve">
+    <value>A GIF has no sound. Export an MP4 to keep the music.</value>
+    <comment>Under the controls while the output format is GIF: an animated GIF has no sound, so the music only goes into MP4 videos.</comment>
+  </data>
+  <data name="Missing" xml:space="preserve">
+    <value>{0} can't be found. Replace it, or remove the music.</value>
+    <comment>In place of the controls when the song's file is not where the project says (moved, renamed, a drive not connected): {0} is the file's name.</comment>
+  </data>
+  <data name="Unreadable" xml:space="preserve">
+    <value>{0} can't be played. Choose an MP3, M4A, WAV, WMA or FLAC file.</value>
+    <comment>An InfoBar after choosing a file that does not play: {0} is the file's name. The formats are file types: keep MP3, M4A, WAV, WMA and FLAC as they are.</comment>
+  </data>
+  <data name="ExportFailed" xml:space="preserve">
+    <value>The music file can't be read. Replace or remove it in the Music section, then export again.</value>
+    <comment>An InfoBar when an export stopped because the music file could not be read (gone, damaged). "Music section" names the section of the inspector (the Heading above).</comment>
+  </data>
+</root>
