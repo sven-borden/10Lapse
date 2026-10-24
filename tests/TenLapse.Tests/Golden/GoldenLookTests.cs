@@ -140,6 +140,99 @@ public sealed class GoldenLookTests(GoldenLookTests.FlickeringPhotos photos) : I
         File.Delete(written);
     }
 
+    [Fact]
+    public async Task AHeldLoopedAndBoomerangedPhotoKeepsItsOwnCorrection()
+    {
+        // #45 with #49: the export's frame index is a video frame. A hold, a second play and the boomerang's way back show
+        // a photo again; each showing must draw with that photo's correction, as the preview draws the photo on screen
+        // (PreviewRenderLoop takes the photo through the same FrameSequence.PhotoAt, then the look of its id).
+        SkipWithoutH264Encoder();
+        var folder = GoldenExport.EvidenceFolder(ClassName, "sequence");
+        var (frames, proxies) = await photos.GetAsync();
+        var sequence = new SequenceSettings(TimeSpan.FromSeconds(1.5), TimeSpan.FromSeconds(1), 2, boomerang: true);
+        var snapshot = GoldenExport.Snapshot(frames, TimingSettings.PerSecond(new Fraction(2, 1)), FrameAspect.Ratio16x9, FitMode.Fill, VideoFormat.Mp4H264, sequence: sequence, look: new LookSettings(true, 100));
+        var playback = snapshot.Playback;
+        var shown = Enumerable.Range(0, playback.Length).Select(playback.PhotoAt).ToArray();
+        Assert.Equal(0, shown[0]);
+        Assert.Equal(shown[0], shown[2]);
+        Assert.Equal(0, shown[^1]);
+        Assert.All(Enumerable.Range(1, frames.Count - 2), photo => Assert.True(shown.Count(at => at == photo) >= 4, $"photo {photo} is shown fewer than 4 times"));
+
+        var size = GoldenExport.SmallSize(snapshot.VideoSize);
+        var (result, _) = await GoldenExport.ExportSmallOrSkipAsync(snapshot, Path.Combine(photos.Folder, "look-sequence.mp4"));
+        var exported = GoldenExport.ReadAllFrames(result.Path).Frames;
+        Assert.Equal(playback.Length, exported.Count);
+
+        var problems = new List<string>();
+        var evidence = new List<(int Index, GoldenImage Reference, GoldenImage Exported)>();
+        var brightness = new Dictionary<int, List<double>>();
+        var (worstWith, worstRatio) = (0.0, 0.0);
+        using (var device = new CanvasDevice())
+        {
+            var preview = new PreviewImageSource(proxies, () => device);
+            var drawn = new Dictionary<int, (GoldenImage With, GoldenImage Without, FrameLook Look)>();
+            for (var position = 0; position < playback.Length; position++)
+            {
+                var photo = shown[position];
+                if (!drawn.TryGetValue(photo, out var reference))
+                {
+                    var frame = snapshot.Frames[photo];
+                    var look = FrameLook.For(snapshot, frame.Id);
+                    reference = (
+                        await PreviewDrawAsync(device, preview, frame, snapshot.FrameSettings, size, look),
+                        await PreviewDrawAsync(device, preview, frame, snapshot.FrameSettings, size, FrameLook.None),
+                        look);
+                    drawn[photo] = reference;
+                }
+
+                var errorWith = Worst(GoldenImage.MeanAbsoluteError(reference.With, exported[position]));
+                var errorWithout = Worst(GoldenImage.MeanAbsoluteError(reference.Without, exported[position]));
+                worstWith = Math.Max(worstWith, errorWith);
+                (brightness.TryGetValue(photo, out var list) ? list : brightness[photo] = []).Add(LuminanceMeter.Measure(exported[position].Pixels, size.Width, size.Height, size.Width * 4));
+                if (errorWith > MeanErrorLimit)
+                {
+                    problems.Add($"video frame {position} (photo {photo}): mean error against the preview with its look expected at most {MeanErrorLimit}, got {errorWith:0.00}");
+                    evidence.Add((position, reference.With, exported[position]));
+                }
+
+                if (Math.Abs(reference.Look.Stops) > 0.2)
+                {
+                    worstRatio = Math.Max(worstRatio, errorWith / errorWithout);
+                    if (errorWith * 2 > errorWithout)
+                    {
+                        problems.Add($"video frame {position} (photo {photo}, {reference.Look.Stops:+0.00;-0.00} stops): not clearly the corrected picture: {errorWith:0.00} levels with its look, {errorWithout:0.00} without");
+                        evidence.Add((position, reference.With, exported[position]));
+                    }
+                }
+            }
+        }
+
+        // Every showing of one photo has the same brightness: the correction follows the photo, not the video frame.
+        var worstShowings = brightness.Values.Max(values => values.Max() - values.Min());
+        TestContext.Current.TestOutputHelper?.WriteLine(
+            $"MP4 {size.Width}x{size.Height}, {playback.Length} video frames of {frames.Count} photos: worst mean error {worstWith:0.00} levels against the preview with its look, " +
+            $"worst with/without ratio {worstRatio:0.00}, largest brightness spread between showings of one photo {worstShowings:0.000} stops");
+        if (worstShowings > 0.03)
+        {
+            problems.Add($"the showings of one photo differ by up to {worstShowings:0.000} stops in brightness");
+        }
+
+        if (problems.Count > 0)
+        {
+            Directory.CreateDirectory(folder);
+            File.Copy(result.Path, Path.Combine(folder, Path.GetFileName(result.Path)), overwrite: true);
+            foreach (var (index, reference, frame) in evidence)
+            {
+                await reference.SavePngAsync(Path.Combine(folder, $"frame{index}-preview.png"));
+                await frame.SavePngAsync(Path.Combine(folder, $"frame{index}-export.png"));
+            }
+
+            Assert.Fail(GoldenExport.Report("MP4 with deflicker, holds, two plays and the boomerang, preview against export:", problems, folder));
+        }
+
+        File.Delete(result.Path);
+    }
+
     private static double Worst((double B, double G, double R) error) => Math.Max(error.B, Math.Max(error.G, error.R));
 
     // The preview's drawing, as GoldenGeometryTests does it, with the photo's look.

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using TenLapse.Core.Look;
 using TenLapse.Core.Projects;
 using TenLapse.Presentation;
+using TenLapse.Presentation.Export;
 using TenLapse.Presentation.Look;
 using TenLapse.Presentation.Services;
 using TenLapse.Tests.Import;
@@ -272,6 +273,40 @@ public sealed class LookPanelTests
         var (snapshot, _) = Assert.Single(app.Exporter.Calls);
         Assert.All(snapshot.Frames, frame => Assert.NotNull(frame.Exposure));
         Assert.False(app.On(() => app.Export.IsWaitingForMeasuring));
+    }
+
+    [Fact]
+    public void CancelWhileTheExportWaitsForTheMeasuringStopsItBeforeAnythingIsExported()
+    {
+        // The wait sits inside the export's try: Cancel there ends the export as any Cancel does, and no exporter (with its
+        // photo source, #49's disposable) is ever started. The measuring itself goes on: it belongs to the Look section.
+        var meter = new FakeExposureMeter();
+        meter.Hold();
+        using var app = new ExportHarness(
+            frames: 8,
+            capabilities: new FakeOutputCapabilities(),
+            setup: project =>
+            {
+                project.UpdateFrames(project.Frames.Select(frame => frame with { PixelSize = new PixelSize(30, 20) }));
+                project.Look = new LookSettings(true, 100);
+            },
+            measuring: shell => new ExposureAnalysis(shell, meter, new UiThreadDispatcher(), new FakeErrorSink(), new FakeInfoBarService()));
+
+        app.StartExport();
+        Assert.True(app.On(() => app.Export.IsWaitingForMeasuring));
+
+        app.On(() => app.Export.CancelCommand.Execute(null));
+        app.Settle();
+
+        Assert.Equal(ExportPanelState.Editing, app.On(() => app.Export.State));
+        Assert.False(app.On(() => app.Export.IsWaitingForMeasuring));
+        Assert.Equal(string.Empty, app.On(() => app.Export.MeasuringText));
+        Assert.Equal(["started", "ended Cancelled"], app.Lifecycle);
+        Assert.True(app.On(() => app.Shell.Edits.IsOpen));
+
+        meter.Release();
+        app.Settle();
+        Assert.Empty(app.Exporter.Calls);
     }
 
     [Fact]

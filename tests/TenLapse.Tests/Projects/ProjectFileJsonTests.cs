@@ -109,6 +109,23 @@ public sealed class ProjectFileJsonTests
     }
 
     [Fact]
+    public void AnOpenedFileKeepsBothTheSequenceAndTheLook()
+    {
+        // #49 and #45 each add a project-only group; one file carries both and the opened project starts with both, clean.
+        var sequence = new SequenceSettings(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(0.5), 3, boomerang: true);
+        var look = new LookSettings(true, 40);
+
+        var read = RoundTrip(new ProjectFileContent { Sequence = sequence, Look = look });
+        Assert.Equal(sequence, read.Sequence);
+        Assert.Equal(look, read.Look);
+
+        var project = read.CreateEmptyProject();
+        Assert.Equal(sequence, project.Sequence);
+        Assert.Equal(look, project.Look);
+        Assert.False(project.Snapshot.IsDirty);
+    }
+
+    [Fact]
     public void AStrengthOutsideItsRangeTakesTheDefaultAndSaysSo()
     {
         var result = ProjectFileJson.Read("""
