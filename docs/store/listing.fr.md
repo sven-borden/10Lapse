@@ -85,7 +85,7 @@ Limit 1,500 characters. This draft: 1,415. Like the English one, it is what 3.0 
 - Musique sous un MP4 : choisissez où commence la chanson, avec un fondu d’entrée et de sortie. Elle est coupée à la fin de la vidéo.
 - Arrêt sur image au début et à la fin, jusqu’à 10 s, jusqu’à cinq lectures des photos, ou le mode Boomerang.
 - Vos projets s’enregistrent : un fichier .10lapse se rouvre plus tard, l’écran d’accueil affiche les projets récents, et si 10Lapse se ferme avant l’enregistrement, il propose de restaurer vos modifications.
-- Ctrl+O ouvre désormais un projet ; Choisir un dossier passe à Ctrl+I.
+- Ctrl+O ouvre désormais un projet ; Choisir un dossier passe à Ctrl+I et Choisir des photos à Ctrl+Maj+I.
 - Avant et Après, dans l’aperçu, comparent vos photos avec et sans anti-scintillement et fusion d’images.
 
 Comme avant, 10Lapse fonctionne hors connexion et vos photos ne quittent jamais votre PC. Il nécessite Windows 11 sur un PC x64 ou ARM64.

@@ -84,7 +84,7 @@ and it leaves out the rating question.
 - Musik unter einem MP4-Video: Wählen Sie, wo der Song beginnt, und blenden Sie ihn ein und aus. Er wird am Ende des Videos abgeschnitten.
 - Standbild am Anfang und am Ende, bis zu 10 Sekunden, bis zu fünf Durchläufe der Fotos oder ein Bumerang.
 - Projekte speichern: Eine .10lapse-Projektdatei lässt sich später wieder öffnen, der Startbildschirm zeigt die zuletzt verwendeten Projekte, und wird 10Lapse vor dem Speichern beendet, bietet es an, Ihre Änderungen wiederherzustellen.
-- Strg+O öffnet jetzt ein Projekt; „Ordner auswählen“ liegt nun auf Strg+I.
+- Strg+O öffnet jetzt ein Projekt; „Ordner auswählen“ liegt nun auf Strg+I, „Fotos auswählen“ auf Strg+Umschalt+I.
 - „Vorher“ und „Nachher“ in der Vorschau vergleichen Ihre Fotos mit und ohne Entflackern und Überlagern.
 
 Wie bisher funktioniert 10Lapse offline, und Ihre Fotos verlassen nie Ihren PC. Es benötigt Windows 11 auf einem x64- oder ARM64-PC.

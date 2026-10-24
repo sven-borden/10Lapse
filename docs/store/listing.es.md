@@ -87,7 +87,7 @@ out the rating question.
 - Música bajo un MP4: elige dónde empieza la canción, con fundido de entrada y de salida. Se corta donde termina el video.
 - Imagen fija al inicio y al final, de hasta 10 segundos, hasta cinco reproducciones de las fotos, o el modo Bumerán.
 - Guarda tu trabajo: un archivo de proyecto .10lapse se vuelve a abrir más tarde, la pantalla de inicio muestra los proyectos recientes y, si 10Lapse se cierra antes de que guardes, te ofrece restaurar tus cambios.
-- Ctrl+O ahora abre un proyecto; “Elegir carpeta” pasó a Ctrl+I.
+- Ctrl+O ahora abre un proyecto; “Elegir carpeta” pasó a Ctrl+I y “Elegir fotos”, a Ctrl+Mayús+I.
 - “Antes” y “Después”, en la vista previa, comparan tus fotos con y sin antiparpadeo y fusión de fotogramas.
 
 Como antes, 10Lapse funciona sin conexión y tus fotos nunca salen de tu equipo. Necesita Windows 11 en un equipo x64 o ARM64.

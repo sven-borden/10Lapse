@@ -86,7 +86,7 @@ O 10Lapse 3.1 traz o que um timelapse precisa depois da sessão de fotos.
 - Música sob um MP4: escolha onde a música começa, com fade de entrada e de saída. Ela é cortada onde o vídeo termina.
 - Imagem congelada no início e no fim, de até 10 segundos, até cinco reproduções das fotos ou o modo Bumerangue.
 - Salve seu trabalho: um arquivo de projeto .10lapse abre de novo depois, a tela inicial mostra os projetos recentes e, se o 10Lapse fechar antes de você salvar, ele oferece restaurar suas alterações.
-- Ctrl+O agora abre um projeto; Escolher pasta passou para Ctrl+I.
+- Ctrl+O agora abre um projeto; Escolher pasta passou para Ctrl+I e Escolher fotos, para Ctrl+Shift+I.
 - Antes e Depois, na visualização, comparam suas fotos com e sem anticintilação e fusão de quadros.
 
 Como antes, o 10Lapse funciona offline e suas fotos nunca saem do seu PC. Ele requer o Windows 11 em um PC x64 ou ARM64.

@@ -87,7 +87,7 @@ Limit 1,500 characters. This draft: 1,220. It is what 3.0 users get with the upd
 - Music under an MP4: choose where the song starts and fade it in and out. It is cut where the video ends.
 - Hold the first and last frames for up to 10 seconds, play the photos up to five times, or play them as a boomerang.
 - Save your work: a .10lapse project file opens again later, the start screen lists recent projects, and if 10Lapse closes before you saved, it offers to restore your changes.
-- Ctrl+O now opens a project; Choose folder moved to Ctrl+I.
+- Ctrl+O now opens a project; Choose folder moved to Ctrl+I and Choose photos to Ctrl+Shift+I.
 - Before and After in the preview compares your photos with and without deflicker and frame blending.
 
 As before, 10Lapse works offline and your photos never leave your PC. It needs Windows 11 on an x64 or ARM64 PC.

@@ -86,7 +86,7 @@ out the rating question.
 - Musica sotto un MP4: scegli dove inizia la canzone, con dissolvenza in entrata e in uscita. Viene tagliata dove finisce il video.
 - Fermo immagine all'inizio e alla fine, fino a 10 secondi, fino a cinque riproduzioni delle foto, oppure la modalità Boomerang.
 - Salva il tuo lavoro: un file di progetto .10lapse si riapre più tardi, la schermata iniziale mostra i progetti recenti e, se 10Lapse si chiude prima del salvataggio, propone di ripristinare le modifiche.
-- Ctrl+O ora apre un progetto; “Scegli cartella” è passato a Ctrl+I.
+- Ctrl+O ora apre un progetto; “Scegli cartella” è passato a Ctrl+I e “Scegli foto” a Ctrl+Maiusc+I.
 - “Prima” e “Dopo”, nell'anteprima, confrontano le tue foto con e senza antisfarfallio e fusione di fotogrammi.
 
 Come prima, 10Lapse funziona offline e le tue foto non lasciano mai il PC. Richiede Windows 11 su un PC x64 o ARM64.
