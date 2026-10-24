@@ -244,6 +244,24 @@ public sealed class RatingPromptTests
         Assert.Equal(Version, remembered.RatingAskedVersion);
     }
 
+    [Fact]
+    public async Task YesOpensTheReviewPageWhenTheStoresCallIsCancelled()
+    {
+        using var remembered = Remembered();
+        using var prompt = Prompt(remembered);
+        _service.Failure = new TaskCanceledException("The Store's call was cancelled.");
+        ShowCard(prompt);
+
+        await prompt.YesCommand.ExecuteAsync(null);
+
+        Assert.False(prompt.IsShown);
+        Assert.Equal(SettingsViewModel.StoreReviewUri, Assert.Single(_launcher.Launched));
+        var (exception, context) = Assert.Single(_errors.Reported);
+        Assert.IsType<TaskCanceledException>(exception);
+        Assert.Equal(RatingText.RequestFailed, context);
+        Assert.Empty(_infoBars.Shown);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

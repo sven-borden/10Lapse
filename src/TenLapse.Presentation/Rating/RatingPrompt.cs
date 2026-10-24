@@ -209,8 +209,10 @@ public sealed partial class RatingPrompt : ObservableObject, IDisposable
 
             _log.Info(RatingText.Unavailable);
         }
-        catch (Exception exception) when (exception is not OperationCanceledException and not OutOfMemoryException)
+        catch (Exception exception) when (exception is not OutOfMemoryException)
         {
+            // A cancel from the Store's call (a TaskCanceledException) is a failure too: the user pressed Yes and nothing
+            // cancels that here, so it must not escape to the error path, which takes a cancel quietly.
             _errors.Report(exception, RatingText.RequestFailed);
         }
 
