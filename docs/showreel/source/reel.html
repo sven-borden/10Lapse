@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>10Lapse motion reel</title>
+<style>
+:root{--disp:'Segoe UI Variable Display','Segoe UI',system-ui,sans-serif;--txt:'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif}
+html,body{margin:0;background:#000;overflow:hidden}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:#F3F1EC;font-family:var(--txt);font-size:14px;line-height:20px;color:#1C1B19}
+.layer{position:absolute;left:0;top:0;width:1920px;height:1080px}
+canvas{display:block}
+.sb{height:32px;padding:0 10px;border-radius:4px;display:inline-flex;align-items:center;gap:8px;color:var(--text);white-space:nowrap;box-sizing:border-box}
+.ib{width:32px;height:32px;border-radius:4px;display:grid;place-items:center;color:var(--text)}
+.acc{height:32px;padding:0 14px;border-radius:4px;border:1px solid var(--accentStroke);background:var(--accent);color:var(--onAccent);font-weight:600;display:inline-flex;align-items:center;gap:8px;box-sizing:border-box;white-space:nowrap}
+.std{height:32px;padding:0 12px;border-radius:4px;border:1px solid var(--stroke);background:var(--ctrl);color:var(--text);display:inline-flex;align-items:center;gap:8px;box-sizing:border-box;white-space:nowrap}
+.sec{padding:16px 0;border-bottom:1px solid var(--divider);display:flex;flex-direction:column;gap:12px}
+.h2{font-size:14px;line-height:20px;font-weight:600}
+.cap{font-size:12px;line-height:16px;color:var(--text2)}
+.tab{font-variant-numeric:tabular-nums}
+.lbl{display:flex;flex-direction:column;gap:6px;font-size:12px;line-height:16px;color:var(--text2)}
+.sel{height:32px;border-radius:4px;border:1px solid var(--stroke);background:var(--ctrl);color:var(--text);display:flex;align-items:center;justify-content:space-between;padding:0 10px;box-sizing:border-box;font-size:14px;line-height:20px}
+.mw{display:inline-block;overflow:hidden;vertical-align:top;padding:0.08em 0.05em 0.22em;margin:-0.08em -0.05em -0.22em}
+.mi{display:inline-block;will-change:transform}
+.kick{font:600 24px/32px var(--txt);letter-spacing:0.01em}
+.head{font:600 96px/104px var(--disp);letter-spacing:-0.025em}
+.subt{font:400 34px/46px var(--txt)}
+.num{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="lib.js"></script>
+<script src="world.js"></script>
+<script src="ui.js"></script>
+<script src="wave.js" onerror="window.WAVE=null"></script>
+<script src="scenes.js"></script>
+<script src="scenes2.js"></script>
+<script src="scenes3.js" onerror="0"></script>
+<script src="timeline.js"></script>
+</body>
+</html>
