@@ -52,7 +52,7 @@ Editing and export
 - If something goes wrong, 10Lapse says what happened and what to do next.
 
 Projects
-Save a project as a .10lapse file, which keeps the list of photos, their order and every setting, and open it again later or with a double-click. The start screen lists your recent projects. If 10Lapse closes before you saved, it offers to restore your changes the next time it starts. Photos a project can't find stay in its file, so they come back once their drive is connected again.
+Save a project as a .10lapse file, which keeps the list of photos, their order and every setting, and open it again later or with a double-click. The start screen lists your recent projects. If 10Lapse closes unexpectedly before you saved, it offers to restore your changes the next time it starts. Photos a project can't find stay in its file, so they come back once their drive is connected again.
 
 Private by design
 10Lapse works offline. There is no account, no analytics and no network access: your photos, videos and projects never leave your PC.
@@ -86,7 +86,7 @@ Limit 1,500 characters. This draft: 1,220. It is what 3.0 users get with the upd
 - Animated GIF: export a GIF that loops, in three sizes, at up to 25 frames per second.
 - Music under an MP4: choose where the song starts and fade it in and out. It is cut where the video ends.
 - Hold the first and last frames for up to 10 seconds, play the photos up to five times, or play them as a boomerang.
-- Save your work: a .10lapse project file opens again later, the start screen lists recent projects, and if 10Lapse closes before you saved, it offers to restore your changes.
+- Save your work: a .10lapse project file opens again later, the start screen lists recent projects, and if 10Lapse closes unexpectedly before you saved, it offers to restore your changes.
 - Ctrl+O now opens a project; Choose folder moved to Ctrl+I and Choose photos to Ctrl+Shift+I.
 - Before and After in the preview compares your photos with and without deflicker and frame blending.
 

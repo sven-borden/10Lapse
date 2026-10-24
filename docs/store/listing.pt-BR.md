@@ -53,7 +53,7 @@ Edição e exportação
 - Se algo der errado, o 10Lapse diz o que aconteceu e o que fazer em seguida.
 
 Projetos
-Salve um projeto como arquivo .10lapse, que guarda a lista de fotos, a ordem delas e todas as configurações, e abra-o de novo depois ou com um clique duplo. A tela inicial mostra seus projetos recentes. Se o 10Lapse fechar antes de você salvar, ele oferece restaurar suas alterações na próxima vez que for aberto. As fotos que um projeto não encontra continuam no arquivo dele e voltam assim que a unidade delas for conectada de novo.
+Salve um projeto como arquivo .10lapse, que guarda a lista de fotos, a ordem delas e todas as configurações, e abra-o de novo depois ou com um clique duplo. A tela inicial mostra seus projetos recentes. Se o 10Lapse fechar inesperadamente antes de você salvar, ele oferece restaurar suas alterações na próxima vez que for aberto. As fotos que um projeto não encontra continuam no arquivo dele e voltam assim que a unidade delas for conectada de novo.
 
 Privacidade em primeiro lugar
 O 10Lapse funciona offline. Não há conta, nem coleta de dados de uso, nem acesso à rede: suas fotos, vídeos e projetos nunca saem do seu PC.
@@ -85,7 +85,7 @@ O 10Lapse 3.1 traz o que um timelapse precisa depois da sessão de fotos.
 - GIF animado: exporte um GIF que se repete sem parar, em três tamanhos, com até 25 quadros por segundo.
 - Música sob um MP4: escolha onde a música começa, com fade de entrada e de saída. Ela é cortada onde o vídeo termina.
 - Imagem congelada no início e no fim, de até 10 segundos, até cinco reproduções das fotos ou o modo Bumerangue.
-- Salve seu trabalho: um arquivo de projeto .10lapse abre de novo depois, a tela inicial mostra os projetos recentes e, se o 10Lapse fechar antes de você salvar, ele oferece restaurar suas alterações.
+- Salve seu trabalho: um arquivo de projeto .10lapse abre de novo depois, a tela inicial mostra os projetos recentes e, se o 10Lapse fechar inesperadamente antes de você salvar, ele oferece restaurar suas alterações.
 - Ctrl+O agora abre um projeto; Escolher pasta passou para Ctrl+I e Escolher fotos, para Ctrl+Shift+I.
 - Antes e Depois, na visualização, comparam suas fotos com e sem anticintilação e fusão de quadros.
 

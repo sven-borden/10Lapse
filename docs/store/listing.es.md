@@ -52,7 +52,7 @@ Edición y exportación
 - Si algo falla, 10Lapse te dice qué pasó y qué hacer a continuación.
 
 Proyectos
-Guarda un proyecto como archivo .10lapse, que conserva la lista de fotos, su orden y todos los ajustes, y vuelve a abrirlo más tarde o con un doble clic. La pantalla de inicio muestra tus proyectos recientes. Si 10Lapse se cierra antes de que guardes, te ofrece restaurar tus cambios la próxima vez que se inicia. Las fotos que un proyecto no encuentra siguen en su archivo, así que vuelven en cuanto su unidad se conecta de nuevo.
+Guarda un proyecto como archivo .10lapse, que conserva la lista de fotos, su orden y todos los ajustes, y vuelve a abrirlo más tarde o con un doble clic. La pantalla de inicio muestra tus proyectos recientes. Si 10Lapse se cierra de forma inesperada antes de que guardes, te ofrece restaurar tus cambios la próxima vez que se inicie. Las fotos que un proyecto no encuentra siguen en su archivo, así que vuelven en cuanto su unidad se conecta de nuevo.
 
 Privacidad desde el diseño
 10Lapse funciona sin conexión. No hay cuenta, ni análisis, ni acceso a la red: tus fotos, videos y proyectos nunca salen de tu equipo.
@@ -86,7 +86,7 @@ out the rating question.
 - GIF animado: exporta un GIF que se repite, en tres tamaños, con hasta 25 fotogramas por segundo.
 - Música bajo un MP4: elige dónde empieza la canción, con fundido de entrada y de salida. Se corta donde termina el video.
 - Imagen fija al inicio y al final, de hasta 10 segundos, hasta cinco reproducciones de las fotos, o el modo Bumerán.
-- Guarda tu trabajo: un archivo de proyecto .10lapse se vuelve a abrir más tarde, la pantalla de inicio muestra los proyectos recientes y, si 10Lapse se cierra antes de que guardes, te ofrece restaurar tus cambios.
+- Guarda tu trabajo: un archivo de proyecto .10lapse se vuelve a abrir más tarde, la pantalla de inicio muestra los proyectos recientes y, si 10Lapse se cierra de forma inesperada antes de que guardes, te ofrece restaurar tus cambios.
 - Ctrl+O ahora abre un proyecto; “Elegir carpeta” pasó a Ctrl+I y “Elegir fotos”, a Ctrl+Mayús+I.
 - “Antes” y “Después”, en la vista previa, comparan tus fotos con y sin antiparpadeo y fusión de fotogramas.
 

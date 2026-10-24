@@ -51,7 +51,7 @@ Modifica ed esportazione
 - Se qualcosa va storto, 10Lapse ti dice cosa è successo e cosa fare.
 
 Progetti
-Salva un progetto come file .10lapse, che conserva l'elenco delle foto, il loro ordine e tutte le impostazioni, e riaprilo più tardi o con un doppio clic. La schermata iniziale mostra i tuoi progetti recenti. Se 10Lapse si chiude prima che tu abbia salvato, all'avvio successivo propone di ripristinare le modifiche. Le foto che un progetto non trova restano nel suo file, quindi tornano appena la loro unità è di nuovo collegata.
+Salva un progetto come file .10lapse, che conserva l'elenco delle foto, il loro ordine e tutte le impostazioni, e riaprilo più tardi o con un doppio clic. La schermata iniziale mostra i tuoi progetti recenti. Se 10Lapse si chiude in modo imprevisto prima che tu abbia salvato, all'avvio successivo propone di ripristinare le modifiche. Le foto che un progetto non trova restano nel suo file, quindi tornano appena la loro unità è di nuovo collegata.
 
 Privacy fin dalla progettazione
 10Lapse funziona offline. Nessun account, nessuna raccolta di dati di utilizzo e nessun accesso alla rete: le tue foto, i tuoi video e i tuoi progetti non lasciano mai il PC.
@@ -85,7 +85,7 @@ out the rating question.
 - GIF animata: esporta una GIF che si ripete all'infinito, in tre misure, fino a 25 fotogrammi al secondo.
 - Musica sotto un MP4: scegli dove inizia la canzone, con dissolvenza in entrata e in uscita. Viene tagliata dove finisce il video.
 - Fermo immagine all'inizio e alla fine, fino a 10 secondi, fino a cinque riproduzioni delle foto, oppure la modalità Boomerang.
-- Salva il tuo lavoro: un file di progetto .10lapse si riapre più tardi, la schermata iniziale mostra i progetti recenti e, se 10Lapse si chiude prima del salvataggio, propone di ripristinare le modifiche.
+- Salva il tuo lavoro: un file di progetto .10lapse si riapre più tardi, la schermata iniziale mostra i progetti recenti e, se 10Lapse si chiude in modo imprevisto prima del salvataggio, propone di ripristinare le modifiche.
 - Ctrl+O ora apre un progetto; “Scegli cartella” è passato a Ctrl+I e “Scegli foto” a Ctrl+Maiusc+I.
 - “Prima” e “Dopo”, nell'anteprima, confrontano le tue foto con e senza antisfarfallio e fusione di fotogrammi.
 

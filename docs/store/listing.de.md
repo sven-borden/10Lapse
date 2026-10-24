@@ -49,7 +49,7 @@ Bearbeiten und exportieren
 - Wenn etwas schiefgeht, sagt 10Lapse, was passiert ist und was Sie als Nächstes tun können.
 
 Projekte
-Speichern Sie ein Projekt als .10lapse-Datei, die die Liste der Fotos, ihre Reihenfolge und alle Einstellungen enthält, und öffnen Sie es später wieder oder per Doppelklick. Der Startbildschirm zeigt Ihre zuletzt verwendeten Projekte. Wird 10Lapse beendet, bevor Sie gespeichert haben, bietet es beim nächsten Start an, Ihre Änderungen wiederherzustellen. Fotos, die ein Projekt nicht findet, bleiben in seiner Datei und kommen zurück, sobald ihr Laufwerk wieder verbunden ist.
+Speichern Sie ein Projekt als .10lapse-Datei, die die Liste der Fotos, ihre Reihenfolge und alle Einstellungen enthält, und öffnen Sie es später wieder oder per Doppelklick. Der Startbildschirm zeigt Ihre zuletzt verwendeten Projekte. Wird 10Lapse unerwartet beendet, bevor Sie gespeichert haben, bietet es beim nächsten Start an, Ihre Änderungen wiederherzustellen. Fotos, die ein Projekt nicht findet, bleiben in seiner Datei und kommen zurück, sobald ihr Laufwerk wieder verbunden ist.
 
 Datenschutz von Grund auf
 10Lapse funktioniert offline. Es gibt kein Konto, keine Analysedaten und keinen Netzwerkzugriff: Ihre Fotos, Videos und Projekte verlassen nie Ihren PC.
@@ -83,7 +83,7 @@ and it leaves out the rating question.
 - Animiertes GIF: ein GIF, das endlos läuft, in drei Größen, mit bis zu 25 Bildern pro Sekunde.
 - Musik unter einem MP4-Video: Wählen Sie, wo der Song beginnt, und blenden Sie ihn ein und aus. Er wird am Ende des Videos abgeschnitten.
 - Standbild am Anfang und am Ende, bis zu 10 Sekunden, bis zu fünf Durchläufe der Fotos oder ein Bumerang.
-- Projekte speichern: Eine .10lapse-Projektdatei lässt sich später wieder öffnen, der Startbildschirm zeigt die zuletzt verwendeten Projekte, und wird 10Lapse vor dem Speichern beendet, bietet es an, Ihre Änderungen wiederherzustellen.
+- Projekte speichern: Eine .10lapse-Projektdatei lässt sich später wieder öffnen, der Startbildschirm zeigt die zuletzt verwendeten Projekte, und stürzt 10Lapse vor dem Speichern ab, bietet es an, Ihre Änderungen wiederherzustellen.
 - Strg+O öffnet jetzt ein Projekt; „Ordner auswählen“ liegt nun auf Strg+I, „Fotos auswählen“ auf Strg+Umschalt+I.
 - „Vorher“ und „Nachher“ in der Vorschau vergleichen Ihre Fotos mit und ohne Entflackern und Überlagern.
 

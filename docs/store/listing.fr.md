@@ -52,7 +52,7 @@ Montage et exportation
 - En cas de problème, 10Lapse vous dit ce qui s’est passé et ce qu’il faut faire.
 
 Projets
-Enregistrez un projet dans un fichier .10lapse, qui garde la liste des photos, leur ordre et tous les réglages, puis rouvrez-le plus tard ou d’un double-clic. L’écran d’accueil affiche vos projets récents. Si 10Lapse se ferme avant que vous ayez enregistré, il propose de restaurer vos modifications au démarrage suivant. Les photos introuvables restent dans le fichier du projet : elles reviennent dès que leur disque est de nouveau branché.
+Enregistrez un projet dans un fichier .10lapse, qui garde la liste des photos, leur ordre et tous les réglages, puis rouvrez-le plus tard ou d’un double-clic. L’écran d’accueil affiche vos projets récents. Si 10Lapse se ferme de façon inattendue avant que vous ayez enregistré, il propose de restaurer vos modifications au démarrage suivant. Les photos introuvables restent dans le fichier du projet : elles reviennent dès que leur disque est de nouveau branché.
 
 Vos photos restent chez vous
 10Lapse fonctionne hors connexion. Pas de compte, pas de statistiques d’utilisation, aucun accès réseau : vos photos, vos vidéos et vos projets ne quittent jamais votre PC.
@@ -84,7 +84,7 @@ Limit 1,500 characters. This draft: 1,415. Like the English one, it is what 3.0 
 - GIF animé : exportez un GIF qui tourne en boucle, en trois tailles, jusqu’à 25 images par seconde.
 - Musique sous un MP4 : choisissez où commence la chanson, avec un fondu d’entrée et de sortie. Elle est coupée à la fin de la vidéo.
 - Arrêt sur image au début et à la fin, jusqu’à 10 s, jusqu’à cinq lectures des photos, ou le mode Boomerang.
-- Vos projets s’enregistrent : un fichier .10lapse se rouvre plus tard, l’écran d’accueil affiche les projets récents, et si 10Lapse se ferme avant l’enregistrement, il propose de restaurer vos modifications.
+- Enregistrez votre travail : un fichier .10lapse se rouvre plus tard, l’écran d’accueil affiche les projets récents, et si 10Lapse plante avant l’enregistrement, il propose de restaurer vos modifications.
 - Ctrl+O ouvre désormais un projet ; Choisir un dossier passe à Ctrl+I et Choisir des photos à Ctrl+Maj+I.
 - Avant et Après, dans l’aperçu, comparent vos photos avec et sans anti-scintillement et fusion d’images.
 
