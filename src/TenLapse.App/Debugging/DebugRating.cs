@@ -13,7 +13,7 @@ namespace TenLapse.Debugging;
 /// </summary>
 /// <remarks>
 /// To see the card after one export instead of two, start with a fresh settings folder whose <c>settings.json</c> is
-/// <c>{"successfulExports": 1}</c>, and export once with <c>--export-to=PATH --sample-frames=N</c> (DebugExport).
+/// <c>{"version": 1, "successfulExports": 1}</c>, and export once with <c>--export-to=PATH --sample-frames=N</c> (DebugExport).
 /// A Debug build's version is <c>1.0.0+&lt;commit&gt;</c>, so each new commit may ask once more.
 /// </remarks>
 internal sealed class DebugRating(ILog log) : IRatingService
