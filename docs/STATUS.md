@@ -11,9 +11,7 @@ languages) and waits for Sven's submission. Milestone 6 then keeps only #30,
 which waits for Sven's photos. Next: what Health and the first reviews bring up.
 `docs/test-matrix.md` is a checklist for the live build (5.22 crop and pan, 5.23 music, 5.24 frame
 blending: nobody has seen or heard them on real shoots yet). 2026-10-24: a 59 s motion reel of 3.1 for borden.ch
-is in `docs/showreel/` (PR #143, Sven's request; it passes its `source/flashes.py`, WCAG 2.3.1). The Store trailer
-shows 3.0 only and fails that check in four stretches, from 1.6, 3.8, 10.8 and 20.2 s (worst 100 % of a 10° field,
-limit 25 %).
+is in `docs/showreel/` (PR #143, Sven's request; it passes its `source/flashes.py`, WCAG 2.3.1).
 
 ## Waves
 
@@ -131,6 +129,9 @@ Nothing blocks the build loop.
   `_many` where millions take de/di; Store names come from
   `displaycatalog.mp.microsoft.com` (ProductTitle); es uses "video" and the MX
   names for a single neutral file.
+- 2026-10-25 (Sven): the 3.0 Store trailer stays for 3.1; no Store cut of the
+  motion reel. It shows 3.0 only and fails `docs/showreel/source/flashes.py`
+  from 1.6, 3.8, 10.8 and 20.2 s (worst 100 % of a 10° field, limit 25 %).
 
 ## Merged
 
