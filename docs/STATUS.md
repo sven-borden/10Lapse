@@ -7,7 +7,7 @@ Updated 2026-10-24. Roadmap: the pinned #59 and the milestones. Working agreemen
 2026-10-21: **3.0 is live on the Store at full rollout** (tag `v3.0.0`, on
 `7c63de5`). 2026-10-24: **3.1.0 is packed and tagged** (`v3.1.0`, on
 `04e6f74`, PR #142 for #141: version 3.1.0.0 and the 3.1 listing in six
-languages) and waits for Sven's submission. Milestone 6 then keeps only #30,
+languages); Sven submitted it on 2026-10-25. Milestone 6 then keeps only #30,
 which waits for Sven's photos. Next: what Health and the first reviews bring up.
 `docs/test-matrix.md` is a checklist for the live build (5.22 crop and pan, 5.23 music, 5.24 frame
 blending: nobody has seen or heard them on real shoots yet). 2026-10-24: a 59 s motion reel of 3.1 for borden.ch
@@ -50,14 +50,13 @@ preview's music, the inspector's fifth section), #138 (`BlendSettings`, the
 
 Nothing blocks the build loop.
 
-- Submit 3.1 (#141): upload `dist/store/TenLapse.App_3.1.0.0_x64_arm64_bundle.msixupload`
-  (rebuild with `pwsh -File scripts/pack.ps1` on `v3.1.0` if `dist/` is gone)
-  and paste every field of `docs/store/listing*.md` in all six languages. Close
-  #141 once it is live.
+- Say when 3.1 is live (the Store catalog,
+  `displaycatalog.mp.microsoft.com/v7.0/products?bigIds=9NBN2XH6S4D8&market=US&languages=en-US`,
+  still listed 3.0.0.0 on 2026-10-25). The main session then closes #141,
+  checks that no live description still says Windows 10 keeps 2.1.1, and
+  updates the borden.ch 10Lapse page ("Status as of 24 Oct 2026").
 - Watch Partner Center Health for start-up crashes (#90); traces are not
   symbolicated, so a count is all it gives.
-- The live listing text still says Windows 10 keeps 2.1.1; pasting the 3.1
-  listing removes it.
 - A native read of the fr, de, es, it and pt-BR texts where he can; whether
   Portugal gets a pt-PT listing reusing the pt-BR text (else it may show
   English); a real-timelapse trailer later (#43's original brief).
