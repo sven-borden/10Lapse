@@ -52,9 +52,10 @@ Nothing blocks the build loop.
   Partner Center submission that changes the listing only: on 2026-10-26 the
   live Description, Short description and What's new are still the 3.0 copy in
   all six languages, with "on Windows 10, the Store offers the older 10Lapse
-  2.1.1". #141 stays open until the catalog
+  2.1.1". #141 is closed (Sven, 2026-10-25), so this line is the only record;
+  check the catalog
   (`displaycatalog.mp.microsoft.com/v7.0/products?bigIds=9NBN2XH6S4D8&market=US&languages=en-US`)
-  shows the 3.1 text.
+  for the 3.1 text, then drop it.
 - Watch Partner Center Health for start-up crashes (#90); traces are not
   symbolicated, so a count is all it gives.
 - A native read of the fr, de, es, it and pt-BR texts where he can; whether
