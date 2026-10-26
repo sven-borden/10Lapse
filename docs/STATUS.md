@@ -1,14 +1,15 @@
 # 10Lapse status
 
-Updated 2026-10-24. Roadmap: the pinned #59 and the milestones. Working agreement: `CLAUDE.md`.
+Updated 2026-10-26. Roadmap: the pinned #59 and the milestones. Working agreement: `CLAUDE.md`.
 
 ## Now
 
-2026-10-21: **3.0 is live on the Store at full rollout** (tag `v3.0.0`, on
-`7c63de5`). 2026-10-24: **3.1.0 is packed and tagged** (`v3.1.0`, on
-`04e6f74`, PR #142 for #141: version 3.1.0.0 and the 3.1 listing in six
-languages); Sven submitted it on 2026-10-25. Milestone 6 then keeps only #30,
-which waits for Sven's photos. Next: what Health and the first reviews bring up.
+2026-10-25: **3.1.0.0 is live on the Store** (tag `v3.1.0` on `04e6f74`, PR #142
+for #141; catalog revision 10:14 UTC, Sven confirmed 2026-10-26), without its
+listing text (owner items). 3.0 went live 2026-10-21 (`v3.0.0` on `7c63de5`).
+The borden.ch 10Lapse page says 3.1 is live (status as of 26 Oct 2026).
+Milestone 6 keeps only #30, which waits for Sven's photos. Next: what Health
+and the first reviews bring up.
 `docs/test-matrix.md` is a checklist for the live build (5.22 crop and pan, 5.23 music, 5.24 frame
 blending: nobody has seen or heard them on real shoots yet). 2026-10-24: a 59 s motion reel of 3.1 for borden.ch
 is in `docs/showreel/` (PR #143, Sven's request; it passes its `source/flashes.py`, WCAG 2.3.1).
@@ -37,12 +38,9 @@ measuring pass and the export's wait for it), #136 (`Framing`, the `crop` group,
 preview's music, the inspector's fifth section), #138 (`BlendSettings`, the
 `blend` group, `FrameRenderer.DrawBlend`, `BlendedPhotoSource`).
 
-- Wave 25: done. #51 GIF export (PR #132), #52 save and reopen (PR #133).
-- Wave 26: done. #49 hold, loop, boomerang (PR #134), #45 deflicker (PR #135).
-- Wave 27: done. #46 crop and pan (PR #136), #50 music (PR #137).
-- Wave 28: done. #47 frame blending (PR #138).
-- Between waves: done. #139 rating question (PR #140, Sven 2026-10-24; gate
-  3,822 passed; checked minimized and restored in the real app).
+- Waves 25 to 28: done. #51 GIF (PR #132), #52 save and reopen (#133), #49
+  hold, loop, boomerang (#134), #45 deflicker (#135), #46 crop and pan (#136),
+  #50 music (#137), #47 frame blending (#138); #139 rating question (#140).
 - #48 stamp and title: closed, not planned (Sven, 2026-10-24).
 - #30 sample sequence once Sven picks the photos.
 
@@ -50,11 +48,13 @@ preview's music, the inspector's fifth section), #138 (`BlendSettings`, the
 
 Nothing blocks the build loop.
 
-- Say when 3.1 is live (the Store catalog,
-  `displaycatalog.mp.microsoft.com/v7.0/products?bigIds=9NBN2XH6S4D8&market=US&languages=en-US`,
-  still listed 3.0.0.0 on 2026-10-25). The main session then closes #141,
-  checks that no live description still says Windows 10 keeps 2.1.1, and
-  updates the borden.ch 10Lapse page ("Status as of 24 Oct 2026").
+- Paste the six 3.1 listings (`docs/store/listing*.md`, every section) in a
+  Partner Center submission that changes the listing only: on 2026-10-26 the
+  live Description, Short description and What's new are still the 3.0 copy in
+  all six languages, with "on Windows 10, the Store offers the older 10Lapse
+  2.1.1". #141 stays open until the catalog
+  (`displaycatalog.mp.microsoft.com/v7.0/products?bigIds=9NBN2XH6S4D8&market=US&languages=en-US`)
+  shows the 3.1 text.
 - Watch Partner Center Health for start-up crashes (#90); traces are not
   symbolicated, so a count is all it gives.
 - A native read of the fr, de, es, it and pt-BR texts where he can; whether
@@ -77,46 +77,32 @@ Nothing blocks the build loop.
   `FrameLookTests.TheReframePathAppliesTheSameLook`); a new drawing step must go
   through that call too or update the path. #46 did: `PhotoRect` takes the framed
   placement (`FrameRenderer.Placement`), so the reframe moves the framed photo.
-- 2026-10-24 (#45, PR #135): exposure measurements live on the frame
-  (`Frame.Exposure`, saved in `.10lapse`), never in an app-data cache; the
-  `look` group is project-only, not in `settings.json`. The correction belongs
-  to the photo, so a hold, loop or boomerang repeats it. Cancelling a pass the
-  app started keeps the Deflicker setting; cancelling right after the user
-  turned it on turns it off. Autosave waits at most 10 s. `ProjectChanges` bits
-  9 (`Sequence`) and 10 (`Look`) are taken. The reasoning: PR #135's
-  "Decisions".
+- 2026-10-24 (#45, PR #135): exposure lives on the frame (`Frame.Exposure`, in
+  `.10lapse`), never in an app-data cache; the `look` group is project-only.
+  The correction belongs to the photo, so holds, loops and boomerangs repeat
+  it. Autosave waits at most 10 s. Details: PR #135 "Decisions".
 - 2026-10-24 (Sven): #46 built by the main session ("no agent, do yourself"),
   no tests run while building and no review pass ("just commit, push, gate,
   merge"); the gate before the merge still runs every test. #50 ("go with
   next") and #47 ("let's resume where we are") were built the same way.
-- 2026-10-24 (#46, PR #136): a framing is a rectangle of the frame's shape in
-  shares of the frame (any aspect or resolution), 4x zoom at most; the move
-  runs over the photos' frames, holds stand still, plays and a boomerang are
-  one move; a steady zoom about the point both framings share; Video, Start
-  and End are the preview's alone. A zoomed export decodes larger and fewer
-  frames ahead (by the zoom squared, at least 2). `ProjectChanges` bit 11
-  (`Crop`) is taken; the full `Project` constructor ends with `crop`.
-- 2026-10-24 (#50, PR #137): music is MP4 only (a GIF has no sound); it starts
-  with the video at a chosen point of the song, never loops (silence after a
-  short song), fades on square curves up to 10 s; the audio track is as long as
-  the video and written up to each frame's start before it (the MP4 sink must
-  not wait on either stream). The file stores the song's full and relative
-  paths and its length. `ProjectChanges` bit 12 (`Music`) is taken; the full
-  `Project` constructor ends with `music`.
-- 2026-10-24 (#47, PR #138): a blend is of photos, not video frames: each
-  photo is the average in linear light of the 2 to 16 photos around it
-  (centred, one more before when even, fewer at the ends), each with its own
-  deflicker stops, so holds, plays and the boomerang repeat blended photos and
-  crop and pan frames the blend. Strength mixes the blend with the photo. A
-  group of its own (`blend`, bit 13; the full `Project` constructor ends with
-  `blend`). A blended export decodes each photo once and holds at most 16 4K
-  photos' pixels (a deep zoom is decoded softer to stay within it).
+- 2026-10-24 (#46, PR #136): a framing is a rectangle in shares of the frame,
+  4x zoom at most; the move runs over the photos' frames (holds stand still,
+  plays and a boomerang are one move). A zoomed export decodes larger and
+  fewer frames ahead. Details: PR #136.
+- 2026-10-24 (#50, PR #137): music is MP4 only, never loops (silence after a
+  short song), fades up to 10 s; the audio is written up to each frame's start
+  before the frame (the MP4 sink must not wait on either stream). Details: PR
+  #137.
+- 2026-10-24 (#47, PR #138): a blend is of photos, not video frames: the
+  average in linear light of the 2 to 16 photos around each photo, after its
+  deflicker, so holds, plays and the boomerang repeat blended photos and crop
+  and pan frames the blend. Details: PR #138 "Decisions".
+- `ProjectChanges` bits taken: 9 `Sequence`, 10 `Look`, 11 `Crop`, 12 `Music`,
+  13 `Blend`.
 - 2026-10-24 (#139, PR #140): the rating ask is an inline card in the finished
-  state, "Do you like 10Lapse?"; the Store is called only after Yes (its dialog,
-  then the review page, then an InfoBar), No closes it. Once per version,
-  recorded only when the card arrives with the window in front
-  (`RatingPrompt.Arrive`; `RememberedSettings.TryRecordRatingAsked` reads the
-  stored value, so a second window never asks again).
+  state; the Store is called only after Yes, No closes it; once per version,
+  recorded only when the card arrives with the window in front. Details: PR
+  #140.
 - Timing tests (PR #102): prove a timeout by its effect and give ceilings a wide
   margin. If one flakes, look first at `ImportPerformanceTests` and the
   `EncoderProbeTests` cached-load ratio.
